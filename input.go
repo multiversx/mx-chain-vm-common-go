@@ -4,16 +4,15 @@ import (
 	"math/big"
 )
 
-// BlockHeader ... data about the block in which the transaction resides
-type BlockHeader struct {
+// SCCallHeader contains data about the block in which the transaction resides
+type SCCallHeader struct {
 	Beneficiary *big.Int // "coinbase"
-	Difficulty  *big.Int
 	Number      *big.Int
 	GasLimit    *big.Int
 	Timestamp   *big.Int
 }
 
-// ContractCreateInput ... VM input when creating a new contract
+// ContractCreateInput VM input when creating a new contract
 type ContractCreateInput struct {
 	CallerAddr   []byte
 	ContractCode []byte
@@ -21,10 +20,10 @@ type ContractCreateInput struct {
 	CallValue    *big.Int
 	GasPrice     *big.Int
 	GasProvided  *big.Int
-	BlockHeader  *BlockHeader
+	Header       *SCCallHeader
 }
 
-// ContractCallInput ... VM input when calling a function from an existing contract
+// ContractCallInput VM input when calling a function from an existing contract
 type ContractCallInput struct {
 	CallerAddr    []byte
 	RecipientAddr []byte
@@ -33,5 +32,5 @@ type ContractCallInput struct {
 	CallValue     *big.Int
 	GasPrice      *big.Int
 	GasProvided   *big.Int
-	BlockHeader   *BlockHeader
+	Header        *SCCallHeader
 }
