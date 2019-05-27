@@ -12,25 +12,25 @@ type SCCallHeader struct {
 	Timestamp   *big.Int
 }
 
+// VMInput contains the common fields between the 2 types of SC call
+type VMInput struct {
+	CallerAddr  []byte
+	Arguments   []*big.Int
+	CallValue   *big.Int
+	GasPrice    *big.Int
+	GasProvided *big.Int
+	Header      *SCCallHeader
+}
+
 // ContractCreateInput VM input when creating a new contract
 type ContractCreateInput struct {
-	CallerAddr   []byte
+	VMInput
 	ContractCode []byte
-	Arguments    []*big.Int
-	CallValue    *big.Int
-	GasPrice     *big.Int
-	GasProvided  *big.Int
-	Header       *SCCallHeader
 }
 
 // ContractCallInput VM input when calling a function from an existing contract
 type ContractCallInput struct {
-	CallerAddr    []byte
+	VMInput
 	RecipientAddr []byte
 	Function      string
-	Arguments     []*big.Int
-	CallValue     *big.Int
-	GasPrice      *big.Int
-	GasProvided   *big.Int
-	Header        *SCCallHeader
 }
