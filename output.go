@@ -18,7 +18,7 @@ type OutputAccount struct {
 	Nonce          *big.Int
 	Balance        *big.Int
 	StorageUpdates []*StorageUpdate
-	Code           string
+	Code           []byte
 }
 
 // LogEntry is the contract execution log
@@ -31,7 +31,7 @@ type LogEntry struct {
 // VMOutput is the return data and final account state after a SC execution
 type VMOutput struct {
 	ReturnData      []*big.Int
-	ReturnCode      *big.Int
+	ReturnCode      ReturnCode
 	GasRemaining    *big.Int
 	GasRefund       *big.Int
 	Error           bool
