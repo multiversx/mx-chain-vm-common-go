@@ -1,3 +1,3 @@
-module github.com/libp2p/elrond-vm-common
+module github.com/ElrondNetwork/elrond-vm-common
 
 go 1.12
