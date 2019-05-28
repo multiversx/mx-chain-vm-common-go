@@ -1,4 +1,4 @@
-package vminterface
+package vmcommon
 
 import "math/big"
 
