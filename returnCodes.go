@@ -1,4 +1,4 @@
-package vminterface
+package vmcommon
 
 // ReturnCode is an enum with the possible error codes returned by the VM
 type ReturnCode int
