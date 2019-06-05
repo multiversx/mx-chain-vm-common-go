@@ -9,21 +9,24 @@ type BlockchainHook interface {
 	// An account with Balance = 0 and Nonce = 0 is considered to not exist
 	AccountExists(address []byte) (bool, error)
 
-	// Should retrieve the balance of an account
+	// Should yield the balance of an account.
+	// Should yield zero if account does not exist.
 	GetBalance(address []byte) (*big.Int, error)
 
-	// Should retrieve the nonce of an account
+	// Should yield the nonce of an account.
+	// Should yield zero if account does not exist.
 	GetNonce(address []byte) (*big.Int, error)
 
-	// Get the storage value for a certain account and index.
-	// Should return an empty byte array if the key is missing from the account storage
+	// Should yield the storage value for a certain account and index.
+	// Should return an empty byte array if the key is missing from the account storage,
+	// or if account does not exist.
 	GetStorageData(accountAddress []byte, index []byte) ([]byte, error)
 
 	// Should return whether of not an account is SC.
 	IsCodeEmpty(address []byte) (bool, error)
 
 	// Should return the compiled and assembled SC code.
-	// Empty byte array if the account is a wallet.
+	// Should yield an empty byte array if the account is a wallet.
 	GetCode(address []byte) ([]byte, error)
 
 	// Should return the hash of the nth previous blockchain.
