@@ -72,13 +72,14 @@ type VMOutput struct {
 
 	// GasRefund is how much gas the sender earned during the transaction.
 	// Certain operations, like freeing up storage, actually return gas instead of consuming it.
-	// Based on GasRefund, the sender can be rewarded instead of taxed.
+	// Based on GasRefund, the sender could in principle be rewarded instead of taxed.
+	// TODO: decide if we are going to support this.
 	GasRefund *big.Int
 
 	// OutputAccounts contains data about all acounts changed as a result of the transaction.
 	// This data tells the network how to update the account data.
 	// It can contain new accounts or existing changed accounts.
-	// Note: the current implementation might also retrieve accounts fthat were not changed.
+	// Note: the current implementation might also retrieve accounts that were not changed.
 	OutputAccounts []*OutputAccount
 
 	// DeletedAccounts is a list of public keys of accounts that need to be deleted

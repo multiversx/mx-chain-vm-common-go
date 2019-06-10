@@ -6,7 +6,7 @@ import (
 
 // SCCallHeader contains data about the block in which the transaction resides.
 type SCCallHeader struct {
-	// Beneficiary is the block proposer (or the miner in the original Ethereum Iele project)
+	// Beneficiary is the block proposer.
 	// It is referred to as "coinbase" in the test .json files
 	// This value is accessible in the VM:
 	// - in IELE, it is returned by `call @iele.beneficiary`
