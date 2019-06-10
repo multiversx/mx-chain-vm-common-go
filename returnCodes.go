@@ -1,7 +1,36 @@
 package vmcommon
 
+import "fmt"
+
 // ReturnCode is an enum with the possible error codes returned by the VM
 type ReturnCode int
+
+func (rc ReturnCode) String() string {
+	switch rc {
+	case Ok:
+		return "ok"
+	case FunctionNotFound:
+		return "function not found"
+	case FunctionWrongSignature:
+		return "wrong signature for function"
+	case ContractNotFound:
+		return "contract not found"
+	case UserError:
+		return "user error"
+	case OutOfGas:
+		return "out of gas"
+	case AccountCollision:
+		return "account collision"
+	case OutOfFunds:
+		return "out of funds"
+	case CallStackOverFlow:
+		return "call stack overflow"
+	case ContractInvalid:
+		return "contract invalid"
+	default:
+		return fmt.Sprintf("unknown error, code: %d", rc)
+	}
+}
 
 const (
 	// Ok is returned when execution was completed normally
