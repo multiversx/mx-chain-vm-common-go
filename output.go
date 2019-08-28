@@ -27,7 +27,7 @@ type OutputAccount struct {
 	Address []byte
 
 	// Nonce is the new account nonce.
-	Nonce *big.Int
+	Nonce uint64
 
 	// Balance is the new account balance.
 	Balance *big.Int
