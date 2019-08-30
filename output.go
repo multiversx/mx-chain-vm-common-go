@@ -29,7 +29,8 @@ type OutputAccount struct {
 	// Nonce is the new account nonce.
 	Nonce uint64
 
-	// Balance is the account balance.
+	// Balance is the account balance after running a SC.
+	// Only used for some tests now, please ignore. Might be removed in the future.
 	Balance *big.Int
 
 	// BalanceDelta is by how much the balance should change following the SC execution.
