@@ -11,6 +11,7 @@ type BlockchainHook interface {
 
 	// NewAddress yields the address of a new SC account, when one such account is created.
 	// The result should only depend on the creator address and nonce.
+	// Returning an empty address lets the VM decide what the new address should be.
 	NewAddress(creatorAddress []byte, creatorNonce uint64) ([]byte, error)
 
 	// Should yield the balance of an account.

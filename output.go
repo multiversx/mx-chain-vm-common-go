@@ -29,8 +29,12 @@ type OutputAccount struct {
 	// Nonce is the new account nonce.
 	Nonce uint64
 
-	// Balance is the new account balance.
+	// Balance is the account balance.
 	Balance *big.Int
+
+	// BalanceDelta is by how much the balance should change following the SC execution.
+	// A negative value indicates that balance should decrease.
+	BalanceDelta *big.Int
 
 	// StorageUpdates is a list of key-value pairs
 	// that should be updated in the account storage.
