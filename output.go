@@ -27,10 +27,15 @@ type OutputAccount struct {
 	Address []byte
 
 	// Nonce is the new account nonce.
-	Nonce *big.Int
+	Nonce uint64
 
-	// Balance is the new account balance.
+	// Balance is the account balance after running a SC.
+	// Only used for some tests now, please ignore. Might be removed in the future.
 	Balance *big.Int
+
+	// BalanceDelta is by how much the balance should change following the SC execution.
+	// A negative value indicates that balance should decrease.
+	BalanceDelta *big.Int
 
 	// StorageUpdates is a list of key-value pairs
 	// that should be updated in the account storage.
