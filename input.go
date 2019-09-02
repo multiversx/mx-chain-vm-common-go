@@ -75,11 +75,6 @@ type VMInput struct {
 type ContractCreateInput struct {
 	VMInput
 
-	// NewContractAddress is the address of the new contract to be created.
-	// An empty NewContractAddress will cause the hook to be called.
-	// If the hook also returns an empty address, the VM will decide the new address.
-	NewContractAddress []byte
-
 	// ContractCode is the code of the contract being created, assembled into a byte array.
 	// For Iele VM, to convert a .iele file to this assembled byte array, see
 	// src/github.com/ElrondNetwork/elrond-vm/iele/compiler/compiler.AssembleIeleCode
