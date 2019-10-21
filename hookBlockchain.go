@@ -49,6 +49,7 @@ type BlockchainHook interface {
 
 	// LastRandomSeed returns the random seed from the last committed block
 	LastRandomSeed() []byte
+
 	// LastEpoch returns the epoch from the last committed block
 	LastEpoch() uint32
 
