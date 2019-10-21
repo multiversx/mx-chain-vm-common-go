@@ -37,4 +37,37 @@ type BlockchainHook interface {
 	// Should return the hash of the nth previous blockchain.
 	// Offset specifies how many blocks we need to look back.
 	GetBlockhash(offset *big.Int) ([]byte, error)
+
+	// LastNonce returns the nonce from from the last committed block
+	LastNonce() uint64
+
+	// LastRound returns the round from the last committed block
+	LastRound() uint64
+
+	// LastTimeStamp returns the timeStamp from the last committed block
+	LastTimeStamp() uint64
+
+	// LastRandomSeed returns the random seed from the last committed block
+	LastRandomSeed() []byte
+
+	// LastEpoch returns the epoch from the last committed block
+	LastEpoch() uint32
+
+	// GetStateRootHash returns the state root hash from the last committed block
+	GetStateRootHash() []byte
+
+	// CurrentNonce returns the nonce from the current block
+	CurrentNonce() uint64
+
+	// CurrentRound returns the round from the current block
+	CurrentRound() uint64
+
+	// CurrentTimeStamp return the timestamp from the current block
+	CurrentTimeStamp() uint64
+
+	// CurrentRandomSeed returns the random seed from the current header
+	CurrentRandomSeed() []byte
+
+	// CurrentEpoch returns the current epoch
+	CurrentEpoch() uint32
 }
