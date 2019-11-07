@@ -1,6 +1,8 @@
 package vmcommon
 
 import (
+	"encoding/hex"
+	"fmt"
 	"math/big"
 )
 
@@ -104,4 +106,49 @@ type VMOutput struct {
 	// The logs should be accessible to the UI.
 	// The logs are part of the transaction receipt.
 	Logs []*LogEntry
+}
+
+// ReturnDataKind specifies how to interpret VMOutputs's return data.
+// More specifically, how to interpret returned data's first item.
+type ReturnDataKind int
+
+const (
+	// AsBigInt to interpret as big int
+	AsBigInt ReturnDataKind = 1 << iota
+	// AsBigIntString to interpret as big int string
+	AsBigIntString
+	// AsString to interpret as string
+	AsString
+	// AsHex to interpret as hex
+	AsHex
+)
+
+// GetFirstReturnData is a helper function that returns the first ReturnData of VMOutput, interpreted as specified.
+func (vmOutput *VMOutput) GetFirstReturnData(asType ReturnDataKind) (interface{}, error) {
+	if len(vmOutput.ReturnData) == 0 {
+		return nil, fmt.Errorf("no return data")
+	}
+
+	returnData := vmOutput.ReturnData[0]
+	returnDataAsBytes := returnData.Bytes()
+	returnDataAsString := string(returnDataAsBytes)
+	returnDataAsHex := hex.EncodeToString(returnDataAsBytes)
+
+	if asType == AsBigInt {
+		return returnData, nil
+	}
+
+	if asType == AsBigIntString {
+		return returnData.String(), nil
+	}
+
+	if asType == AsString {
+		return returnDataAsString, nil
+	}
+
+	if asType == AsHex {
+		return returnDataAsHex, nil
+	}
+
+	return nil, fmt.Errorf("can't interpret return data")
 }
