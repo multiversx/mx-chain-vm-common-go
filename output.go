@@ -130,24 +130,16 @@ func (vmOutput *VMOutput) GetFirstReturnData(asType ReturnDataKind) (interface{}
 	}
 
 	returnData := vmOutput.ReturnData[0]
-	returnDataAsBytes := returnData.Bytes()
-	returnDataAsString := string(returnDataAsBytes)
-	returnDataAsHex := hex.EncodeToString(returnDataAsBytes)
 
-	if asType == AsBigInt {
+	switch asType {
+	case AsBigInt:
 		return returnData, nil
-	}
-
-	if asType == AsBigIntString {
+	case AsBigIntString:
 		return returnData.String(), nil
-	}
-
-	if asType == AsString {
-		return returnDataAsString, nil
-	}
-
-	if asType == AsHex {
-		return returnDataAsHex, nil
+	case AsString:
+		return string(returnData.Bytes()), nil
+	case AsHex:
+		return hex.EncodeToString(returnData.Bytes()), nil
 	}
 
 	return nil, fmt.Errorf("can't interpret return data")
