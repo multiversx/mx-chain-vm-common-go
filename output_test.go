@@ -9,7 +9,7 @@ import (
 
 func TestGetFirstReturnData_VMOutputWithNoReturnDataShouldErr(t *testing.T) {
 	vmOutput := VMOutput{
-		ReturnData: []*big.Int{},
+		ReturnData: [][]byte{},
 	}
 
 	_, err := vmOutput.GetFirstReturnData(AsBigInt)
@@ -18,7 +18,7 @@ func TestGetFirstReturnData_VMOutputWithNoReturnDataShouldErr(t *testing.T) {
 
 func TestGetFirstReturnData_WithBadReturnDataKindShouldErr(t *testing.T) {
 	vmOutput := VMOutput{
-		ReturnData: []*big.Int{big.NewInt(100)},
+		ReturnData: [][]byte{[]byte("100")},
 	}
 
 	_, err := vmOutput.GetFirstReturnData(42)
@@ -29,7 +29,7 @@ func TestGetFirstReturnData(t *testing.T) {
 	value := big.NewInt(100)
 
 	vmOutput := VMOutput{
-		ReturnData: []*big.Int{value},
+		ReturnData: [][]byte{value.Bytes()},
 	}
 
 	dataAsBigInt, _ := vmOutput.GetFirstReturnData(AsBigInt)
