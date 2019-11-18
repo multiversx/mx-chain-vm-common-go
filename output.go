@@ -64,7 +64,7 @@ type VMOutput struct {
 	// This value does not influence the account state in any way.
 	// The value should be accessible in a UI.
 	// ReturnData is part of the transaction receipt.
-	ReturnData []*big.Int
+	ReturnData [][]byte
 
 	// ReturnCode is the function call error code.
 	// If it is not `Ok`, the transaction failed in some way - gas is, however, consumed anyway.
@@ -133,13 +133,13 @@ func (vmOutput *VMOutput) GetFirstReturnData(asType ReturnDataKind) (interface{}
 
 	switch asType {
 	case AsBigInt:
-		return returnData, nil
+		return big.NewInt(0).SetBytes(returnData), nil
 	case AsBigIntString:
-		return returnData.String(), nil
+		return big.NewInt(0).SetBytes(returnData).String(), nil
 	case AsString:
-		return string(returnData.Bytes()), nil
+		return string(returnData), nil
 	case AsHex:
-		return hex.EncodeToString(returnData.Bytes()), nil
+		return hex.EncodeToString(returnData), nil
 	}
 
 	return nil, fmt.Errorf("can't interpret return data")

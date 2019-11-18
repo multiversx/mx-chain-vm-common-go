@@ -4,29 +4,6 @@ import (
 	"math/big"
 )
 
-// SCCallHeader contains data about the block in which the transaction resides.
-type SCCallHeader struct {
-	// Beneficiary is the block proposer.
-	// It is referred to as "coinbase" in the test .json files
-	// This value is accessible in the VM:
-	// - in IELE, it is returned by `call @iele.beneficiary`
-	Beneficiary *big.Int
-
-	// Number refers to the block number
-	// This value is accessible in the VM:
-	// - in IELE, it is returned by `call @iele.number`
-	Number *big.Int
-
-	// GasLimit refers to the gas limit of a block
-	GasLimit *big.Int
-
-	// Timestamp indicates when the proposer proposed the block.
-	// It should be somehow encoded in the blockchain, in order to make VM execution deterministic.
-	// This value is accessible in the VM:
-	// - in IELE, it is returned by `call @iele.timestamp`
-	Timestamp *big.Int
-}
-
 // VMInput contains the common fields between the 2 types of SC call.
 type VMInput struct {
 	// CallerAddr is the public key of the wallet initiating the transaction, "from".
@@ -37,7 +14,7 @@ type VMInput struct {
 	// For contract call, these are the parameters to the function referenced in ContractCallInput.Function.
 	// If the number of arguments does not match the function arity,
 	// the transaction will return FunctionWrongSignature ReturnCode.
-	Arguments []*big.Int
+	Arguments [][]byte
 
 	// CallValue is the value (amount of tokens) transferred by the transaction.
 	// The VM knows to subtract this value from sender balance (CallerAddr)
@@ -53,18 +30,14 @@ type VMInput struct {
 	// 1. subtract GasPrice x GasProvided
 	// 2. call VM, which will subtract CallValue if enough funds remain
 	// 3. reimburse GasPrice x (VMOutput.GasRemaining + VMOutput.GasRefund)
-	GasPrice *big.Int
+	GasPrice uint64
 
 	// GasProvided is the maximum gas allowed for the smart contract execution.
 	// If the transaction consumes more gas than this value, it will immediately terminate
 	// and return OutOfGas ReturnCode.
 	// The sender will not be charged based on GasProvided, only on the gas burned,
 	// so it doesn't cost the sender more to have a higher gas limit.
-	GasProvided *big.Int
-
-	// Header is the block header info.
-	// The same object can be reused in all transaction inputs in a block.
-	Header *SCCallHeader
+	GasProvided uint64
 }
 
 // ContractCreateInput VM input when creating a new contract.
