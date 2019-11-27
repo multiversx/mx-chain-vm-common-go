@@ -34,9 +34,8 @@ type BlockchainHook interface {
 	// Should yield an empty byte array if the account is a wallet.
 	GetCode(address []byte) ([]byte, error)
 
-	// Should return the hash of the nth previous blockchain.
-	// Offset specifies how many blocks we need to look back.
-	GetBlockhash(offset *big.Int) ([]byte, error)
+	// Returns the hash of the block with the asked nonce if available
+	GetBlockhash(nonce uint64) ([]byte, error)
 
 	// LastNonce returns the nonce from from the last committed block
 	LastNonce() uint64

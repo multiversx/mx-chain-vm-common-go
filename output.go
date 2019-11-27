@@ -48,13 +48,17 @@ type OutputAccount struct {
 	// Code is the assembled code of a smart contract account.
 	// This field will be populated when a new SC must be created after the transaction.
 	Code []byte
+
+	// Data will be populated if there is a transfer to this output account which has to
+	// be further interpreted or verified
+	Data []byte
 }
 
 // LogEntry represents an entry in the contract execution log.
 // TODO: document all fields.
 type LogEntry struct {
 	Address []byte
-	Topics  []*big.Int
+	Topics  [][]byte
 	Data    []byte
 }
 
@@ -75,12 +79,11 @@ type VMOutput struct {
 
 	// GasRemaining = VMInput.GasProvided - gas used.
 	// It is necessary to compute how much to charge the sender for the transaction.
-	GasRemaining *big.Int
+	GasRemaining uint64
 
 	// GasRefund is how much gas the sender earned during the transaction.
 	// Certain operations, like freeing up storage, actually return gas instead of consuming it.
 	// Based on GasRefund, the sender could in principle be rewarded instead of taxed.
-	// TODO: decide if we are going to support this.
 	GasRefund *big.Int
 
 	// OutputAccounts contains data about all acounts changed as a result of the transaction.
