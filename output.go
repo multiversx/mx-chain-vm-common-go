@@ -80,6 +80,10 @@ type VMOutput struct {
 	// ReturnCode is part of the transaction receipt.
 	ReturnCode ReturnCode
 
+	// ReturnMessage is a message set by the SmartContract, destined for the
+	// caller
+	ReturnMessage string
+
 	// GasRemaining = VMInput.GasProvided - gas used.
 	// It is necessary to compute how much to charge the sender for the transaction.
 	GasRemaining uint64
