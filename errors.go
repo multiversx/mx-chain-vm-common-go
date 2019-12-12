@@ -11,7 +11,8 @@ var ErrNilArguments = errors.New("smart contract arguments are nil")
 // ErrNilCode signals that code from transaction data is nil
 var ErrNilCode = errors.New("smart contract code is nil")
 
-// ErrNilFunction signals that function from transaction data is nil
+// ErrNilFunction signals that the function name from transaction data is nil
 var ErrNilFunction = errors.New("smart contract function is nil")
 
-var ErrInvalidDataString = errors.New("transaction data string is invalid")
+// ErrInvalidDataString signals that the transaction data string could not be split evenly
+var ErrInvalidDataString = errors.New("transaction data string is unevenly split")
