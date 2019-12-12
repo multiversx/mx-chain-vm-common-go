@@ -5,18 +5,6 @@ import (
 	"strings"
 )
 
-// ArgumentsParser defines the functionality to parse transaction data into arguments and code for smart contracts
-type ArgumentsParser interface {
-	GetArguments() ([][]byte, error)
-	GetCode() ([]byte, error)
-	GetFunction() (string, error)
-	ParseData(data string) error
-
-	CreateDataFromStorageUpdate(storageUpdates []*StorageUpdate) string
-	GetStorageUpdates(data string) ([]*StorageUpdate, error)
-	IsInterfaceNil() bool
-}
-
 type atArgumentParser struct {
 	arguments [][]byte
 	code      []byte
@@ -26,7 +14,7 @@ const atSep = "@"
 const atSepChar = '@'
 
 // NewAtArgumentParser creates a new argument parser implementation that splits arguments by @ character
-func NewAtArgumentParser() (ArgumentsParser, error) {
+func NewAtArgumentParser() (*atArgumentParser, error) {
 	return &atArgumentParser{}, nil
 }
 
