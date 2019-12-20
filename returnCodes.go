@@ -27,6 +27,8 @@ func (rc ReturnCode) String() string {
 		return "call stack overflow"
 	case ContractInvalid:
 		return "contract invalid"
+	case ExecutionFailed:
+		return "execution failed"
 	default:
 		return fmt.Sprintf("unknown error, code: %d", rc)
 	}
@@ -62,4 +64,7 @@ const (
 
 	// ContractInvalid is returned when the contract is invalid.
 	ContractInvalid ReturnCode = 9
+
+	// ExecutionFailed is returned when the execution of the specified function has failed.
+	ExecutionFailed ReturnCode = 10
 )
