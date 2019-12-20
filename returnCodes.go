@@ -65,6 +65,6 @@ const (
 	// ContractInvalid is returned when the contract is invalid.
 	ContractInvalid ReturnCode = 9
 
-  // ExecutionFailed is returned when the execution of the specified function has failed.
-  ExecutionFailed ReturnCode = 10
+	// ExecutionFailed is returned when the execution of the specified function has failed.
+	ExecutionFailed ReturnCode = 10
 )
