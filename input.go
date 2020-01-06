@@ -4,6 +4,21 @@ import (
 	"math/big"
 )
 
+type CallType int
+
+const (
+	// DirectCall means that the call is an explicit SC invocation originating from a user Transaction
+	DirectCall CallType = 0
+
+	// AsynchronousCall means that the invocation was performed from within
+	// another SmartContract from another Shard, using asyncCall
+	AsynchronousCall CallType = 1
+
+	// AsynchronousCallBack means that an AsynchronousCall was performed
+	// previously, and now the control returns to the caller SmartContract's callBack method
+	AsynchronousCallBack CallType = 2
+)
+
 // VMInput contains the common fields between the 2 types of SC call.
 type VMInput struct {
 	// CallerAddr is the public key of the wallet initiating the transaction, "from".
@@ -21,6 +36,11 @@ type VMInput struct {
 	// and to add it to the smart contract balance.
 	// It is often, but not always zero in SC calls.
 	CallValue *big.Int
+
+	// CallType is the type of SmartContract call
+	// Based on this value, the VM is informed of whether the call is direct,
+	// asynchronous, or asynchronous callback.
+	CallType CallType
 
 	// GasPrice multiplied by the gas burned by the transaction yields the transaction fee.
 	// A larger GasPrice will incentivize block proposers to include the transaction in a block sooner,
