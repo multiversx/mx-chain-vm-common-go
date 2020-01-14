@@ -32,7 +32,11 @@ func (at *atArgumentParser) ParseData(data string) error {
 	code := []byte(splitString[0])
 	arguments := make([][]byte, len(splitString)-1)
 	for i := 1; i < len(splitString); i++ {
-		arguments[i-1], err = hex.DecodeString(splitString[i])
+		fragment := splitString[i]
+		if len(fragment) % 2 != 0 {
+			fragment = "0" + fragment
+		}
+		arguments[i-1], err = hex.DecodeString(fragment)
 		if err != nil {
 			return err
 		}
@@ -89,12 +93,20 @@ func (at *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, er
 
 	storageUpdates := make([]*StorageUpdate, 0, len(splitString))
 	for i := 0; i < len(splitString); i += 2 {
-		offset, err := hex.DecodeString(splitString[i])
+		fragment := splitString[i]
+		if len(fragment) % 2 != 0 {
+			fragment = "0" + fragment
+		}
+		offset, err := hex.DecodeString(fragment)
 		if err != nil {
 			return nil, err
 		}
 
-		value, err := hex.DecodeString(splitString[i+1])
+		fragment = splitString[i+1]
+		if len(fragment) % 2 != 0 {
+			fragment = "0" + fragment
+		}
+		value, err := hex.DecodeString(fragment)
 		if err != nil {
 			return nil, err
 		}
