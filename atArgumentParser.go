@@ -32,10 +32,7 @@ func (at *atArgumentParser) ParseData(data string) error {
 	code := []byte(splitString[0])
 	arguments := make([][]byte, len(splitString)-1)
 	for i := 1; i < len(splitString); i++ {
-		fragment := splitString[i]
-		if len(fragment) % 2 != 0 {
-			fragment = "0" + fragment
-		}
+		fragment := ensureEvenLength(splitString[i])
 		arguments[i-1], err = hex.DecodeString(fragment)
 		if err != nil {
 			return err
@@ -93,19 +90,13 @@ func (at *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, er
 
 	storageUpdates := make([]*StorageUpdate, 0, len(splitString))
 	for i := 0; i < len(splitString); i += 2 {
-		fragment := splitString[i]
-		if len(fragment) % 2 != 0 {
-			fragment = "0" + fragment
-		}
+		fragment := ensureEvenLength(splitString[i])
 		offset, err := hex.DecodeString(fragment)
 		if err != nil {
 			return nil, err
 		}
 
-		fragment = splitString[i+1]
-		if len(fragment) % 2 != 0 {
-			fragment = "0" + fragment
-		}
+		fragment = ensureEvenLength(splitString[i+1])
 		value, err := hex.DecodeString(fragment)
 		if err != nil {
 			return nil, err
@@ -132,6 +123,13 @@ func (at *atArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*Storag
 		}
 	}
 	return data
+}
+
+func ensureEvenLength(str string) string {
+	if len(str) % 2 != 0 {
+		return "0" + str
+	}
+	return str
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
