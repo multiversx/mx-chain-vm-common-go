@@ -43,7 +43,7 @@ type OutputAccount struct {
 	// that should be updated in the account storage.
 	// Please note that it is likely that not all existing
 	// account storage keys show up here.
-	StorageUpdates []*StorageUpdate
+	StorageUpdates map[string]*StorageUpdate
 
 	// Code is the assembled code of a smart contract account.
 	// This field will be populated when a new SC must be created after the transaction.
@@ -55,6 +55,16 @@ type OutputAccount struct {
 
 	// GasLimit will be populated if the call is a smart contract call for another shard
 	GasLimit uint64
+
+	// Logs is a list of event data logged by the VM.
+	// Smart contracts can choose to log certain events programatically.
+	// There are 3 main use cases for events and logs:
+	// 1. smart contract return values for the user interface;
+	// 2. asynchronous triggers with data;
+	// 3. a cheaper form of storage (e.g. storing historical data that can be rendered by the frontend).
+	// The logs should be accessible to the UI.
+	// The logs are part of the transaction receipt.
+	Logs []*LogEntry
 }
 
 // LogEntry represents an entry in the contract execution log.
@@ -97,7 +107,7 @@ type VMOutput struct {
 	// This data tells the network how to update the account data.
 	// It can contain new accounts or existing changed accounts.
 	// Note: the current implementation might also retrieve accounts that were not changed.
-	OutputAccounts []*OutputAccount
+	OutputAccounts map[string]*OutputAccount
 
 	// DeletedAccounts is a list of public keys of accounts that need to be deleted
 	// as a result of the transaction.
@@ -106,16 +116,6 @@ type VMOutput struct {
 	// TouchedAccounts is a list of public keys of accounts that were somehow involved in the VM execution.
 	// TODO: investigate what we need to to about these.
 	TouchedAccounts [][]byte
-
-	// Logs is a list of event data logged by the VM.
-	// Smart contracts can choose to log certain events programatically.
-	// There are 3 main use cases for events and logs:
-	// 1. smart contract return values for the user interface;
-	// 2. asynchronous triggers with data;
-	// 3. a cheaper form of storage (e.g. storing historical data that can be rendered by the frontend).
-	// The logs should be accessible to the UI.
-	// The logs are part of the transaction receipt.
-	Logs []*LogEntry
 }
 
 // ReturnDataKind specifies how to interpret VMOutputs's return data.
