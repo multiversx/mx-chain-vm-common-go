@@ -39,11 +39,13 @@ type OutputAccount struct {
 	// A negative value indicates that balance should decrease.
 	BalanceDelta *big.Int
 
-	// StorageUpdates is a list of key-value pairs
-	// that should be updated in the account storage.
-	// Please note that it is likely that not all existing
-	// account storage keys show up here.
-	StorageUpdates []*StorageUpdate
+	// StorageUpdates is a map containing pointers to StorageUpdate structs,
+	// indexed with strings produced by `string(StorageUpdate.Offset)`, for fast
+	// access by the Offset of the StorageUpdate. These StorageUpdate structs
+	// will be processed by the Node to modify the storage of the SmartContract.
+	// Please note that it is likely that not all existing account storage keys
+	// show up here.
+	StorageUpdates map[string]*StorageUpdate
 
 	// Code is the assembled code of a smart contract account.
 	// This field will be populated when a new SC must be created after the transaction.
@@ -93,11 +95,14 @@ type VMOutput struct {
 	// Based on GasRefund, the sender could in principle be rewarded instead of taxed.
 	GasRefund *big.Int
 
-	// OutputAccounts contains data about all acounts changed as a result of the transaction.
-	// This data tells the network how to update the account data.
+	// OutputAccounts contains data about all accounts changed as a result of the
+	// Transaction. It is a map containing pointers to OutputAccount structs,
+	// indexed with strings produced by `string(OutputAccount.Address)`, for fast
+	// access by the Address of the OutputAccount.
+	// This information tells the Node how to update the account data.
 	// It can contain new accounts or existing changed accounts.
 	// Note: the current implementation might also retrieve accounts that were not changed.
-	OutputAccounts []*OutputAccount
+	OutputAccounts map[string]*OutputAccount
 
 	// DeletedAccounts is a list of public keys of accounts that need to be deleted
 	// as a result of the transaction.
