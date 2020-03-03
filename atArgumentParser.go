@@ -14,8 +14,8 @@ const atSep = "@"
 const atSepChar = '@'
 
 // NewAtArgumentParser creates a new argument parser implementation that splits arguments by @ character
-func NewAtArgumentParser() (*atArgumentParser, error) {
-	return &atArgumentParser{}, nil
+func NewAtArgumentParser() *atArgumentParser {
+	return &atArgumentParser{}
 }
 
 // ParseData creates the code and the arguments from the input data

@@ -10,8 +10,7 @@ import (
 func TestNewAtArgumentParser(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
 	args, err := parser.GetArguments()
@@ -30,11 +29,10 @@ func TestNewAtArgumentParser(t *testing.T) {
 func TestAtArgumentParser_GetArguments(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err = parser.ParseData("aaaa@aa@bb@bc")
+	err := parser.ParseData("aaaa@aa@bb@bc")
 	assert.Nil(t, err)
 
 	args, err := parser.GetArguments()
@@ -62,11 +60,10 @@ func TestAtArgumentParser_GetArgumentsOddLength(t *testing.T) {
 func TestAtArgumentParser_GetArgumentsEmpty(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err = parser.ParseData("aaaa")
+	err := parser.ParseData("aaaa")
 	assert.Nil(t, err)
 
 	args, err := parser.GetArguments()
@@ -78,11 +75,10 @@ func TestAtArgumentParser_GetArgumentsEmpty(t *testing.T) {
 func TestAtArgumentParser_GetCode(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err = parser.ParseData("bbbbbbbb@aaaa")
+	err := parser.ParseData("bbbbbbbb@aaaa")
 	assert.Nil(t, err)
 
 	code, err := parser.GetCode()
@@ -94,11 +90,10 @@ func TestAtArgumentParser_GetCode(t *testing.T) {
 func TestAtArgumentParser_GetCodeEmpty(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err = parser.ParseData("@aaaa")
+	err := parser.ParseData("@aaaa")
 	assert.Equal(t, ErrStringSplitFailed, err)
 
 	code, err := parser.GetCode()
@@ -109,11 +104,10 @@ func TestAtArgumentParser_GetCodeEmpty(t *testing.T) {
 func TestAtArgumentParser_GetFunction(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err = parser.ParseData("bbbbbbbb@aaaa")
+	err := parser.ParseData("bbbbbbbb@aaaa")
 	assert.Nil(t, err)
 
 	function, err := parser.GetFunction()
@@ -125,11 +119,10 @@ func TestAtArgumentParser_GetFunction(t *testing.T) {
 func TestAtArgumentParser_GetFunctionEmpty(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err = parser.ParseData("@a")
+	err := parser.ParseData("@a")
 	assert.Equal(t, ErrStringSplitFailed, err)
 
 	function, err := parser.GetFunction()
@@ -140,30 +133,27 @@ func TestAtArgumentParser_GetFunctionEmpty(t *testing.T) {
 func TestAtArgumentParser_ParseData(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err = parser.ParseData("ab")
+	err := parser.ParseData("ab")
 	assert.Nil(t, err)
 }
 
 func TestAtArgumentParser_ParseDataEmpty(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err = parser.ParseData("")
+	err := parser.ParseData("")
 	assert.Equal(t, ErrStringSplitFailed, err)
 }
 
 func TestAtArgumentParser_CreateDataFromStorageUpdate(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
 	data := parser.CreateDataFromStorageUpdate(nil)
@@ -195,8 +185,7 @@ func TestAtArgumentParser_CreateDataFromStorageUpdate(t *testing.T) {
 func TestAtArgumentParser_GetStorageUpdatesEmptyData(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
 	stUpdates, err := parser.GetStorageUpdates("")
@@ -208,8 +197,7 @@ func TestAtArgumentParser_GetStorageUpdatesEmptyData(t *testing.T) {
 func TestAtArgumentParser_GetStorageUpdatesWrongData(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
 	test := "test"
@@ -234,8 +222,7 @@ func TestAtArgumentParser_GetStorageUpdatesWrongData(t *testing.T) {
 func TestAtArgumentParser_GetStorageUpdates(t *testing.T) {
 	t.Parallel()
 
-	parser, err := NewAtArgumentParser()
-	assert.Nil(t, err)
+	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
 	test := "aaaa"
