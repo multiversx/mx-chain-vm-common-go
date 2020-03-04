@@ -41,6 +41,21 @@ func TestAtArgumentParser_GetArguments(t *testing.T) {
 	assert.Equal(t, 3, len(args))
 }
 
+func TestAtArgumentParser_GetArgumentsOddLength(t *testing.T) {
+	t.Parallel()
+
+	parser := NewAtArgumentParser()
+	assert.NotNil(t, parser)
+
+	err := parser.ParseData("aaaa@a@bb@bc@d")
+	assert.Nil(t, err)
+
+	args, err := parser.GetArguments()
+	assert.Nil(t, err)
+	assert.NotNil(t, args)
+	assert.Equal(t, 4, len(args))
+}
+
 func TestAtArgumentParser_GetArgumentsEmpty(t *testing.T) {
 	t.Parallel()
 
