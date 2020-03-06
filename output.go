@@ -57,6 +57,9 @@ type OutputAccount struct {
 
 	// GasLimit will be populated if the call is a smart contract call for another shard
 	GasLimit uint64
+
+	// CallType will be set if the output account must be invoked as a smart contract
+	CallType CallType
 }
 
 // LogEntry represents an entry in the contract execution log.
