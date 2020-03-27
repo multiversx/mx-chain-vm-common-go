@@ -2,102 +2,130 @@ package vmcommon
 
 import (
 	"encoding/hex"
-	"strings"
 )
 
-type atArgumentParser struct {
+// AtArgumentParser is a parser that splits arguments by @ character
+type AtArgumentParser struct {
+	// First argument is a string (function name or hex-encoded bytecode), the rest are raw bytes
 	arguments [][]byte
-	code      []byte
 }
 
-const atSep = "@"
-const atSepChar = '@'
+const atSeparator = "@"
+const atSeparatorChar = '@'
+const startIndexOfConstructorArguments = 2
+const startIndexOfFunctionArguments = 1
+const minNumDeployArguments = 2
+const minNumCallArguments = 1
+const indexOfCode = 0
+const indexOfCodeMetadata = 1
+const indexOfFunction = indexOfCode
 
-// NewAtArgumentParser creates a new argument parser implementation that splits arguments by @ character
-func NewAtArgumentParser() *atArgumentParser {
-	return &atArgumentParser{}
+// NewAtArgumentParser creates a new parser
+func NewAtArgumentParser() *AtArgumentParser {
+	return &AtArgumentParser{
+		arguments: make([][]byte, 0),
+	}
 }
 
 // ParseData creates the code and the arguments from the input data
 // format: code@arg1@arg2@arg3...
 // Until the first @ all the bytes are for the code / function
 // after that every argument start with an @
-func (at *atArgumentParser) ParseData(data string) error {
-	splitString := strings.Split(data, atSep)
-	if len(splitString) == 0 || len(splitString[0]) == 0 {
-		return ErrStringSplitFailed
+func (parser *AtArgumentParser) ParseData(data string) error {
+	tokens := tokenize(data)
+	err := requireAnyTokens(tokens)
+	if err != nil {
+		return err
 	}
 
-	var err error
-	code := []byte(splitString[0])
-	arguments := make([][]byte, len(splitString)-1)
-	for i := 1; i < len(splitString); i++ {
-		fragment := ensureEvenLength(splitString[i])
-		arguments[i-1], err = hex.DecodeString(fragment)
+	// First argument is not decoded, but left as it is
+	parser.arguments = append(parser.arguments, []byte(tokens[0]))
+
+	for i := 1; i < len(tokens); i++ {
+		argument, err := decodeToken(tokens[i])
 		if err != nil {
 			return err
 		}
+
+		parser.arguments = append(parser.arguments, argument)
 	}
 
-	at.code = code
-	at.arguments = arguments
 	return nil
 }
 
-// GetArguments returns the arguments from the parsed data
-func (at *atArgumentParser) GetArguments() ([][]byte, error) {
-	if at.arguments == nil {
+// GetFunctionArguments returns the call arguments
+func (parser *AtArgumentParser) GetFunctionArguments() ([][]byte, error) {
+	if len(parser.arguments) < startIndexOfFunctionArguments {
 		return nil, ErrNilArguments
 	}
-	return at.arguments, nil
+
+	return parser.arguments[startIndexOfFunctionArguments:], nil
+}
+
+// GetConstructorArguments returns the deploy arguments
+func (parser *AtArgumentParser) GetConstructorArguments() ([][]byte, error) {
+	if len(parser.arguments) < startIndexOfConstructorArguments {
+		return nil, ErrNilArguments
+	}
+
+	return parser.arguments[startIndexOfConstructorArguments:], nil
 }
 
 // GetCode returns the code from the parsed data
-func (at *atArgumentParser) GetCode() ([]byte, error) {
-	if at.code == nil {
+func (parser *AtArgumentParser) GetCode() ([]byte, error) {
+	if len(parser.arguments) < minNumDeployArguments {
 		return nil, ErrNilCode
 	}
-	return at.code, nil
+
+	hexCode := parser.arguments[indexOfCode]
+	return hexCode, nil
+}
+
+// GetCodeMetadata returns the code metadata from the parsed data
+func (parser *AtArgumentParser) GetCodeMetadata() ([]byte, error) {
+	if len(parser.arguments) < minNumDeployArguments {
+		return nil, ErrNilCodeMetadata
+	}
+
+	return parser.arguments[indexOfCodeMetadata], nil
 }
 
 // GetFunction returns the function from the parsed data
-func (at *atArgumentParser) GetFunction() (string, error) {
-	if at.code == nil {
+func (parser *AtArgumentParser) GetFunction() (string, error) {
+	if len(parser.arguments) < minNumDeployArguments {
 		return "", ErrNilFunction
 	}
-	return string(at.code), nil
+
+	return string(parser.arguments[indexOfFunction]), nil
 }
 
 // GetSeparator returns the separator used for parsing the data
-func (at *atArgumentParser) GetSeparator() string {
-	return atSep
+func (parser *AtArgumentParser) GetSeparator() string {
+	return atSeparator
 }
 
 // GetStorageUpdates parse data into storage updates
-func (at *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, error) {
-	if len(data) > 0 && data[0] == atSepChar {
-		data = data[1:]
+func (parser *AtArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, error) {
+	data = trimLeadingSeparatorChar(data)
+
+	tokens := tokenize(data)
+	err := requireAnyTokens(tokens)
+	if err != nil {
+		return nil, err
+	}
+	err = requireNumTokensIsEven(tokens)
+	if err != nil {
+		return nil, err
 	}
 
-	splitString := strings.Split(data, atSep)
-	if len(splitString) == 0 || len(splitString[0]) == 0 {
-		return nil, ErrStringSplitFailed
-	}
-
-	if len(splitString)%2 != 0 {
-		return nil, ErrInvalidDataString
-	}
-
-	storageUpdates := make([]*StorageUpdate, 0, len(splitString))
-	for i := 0; i < len(splitString); i += 2 {
-		fragment := ensureEvenLength(splitString[i])
-		offset, err := hex.DecodeString(fragment)
+	storageUpdates := make([]*StorageUpdate, 0, len(tokens))
+	for i := 0; i < len(tokens); i += 2 {
+		offset, err := decodeToken(tokens[i])
 		if err != nil {
 			return nil, err
 		}
 
-		fragment = ensureEvenLength(splitString[i+1])
-		value, err := hex.DecodeString(fragment)
+		value, err := decodeToken(tokens[i+1])
 		if err != nil {
 			return nil, err
 		}
@@ -110,29 +138,22 @@ func (at *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, er
 }
 
 // CreateDataFromStorageUpdate creates storage update from data
-func (at *atArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*StorageUpdate) string {
+func (parser *AtArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*StorageUpdate) string {
 	data := ""
 	for i := 0; i < len(storageUpdates); i++ {
 		storageUpdate := storageUpdates[i]
 		data = data + hex.EncodeToString(storageUpdate.Offset)
-		data = data + at.GetSeparator()
+		data = data + parser.GetSeparator()
 		data = data + hex.EncodeToString(storageUpdate.Data)
 
 		if i < len(storageUpdates)-1 {
-			data = data + at.GetSeparator()
+			data = data + parser.GetSeparator()
 		}
 	}
 	return data
 }
 
-func ensureEvenLength(str string) string {
-	if len(str) % 2 != 0 {
-		return "0" + str
-	}
-	return str
-}
-
 // IsInterfaceNil returns true if there is no value under the interface
-func (at *atArgumentParser) IsInterfaceNil() bool {
-	return at == nil
+func (parser *AtArgumentParser) IsInterfaceNil() bool {
+	return parser == nil
 }

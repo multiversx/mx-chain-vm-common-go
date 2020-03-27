@@ -34,6 +34,8 @@ type BlockchainHook interface {
 	// Should yield an empty byte array if the account is a wallet.
 	GetCode(address []byte) ([]byte, error)
 
+	// TODO: GetCodeMetadata(address []byte) ([]byte, error)
+
 	// Returns the hash of the block with the asked nonce if available
 	GetBlockhash(nonce uint64) ([]byte, error)
 
