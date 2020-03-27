@@ -5,6 +5,7 @@ import (
 )
 
 // AtArgumentParser is a parser that splits arguments by @ character
+// [NotConcurrentSafe]
 type AtArgumentParser struct {
 	// First argument is a string (function name or hex-encoded bytecode), the rest are raw bytes
 	arguments [][]byte
@@ -23,9 +24,13 @@ const indexOfFunction = indexOfCode
 
 // NewAtArgumentParser creates a new parser
 func NewAtArgumentParser() *AtArgumentParser {
-	return &AtArgumentParser{
-		arguments: make([][]byte, 0),
-	}
+	parser := &AtArgumentParser{}
+	parser.clearArguments()
+	return parser
+}
+
+func (parser *AtArgumentParser) clearArguments() {
+	parser.arguments = make([][]byte, 0)
 }
 
 // ParseData creates the code and the arguments from the input data
@@ -33,6 +38,8 @@ func NewAtArgumentParser() *AtArgumentParser {
 // Until the first @ all the bytes are for the code / function
 // after that every argument start with an @
 func (parser *AtArgumentParser) ParseData(data string) error {
+	parser.clearArguments()
+
 	tokens := tokenize(data)
 	err := requireAnyTokens(tokens)
 	if err != nil {
