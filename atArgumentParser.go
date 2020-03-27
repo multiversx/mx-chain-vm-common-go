@@ -33,10 +33,9 @@ func (parser *AtArgumentParser) clearArguments() {
 	parser.arguments = make([][]byte, 0)
 }
 
-// ParseData creates the code and the arguments from the input data
-// format: code@arg1@arg2@arg3...
-// Until the first @ all the bytes are for the code / function
-// after that every argument start with an @
+// ParseData parses strings of the following formats:
+// contract deploy: codeHex@vmTypeHex@codeMetadataHex@argFooHex@argBarHex...
+// contract call: functionRaw@argFooHex@argBarHex...
 func (parser *AtArgumentParser) ParseData(data string) error {
 	parser.clearArguments()
 
@@ -46,7 +45,7 @@ func (parser *AtArgumentParser) ParseData(data string) error {
 		return err
 	}
 
-	// First argument is not decoded, but left as it is
+	// First argument is not decoded, but left as it is (function or codeHex)
 	parser.arguments = append(parser.arguments, []byte(tokens[0]))
 
 	for i := 1; i < len(tokens); i++ {
