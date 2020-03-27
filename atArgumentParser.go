@@ -12,12 +12,13 @@ type AtArgumentParser struct {
 
 const atSeparator = "@"
 const atSeparatorChar = '@'
-const startIndexOfConstructorArguments = 2
+const startIndexOfConstructorArguments = 3
 const startIndexOfFunctionArguments = 1
-const minNumDeployArguments = 2
+const minNumDeployArguments = 3
 const minNumCallArguments = 1
 const indexOfCode = 0
-const indexOfCodeMetadata = 1
+const indexOfVMType = 1
+const indexOfCodeMetadata = 2
 const indexOfFunction = indexOfCode
 
 // NewAtArgumentParser creates a new parser
@@ -59,7 +60,8 @@ func (parser *AtArgumentParser) GetFunctionArguments() ([][]byte, error) {
 		return nil, ErrNilArguments
 	}
 
-	return parser.arguments[startIndexOfFunctionArguments:], nil
+	args := parser.arguments[startIndexOfFunctionArguments:]
+	return args, nil
 }
 
 // GetConstructorArguments returns the deploy arguments
@@ -68,35 +70,49 @@ func (parser *AtArgumentParser) GetConstructorArguments() ([][]byte, error) {
 		return nil, ErrNilArguments
 	}
 
-	return parser.arguments[startIndexOfConstructorArguments:], nil
+	args := parser.arguments[startIndexOfConstructorArguments:]
+	return args, nil
 }
 
 // GetCode returns the code from the parsed data
 func (parser *AtArgumentParser) GetCode() ([]byte, error) {
 	if len(parser.arguments) < minNumDeployArguments {
-		return nil, ErrNilCode
+		return nil, ErrBadDeployArguments
 	}
 
 	hexCode := parser.arguments[indexOfCode]
 	return hexCode, nil
 }
 
-// GetCodeMetadata returns the code metadata from the parsed data
-func (parser *AtArgumentParser) GetCodeMetadata() ([]byte, error) {
+// GetVMType returns the VM type from the parsed data
+func (parser *AtArgumentParser) GetVMType() ([]byte, error) {
 	if len(parser.arguments) < minNumDeployArguments {
-		return nil, ErrNilCodeMetadata
+		return nil, ErrBadDeployArguments
 	}
 
-	return parser.arguments[indexOfCodeMetadata], nil
+	vmType := parser.arguments[indexOfVMType]
+	return vmType, nil
+}
+
+// GetCodeMetadata returns the code metadata from the parsed data
+func (parser *AtArgumentParser) GetCodeMetadata() (CodeMetadata, error) {
+	if len(parser.arguments) < minNumDeployArguments {
+		return CodeMetadata{}, ErrBadDeployArguments
+	}
+
+	codeMetadataBytes := parser.arguments[indexOfCodeMetadata]
+	codeMetadata := CodeMetadataFromBytes(codeMetadataBytes)
+	return codeMetadata, nil
 }
 
 // GetFunction returns the function from the parsed data
 func (parser *AtArgumentParser) GetFunction() (string, error) {
-	if len(parser.arguments) < minNumDeployArguments {
+	if len(parser.arguments) < minNumCallArguments {
 		return "", ErrNilFunction
 	}
 
-	return string(parser.arguments[indexOfFunction]), nil
+	function := string(parser.arguments[indexOfFunction])
+	return function, nil
 }
 
 // GetSeparator returns the separator used for parsing the data

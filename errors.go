@@ -5,11 +5,8 @@ import "errors"
 // ErrTokenizeFailed signals that data splitting into arguments and code failed
 var ErrTokenizeFailed = errors.New("data splitting into arguments and code/function failed")
 
-// ErrNilCode signals that code from transaction data is nil
-var ErrNilCode = errors.New("smart contract code is nil")
-
-// ErrNilCodeMetadata signals that code metadata from transaction data is nil
-var ErrNilCodeMetadata = errors.New("smart contract code metadata is nil")
+// ErrBadDeployArguments signals that deploy arguments are bad
+var ErrBadDeployArguments = errors.New("bad deploy arguments")
 
 // ErrNilFunction signals that the function name from transaction data is nil
 var ErrNilFunction = errors.New("smart contract function is nil")
