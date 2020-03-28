@@ -32,7 +32,7 @@ func TestAtArgumentParser_GetArguments(t *testing.T) {
 	parser := NewAtArgumentParser()
 	assert.NotNil(t, parser)
 
-	err := parser.ParseData("aaaa@aa@bb@bc")
+	err := parser.ParseData("some_c///ode@aa@bb@bc")
 	assert.Nil(t, err)
 
 	args, err := parser.GetArguments()
@@ -69,6 +69,58 @@ func TestAtArgumentParser_GetArgumentsEmpty(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, args)
 	assert.Equal(t, 0, len(args))
+}
+
+func TestAtArgumentParser_GetEmptyArgument1(t *testing.T) {
+	t.Parallel()
+
+	parser := NewAtArgumentParser()
+	assert.NotNil(t, parser)
+
+	err := parser.ParseData("aaaa@")
+	assert.Nil(t, err)
+
+	args, err := parser.GetArguments()
+	assert.Nil(t, err)
+	assert.NotNil(t, args)
+	assert.Equal(t, 1, len(args))
+	assert.Equal(t, 0, len(args[0]))
+}
+
+func TestAtArgumentParser_GetEmptyArgument2(t *testing.T) {
+	t.Parallel()
+
+	parser := NewAtArgumentParser()
+	assert.NotNil(t, parser)
+
+	err := parser.ParseData("aaaa@@0123")
+	assert.Nil(t, err)
+
+	args, err := parser.GetArguments()
+	assert.Nil(t, err)
+	assert.NotNil(t, args)
+	assert.Equal(t, 2, len(args))
+	assert.Equal(t, 0, len(args[0]))
+}
+
+func TestAtArgumentParser_GetEmptyArgument3(t *testing.T) {
+	t.Parallel()
+
+	parser := NewAtArgumentParser()
+	assert.NotNil(t, parser)
+
+	err := parser.ParseData("aaaa@12@@0123@@")
+	assert.Nil(t, err)
+
+	args, err := parser.GetArguments()
+	assert.Nil(t, err)
+	assert.NotNil(t, args)
+	assert.Equal(t, 5, len(args))
+	assert.Equal(t, 1, len(args[0]))
+	assert.Equal(t, 0, len(args[1]))
+	assert.Equal(t, 2, len(args[2]))
+	assert.Equal(t, 0, len(args[3]))
+	assert.Equal(t, 0, len(args[4]))
 }
 
 func TestAtArgumentParser_GetCode(t *testing.T) {
