@@ -131,6 +131,7 @@ func (parser *AtArgumentParser) GetSeparator() string {
 }
 
 // GetStorageUpdates parse data into storage updates
+// TODO: Refactor out
 func (parser *AtArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, error) {
 	data = trimLeadingSeparatorChar(data)
 
@@ -164,6 +165,7 @@ func (parser *AtArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate
 }
 
 // CreateDataFromStorageUpdate creates storage update from data
+// TODO: Refactor out
 func (parser *AtArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*StorageUpdate) string {
 	data := ""
 	for i := 0; i < len(storageUpdates); i++ {
