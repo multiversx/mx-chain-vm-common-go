@@ -97,6 +97,10 @@ func (parser *AtArgumentParser) GetVMType() ([]byte, error) {
 	}
 
 	vmType := parser.arguments[indexOfVMType]
+	if len(vmType) != VMTypeLen {
+		return nil, ErrInvalidVMType
+	}
+
 	return vmType, nil
 }
 

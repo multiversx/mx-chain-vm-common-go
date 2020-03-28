@@ -16,3 +16,6 @@ var ErrNilArguments = errors.New("smart contract arguments are nil")
 
 // ErrInvalidDataString signals that the transaction data string could not be split evenly
 var ErrInvalidDataString = errors.New("transaction data string is unevenly split")
+
+// ErrInvalidVMType signals an invalid VMType
+var ErrInvalidVMType = errors.New("invalid vm type")
