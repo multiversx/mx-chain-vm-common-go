@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,7 +41,7 @@ func TestAtArgumentParser_GetArguments(t *testing.T) {
 	require.NotNil(t, parser)
 
 	err := parser.ParseData("some_c///ode@aa@bb@bc")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	args, err := parser.GetFunctionArguments()
 	require.Nil(t, err)
@@ -92,52 +91,52 @@ func TestAtArgumentParser_GetEmptyArgument1(t *testing.T) {
 	t.Parallel()
 
 	parser := NewAtArgumentParser()
-	assert.NotNil(t, parser)
+	require.NotNil(t, parser)
 
 	err := parser.ParseData("aaaa@")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	args, err := parser.GetFunctionArguments()
-	assert.Nil(t, err)
-	assert.NotNil(t, args)
-	assert.Equal(t, 1, len(args))
-	assert.Equal(t, 0, len(args[0]))
+	require.Nil(t, err)
+	require.NotNil(t, args)
+	require.Equal(t, 1, len(args))
+	require.Equal(t, 0, len(args[0]))
 }
 
 func TestAtArgumentParser_GetEmptyArgument2(t *testing.T) {
 	t.Parallel()
 
 	parser := NewAtArgumentParser()
-	assert.NotNil(t, parser)
+	require.NotNil(t, parser)
 
 	err := parser.ParseData("aaaa@@0123")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	args, err := parser.GetFunctionArguments()
-	assert.Nil(t, err)
-	assert.NotNil(t, args)
-	assert.Equal(t, 2, len(args))
-	assert.Equal(t, 0, len(args[0]))
+	require.Nil(t, err)
+	require.NotNil(t, args)
+	require.Equal(t, 2, len(args))
+	require.Equal(t, 0, len(args[0]))
 }
 
 func TestAtArgumentParser_GetEmptyArgument3(t *testing.T) {
 	t.Parallel()
 
 	parser := NewAtArgumentParser()
-	assert.NotNil(t, parser)
+	require.NotNil(t, parser)
 
 	err := parser.ParseData("aaaa@12@@0123@@")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	args, err := parser.GetFunctionArguments()
-	assert.Nil(t, err)
-	assert.NotNil(t, args)
-	assert.Equal(t, 5, len(args))
-	assert.Equal(t, 1, len(args[0]))
-	assert.Equal(t, 0, len(args[1]))
-	assert.Equal(t, 2, len(args[2]))
-	assert.Equal(t, 0, len(args[3]))
-	assert.Equal(t, 0, len(args[4]))
+	require.Nil(t, err)
+	require.NotNil(t, args)
+	require.Equal(t, 5, len(args))
+	require.Equal(t, 1, len(args[0]))
+	require.Equal(t, 0, len(args[1]))
+	require.Equal(t, 2, len(args[2]))
+	require.Equal(t, 0, len(args[3]))
+	require.Equal(t, 0, len(args[4]))
 }
 
 func TestAtArgumentParser_GetCode(t *testing.T) {
