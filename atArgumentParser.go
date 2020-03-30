@@ -83,7 +83,7 @@ func (parser *AtArgumentParser) GetConstructorArguments() ([][]byte, error) {
 // GetCode returns the code from the parsed data
 func (parser *AtArgumentParser) GetCode() ([]byte, error) {
 	if len(parser.arguments) < minNumDeployArguments {
-		return nil, ErrBadDeployArguments
+		return nil, ErrInvalidDeployArguments
 	}
 
 	hexCode := parser.arguments[indexOfCode]
@@ -93,7 +93,7 @@ func (parser *AtArgumentParser) GetCode() ([]byte, error) {
 // GetVMType returns the VM type from the parsed data
 func (parser *AtArgumentParser) GetVMType() ([]byte, error) {
 	if len(parser.arguments) < minNumDeployArguments {
-		return nil, ErrBadDeployArguments
+		return nil, ErrInvalidDeployArguments
 	}
 
 	vmType := parser.arguments[indexOfVMType]
@@ -107,7 +107,7 @@ func (parser *AtArgumentParser) GetVMType() ([]byte, error) {
 // GetCodeMetadata returns the code metadata from the parsed data
 func (parser *AtArgumentParser) GetCodeMetadata() (CodeMetadata, error) {
 	if len(parser.arguments) < minNumDeployArguments {
-		return CodeMetadata{}, ErrBadDeployArguments
+		return CodeMetadata{}, ErrInvalidDeployArguments
 	}
 
 	codeMetadataBytes := parser.arguments[indexOfCodeMetadata]
@@ -131,7 +131,6 @@ func (parser *AtArgumentParser) GetSeparator() string {
 }
 
 // GetStorageUpdates parse data into storage updates
-// TODO: Refactor out
 func (parser *AtArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, error) {
 	data = trimLeadingSeparatorChar(data)
 
@@ -165,7 +164,6 @@ func (parser *AtArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate
 }
 
 // CreateDataFromStorageUpdate creates storage update from data
-// TODO: Refactor out
 func (parser *AtArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*StorageUpdate) string {
 	data := ""
 	for i := 0; i < len(storageUpdates); i++ {

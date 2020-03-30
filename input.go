@@ -93,7 +93,7 @@ type ContractCallInput struct {
 // GetCodeUpgrade gets the code upgrade from the arguments
 func (callInput *ContractCallInput) GetCodeUpgrade() ([]byte, error) {
 	if len(callInput.Arguments) < 1 {
-		return nil, ErrInvalidArgumentCodeUpgrade
+		return nil, ErrInvalidUpgradeArguments
 	}
 
 	return callInput.Arguments[0], nil
@@ -102,7 +102,7 @@ func (callInput *ContractCallInput) GetCodeUpgrade() ([]byte, error) {
 // GetCodeMetadataUpgrade gets the code metadata upgrade from the arguments
 func (callInput *ContractCallInput) GetCodeMetadataUpgrade() ([]byte, error) {
 	if len(callInput.Arguments) < 2 {
-		return nil, ErrInvalidArgumentCodeMetadataUpgrade
+		return nil, ErrInvalidUpgradeArguments
 	}
 
 	return callInput.Arguments[1], nil

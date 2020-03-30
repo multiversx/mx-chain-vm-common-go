@@ -5,8 +5,8 @@ import "errors"
 // ErrTokenizeFailed signals that data splitting into arguments and code failed
 var ErrTokenizeFailed = errors.New("data splitting into arguments and code/function failed")
 
-// ErrBadDeployArguments signals that deploy arguments are bad
-var ErrBadDeployArguments = errors.New("bad deploy arguments")
+// ErrInvalidDeployArguments signals invalid deploy arguments
+var ErrInvalidDeployArguments = errors.New("invalid deploy arguments")
 
 // ErrNilFunction signals that the function name from transaction data is nil
 var ErrNilFunction = errors.New("smart contract function is nil")
@@ -20,8 +20,5 @@ var ErrInvalidDataString = errors.New("transaction data string is unevenly split
 // ErrInvalidVMType signals an invalid VMType
 var ErrInvalidVMType = errors.New("invalid vm type")
 
-// ErrInvalidArgumentCodeUpgrade signals an invalid code upgrade argument
-var ErrInvalidArgumentCodeUpgrade = errors.New("invalid argument: code upgrade")
-
-// ErrInvalidArgumentCodeMetadataUpgrade signals an invalid code metadata upgrade argument
-var ErrInvalidArgumentCodeMetadataUpgrade = errors.New("invalid argument: code metadata upgrade")
+// ErrInvalidUpgradeArguments signals an invalid upgrade argument
+var ErrInvalidUpgradeArguments = errors.New("invalid upgrade arguments")

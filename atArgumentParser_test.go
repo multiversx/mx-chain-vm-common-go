@@ -24,11 +24,11 @@ func TestNewAtArgumentParser(t *testing.T) {
 
 	code, err := parser.GetCode()
 	require.Nil(t, code)
-	require.Equal(t, ErrBadDeployArguments, err)
+	require.Equal(t, ErrInvalidDeployArguments, err)
 
 	codeMetadata, err := parser.GetCodeMetadata()
 	require.Equal(t, CodeMetadata{}, codeMetadata)
-	require.Equal(t, ErrBadDeployArguments, err)
+	require.Equal(t, ErrInvalidDeployArguments, err)
 
 	function, err := parser.GetFunction()
 	require.Equal(t, "", function)
@@ -176,7 +176,7 @@ func TestAtArgumentParser_GetCodeEmpty(t *testing.T) {
 	require.Equal(t, ErrTokenizeFailed, err)
 
 	code, err := parser.GetCode()
-	require.Equal(t, ErrBadDeployArguments, err)
+	require.Equal(t, ErrInvalidDeployArguments, err)
 	require.Nil(t, code)
 }
 
