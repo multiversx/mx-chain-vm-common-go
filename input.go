@@ -89,3 +89,21 @@ type ContractCallInput struct {
 	// The function must be public (e.g. in Iele `define public @functionName(...)`)
 	Function string
 }
+
+// GetCodeUpgrade gets the code upgrade from the arguments
+func (callInput *ContractCallInput) GetCodeUpgrade() ([]byte, error) {
+	if len(callInput.Arguments) < 1 {
+		return nil, ErrInvalidArgumentCodeUpgrade
+	}
+
+	return callInput.Arguments[0], nil
+}
+
+// GetCodeMetadataUpgrade gets the code metadata upgrade from the arguments
+func (callInput *ContractCallInput) GetCodeMetadataUpgrade() ([]byte, error) {
+	if len(callInput.Arguments) < 2 {
+		return nil, ErrInvalidArgumentCodeMetadataUpgrade
+	}
+
+	return callInput.Arguments[1], nil
+}
