@@ -80,7 +80,7 @@ func (parser *AtArgumentParser) GetConstructorArguments() ([][]byte, error) {
 	return args, nil
 }
 
-// GetCode returns the code from the parsed data
+// GetCode returns the hex-encoded code from the parsed data
 func (parser *AtArgumentParser) GetCode() ([]byte, error) {
 	if len(parser.arguments) < minNumDeployArguments {
 		return nil, ErrInvalidDeployArguments
@@ -88,6 +88,21 @@ func (parser *AtArgumentParser) GetCode() ([]byte, error) {
 
 	hexCode := parser.arguments[indexOfCode]
 	return hexCode, nil
+}
+
+// GetCodeDecoded returns the code from the parsed data, hex-decoded
+func (parser *AtArgumentParser) GetCodeDecoded() ([]byte, error) {
+	codeHex, err := parser.GetCode()
+	if err != nil {
+		return nil, err
+	}
+
+	code, err := hex.DecodeString(string(codeHex))
+	if err != nil {
+		return nil, err
+	}
+
+	return code, err
 }
 
 // GetVMType returns the VM type from the parsed data
