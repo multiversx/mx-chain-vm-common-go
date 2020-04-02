@@ -19,6 +19,3 @@ var ErrInvalidDataString = errors.New("transaction data string is unevenly split
 
 // ErrInvalidVMType signals an invalid VMType
 var ErrInvalidVMType = errors.New("invalid vm type")
-
-// ErrInvalidUpgradeArguments signals an invalid upgrade argument
-var ErrInvalidUpgradeArguments = errors.New("invalid upgrade arguments")
