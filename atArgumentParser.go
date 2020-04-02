@@ -6,7 +6,7 @@ import (
 
 // AtArgumentParser is a parser that splits arguments by @ character
 // [NotConcurrentSafe]
-type AtArgumentParser struct {
+type atArgumentParser struct {
 	// First argument is a string (function name or hex-encoded bytecode), the rest are raw bytes
 	arguments [][]byte
 }
@@ -23,20 +23,20 @@ const indexOfCodeMetadata = 2
 const indexOfFunction = 0
 
 // NewAtArgumentParser creates a new parser
-func NewAtArgumentParser() *AtArgumentParser {
-	parser := &AtArgumentParser{}
+func NewAtArgumentParser() *atArgumentParser {
+	parser := &atArgumentParser{}
 	parser.clearArguments()
 	return parser
 }
 
-func (parser *AtArgumentParser) clearArguments() {
+func (parser *atArgumentParser) clearArguments() {
 	parser.arguments = make([][]byte, 0)
 }
 
 // ParseData parses strings of the following formats:
 // contract deploy: codeHex@vmTypeHex@codeMetadataHex@argFooHex@argBarHex...
 // contract call: functionRaw@argFooHex@argBarHex...
-func (parser *AtArgumentParser) ParseData(data string) error {
+func (parser *atArgumentParser) ParseData(data string) error {
 	parser.clearArguments()
 
 	tokens, err := tokenize(data)
@@ -60,7 +60,7 @@ func (parser *AtArgumentParser) ParseData(data string) error {
 }
 
 // GetFunctionArguments returns the call arguments
-func (parser *AtArgumentParser) GetFunctionArguments() ([][]byte, error) {
+func (parser *atArgumentParser) GetFunctionArguments() ([][]byte, error) {
 	if len(parser.arguments) < startIndexOfFunctionArguments {
 		return nil, ErrNilArguments
 	}
@@ -70,7 +70,7 @@ func (parser *AtArgumentParser) GetFunctionArguments() ([][]byte, error) {
 }
 
 // GetConstructorArguments returns the deploy arguments
-func (parser *AtArgumentParser) GetConstructorArguments() ([][]byte, error) {
+func (parser *atArgumentParser) GetConstructorArguments() ([][]byte, error) {
 	if len(parser.arguments) < startIndexOfConstructorArguments {
 		return nil, ErrNilArguments
 	}
@@ -80,7 +80,7 @@ func (parser *AtArgumentParser) GetConstructorArguments() ([][]byte, error) {
 }
 
 // GetCode returns the hex-encoded code from the parsed data
-func (parser *AtArgumentParser) GetCode() ([]byte, error) {
+func (parser *atArgumentParser) GetCode() ([]byte, error) {
 	if len(parser.arguments) < minNumDeployArguments {
 		return nil, ErrInvalidDeployArguments
 	}
@@ -90,7 +90,7 @@ func (parser *AtArgumentParser) GetCode() ([]byte, error) {
 }
 
 // GetCodeDecoded returns the code from the parsed data, hex-decoded
-func (parser *AtArgumentParser) GetCodeDecoded() ([]byte, error) {
+func (parser *atArgumentParser) GetCodeDecoded() ([]byte, error) {
 	codeHex, err := parser.GetCode()
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (parser *AtArgumentParser) GetCodeDecoded() ([]byte, error) {
 }
 
 // GetVMType returns the VM type from the parsed data
-func (parser *AtArgumentParser) GetVMType() ([]byte, error) {
+func (parser *atArgumentParser) GetVMType() ([]byte, error) {
 	if len(parser.arguments) < minNumDeployArguments {
 		return nil, ErrInvalidDeployArguments
 	}
@@ -119,7 +119,7 @@ func (parser *AtArgumentParser) GetVMType() ([]byte, error) {
 }
 
 // GetCodeMetadata returns the code metadata from the parsed data
-func (parser *AtArgumentParser) GetCodeMetadata() (CodeMetadata, error) {
+func (parser *atArgumentParser) GetCodeMetadata() (CodeMetadata, error) {
 	if len(parser.arguments) < minNumDeployArguments {
 		return CodeMetadata{}, ErrInvalidDeployArguments
 	}
@@ -130,7 +130,7 @@ func (parser *AtArgumentParser) GetCodeMetadata() (CodeMetadata, error) {
 }
 
 // GetFunction returns the function from the parsed data
-func (parser *AtArgumentParser) GetFunction() (string, error) {
+func (parser *atArgumentParser) GetFunction() (string, error) {
 	if len(parser.arguments) < minNumCallArguments {
 		return "", ErrNilFunction
 	}
@@ -140,12 +140,12 @@ func (parser *AtArgumentParser) GetFunction() (string, error) {
 }
 
 // GetSeparator returns the separator used for parsing the data
-func (parser *AtArgumentParser) GetSeparator() string {
+func (parser *atArgumentParser) GetSeparator() string {
 	return atSeparator
 }
 
 // GetStorageUpdates parse data into storage updates
-func (parser *AtArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, error) {
+func (parser *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, error) {
 	data = trimLeadingSeparatorChar(data)
 
 	tokens, err := tokenize(data)
@@ -177,7 +177,7 @@ func (parser *AtArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate
 }
 
 // CreateDataFromStorageUpdate creates storage update from data
-func (parser *AtArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*StorageUpdate) string {
+func (parser *atArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*StorageUpdate) string {
 	data := ""
 	for i := 0; i < len(storageUpdates); i++ {
 		storageUpdate := storageUpdates[i]
@@ -193,6 +193,6 @@ func (parser *AtArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*St
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (parser *AtArgumentParser) IsInterfaceNil() bool {
+func (parser *atArgumentParser) IsInterfaceNil() bool {
 	return parser == nil
 }
