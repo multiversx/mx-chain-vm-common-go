@@ -20,7 +20,7 @@ const minNumCallArguments = 1
 const indexOfCode = 0
 const indexOfVMType = 1
 const indexOfCodeMetadata = 2
-const indexOfFunction = indexOfCode
+const indexOfFunction = 0
 
 // NewAtArgumentParser creates a new parser
 func NewAtArgumentParser() *AtArgumentParser {
@@ -39,8 +39,7 @@ func (parser *AtArgumentParser) clearArguments() {
 func (parser *AtArgumentParser) ParseData(data string) error {
 	parser.clearArguments()
 
-	tokens := tokenize(data)
-	err := requireAnyTokens(tokens)
+	tokens, err := tokenize(data)
 	if err != nil {
 		return err
 	}
@@ -112,7 +111,7 @@ func (parser *AtArgumentParser) GetVMType() ([]byte, error) {
 	}
 
 	vmType := parser.arguments[indexOfVMType]
-	if len(vmType) != VMTypeLen {
+	if len(vmType) == 0 {
 		return nil, ErrInvalidVMType
 	}
 
@@ -149,8 +148,7 @@ func (parser *AtArgumentParser) GetSeparator() string {
 func (parser *AtArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, error) {
 	data = trimLeadingSeparatorChar(data)
 
-	tokens := tokenize(data)
-	err := requireAnyTokens(tokens)
+	tokens, err := tokenize(data)
 	if err != nil {
 		return nil, err
 	}

@@ -5,8 +5,14 @@ import (
 	"strings"
 )
 
-func tokenize(data string) []string {
-	return strings.Split(data, atSeparator)
+func tokenize(data string) ([]string, error) {
+	tokens := strings.Split(data, atSeparator)
+
+	if len(tokens) == 0 || len(tokens[0]) == 0 {
+		return nil, ErrTokenizeFailed
+	}
+
+	return tokens, nil
 }
 
 func decodeToken(token string) ([]byte, error) {
@@ -32,14 +38,6 @@ func trimLeadingSeparatorChar(data string) string {
 	}
 
 	return data
-}
-
-func requireAnyTokens(tokens []string) error {
-	if len(tokens) == 0 || len(tokens[0]) == 0 {
-		return ErrTokenizeFailed
-	}
-
-	return nil
 }
 
 func requireNumTokensIsEven(tokens []string) error {
