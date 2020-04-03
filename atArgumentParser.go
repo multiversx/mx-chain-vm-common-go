@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 )
 
-// AtArgumentParser is a parser that splits arguments by @ character
+// atArgumentParser is a parser that splits arguments by @ character
 // [NotConcurrentSafe]
 type atArgumentParser struct {
 	// First argument is a string (function name or hex-encoded bytecode), the rest are raw bytes
