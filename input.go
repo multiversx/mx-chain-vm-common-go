@@ -4,6 +4,7 @@ import (
 	"math/big"
 )
 
+// CallType specifies the type of SC invocation (in terms of asynchronicity)
 type CallType int
 
 const (
@@ -72,6 +73,9 @@ type ContractCreateInput struct {
 	// For Iele VM, to convert a .iele file to this assembled byte array, see
 	// src/github.com/ElrondNetwork/elrond-vm/iele/compiler/compiler.AssembleIeleCode
 	ContractCode []byte
+
+	// ContractCodeMetadata is the code metadata of the contract being created.
+	ContractCodeMetadata []byte
 }
 
 // ContractCallInput VM input when calling a function from an existing contract

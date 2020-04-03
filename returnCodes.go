@@ -67,4 +67,7 @@ const (
 
 	// ExecutionFailed is returned when the execution of the specified function has failed.
 	ExecutionFailed ReturnCode = 10
+
+	// UpgradeFailed is returned when the upgrade of the contract has failed
+	UpgradeFailed ReturnCode = 11
 )

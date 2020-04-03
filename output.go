@@ -51,6 +51,10 @@ type OutputAccount struct {
 	// This field will be populated when a new SC must be created after the transaction.
 	Code []byte
 
+	// CodeMetadata is the metadata of the code
+	// Like "Code", this field will be populated when a new SC must be created after the transaction.
+	CodeMetadata []byte
+
 	// Data will be populated if there is a transfer to this output account which has to
 	// be further interpreted or verified
 	Data []byte
