@@ -69,4 +69,7 @@ type BlockchainHook interface {
 
 	// CurrentEpoch returns the current epoch
 	CurrentEpoch() uint32
+
+	// ProcessBuiltInFunction will process the builtIn function for the created input
+	ProcessBuiltInFunction(input *ContractCallInput) (*big.Int, uint64, error)
 }
