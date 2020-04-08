@@ -88,4 +88,10 @@ type ContractCallInput struct {
 	// Function is the name of the smart contract function that will be called.
 	// The function must be public (e.g. in Iele `define public @functionName(...)`)
 	Function string
+
+	// OriginalTxHash
+	OriginalTxHash []byte
+
+	// CurrentTxHash
+	CurrentTxHash []byte
 }
