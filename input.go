@@ -59,6 +59,12 @@ type VMInput struct {
 	// The sender will not be charged based on GasProvided, only on the gas burned,
 	// so it doesn't cost the sender more to have a higher gas limit.
 	GasProvided uint64
+
+	// OriginalTxHash
+	OriginalTxHash []byte
+
+	// CurrentTxHash
+	CurrentTxHash []byte
 }
 
 // ContractCreateInput VM input when creating a new contract.
