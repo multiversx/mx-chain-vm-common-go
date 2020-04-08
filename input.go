@@ -59,6 +59,12 @@ type VMInput struct {
 	// The sender will not be charged based on GasProvided, only on the gas burned,
 	// so it doesn't cost the sender more to have a higher gas limit.
 	GasProvided uint64
+
+	// OriginalTxHash
+	OriginalTxHash []byte
+
+	// CurrentTxHash
+	CurrentTxHash []byte
 }
 
 // ContractCreateInput VM input when creating a new contract.
@@ -88,10 +94,4 @@ type ContractCallInput struct {
 	// Function is the name of the smart contract function that will be called.
 	// The function must be public (e.g. in Iele `define public @functionName(...)`)
 	Function string
-
-	// OriginalTxHash
-	OriginalTxHash []byte
-
-	// CurrentTxHash
-	CurrentTxHash []byte
 }
