@@ -4,6 +4,9 @@ import (
 	"math/big"
 )
 
+// FunctionNames (alias) is a map of function names
+type FunctionNames = map[string]struct{}
+
 // BlockchainHook is the interface for VM blockchain callbacks
 type BlockchainHook interface {
 	// An account with Balance = 0 and Nonce = 0 is considered to not exist
@@ -72,4 +75,7 @@ type BlockchainHook interface {
 
 	// ProcessBuiltInFunction will process the builtIn function for the created input
 	ProcessBuiltInFunction(input *ContractCallInput) (*big.Int, uint64, error)
+
+	// GetBuiltinFunctionNames returns the names of protocol built-in functions
+	GetBuiltinFunctionNames() FunctionNames
 }
