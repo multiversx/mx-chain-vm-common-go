@@ -69,9 +69,10 @@ type OutputAccount struct {
 // LogEntry represents an entry in the contract execution log.
 // TODO: document all fields.
 type LogEntry struct {
-	Address []byte
-	Topics  [][]byte
-	Data    []byte
+	Identifier []byte
+	Address    []byte
+	Topics     [][]byte
+	Data       []byte
 }
 
 // VMOutput is the return data and final account state after a SC execution.
