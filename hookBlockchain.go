@@ -28,7 +28,7 @@ type BlockchainHook interface {
 	// Should yield the storage value for a certain account and index.
 	// Should return an empty byte array if the key is missing from the account storage,
 	// or if account does not exist.
-	GetStorageData(accountAddress []byte, index []byte) ([]byte, error)
+	GetStorageData(accountAddress []byte, index []byte) (StorageData, error)
 
 	// Should return whether of not an account is SC.
 	IsCodeEmpty(address []byte) (bool, error)
