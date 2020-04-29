@@ -6,6 +6,22 @@ import (
 	"math/big"
 )
 
+type StorageData struct {
+	// Data is the storage value.
+	// The VM treats this as a big.Int.
+	// Zero indicates missing data for the key (or even a missing key),
+	// therefore a value of zero here indicates that
+	// the storage map entry with the given key can be deleted.
+	Data []byte
+
+	// TimeLock is used to indicate to the developer that there's
+	//  a lock over a particular storage item and he should not
+	//  update/delete until the time lock passes.
+	// Note: If the developer chooses so, he can update the
+	//  storage item anyway.
+	TimeLock uint64
+}
+
 // StorageUpdate represents a change in the account storage (insert, update or delete)
 // Note: current implementation might also return unmodified storage entries.
 type StorageUpdate struct {
@@ -13,12 +29,8 @@ type StorageUpdate struct {
 	// The VM treats this as a big.Int.
 	Offset []byte
 
-	// Data is the new storage value.
-	// The VM treats this as a big.Int.
-	// Zero indicates missing data for the key (or even a missing key),
-	// therefore a value of zero here indicates that
-	// the storage map entry with the given key can be deleted.
-	Data []byte
+	// StorageData is the new storage value.
+	StorageData StorageData
 }
 
 // OutputAccount shows the state of an account after contract execution.
