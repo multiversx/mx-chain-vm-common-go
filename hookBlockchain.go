@@ -78,4 +78,7 @@ type BlockchainHook interface {
 
 	// GetBuiltinFunctionNames returns the names of protocol built-in functions
 	GetBuiltinFunctionNames() FunctionNames
+
+	// GetAllState returns the full state of the account, all the key-value saved
+	GetAllState(address []byte) (map[string][]byte, error)
 }
