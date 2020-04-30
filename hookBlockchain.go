@@ -74,7 +74,7 @@ type BlockchainHook interface {
 	CurrentEpoch() uint32
 
 	// ProcessBuiltInFunction will process the builtIn function for the created input
-	ProcessBuiltInFunction(input *ContractCallInput) (*big.Int, uint64, error)
+	ProcessBuiltInFunction(input *ContractCallInput) (*VMOutput, error)
 
 	// GetBuiltinFunctionNames returns the names of protocol built-in functions
 	GetBuiltinFunctionNames() FunctionNames
