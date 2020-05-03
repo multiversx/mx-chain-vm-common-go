@@ -169,7 +169,7 @@ func (parser *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate
 			return nil, err
 		}
 
-		storageUpdate := &StorageUpdate{Offset: offset, Data: value}
+		storageUpdate := &StorageUpdate{Offset: offset, StorageData: StorageData{Data: value}}
 		storageUpdates = append(storageUpdates, storageUpdate)
 	}
 
@@ -183,7 +183,7 @@ func (parser *atArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*St
 		storageUpdate := storageUpdates[i]
 		data = data + hex.EncodeToString(storageUpdate.Offset)
 		data = data + parser.GetSeparator()
-		data = data + hex.EncodeToString(storageUpdate.Data)
+		data = data + hex.EncodeToString(storageUpdate.StorageData.Data)
 
 		if i < len(storageUpdates)-1 {
 			data = data + parser.GetSeparator()

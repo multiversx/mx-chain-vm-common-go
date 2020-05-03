@@ -237,7 +237,7 @@ func TestAtArgumentParser_CreateDataFromStorageUpdate(t *testing.T) {
 	require.Equal(t, 0, len(data))
 
 	test := []byte("aaaa")
-	stUpd := StorageUpdate{Offset: test, Data: test}
+	stUpd := StorageUpdate{Offset: test, StorageData: StorageData{Data: test}}
 	stUpdates := make([]*StorageUpdate, 0)
 	stUpdates = append(stUpdates, &stUpd, &stUpd, &stUpd)
 	result := ""
@@ -320,7 +320,7 @@ func TestAtArgumentParser_GetStorageUpdates(t *testing.T) {
 
 	require.Nil(t, err)
 	for i := 0; i < 2; i++ {
-		require.Equal(t, test, hex.EncodeToString(stUpdates[i].Data))
+		require.Equal(t, test, hex.EncodeToString(stUpdates[i].StorageData.Data))
 		require.Equal(t, test, hex.EncodeToString(stUpdates[i].Offset))
 	}
 }
