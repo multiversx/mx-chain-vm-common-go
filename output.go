@@ -6,6 +6,11 @@ import (
 	"math/big"
 )
 
+const (
+	TimeLockUnset uint64 = iota
+	TimeLockReset
+)
+
 type StorageData struct {
 	// Data is the storage value.
 	// The VM treats this as a big.Int.
