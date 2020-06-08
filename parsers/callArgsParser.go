@@ -8,6 +8,8 @@ func NewCallArgsParser() *callArgsParser {
 	return &callArgsParser{}
 }
 
+// ParseData parses strings of the following format:
+// functionRaw@argFooHex@argBarHex...
 func (parser *callArgsParser) ParseData(data string) (string, [][]byte, error) {
 	var function string
 	var arguments [][]byte

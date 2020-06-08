@@ -21,3 +21,9 @@ var ErrInvalidDataString = errors.New("transaction data string is unevenly split
 
 // ErrInvalidVMType signals an invalid VMType
 var ErrInvalidVMType = errors.New("invalid vm type")
+
+// ErrInvalidCode signals an invalid Code
+var ErrInvalidCode = errors.New("invalid code")
+
+// ErrInvalidCodeMetadata signals an invalid Code Metadata
+var ErrInvalidCodeMetadata = errors.New("invalid code metadata")
