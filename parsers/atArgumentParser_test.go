@@ -1,9 +1,10 @@
-package vmcommon
+package parsers
 
 import (
 	"encoding/hex"
 	"testing"
 
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +27,7 @@ func TestNewAtArgumentParser(t *testing.T) {
 	require.Equal(t, ErrInvalidDeployArguments, err)
 
 	codeMetadata, err := parser.GetCodeMetadata()
-	require.Equal(t, CodeMetadata{}, codeMetadata)
+	require.Equal(t, vmcommon.CodeMetadata{}, codeMetadata)
 	require.Equal(t, ErrInvalidDeployArguments, err)
 
 	function, err := parser.GetFunction()
@@ -237,8 +238,8 @@ func TestAtArgumentParser_CreateDataFromStorageUpdate(t *testing.T) {
 	require.Equal(t, 0, len(data))
 
 	test := []byte("aaaa")
-	stUpd := StorageUpdate{Offset: test, Data: test}
-	stUpdates := make([]*StorageUpdate, 0)
+	stUpd := vmcommon.StorageUpdate{Offset: test, Data: test}
+	stUpdates := make([]*vmcommon.StorageUpdate, 0)
 	stUpdates = append(stUpdates, &stUpd, &stUpd, &stUpd)
 	result := ""
 	sep := "@"

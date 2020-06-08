@@ -1,6 +1,8 @@
-package vmcommon
+package parsers
 
-import "errors"
+import (
+	"errors"
+)
 
 // ErrTokenizeFailed signals that data splitting into arguments and code failed
 var ErrTokenizeFailed = errors.New("data splitting into arguments and code/function failed")

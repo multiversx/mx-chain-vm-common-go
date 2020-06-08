@@ -1,7 +1,9 @@
-package vmcommon
+package parsers
 
 import (
 	"encoding/hex"
+
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
 // atArgumentParser is a parser that splits arguments by @ character
@@ -119,13 +121,13 @@ func (parser *atArgumentParser) GetVMType() ([]byte, error) {
 }
 
 // GetCodeMetadata returns the code metadata from the parsed data
-func (parser *atArgumentParser) GetCodeMetadata() (CodeMetadata, error) {
+func (parser *atArgumentParser) GetCodeMetadata() (vmcommon.CodeMetadata, error) {
 	if len(parser.arguments) < minNumDeployArguments {
-		return CodeMetadata{}, ErrInvalidDeployArguments
+		return vmcommon.CodeMetadata{}, ErrInvalidDeployArguments
 	}
 
 	codeMetadataBytes := parser.arguments[indexOfCodeMetadata]
-	codeMetadata := CodeMetadataFromBytes(codeMetadataBytes)
+	codeMetadata := vmcommon.CodeMetadataFromBytes(codeMetadataBytes)
 	return codeMetadata, nil
 }
 
@@ -145,7 +147,7 @@ func (parser *atArgumentParser) GetSeparator() string {
 }
 
 // GetStorageUpdates parse data into storage updates
-func (parser *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate, error) {
+func (parser *atArgumentParser) GetStorageUpdates(data string) ([]*vmcommon.StorageUpdate, error) {
 	data = trimLeadingSeparatorChar(data)
 
 	tokens, err := tokenize(data)
@@ -157,7 +159,7 @@ func (parser *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate
 		return nil, err
 	}
 
-	storageUpdates := make([]*StorageUpdate, 0, len(tokens))
+	storageUpdates := make([]*vmcommon.StorageUpdate, 0, len(tokens))
 	for i := 0; i < len(tokens); i += 2 {
 		offset, err := decodeToken(tokens[i])
 		if err != nil {
@@ -169,7 +171,7 @@ func (parser *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate
 			return nil, err
 		}
 
-		storageUpdate := &StorageUpdate{Offset: offset, Data: value}
+		storageUpdate := &vmcommon.StorageUpdate{Offset: offset, Data: value}
 		storageUpdates = append(storageUpdates, storageUpdate)
 	}
 
@@ -177,7 +179,7 @@ func (parser *atArgumentParser) GetStorageUpdates(data string) ([]*StorageUpdate
 }
 
 // CreateDataFromStorageUpdate creates storage update from data
-func (parser *atArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*StorageUpdate) string {
+func (parser *atArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*vmcommon.StorageUpdate) string {
 	data := ""
 	for i := 0; i < len(storageUpdates); i++ {
 		storageUpdate := storageUpdates[i]

@@ -1,4 +1,4 @@
-package vmcommon
+package parsers
 
 import (
 	"encoding/hex"
