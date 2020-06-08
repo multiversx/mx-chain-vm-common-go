@@ -3,7 +3,6 @@ package parsers
 const atSeparator = "@"
 const atSeparatorChar = '@'
 const startIndexOfConstructorArguments = 3
-const startIndexOfFunctionArguments = 1
 const minNumDeployArguments = 3
 const minNumCallArguments = 1
 const indexOfCode = 0
