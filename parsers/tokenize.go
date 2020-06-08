@@ -15,11 +15,6 @@ func tokenize(data string) ([]string, error) {
 	return tokens, nil
 }
 
-func decodeTokenPermissive(token string) ([]byte, error) {
-	token = ensureEvenLength(token)
-	return decodeToken(token)
-}
-
 func decodeToken(token string) ([]byte, error) {
 	decoded, err := hex.DecodeString(token)
 	if err != nil {
@@ -27,13 +22,6 @@ func decodeToken(token string) ([]byte, error) {
 	}
 
 	return decoded, nil
-}
-
-func ensureEvenLength(str string) string {
-	if len(str)%2 != 0 {
-		return "0" + str
-	}
-	return str
 }
 
 func trimLeadingSeparatorChar(data string) string {

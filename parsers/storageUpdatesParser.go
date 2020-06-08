@@ -29,12 +29,12 @@ func (parser *storageUpdatesParser) GetStorageUpdates(data string) ([]*vmcommon.
 
 	storageUpdates := make([]*vmcommon.StorageUpdate, 0, len(tokens))
 	for i := 0; i < len(tokens); i += 2 {
-		offset, err := decodeTokenPermissive(tokens[i])
+		offset, err := decodeToken(tokens[i])
 		if err != nil {
 			return nil, err
 		}
 
-		value, err := decodeTokenPermissive(tokens[i+1])
+		value, err := decodeToken(tokens[i+1])
 		if err != nil {
 			return nil, err
 		}

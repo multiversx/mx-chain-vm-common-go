@@ -55,7 +55,15 @@ func TestDeployArgsParser_ParseDataWhenErrorneousInput(t *testing.T) {
 	require.Equal(t, ErrInvalidVMType, err)
 	require.Nil(t, parsed)
 
+	parsed, err = parser.ParseData("ABBA@@A")
+	require.Equal(t, ErrInvalidVMType, err)
+	require.Nil(t, parsed)
+
 	parsed, err = parser.ParseData("ABBA@ABBA@A")
 	require.Equal(t, ErrInvalidCodeMetadata, err)
+	require.Nil(t, parsed)
+
+	parsed, err = parser.ParseData("ABBA@ABBA@ABBA@A")
+	require.Equal(t, ErrTokenizeFailed, err)
 	require.Nil(t, parsed)
 }
