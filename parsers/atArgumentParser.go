@@ -13,17 +13,6 @@ type atArgumentParser struct {
 	arguments [][]byte
 }
 
-const atSeparator = "@"
-const atSeparatorChar = '@'
-const startIndexOfConstructorArguments = 3
-const startIndexOfFunctionArguments = 1
-const minNumDeployArguments = 3
-const minNumCallArguments = 1
-const indexOfCode = 0
-const indexOfVMType = 1
-const indexOfCodeMetadata = 2
-const indexOfFunction = 0
-
 // NewAtArgumentParser creates a new parser
 func NewAtArgumentParser() *atArgumentParser {
 	parser := &atArgumentParser{}
@@ -50,7 +39,7 @@ func (parser *atArgumentParser) ParseData(data string) error {
 	parser.arguments = append(parser.arguments, []byte(tokens[0]))
 
 	for i := 1; i < len(tokens); i++ {
-		argument, err := decodeToken(tokens[i])
+		argument, err := decodeTokenPermissive(tokens[i])
 		if err != nil {
 			return err
 		}
@@ -139,59 +128,6 @@ func (parser *atArgumentParser) GetFunction() (string, error) {
 
 	function := string(parser.arguments[indexOfFunction])
 	return function, nil
-}
-
-// GetSeparator returns the separator used for parsing the data
-func (parser *atArgumentParser) GetSeparator() string {
-	return atSeparator
-}
-
-// GetStorageUpdates parse data into storage updates
-func (parser *atArgumentParser) GetStorageUpdates(data string) ([]*vmcommon.StorageUpdate, error) {
-	data = trimLeadingSeparatorChar(data)
-
-	tokens, err := tokenize(data)
-	if err != nil {
-		return nil, err
-	}
-	err = requireNumTokensIsEven(tokens)
-	if err != nil {
-		return nil, err
-	}
-
-	storageUpdates := make([]*vmcommon.StorageUpdate, 0, len(tokens))
-	for i := 0; i < len(tokens); i += 2 {
-		offset, err := decodeToken(tokens[i])
-		if err != nil {
-			return nil, err
-		}
-
-		value, err := decodeToken(tokens[i+1])
-		if err != nil {
-			return nil, err
-		}
-
-		storageUpdate := &vmcommon.StorageUpdate{Offset: offset, Data: value}
-		storageUpdates = append(storageUpdates, storageUpdate)
-	}
-
-	return storageUpdates, nil
-}
-
-// CreateDataFromStorageUpdate creates storage update from data
-func (parser *atArgumentParser) CreateDataFromStorageUpdate(storageUpdates []*vmcommon.StorageUpdate) string {
-	data := ""
-	for i := 0; i < len(storageUpdates); i++ {
-		storageUpdate := storageUpdates[i]
-		data = data + hex.EncodeToString(storageUpdate.Offset)
-		data = data + parser.GetSeparator()
-		data = data + hex.EncodeToString(storageUpdate.Data)
-
-		if i < len(storageUpdates)-1 {
-			data = data + parser.GetSeparator()
-		}
-	}
-	return data
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
