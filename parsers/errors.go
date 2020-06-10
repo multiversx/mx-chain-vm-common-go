@@ -1,9 +1,11 @@
-package vmcommon
+package parsers
 
-import "errors"
+import (
+	"errors"
+)
 
 // ErrTokenizeFailed signals that data splitting into arguments and code failed
-var ErrTokenizeFailed = errors.New("data splitting into arguments and code/function failed")
+var ErrTokenizeFailed = errors.New("tokenize failed")
 
 // ErrInvalidDeployArguments signals invalid deploy arguments
 var ErrInvalidDeployArguments = errors.New("invalid deploy arguments")
@@ -19,3 +21,9 @@ var ErrInvalidDataString = errors.New("transaction data string is unevenly split
 
 // ErrInvalidVMType signals an invalid VMType
 var ErrInvalidVMType = errors.New("invalid vm type")
+
+// ErrInvalidCode signals an invalid Code
+var ErrInvalidCode = errors.New("invalid code")
+
+// ErrInvalidCodeMetadata signals an invalid Code Metadata
+var ErrInvalidCodeMetadata = errors.New("invalid code metadata")

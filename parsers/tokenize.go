@@ -1,4 +1,4 @@
-package vmcommon
+package parsers
 
 import (
 	"encoding/hex"
@@ -16,20 +16,12 @@ func tokenize(data string) ([]string, error) {
 }
 
 func decodeToken(token string) ([]byte, error) {
-	token = ensureEvenLength(token)
 	decoded, err := hex.DecodeString(token)
 	if err != nil {
-		return nil, err
+		return nil, ErrTokenizeFailed
 	}
 
 	return decoded, nil
-}
-
-func ensureEvenLength(str string) string {
-	if len(str)%2 != 0 {
-		return "0" + str
-	}
-	return str
 }
 
 func trimLeadingSeparatorChar(data string) string {
