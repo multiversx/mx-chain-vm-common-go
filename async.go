@@ -9,8 +9,8 @@ const (
 	AsyncCallRejected
 )
 
-// AsyncCall holds the information abount an async call
-type AsyncCall struct {
+// AsyncGeneratedCall holds the information abount an async call
+type AsyncGeneratedCall struct {
 	Status          AsyncCallStatus
 	Destination     []byte
 	Data            []byte
@@ -25,7 +25,7 @@ type AsyncCall struct {
 //  that should be called when all these async calls are resolved
 type AsyncContext struct {
 	Callback   int32
-	AsyncCalls []*AsyncCall
+	AsyncCalls []*AsyncGeneratedCall
 }
 
 // AsyncInitiator will keep the data about the initiator of an async call
@@ -42,22 +42,22 @@ type AsyncContextInfo struct {
 }
 
 // GetDestination returns the destination of an async call
-func (ac *AsyncCall) GetDestination() []byte {
+func (ac *AsyncGeneratedCall) GetDestination() []byte {
 	return ac.Destination
 }
 
 // GetData returns the transaction data of the async call
-func (ac *AsyncCall) GetData() []byte {
+func (ac *AsyncGeneratedCall) GetData() []byte {
 	return ac.Data
 }
 
 // GetGasLimit returns the gas limit of the current async call
-func (ac *AsyncCall) GetGasLimit() uint64 {
+func (ac *AsyncGeneratedCall) GetGasLimit() uint64 {
 	return ac.GasLimit
 }
 
 // GetValueBytes returns the byte representation of the value of the async call
-func (ac *AsyncCall) GetValueBytes() []byte {
+func (ac *AsyncGeneratedCall) GetValueBytes() []byte {
 	return ac.ValueBytes
 }
 
