@@ -24,7 +24,7 @@ type AsyncGeneratedCall struct {
 // AsyncContext is a structure containing a group of async calls and a callback
 //  that should be called when all these async calls are resolved
 type AsyncContext struct {
-	Callback   int32
+	Callback   string
 	AsyncCalls []*AsyncGeneratedCall
 }
 
