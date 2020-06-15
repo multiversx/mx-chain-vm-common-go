@@ -61,3 +61,8 @@ func (ac *AsyncGeneratedCall) GetValueBytes() []byte {
 	return ac.ValueBytes
 }
 
+// IsInterfaceNil returns true if there is no value under the interface
+func (ac *AsyncGeneratedCall) IsInterfaceNil() bool {
+	return ac == nil
+}
+
