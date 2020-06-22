@@ -9,8 +9,8 @@ type FunctionNames = map[string]struct{}
 
 // BlockchainHook is the interface for VM blockchain callbacks
 type BlockchainHook interface {
-	// An account with Balance = 0 and Nonce = 0 is considered to not exist
-	AccountExists(address []byte) (bool, error)
+	// // An account with Balance = 0 and Nonce = 0 is considered to not exist
+	// AccountExists(address []byte) (bool, error)
 
 	// NewAddress yields the address of a new SC account, when one such account is created.
 	// The result should only depend on the creator address and nonce.
