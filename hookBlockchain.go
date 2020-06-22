@@ -81,4 +81,22 @@ type BlockchainHook interface {
 
 	// GetAllState returns the full state of the account, all the key-value saved
 	GetAllState(address []byte) (map[string][]byte, error)
+
+	// GetUserAccount returns a user account
+	GetUserAccount(address []byte) UserAccountHandler
+}
+
+// UserAccountHandler defines a user account
+type UserAccountHandler interface {
+	AddressBytes() []byte
+	GetNonce() uint64
+	GetCode() []byte
+	GetCodeMetadata() []byte
+	GetCodeHash() []byte
+	GetRootHash() []byte
+	GetBalance() *big.Int
+	GetDeveloperReward() *big.Int
+	GetOwnerAddress() []byte
+	GetUserName() []byte
+	IsInterfaceNil() bool
 }
