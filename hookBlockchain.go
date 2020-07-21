@@ -72,6 +72,9 @@ type BlockchainHook interface {
 
 	// IsSmartContract returns whether the address points to a smart contract
 	IsSmartContract(address []byte) bool
+
+	// IsPayable checks weather the provided address can receive ERD or not
+	IsPayable(address []byte) (bool, error)
 }
 
 // UserAccountHandler defines a user account
