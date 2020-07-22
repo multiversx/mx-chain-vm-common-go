@@ -94,4 +94,8 @@ type ContractCallInput struct {
 	// Function is the name of the smart contract function that will be called.
 	// The function must be public (e.g. in Iele `define public @functionName(...)`)
 	Function string
+
+	// AllowInitFunction specifies whether calling the initialization method of
+	// the smart contract is allowed or not
+	AllowInitFunction bool
 }
