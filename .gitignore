@@ -13,3 +13,9 @@
 
 # ctags file
 tags
+
+# IDE files
+.idea/
+
+# Libraries
+vendor/
