@@ -57,13 +57,16 @@ type OutputAccount struct {
 
 	// Data will be populated if there is a transfer to this output account which has to
 	// be further interpreted or verified
-	Data []byte
+	Data [][]byte
 
 	// GasLimit will be populated if the call is a smart contract call for another shard
 	GasLimit uint64
 
 	// CallType will be set if the output account must be invoked as a smart contract
 	CallType CallType
+
+	// GasUsed will be populated if the contract was called in the same shard
+	GasUsed uint64
 }
 
 // LogEntry represents an entry in the contract execution log.

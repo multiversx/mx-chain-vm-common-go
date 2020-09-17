@@ -5,14 +5,14 @@ const lengthOfCodeMetadata = 2
 const (
 	METADATA_UPGRADEABLE = 1
 	METADATA_PAYABLE     = 2
-	METADATA_RESERVED_1  = 4
-	METADATA_RESERVED_2  = 8
+	METADATA_READABLE    = 4
 )
 
 // CodeMetadata represents smart contract code metadata
 type CodeMetadata struct {
 	Payable     bool
 	Upgradeable bool
+	Readable    bool
 }
 
 // CodeMetadataFromBytes creates a metadata object from bytes
@@ -23,6 +23,7 @@ func CodeMetadataFromBytes(bytes []byte) CodeMetadata {
 
 	return CodeMetadata{
 		Upgradeable: (bytes[0] & METADATA_UPGRADEABLE) != 0,
+		Readable:    (bytes[0] & METADATA_READABLE) != 0,
 		Payable:     (bytes[1] & METADATA_PAYABLE) != 0,
 	}
 }
@@ -34,7 +35,9 @@ func (metadata *CodeMetadata) ToBytes() []byte {
 	if metadata.Upgradeable {
 		bytes[0] |= METADATA_UPGRADEABLE
 	}
-
+	if metadata.Readable {
+		bytes[0] |= METADATA_READABLE
+	}
 	if metadata.Payable {
 		bytes[1] |= METADATA_PAYABLE
 	}
