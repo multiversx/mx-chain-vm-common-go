@@ -5,9 +5,7 @@ const lengthOfCodeMetadata = 2
 const (
 	METADATA_UPGRADEABLE = 1
 	METADATA_PAYABLE     = 2
-	METADATA_READABLE    = 16
-	METADATA_RESERVED_1  = 4
-	METADATA_RESERVED_2  = 8
+	METADATA_READABLE    = 4
 )
 
 // CodeMetadata represents smart contract code metadata
