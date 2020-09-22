@@ -35,10 +35,6 @@ type OutputAccount struct {
 	// Only used for some tests now, please ignore. Might be removed in the future.
 	Balance *big.Int
 
-	// BalanceDelta is by how much the balance should change following the SC execution.
-	// A negative value indicates that balance should decrease.
-	BalanceDelta *big.Int
-
 	// StorageUpdates is a map containing pointers to StorageUpdate structs,
 	// indexed with strings produced by `string(StorageUpdate.Offset)`, for fast
 	// access by the Offset of the StorageUpdate. These StorageUpdate structs
@@ -55,18 +51,27 @@ type OutputAccount struct {
 	// Like "Code", this field will be populated when a new SC must be created after the transaction.
 	CodeMetadata []byte
 
-	// Data will be populated if there is a transfer to this output account which has to
-	// be further interpreted or verified
-	Data [][]byte
+	// BalanceDelta is by how much the balance should change following the SC execution.
+	// A negative value indicates that balance should decrease.
+	BalanceDelta *big.Int
 
-	// GasLimit will be populated if the call is a smart contract call for another shard
-	GasLimit uint64
-
-	// CallType will be set if the output account must be invoked as a smart contract
-	CallType CallType
+	// OutputTransfers represents the cross shard calls for this account
+	OutputTransfers []OutputTransfer
 
 	// GasUsed will be populated if the contract was called in the same shard
 	GasUsed uint64
+}
+
+// OutputTransfer contains the fields needed to create transfers to another shard
+type OutputTransfer struct {
+	// Value to be transferred
+	Value *big.Int
+	// GasLimit to used for the call
+	GasLimit uint64
+	// Data to be used in cross call
+	Data []byte
+	// CallType is set if it is a smart contract invocation
+	CallType CallType
 }
 
 // LogEntry represents an entry in the contract execution log.
