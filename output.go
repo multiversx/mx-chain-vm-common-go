@@ -51,6 +51,9 @@ type OutputAccount struct {
 	// Like "Code", this field will be populated when a new SC must be created after the transaction.
 	CodeMetadata []byte
 
+	// CodeDeployerAddress will be populated in case of contract deployment or upgrade (both direct and indirect)
+	CodeDeployerAddress []byte
+
 	// BalanceDelta is by how much the balance should change following the SC execution.
 	// A negative value indicates that balance should decrease.
 	BalanceDelta *big.Int
