@@ -32,9 +32,9 @@ type VMInput struct {
 	// the transaction will return FunctionWrongSignature ReturnCode.
 	Arguments [][]byte
 
-	// CallValue is the value (amount of tokens) transferred by the transaction.
-	// The VM knows to subtract this value from sender balance (CallerAddr)
-	// and to add it to the smart contract balance.
+	// CallValue is the eGLD value (amount of tokens) transferred by the transaction.
+	// Before reaching the VM knows this value is subtracted from sender balance (CallerAddr)
+	// and to added to the smart contract balance.
 	// It is often, but not always zero in SC calls.
 	CallValue *big.Int
 
@@ -65,6 +65,15 @@ type VMInput struct {
 
 	// CurrentTxHash
 	CurrentTxHash []byte
+
+	// ESDTValue is the value (amount of tokens) transferred by the transaction.
+	// Before reaching the VM knows this value is subtracted from sender balance (CallerAddr)
+	// and to added to the smart contract balance.
+	// It is often, but not always zero in SC calls.
+	ESDTValue *big.Int
+
+	// ESDTTokenName is the name of the token which was transferred by the transaction to the SC
+	ESDTTokenName []byte
 }
 
 // ContractCreateInput VM input when creating a new contract.
