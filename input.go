@@ -33,7 +33,7 @@ type VMInput struct {
 	Arguments [][]byte
 
 	// CallValue is the eGLD value (amount of tokens) transferred by the transaction.
-	// Before reaching the VM knows this value is subtracted from sender balance (CallerAddr)
+	// Before reaching the VM this value is subtracted from sender balance (CallerAddr)
 	// and to added to the smart contract balance.
 	// It is often, but not always zero in SC calls.
 	CallValue *big.Int
@@ -67,7 +67,7 @@ type VMInput struct {
 	CurrentTxHash []byte
 
 	// ESDTValue is the value (amount of tokens) transferred by the transaction.
-	// Before reaching the VM knows this value is subtracted from sender balance (CallerAddr)
+	// Before reaching the VM this value is subtracted from sender balance (CallerAddr)
 	// and to added to the smart contract balance.
 	// It is often, but not always zero in SC calls.
 	ESDTValue *big.Int
@@ -85,8 +85,6 @@ type ContractCreateInput struct {
 	VMInput
 
 	// ContractCode is the code of the contract being created, assembled into a byte array.
-	// For Iele VM, to convert a .iele file to this assembled byte array, see
-	// src/github.com/ElrondNetwork/elrond-vm/iele/compiler/compiler.AssembleIeleCode
 	ContractCode []byte
 
 	// ContractCodeMetadata is the code metadata of the contract being created.
@@ -101,7 +99,7 @@ type ContractCallInput struct {
 	RecipientAddr []byte
 
 	// Function is the name of the smart contract function that will be called.
-	// The function must be public (e.g. in Iele `define public @functionName(...)`)
+	// The function must be public
 	Function string
 
 	// AllowInitFunction specifies whether calling the initialization method of
