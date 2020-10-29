@@ -60,6 +60,11 @@ type VMInput struct {
 	// so it doesn't cost the sender more to have a higher gas limit.
 	GasProvided uint64
 
+	// GasLocked is the amount of gas that must be kept unused during the current
+	// call, because it will be used later for a callback. This field is only
+	// used during asynchronous calls.
+	GasLocked uint64
+
 	// OriginalTxHash
 	OriginalTxHash []byte
 
