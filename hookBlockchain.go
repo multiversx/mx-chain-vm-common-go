@@ -81,6 +81,9 @@ type BlockchainHook interface {
 
 	// GetCompiledCode returns the compiled code if it finds in the cache or storage
 	GetCompiledCode(codeHash []byte) (bool, []byte)
+
+	// ClearCompiledCodes clears the cache and storage of compiled codes
+	ClearCompiledCodes()
 }
 
 // UserAccountHandler defines a user account
