@@ -7,4 +7,7 @@ type VMExecutionHandler interface {
 
 	// Computes the result of a smart contract call and how the system must change after the execution
 	RunSmartContractCall(input *ContractCallInput) (*VMOutput, error)
+
+	// GasScheduleChange sets a new gas schedule for the VM
+	GasScheduleChange(newGasSchedule map[string]map[string]uint64)
 }
