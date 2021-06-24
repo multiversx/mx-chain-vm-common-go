@@ -96,7 +96,7 @@ type VMInput struct {
 
 // ContractCreateInput VM input when creating a new contract.
 // Here we have no RecipientAddr because
-// the address (PK) of the created account will be provided by the VM.
+// the address (PK) of the created account will be provided by the vmcommon.
 // We also do not need to specify a Function field,
 // because on creation `init` is always called.
 type ContractCreateInput struct {

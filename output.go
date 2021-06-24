@@ -136,7 +136,7 @@ type VMOutput struct {
 	// TODO: investigate what we need to to about these.
 	TouchedAccounts [][]byte
 
-	// Logs is a list of event data logged by the VM.
+	// Logs is a list of event data logged by the vmcommon.
 	// Smart contracts can choose to log certain events programatically.
 	// There are 3 main use cases for events and logs:
 	// 1. smart contract return values for the user interface;
