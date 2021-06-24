@@ -289,11 +289,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsP
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	tailLength := 28 // len(esdtKey) + "identifier"
 	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
-	userAcc.SetDataTrie(&mock.TrieStub{
-		GetCalled: func(_ []byte) ([]byte, error) {
-			return esdtDataBytes, nil
-		},
-	})
+	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
+
 	output, err := eqf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
@@ -337,11 +334,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	tailLength := len(tokenKey) + len("identifier")
 	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
-	userAcc.SetDataTrie(&mock.TrieStub{
-		GetCalled: func(_ []byte) ([]byte, error) {
-			return esdtDataBytes, nil
-		},
-	})
+	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
+
 	output, err := eqf.ProcessBuiltinFunction(
 		userAcc,
 		nil,

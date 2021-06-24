@@ -4,9 +4,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go/core/vmcommon"
-	"github.com/ElrondNetwork/elrond-go/data/state"
-	"github.com/ElrondNetwork/elrond-go/process"
+	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,7 +23,7 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 
 	addr := []byte("addr")
 
-	acc, _ := vmcommon.NewUserAccount(addr)
+	acc := mock.NewUserAccount(addr)
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallerAddr:  dnsAddr,

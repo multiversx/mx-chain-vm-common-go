@@ -6,11 +6,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go/core"
-	"github.com/ElrondNetwork/elrond-go/core/check"
-	"github.com/ElrondNetwork/elrond-go/core/vmcommon"
-	"github.com/ElrondNetwork/elrond-go/data/state"
-	"github.com/ElrondNetwork/elrond-go/process"
+	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/check"
+	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,7 +64,7 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
 
 	addr := []byte("addr")
-	acc, _ := vmcommon.NewUserAccount(addr)
+	acc := mock.NewUserAccount(addr)
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallerAddr:  addr,
@@ -120,7 +118,7 @@ func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
 
 	addr := []byte("addr")
-	acc, _ := vmcommon.NewUserAccount(addr)
+	acc := mock.NewUserAccount(addr)
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallerAddr:  addr,

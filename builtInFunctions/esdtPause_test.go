@@ -4,19 +4,15 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go/core"
-	"github.com/ElrondNetwork/elrond-go/core/vmcommon"
-	"github.com/ElrondNetwork/elrond-go/data/state"
-	"github.com/ElrondNetwork/elrond-go/process"
-	"github.com/ElrondNetwork/elrond-go/process/mock"
-	"github.com/ElrondNetwork/elrond-go/vm"
+	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestESDTPause_ProcessBuiltInFunction(t *testing.T) {
 	t.Parallel()
 
-	acnt, _ := vmcommon.NewUserAccount(vmcommon.SystemAccountAddress)
+	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
 	pauseFunc, _ := NewESDTPauseFunc(&mock.AccountsStub{
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
