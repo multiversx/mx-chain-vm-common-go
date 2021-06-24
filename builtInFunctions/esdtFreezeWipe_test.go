@@ -4,12 +4,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go/core/vmcommon"
-	"github.com/ElrondNetwork/elrond-go/data/esdt"
-	"github.com/ElrondNetwork/elrond-go/data/state"
-	"github.com/ElrondNetwork/elrond-go/process"
-	"github.com/ElrondNetwork/elrond-go/process/mock"
-	"github.com/ElrondNetwork/elrond-go/vm"
+	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
+	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,7 +51,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 	assert.Equal(t, err, ErrNilUserAccount)
 
 	input.RecipientAddr = []byte("dst")
-	acnt, _ := vmcommon.NewUserAccount(input.RecipientAddr)
+	acnt := mock.NewUserAccount(input.RecipientAddr)
 	_, err = freeze.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Nil(t, err)
 
@@ -88,7 +85,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	esdtKey := append(freeze.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(10)}
 	marshaledData, _ := freeze.marshalizer.Marshal(esdtToken)
-	acnt, _ := vmcommon.NewUserAccount(input.RecipientAddr)
+	acnt := mock.NewUserAccount(input.RecipientAddr)
 	_ = acnt.DataTrieTracker().SaveKeyValue(esdtKey, marshaledData)
 
 	_, err = freeze.ProcessBuiltinFunction(nil, acnt, input)

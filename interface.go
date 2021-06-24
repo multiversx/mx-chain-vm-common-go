@@ -211,3 +211,21 @@ type Coordinator interface {
 	CommunicationIdentifier(destShardID uint32) string
 	IsInterfaceNil() bool
 }
+
+// AccountsAdapter is used for the structure that manages the accounts on top of a trie.PatriciaMerkleTrie
+// implementation
+type AccountsAdapter interface {
+	GetExistingAccount(address []byte) (AccountHandler, error)
+	LoadAccount(address []byte) (AccountHandler, error)
+	SaveAccount(account AccountHandler) error
+	RemoveAccount(address []byte) error
+	Commit() ([]byte, error)
+	JournalLen() int
+	RevertToSnapshot(snapshot int) error
+	GetNumCheckpoints() uint32
+	GetCode(codeHash []byte) []byte
+
+	RootHash() ([]byte, error)
+	RecreateTrie(rootHash []byte) error
+	IsInterfaceNil() bool
+}

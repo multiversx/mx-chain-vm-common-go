@@ -5,13 +5,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go/core"
-	"github.com/ElrondNetwork/elrond-go/core/check"
-	"github.com/ElrondNetwork/elrond-go/core/vmcommon"
-	"github.com/ElrondNetwork/elrond-go/data/esdt"
-	"github.com/ElrondNetwork/elrond-go/data/state"
-	"github.com/ElrondNetwork/elrond-go/process"
-	"github.com/ElrondNetwork/elrond-go/process/mock"
+	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/check"
+	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
+	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -251,11 +248,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) 
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	tailLength := 28 // len(esdtKey) + "identifier"
 	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
-	userAcc.SetDataTrie(&mock.TrieStub{
-		GetCalled: func(_ []byte) ([]byte, error) {
-			return esdtDataBytes, nil
-		},
-	})
+	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := eqf.ProcessBuiltinFunction(
 		userAcc,
 		nil,

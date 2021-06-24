@@ -4,12 +4,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go/core/vmcommon"
-	"github.com/ElrondNetwork/elrond-go/data/esdt"
-	"github.com/ElrondNetwork/elrond-go/data/state"
-	"github.com/ElrondNetwork/elrond-go/process"
-	"github.com/ElrondNetwork/elrond-go/process/mock"
-	"github.com/ElrondNetwork/elrond-go/vm"
+	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
+	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -43,7 +40,7 @@ func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 
 	input.RecipientAddr = vmcommon.ESDTSCAddress
 	input.GasProvided = burnFunc.funcGasCost - 1
-	accSnd, _ := vmcommon.NewUserAccount([]byte("dst"))
+	accSnd := mock.NewUserAccount([]byte("dst"))
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Equal(t, err, ErrNotEnoughGas)
 
@@ -75,7 +72,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	key := []byte("key")
 	value := big.NewInt(10).Bytes()
 	input.Arguments = [][]byte{key, value}
-	accSnd, _ := vmcommon.NewUserAccount([]byte("snd"))
+	accSnd := mock.NewUserAccount([]byte("snd"))
 
 	esdtFrozen := ESDTUserMetadata{Frozen: true}
 	esdtNotFrozen := ESDTUserMetadata{Frozen: false}

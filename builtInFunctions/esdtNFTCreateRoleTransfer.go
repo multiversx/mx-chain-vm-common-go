@@ -178,7 +178,6 @@ func (e *esdtNFTCreateRoleTransfer) addCreateRoleToAccount(
 
 	for _, role := range roles.Roles {
 		if bytes.Equal(role, []byte(vmcommon.ESDTRoleNFTCreate)) {
-			log.Error("addCreateRoleToAccount which already has create role")
 			return nil
 		}
 	}

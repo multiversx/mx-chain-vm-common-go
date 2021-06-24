@@ -4,11 +4,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go/core/check"
-	"github.com/ElrondNetwork/elrond-go/data/state"
-
-	"github.com/ElrondNetwork/elrond-go/core/vmcommon"
-	"github.com/ElrondNetwork/elrond-go/process"
+	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/check"
+	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,7 +39,7 @@ func TestChangeOwnerAddress_ProcessBuiltinFunction(t *testing.T) {
 	owner := []byte("send")
 	addr := []byte("addr")
 
-	acc, _ := vmcommon.NewUserAccount(addr)
+	acc := mock.NewUserAccount(addr)
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{CallerAddr: owner, CallValue: big.NewInt(0)},
 	}

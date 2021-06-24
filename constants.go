@@ -24,6 +24,9 @@ const BuiltInFunctionSetUserName = "SetUserName"
 // BuiltInFunctionESDTBurn is the key for the elrond standard digital token burn built-in function
 const BuiltInFunctionESDTBurn = "ESDTBurn"
 
+// BuiltInFunctionESDTNFTCreateRoleTransfer is the key for the elrond standard digital token create role transfer function
+const BuiltInFunctionESDTNFTCreateRoleTransfer = "ESDTNFTCreateRoleTransfer"
+
 // ESDTRoleLocalBurn is the constant string for the local role of burn for ESDT tokens
 const ESDTRoleLocalBurn = "ESDTRoleLocalBurn"
 

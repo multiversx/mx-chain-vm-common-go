@@ -4,9 +4,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go/core/vmcommon"
-	"github.com/ElrondNetwork/elrond-go/data/state"
-	"github.com/ElrondNetwork/elrond-go/process"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +15,7 @@ func TestClaimDeveloperRewards_ProcessBuiltinFunction(t *testing.T) {
 	cdr := claimDeveloperRewards{}
 
 	sender := []byte("sender")
-	acc, _ := vmcommon.NewUserAccount([]byte("addr12"))
+	acc := mock.NewUserAccount([]byte("addr12"))
 
 	vmOutput, err := cdr.ProcessBuiltinFunction(nil, acc, nil)
 	require.Nil(t, vmOutput)
@@ -35,7 +34,7 @@ func TestClaimDeveloperRewards_ProcessBuiltinFunction(t *testing.T) {
 
 	vmOutput, err = cdr.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, vmOutput)
-	require.Equal(t, vmcommon.ErrOperationNotPermitted, err)
+	require.Equal(t, ErrOperationNotPermitted, err)
 
 	acc.OwnerAddress = sender
 	value := big.NewInt(100)
