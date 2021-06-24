@@ -3,7 +3,7 @@ package parsers
 import (
 	"encoding/hex"
 
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type storageUpdatesParser struct {

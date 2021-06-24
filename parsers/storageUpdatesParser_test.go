@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/stretchr/testify/require"
 )
 

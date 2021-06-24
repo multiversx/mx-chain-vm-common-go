@@ -1,7 +1,7 @@
 package parsers
 
 import (
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type deployArgsParser struct {
