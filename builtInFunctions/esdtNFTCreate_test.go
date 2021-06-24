@@ -8,6 +8,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
+	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,30 +18,12 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 	nftCreate, _ := NewESDTNFTCreateFunc(
 		1,
 		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		&mock.PauseHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 	)
 
 	return nftCreate
-}
-
-func createNftCreateWithMockArguments(pauseHandler vmcommon.ESDTPauseHandler) (*esdtNFTCreate, vmcommon.AccountsAdapter) {
-	marshalizer := &mock.MarshalizerMock{}
-	hasher := &mock.HasherMock{}
-	trieStoreManager := createTrieStorageManager(createMemUnit(), marshalizer, hasher)
-	tr, _ := trie.NewTrie(trieStoreManager, marshalizer, hasher, 6)
-	accounts, _ := vmcommon.NewAccountsDB(tr, hasher, marshalizer, factory.NewAccountCreator())
-
-	nftCreate, _ := NewESDTNFTCreateFunc(
-		0,
-		vmcommon.BaseOperationCost{},
-		marshalizer,
-		pauseHandler,
-		&mock.ESDTRoleHandlerStub{},
-	)
-
-	return nftCreate, accounts
 }
 
 func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
@@ -59,7 +42,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 	nftCreate, err = NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		nil,
 		&mock.ESDTRoleHandlerStub{},
 	)
@@ -69,7 +52,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 	nftCreate, err = NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		&mock.PauseHandlerStub{},
 		nil,
 	)
@@ -83,7 +66,7 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 	nftCreate, err := NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		&mock.PauseHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 	)
@@ -171,7 +154,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 	nftCreate, _ := NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		&mock.PauseHandlerStub{},
 		&mock.ESDTRoleHandlerStub{
 			CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
@@ -196,16 +179,18 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	t.Parallel()
 
-	nftCreate, accounts := createNftCreateWithMockArguments(&mock.PauseHandlerStub{})
+	nftCreate, _ := NewESDTNFTCreateFunc(
+		0,
+		vmcommon.BaseOperationCost{},
+		&mock.MarshalizerMock{},
+		&mock.PauseHandlerStub{},
+		&mock.ESDTRoleHandlerStub{},
+	)
 	address := bytes.Repeat([]byte{1}, 32)
-	sender, _ := accounts.LoadAccount(address)
+	sender := mock.NewUserAccount(address)
 	//add some data in the trie, otherwise the creation will fail (it won't happen in real case usage as the create NFT
 	//will be called after the creation permission was set in the account's data)
-	_ = sender.(vmcommon.UserAccountHandler).DataTrieTracker().SaveKeyValue([]byte("key"), []byte("value"))
-	_ = accounts.SaveAccount(sender)
-	_, _ = accounts.Commit()
-
-	sender, _ = accounts.LoadAccount(address)
+	_ = sender.DataTrieTracker().SaveKeyValue([]byte("key"), []byte("value"))
 
 	token := "token"
 	quantity := big.NewInt(2)
@@ -231,14 +216,11 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		},
 		RecipientAddr: sender.AddressBytes(),
 	}
-	vmOutput, err := nftCreate.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
+	vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
 	assert.Nil(t, err)
 	require.NotNil(t, vmOutput)
 
-	_ = accounts.SaveAccount(sender)
-	_, _ = accounts.Commit()
-
-	createdEsdt, latestNonce := readNFTData(t, accounts, nftCreate.marshalizer, []byte(token), 1, address)
+	createdEsdt, latestNonce := readNFTData(t, sender, nftCreate.marshalizer, []byte(token), 1, address)
 	assert.Equal(t, uint64(1), latestNonce)
 	expectedEsdt := &esdt.ESDigitalToken{
 		Type:       uint32(vmcommon.NonFungible),
@@ -257,10 +239,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	assert.Equal(t, expectedEsdt, createdEsdt)
 }
 
-func readNFTData(t *testing.T, accounts vmcommon.AccountsAdapter, marshalizer vmcommon.Marshalizer, tokenID []byte, nonce uint64, address []byte) (*esdt.ESDigitalToken, uint64) {
-	account, err := accounts.LoadAccount(address)
-	require.Nil(t, err)
-
+func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshalizer vmcommon.Marshalizer, tokenID []byte, nonce uint64, address []byte) (*esdt.ESDigitalToken, uint64) {
 	nonceKey := getNonceKey(tokenID)
 	latestNonceBytes, err := account.(vmcommon.UserAccountHandler).DataTrieTracker().RetrieveValue(nonceKey)
 	require.Nil(t, err)

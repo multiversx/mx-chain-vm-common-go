@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
+	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -81,11 +81,8 @@ func TestESDTNFTCreateRoleTransfer_ProcessWithErrors(t *testing.T) {
 
 func createESDTNFTCreateRoleTransferComponent(t *testing.T) *esdtNFTCreateRoleTransfer {
 	marshalizer := &mock.MarshalizerMock{}
-	hasher := &mock.HasherMock{}
-	shardCoordinator, _ := vmcommon.NewMultiShardCoordinator(1, 0)
-	trieStoreManager := createTrieStorageManager(createMemUnit(), marshalizer, hasher)
-	tr, _ := trie.NewTrie(trieStoreManager, marshalizer, hasher, 6)
-	accounts, _ := vmcommon.NewAccountsDB(tr, hasher, marshalizer, factory.NewAccountCreator())
+	shardCoordinator := mock.NewMultiShardsCoordinatorMock(2)
+	accounts := &mock.AccountsStub{}
 
 	e, err := NewESDTNFTCreateRoleTransfer(marshalizer, accounts, shardCoordinator)
 	assert.Nil(t, err)
@@ -110,7 +107,7 @@ func TestESDTNFTCreateRoleTransfer_ProcessAtCurrentShard(t *testing.T) {
 	userAcc := destAcc.(vmcommon.UserAccountHandler)
 	vmOutput, err := e.ProcessBuiltinFunction(nil, userAcc, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, vmcommon.ErrNilTrie)
+	assert.Equal(t, err, ErrNotEnoughGas)
 
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
 	err = saveRolesToAccount(userAcc, esdtTokenRoleKey, &esdt.ESDTRoles{Roles: [][]byte{[]byte(vmcommon.ESDTRoleNFTCreate), []byte(vmcommon.ESDTRoleNFTAddQuantity)}}, e.marshalizer)

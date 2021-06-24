@@ -7,6 +7,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
+	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -247,11 +248,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	tailLength := 28 // len(esdtKey) + "identifier"
 	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
-	userAcc.SetDataTrie(&mock.TrieStub{
-		GetCalled: func(_ []byte) ([]byte, error) {
-			return esdtDataBytes, nil
-		},
-	})
+	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
@@ -290,11 +287,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionInvalidBurnQuantity(t *testing.T)
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	tailLength := 28 // len(esdtKey) + "identifier"
 	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
-	userAcc.SetDataTrie(&mock.TrieStub{
-		GetCalled: func(_ []byte) ([]byte, error) {
-			return esdtDataBytes, nil
-		},
-	})
+	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
@@ -335,11 +328,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaus
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	tailLength := 28 // len(esdtKey) + "identifier"
 	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
-	userAcc.SetDataTrie(&mock.TrieStub{
-		GetCalled: func(_ []byte) ([]byte, error) {
-			return esdtDataBytes, nil
-		},
-	})
+	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
@@ -383,11 +372,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	tailLength := len(tokenKey) + len("identifier")
 	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
-	userAcc.SetDataTrie(&mock.TrieStub{
-		GetCalled: func(_ []byte) ([]byte, error) {
-			return esdtDataBytes, nil
-		},
-	})
+	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
