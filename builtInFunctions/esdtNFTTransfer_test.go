@@ -523,6 +523,7 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
+	destinationAddress[31] = 0
 	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -560,8 +561,8 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 	_ = transferFunc.accounts.SaveAccount(destination)
 	_, _ = transferFunc.accounts.Commit()
 
-	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), sender.(vmcommon.UserAccountHandler), vmInput)
-	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
+	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	assert.Equal(t, ErrESDTIsFrozenForAccount, err)
 }
 
 func TestESDTNFTTransfer_NotEnoughGas(t *testing.T) {
