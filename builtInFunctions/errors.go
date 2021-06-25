@@ -193,3 +193,18 @@ var ErrWrongNFTOnDestination = errors.New("wrong NFT on destination")
 
 // ErrNewNFTDataOnSenderAddress signals that a new NFT data was found on the sender address
 var ErrNewNFTDataOnSenderAddress = errors.New("new NFT data on sender")
+
+// ErrNilContainerElement signals when trying to add a nil element in the container
+var ErrNilContainerElement = errors.New("element cannot be nil")
+
+// ErrInvalidContainerKey signals that an element does not exist in the container's map
+var ErrInvalidContainerKey = errors.New("element does not exist in container")
+
+// ErrContainerKeyAlreadyExists signals that an element was already set in the container's map
+var ErrContainerKeyAlreadyExists = errors.New("provided key already exists in container")
+
+// ErrWrongTypeInContainer signals that a wrong type of object was found in container
+var ErrWrongTypeInContainer = errors.New("wrong type of object inside container")
+
+// ErrEmptyFunctionName signals that an empty function name has been provided
+var ErrEmptyFunctionName = errors.New("empty function name")
