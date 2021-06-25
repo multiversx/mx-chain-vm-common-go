@@ -57,6 +57,15 @@ const ESDTRoleNFTAddQuantity = "ESDTRoleNFTAddQuantity"
 // ESDTRoleNFTBurn is the constant string for the local role of burn for ESDT NFT tokens
 const ESDTRoleNFTBurn = "ESDTRoleNFTBurn"
 
+// BuiltInFunctionESDTNFTCreate is the key for the elrond standard digital token NFT create built-in function
+const BuiltInFunctionESDTNFTCreate = "ESDTNFTCreate"
+
+// BuiltInFunctionESDTNFTAddQuantity is the key for the elrond standard digital token NFT add quantity built-in function
+const BuiltInFunctionESDTNFTAddQuantity = "ESDTNFTAddQuantity"
+
+// BuiltInFunctionESDTNFTBurn is the key for the elrond standard digital token NFT burn built-in function
+const BuiltInFunctionESDTNFTBurn = "ESDTNFTBurn"
+
 // ESDTType defines the possible types in case of ESDT tokens
 type ESDTType uint32
 

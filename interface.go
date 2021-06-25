@@ -247,3 +247,9 @@ type BuiltInFunctionContainer interface {
 	Keys() map[string]struct{}
 	IsInterfaceNil() bool
 }
+
+// AcceptPayableHandler defines the methods to accept a payable handler through a set function
+type AcceptPayableHandler interface {
+	SetPayableHandler(payableHandler PayableHandler) error
+	IsInterfaceNil() bool
+}

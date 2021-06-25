@@ -315,7 +315,8 @@ func getESDTDataFromKey(
 	return esdtData, nil
 }
 
-func (e *esdtTransfer) setPayableHandler(payableHandler vmcommon.PayableHandler) error {
+// SetPayableHandler will set the payable handler to the function
+func (e *esdtTransfer) SetPayableHandler(payableHandler vmcommon.PayableHandler) error {
 	if check.IfNil(payableHandler) {
 		return ErrNilPayableHandler
 	}

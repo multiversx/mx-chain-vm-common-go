@@ -201,11 +201,11 @@ func TestEsdtNFTTransfer_SetPayable(t *testing.T) {
 	t.Parallel()
 
 	nftTransfer := createNftTransferWithStubArguments()
-	err := nftTransfer.setPayableHandler(nil)
+	err := nftTransfer.SetPayableHandler(nil)
 	assert.Equal(t, ErrNilPayableHandler, err)
 
 	handler := &mock.PayableHandlerStub{}
-	err = nftTransfer.setPayableHandler(handler)
+	err = nftTransfer.SetPayableHandler(handler)
 	assert.Nil(t, err)
 	assert.True(t, handler == nftTransfer.payableHandler) //pointer testing
 }
@@ -266,7 +266,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 	t.Parallel()
 
 	nftTransfer := createNftTransferWithMockArguments(0, 1, &mock.PauseHandlerStub{})
-	_ = nftTransfer.setPayableHandler(
+	_ = nftTransfer.SetPayableHandler(
 		&mock.PayableHandlerStub{
 			IsPayableCalled: func(address []byte) (bool, error) {
 				return true, nil
@@ -342,10 +342,10 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoesNotHo
 	}
 
 	nftTransferSenderShard := createNftTransferWithMockArguments(1, 2, &mock.PauseHandlerStub{})
-	_ = nftTransferSenderShard.setPayableHandler(payableHandler)
+	_ = nftTransferSenderShard.SetPayableHandler(payableHandler)
 
 	nftTransferDestinationShard := createNftTransferWithMockArguments(0, 2, &mock.PauseHandlerStub{})
-	_ = nftTransferDestinationShard.setPayableHandler(payableHandler)
+	_ = nftTransferDestinationShard.SetPayableHandler(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{1}, 32)
 	destinationAddress := bytes.Repeat([]byte{0}, 32)
@@ -434,10 +434,10 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(
 	}
 
 	nftTransferSenderShard := createNftTransferWithMockArguments(0, 2, &mock.PauseHandlerStub{})
-	_ = nftTransferSenderShard.setPayableHandler(payableHandler)
+	_ = nftTransferSenderShard.SetPayableHandler(payableHandler)
 
 	nftTransferDestinationShard := createNftTransferWithMockArguments(1, 2, &mock.PauseHandlerStub{})
-	_ = nftTransferDestinationShard.setPayableHandler(payableHandler)
+	_ = nftTransferDestinationShard.SetPayableHandler(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
@@ -519,7 +519,7 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 	t.Parallel()
 
 	transferFunc := createNftTransferWithMockArguments(0, 1, &mock.PauseHandlerStub{})
-	_ = transferFunc.setPayableHandler(&mock.PayableHandlerStub{})
+	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
@@ -569,7 +569,7 @@ func TestESDTNFTTransfer_NotEnoughGas(t *testing.T) {
 	t.Parallel()
 
 	transferFunc := createNftTransferWithMockArguments(0, 1, &mock.PauseHandlerStub{})
-	_ = transferFunc.setPayableHandler(&mock.PayableHandlerStub{})
+	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)

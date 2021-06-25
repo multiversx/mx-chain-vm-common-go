@@ -152,10 +152,13 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTCreate, vmInput.CallerAddr, tokenID, nextNonce)
+
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - gasToUse,
 		ReturnData:   [][]byte{big.NewInt(0).SetUint64(nextNonce).Bytes()},
+		Logs:         []*vmcommon.LogEntry{logEntry},
 	}
 	return vmOutput, nil
 }

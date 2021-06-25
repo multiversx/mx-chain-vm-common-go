@@ -62,7 +62,8 @@ func NewESDTNFTTransferFunc(
 	return e, nil
 }
 
-func (e *esdtNFTTransfer) setPayableHandler(payableHandler vmcommon.PayableHandler) error {
+// SetPayableHandler will set the payable handler to the function
+func (e *esdtNFTTransfer) SetPayableHandler(payableHandler vmcommon.PayableHandler) error {
 	if check.IfNil(payableHandler) {
 		return ErrNilPayableHandler
 	}
@@ -147,6 +148,11 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 			vmInput.CallType,
 			vmOutput)
 	}
+
+	tokenNonce := esdtTransferData.TokenMetaData.Nonce
+	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTTransfer, vmInput.CallerAddr, vmInput.Arguments[0], tokenNonce)
+	logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
+	vmOutput.Logs = []*vmcommon.LogEntry{logEntry}
 
 	return vmOutput, nil
 }
