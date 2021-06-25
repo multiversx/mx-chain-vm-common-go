@@ -246,8 +246,6 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
-	tailLength := 28 // len(esdtKey) + "identifier"
-	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
 	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
@@ -285,8 +283,6 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionInvalidBurnQuantity(t *testing.T)
 		Value: initialQuantity,
 	}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
-	tailLength := 28 // len(esdtKey) + "identifier"
-	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
 	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
@@ -326,8 +322,6 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaus
 		Value: big.NewInt(10),
 	}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
-	tailLength := 28 // len(esdtKey) + "identifier"
-	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
 	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
@@ -370,9 +364,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
-	tailLength := len(tokenKey) + len("identifier")
-	esdtDataBytes = append(esdtDataBytes, make([]byte, tailLength)...)
-	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
+	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+string(tokenKey)), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
