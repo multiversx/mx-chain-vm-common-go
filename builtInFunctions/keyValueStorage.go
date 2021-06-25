@@ -70,7 +70,7 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 			return nil, fmt.Errorf("%w it is not allowed to save under key %s", ErrOperationNotPermitted, key)
 		}
 
-		oldValue, _ := acntDst.DataTrieTracker().RetrieveValue(key)
+		oldValue, _ := acntDst.AccountDataHandler().RetrieveValue(key)
 		if bytes.Equal(oldValue, value) {
 			continue
 		}
@@ -87,7 +87,7 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 			return nil, ErrNotEnoughGas
 		}
 
-		err = acntDst.DataTrieTracker().SaveKeyValue(key, value)
+		err = acntDst.AccountDataHandler().SaveKeyValue(key, value)
 		if err != nil {
 			return nil, err
 		}

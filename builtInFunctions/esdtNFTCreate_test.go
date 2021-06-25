@@ -190,7 +190,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	sender := mock.NewUserAccount(address)
 	//add some data in the trie, otherwise the creation will fail (it won't happen in real case usage as the create NFT
 	//will be called after the creation permission was set in the account's data)
-	_ = sender.DataTrieTracker().SaveKeyValue([]byte("key"), []byte("value"))
+	_ = sender.AccountDataHandler().SaveKeyValue([]byte("key"), []byte("value"))
 
 	token := "token"
 	quantity := big.NewInt(2)
@@ -239,16 +239,16 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	assert.Equal(t, expectedEsdt, createdEsdt)
 }
 
-func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshalizer vmcommon.Marshalizer, tokenID []byte, nonce uint64, address []byte) (*esdt.ESDigitalToken, uint64) {
+func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshalizer vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
 	nonceKey := getNonceKey(tokenID)
-	latestNonceBytes, err := account.(vmcommon.UserAccountHandler).DataTrieTracker().RetrieveValue(nonceKey)
+	latestNonceBytes, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(nonceKey)
 	require.Nil(t, err)
 	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
 
 	createdTokenID := []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier)
 	createdTokenID = append(createdTokenID, tokenID...)
 	tokenKey := computeESDTNFTTokenKey(createdTokenID, nonce)
-	data, err := account.(vmcommon.UserAccountHandler).DataTrieTracker().RetrieveValue(tokenKey)
+	data, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(tokenKey)
 	require.Nil(t, err)
 
 	esdtData := &esdt.ESDigitalToken{}

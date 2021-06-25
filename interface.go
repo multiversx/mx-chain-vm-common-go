@@ -146,7 +146,7 @@ type UserAccountHandler interface {
 	GetCodeMetadata() []byte
 	GetCodeHash() []byte
 	GetRootHash() []byte
-	DataTrieTracker() DataTrieTracker
+	AccountDataHandler() AccountDataHandler
 	AddToBalance(value *big.Int) error
 	GetBalance() *big.Int
 	ClaimDeveloperRewards([]byte) (*big.Int, error)
@@ -159,10 +159,8 @@ type UserAccountHandler interface {
 	AccountHandler
 }
 
-// DataTrieTracker models what how to manipulate data held by a SC account
-type DataTrieTracker interface {
-	ClearDataCaches()
-	DirtyData() map[string][]byte
+// AccountDataHandler models what how to manipulate data held by a SC account
+type AccountDataHandler interface {
 	RetrieveValue(key []byte) ([]byte, error)
 	SaveKeyValue(key []byte, value []byte) error
 	IsInterfaceNil() bool

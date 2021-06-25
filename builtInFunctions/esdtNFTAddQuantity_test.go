@@ -246,7 +246,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
-	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
+	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := eqf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
@@ -285,7 +285,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsP
 		Value: big.NewInt(10),
 	}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
-	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
+	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 
 	output, err := eqf.ProcessBuiltinFunction(
 		userAcc,
@@ -328,7 +328,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
-	_ = userAcc.DataTrieTracker().SaveKeyValue(tokenKey, esdtDataBytes)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 
 	output, err := eqf.ProcessBuiltinFunction(
 		userAcc,
@@ -348,7 +348,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 
-	res, err := userAcc.DataTrieTracker().RetrieveValue([]byte(key))
+	res, err := userAcc.AccountDataHandler().RetrieveValue([]byte(key))
 	require.NoError(t, err)
 	require.NotNil(t, res)
 

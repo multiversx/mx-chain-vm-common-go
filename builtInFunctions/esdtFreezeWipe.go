@@ -88,7 +88,7 @@ func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, t
 		return ErrCannotWipeAccountNotFrozen
 	}
 
-	return acntDst.DataTrieTracker().SaveKeyValue(tokenKey, nil)
+	return acntDst.AccountDataHandler().SaveKeyValue(tokenKey, nil)
 }
 
 func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) error {

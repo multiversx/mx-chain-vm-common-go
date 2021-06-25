@@ -65,7 +65,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldErr(t *testing.T) {
 	esdtRolesF, _ := NewESDTRolesFunc(&mock.MarshalizerMock{Fail: true}, false)
 
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, &mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					return nil, nil
@@ -89,7 +89,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldWorkEvenIfAccntTrieI
 	esdtRolesF, _ := NewESDTRolesFunc(&mock.MarshalizerMock{}, false)
 
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, &mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, error) {
 					return nil, nil
@@ -118,7 +118,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesShouldWork(t *testing.T) {
 	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, true)
 
 	acc := &mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{}
@@ -151,7 +151,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_SaveFailedShouldErr(t *testing.T) {
 
 	localErr := errors.New("local err")
 	acc := &mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{}
@@ -180,7 +180,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesDoesNotExistsShouldWork(t *t
 	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
 
 	acc := &mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{}
@@ -212,7 +212,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesShouldWork(t *testing.T) {
 	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
 
 	acc := &mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{
@@ -256,7 +256,7 @@ func TestEsdtRoles_CheckAllowedToExecuteCannotGetESDTRole(t *testing.T) {
 	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					return nil, nil
@@ -274,7 +274,7 @@ func TestEsdtRoles_CheckAllowedToExecuteIsNewNotAllowed(t *testing.T) {
 	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					return nil, nil
@@ -292,7 +292,7 @@ func TestEsdtRoles_CheckAllowed_ShouldWork(t *testing.T) {
 	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{
@@ -313,7 +313,7 @@ func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{

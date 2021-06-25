@@ -285,7 +285,7 @@ func saveESDTData(
 ) error {
 	isValueZero := esdtData.Value.Cmp(zero) == 0
 	if isValueZero && arePropertiesEmpty(esdtData.Properties) {
-		return userAcnt.DataTrieTracker().SaveKeyValue(key, nil)
+		return userAcnt.AccountDataHandler().SaveKeyValue(key, nil)
 	}
 
 	marshaledData, err := marshalizer.Marshal(esdtData)
@@ -293,7 +293,7 @@ func saveESDTData(
 		return err
 	}
 
-	return userAcnt.DataTrieTracker().SaveKeyValue(key, marshaledData)
+	return userAcnt.AccountDataHandler().SaveKeyValue(key, marshaledData)
 }
 
 func getESDTDataFromKey(
@@ -302,7 +302,7 @@ func getESDTDataFromKey(
 	marshalizer vmcommon.Marshalizer,
 ) (*esdt.ESDigitalToken, error) {
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(vmcommon.Fungible)}
-	marshaledData, err := userAcnt.DataTrieTracker().RetrieveValue(key)
+	marshaledData, err := userAcnt.AccountDataHandler().RetrieveValue(key)
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, nil
 	}

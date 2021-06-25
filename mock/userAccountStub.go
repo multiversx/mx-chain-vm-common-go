@@ -8,8 +8,8 @@ import (
 
 // UserAccountStub -
 type UserAccountStub struct {
-	AddToBalanceCalled    func(value *big.Int) error
-	DataTrieTrackerCalled func() vmcommon.DataTrieTracker
+	AddToBalanceCalled       func(value *big.Int) error
+	AccountDataHandlerCalled func() vmcommon.AccountDataHandler
 }
 
 // HasNewCode -
@@ -103,7 +103,7 @@ func (u *UserAccountStub) GetCodeMetadata() []byte {
 }
 
 // SetCodeHash -
-func (u *UserAccountStub) SetCodeHash([]byte) {
+func (u *UserAccountStub) SetCodeHash(_ []byte) {
 
 }
 
@@ -113,7 +113,7 @@ func (u *UserAccountStub) GetCodeHash() []byte {
 }
 
 // SetRootHash -
-func (u *UserAccountStub) SetRootHash([]byte) {
+func (u *UserAccountStub) SetRootHash(_ []byte) {
 
 }
 
@@ -123,9 +123,9 @@ func (u *UserAccountStub) GetRootHash() []byte {
 }
 
 // DataTrieTracker -
-func (u *UserAccountStub) DataTrieTracker() vmcommon.DataTrieTracker {
-	if u.DataTrieTrackerCalled != nil {
-		return u.DataTrieTrackerCalled()
+func (u *UserAccountStub) AccountDataHandler() vmcommon.AccountDataHandler {
+	if u.AccountDataHandlerCalled != nil {
+		return u.AccountDataHandlerCalled()
 	}
 	return nil
 }

@@ -73,10 +73,10 @@ func (e *esdtPause) togglePause(token []byte) error {
 		return err
 	}
 
-	val, _ := systemSCAccount.DataTrieTracker().RetrieveValue(token)
+	val, _ := systemSCAccount.AccountDataHandler().RetrieveValue(token)
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	esdtMetaData.Paused = e.pause
-	err = systemSCAccount.DataTrieTracker().SaveKeyValue(token, esdtMetaData.ToBytes())
+	err = systemSCAccount.AccountDataHandler().SaveKeyValue(token, esdtMetaData.ToBytes())
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (e *esdtPause) IsPaused(pauseKey []byte) bool {
 		return false
 	}
 
-	val, _ := systemSCAccount.DataTrieTracker().RetrieveValue(pauseKey)
+	val, _ := systemSCAccount.AccountDataHandler().RetrieveValue(pauseKey)
 	if len(val) != lengthOfESDTMetadata {
 		return false
 	}

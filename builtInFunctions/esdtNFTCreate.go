@@ -165,7 +165,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 
 func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, error) {
 	nonceKey := getNonceKey(tokenID)
-	nonceData, err := acnt.DataTrieTracker().RetrieveValue(nonceKey)
+	nonceData, err := acnt.AccountDataHandler().RetrieveValue(nonceKey)
 	if err != nil {
 		return 0, err
 	}
@@ -179,7 +179,7 @@ func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, e
 
 func saveLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte, nonce uint64) error {
 	nonceKey := getNonceKey(tokenID)
-	return acnt.DataTrieTracker().SaveKeyValue(nonceKey, big.NewInt(0).SetUint64(nonce).Bytes())
+	return acnt.AccountDataHandler().SaveKeyValue(nonceKey, big.NewInt(0).SetUint64(nonce).Bytes())
 }
 
 func computeESDTNFTTokenKey(esdtTokenKey []byte, nonce uint64) []byte {
@@ -215,7 +215,7 @@ func getESDTNFTTokenOnDestination(
 ) (*esdt.ESDigitalToken, bool, error) {
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(vmcommon.Fungible)}
-	marshaledData, err := accnt.DataTrieTracker().RetrieveValue(esdtNFTTokenKey)
+	marshaledData, err := accnt.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, true, nil
 	}
@@ -252,7 +252,7 @@ func saveESDTNFTToken(
 	}
 
 	if esdtData.Value.Cmp(zero) <= 0 {
-		return acnt.DataTrieTracker().SaveKeyValue(esdtNFTTokenKey, nil)
+		return acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
 
 	marshaledData, err := marshalizer.Marshal(esdtData)
@@ -260,7 +260,7 @@ func saveESDTNFTToken(
 		return err
 	}
 
-	return acnt.DataTrieTracker().SaveKeyValue(esdtNFTTokenKey, marshaledData)
+	return acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
 }
 
 func checkESDTNFTCreateBurnAddInput(

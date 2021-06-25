@@ -150,7 +150,7 @@ func (awm *AccountWrapMock) AddressBytes() []byte {
 }
 
 // DataTrieTracker -
-func (awm *AccountWrapMock) DataTrieTracker() vmcommon.DataTrieTracker {
+func (awm *AccountWrapMock) AccountDataHandler() vmcommon.AccountDataHandler {
 	return awm
 }
 

@@ -100,7 +100,7 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t 
 
 	localErr := errors.New("local err")
 	_, err := esdtLocalBurnF.ProcessBuiltinFunction(&mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					return nil, localErr
@@ -127,7 +127,7 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	})
 
 	sndAccout := &mock.UserAccountStub{
-		DataTrieTrackerCalled: func() vmcommon.DataTrieTracker {
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}

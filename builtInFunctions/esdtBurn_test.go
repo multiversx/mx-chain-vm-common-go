@@ -80,7 +80,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	esdtKey := append(burnFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(100), Properties: esdtFrozen.ToBytes()}
 	marshaledData, _ := marshalizer.Marshal(esdtToken)
-	_ = accSnd.DataTrieTracker().SaveKeyValue(esdtKey, marshaledData)
+	_ = accSnd.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 
 	_, err := burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
@@ -90,7 +90,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	}
 	esdtToken = &esdt.ESDigitalToken{Value: big.NewInt(100), Properties: esdtNotFrozen.ToBytes()}
 	marshaledData, _ = marshalizer.Marshal(esdtToken)
-	_ = accSnd.DataTrieTracker().SaveKeyValue(esdtKey, marshaledData)
+	_ = accSnd.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Equal(t, err, ErrESDTTokenIsPaused)
@@ -101,7 +101,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Nil(t, err)
 
-	marshaledData, _ = accSnd.DataTrieTracker().RetrieveValue(esdtKey)
+	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshalizer.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 
@@ -115,6 +115,6 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Nil(t, err)
 
-	marshaledData, _ = accSnd.DataTrieTracker().RetrieveValue(esdtKey)
+	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	assert.Equal(t, len(marshaledData), 0)
 }

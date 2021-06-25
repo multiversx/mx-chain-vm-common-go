@@ -196,7 +196,7 @@ func saveRolesToAccount(
 	if err != nil {
 		return err
 	}
-	err = acntDst.DataTrieTracker().SaveKeyValue(esdtTokenRoleKey, marshaledData)
+	err = acntDst.AccountDataHandler().SaveKeyValue(esdtTokenRoleKey, marshaledData)
 	if err != nil {
 		return err
 	}

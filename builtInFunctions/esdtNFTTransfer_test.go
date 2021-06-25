@@ -117,7 +117,7 @@ func createESDTToken(
 	}
 	buff, _ := marshalizer.Marshal(esdtData)
 
-	_ = account.DataTrieTracker().SaveKeyValue(esdtNFTTokenKey, buff)
+	_ = account.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, buff)
 }
 
 func testNFTTokenShouldExist(
@@ -557,7 +557,7 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 	esdtKey := computeESDTNFTTokenKey(tokenId, tokenNonce)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(0), Properties: esdtFrozen.ToBytes()}
 	marshaledData, _ := transferFunc.marshalizer.Marshal(esdtToken)
-	_ = destination.(vmcommon.UserAccountHandler).DataTrieTracker().SaveKeyValue(esdtKey, marshaledData)
+	_ = destination.(vmcommon.UserAccountHandler).AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 	_ = transferFunc.accounts.SaveAccount(destination)
 	_, _ = transferFunc.accounts.Commit()
 
