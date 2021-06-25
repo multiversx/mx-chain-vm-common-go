@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,7 +41,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionErrors(t *testing.T) {
 	assert.Nil(t, err)
 
 	input.GasProvided = transferFunc.funcGasCost - 1
-	accSnd := vmcommon.NewEmptyUserAccount()
+	accSnd := mock.NewUserAccount([]byte("address"))
 	_, err = transferFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Equal(t, err, ErrNotEnoughGas)
 
@@ -69,8 +70,8 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 	key := []byte("key")
 	value := big.NewInt(10).Bytes()
 	input.Arguments = [][]byte{key, value}
-	accSnd, _ := vmcommon.NewUserAccount([]byte("snd"))
-	accDst, _ := vmcommon.NewUserAccount([]byte("dst"))
+	accSnd := mock.NewUserAccount([]byte("snd"))
+	accDst := mock.NewUserAccount([]byte("dst"))
 
 	_, err := transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
 	assert.Equal(t, err, ErrInsufficientFunds)
@@ -107,7 +108,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionSenderInShard(t *testing.T) {
 	key := []byte("key")
 	value := big.NewInt(10).Bytes()
 	input.Arguments = [][]byte{key, value}
-	accSnd, _ := vmcommon.NewUserAccount([]byte("snd"))
+	accSnd := mock.NewUserAccount([]byte("snd"))
 
 	esdtKey := append(transferFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(100)}
@@ -137,7 +138,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionDestInShard(t *testing.T) {
 	key := []byte("key")
 	value := big.NewInt(10).Bytes()
 	input.Arguments = [][]byte{key, value}
-	accDst, _ := vmcommon.NewUserAccount([]byte("dst"))
+	accDst := mock.NewUserAccount([]byte("dst"))
 
 	vmOutput, err := transferFunc.ProcessBuiltinFunction(nil, accDst, input)
 	assert.Nil(t, err)
@@ -167,8 +168,8 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	key := []byte("key")
 	value := big.NewInt(10).Bytes()
 	input.Arguments = [][]byte{key, value}
-	accSnd, _ := vmcommon.NewUserAccount([]byte("snd"))
-	accDst, _ := vmcommon.NewUserAccount([]byte("dst"))
+	accSnd := mock.NewUserAccount([]byte("snd"))
+	accDst := mock.NewUserAccount([]byte("dst"))
 
 	esdtFrozen := ESDTUserMetadata{Frozen: true}
 	esdtNotFrozen := ESDTUserMetadata{Frozen: false}
@@ -200,7 +201,7 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	marshaledData, _ = marshalizer.Marshal(esdtToken)
 	_ = accDst.DataTrieTracker().SaveKeyValue(esdtKey, marshaledData)
 
-	systemAccount, _ := vmcommon.NewUserAccount(vmcommon.SystemAccountAddress)
+	systemAccount := mock.NewUserAccount(vmcommon.SystemAccountAddress)
 	esdtGlobal := ESDTGlobalMetadata{Paused: true}
 	pauseKey := []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier + string(key))
 	_ = systemAccount.DataTrieTracker().SaveKeyValue(pauseKey, esdtGlobal.ToBytes())
@@ -233,8 +234,8 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	key := []byte("key")
 	value := big.NewInt(10).Bytes()
 	input.Arguments = [][]byte{key, value}
-	accSnd, _ := vmcommon.NewUserAccount([]byte("snd"))
-	accDst, _ := vmcommon.NewUserAccount(vmcommon.ESDTSCAddress)
+	accSnd := mock.NewUserAccount([]byte("snd"))
+	accDst := mock.NewUserAccount(vmcommon.ESDTSCAddress)
 
 	esdtKey := append(transferFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(100)}

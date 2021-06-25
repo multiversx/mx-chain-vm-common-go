@@ -82,7 +82,23 @@ func TestESDTNFTCreateRoleTransfer_ProcessWithErrors(t *testing.T) {
 func createESDTNFTCreateRoleTransferComponent(t *testing.T) *esdtNFTCreateRoleTransfer {
 	marshalizer := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(2)
-	accounts := &mock.AccountsStub{}
+	mapAccounts := make(map[string]vmcommon.UserAccountHandler)
+	accounts := &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			_, ok := mapAccounts[string(address)]
+			if !ok {
+				mapAccounts[string(address)] = mock.NewUserAccount(address)
+			}
+			return mapAccounts[string(address)], nil
+		},
+		GetExistingAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			_, ok := mapAccounts[string(address)]
+			if !ok {
+				mapAccounts[string(address)] = mock.NewUserAccount(address)
+			}
+			return mapAccounts[string(address)], nil
+		},
+	}
 
 	e, err := NewESDTNFTCreateRoleTransfer(marshalizer, accounts, shardCoordinator)
 	assert.Nil(t, err)

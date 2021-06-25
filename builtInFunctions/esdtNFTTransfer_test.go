@@ -3,13 +3,13 @@ package builtInFunctions
 import (
 	"bytes"
 	"encoding/hex"
-	"io/ioutil"
 	"math/big"
 	"strings"
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
+	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +20,7 @@ var keyPrefix = []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdent
 func createNftTransferWithStubArguments() *esdtNFTTransfer {
 	nftTransfer, _ := NewESDTNFTTransferFunc(
 		0,
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		&mock.PauseHandlerStub{},
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
@@ -30,44 +30,27 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 	return nftTransfer
 }
 
-func createMemUnit() storage.Storer {
-	capacity := uint32(10)
-	shards := uint32(1)
-	sizeInBytes := uint64(0)
-	cache, _ := storageUnit.NewCache(storageUnit.CacheConfig{Type: storageUnit.LRUCache, Capacity: capacity, Shards: shards, SizeInBytes: sizeInBytes})
-	persist, _ := memorydb.NewlruDB(100000)
-	unit, _ := storageUnit.NewStorageUnit(cache, persist)
-
-	return unit
-}
-
-func createTrieStorageManager(store storage.Storer, marshalizer vmcommon.Marshalizer, hasher hashing.Hasher) data.StorageManager {
-	ewl, _ := evictionWaitingList.NewEvictionWaitingList(100, memorydb.New(), marshalizer)
-	tempDir, _ := ioutil.TempDir("", "process")
-	cfg := config.DBConfig{
-		FilePath:          tempDir,
-		Type:              string(storageUnit.LvlDBSerial),
-		BatchDelaySeconds: 4,
-		MaxBatchSize:      10000,
-		MaxOpenFiles:      10,
-	}
-	generalCfg := config.TrieStorageManagerConfig{
-		PruningBufferLen:   1000,
-		SnapshotsBufferLen: 10,
-		MaxSnapshots:       2,
-	}
-	trieStorageManager, _ := trie.NewTrieStorageManager(store, marshalizer, hasher, cfg, ewl, generalCfg)
-
-	return trieStorageManager
-}
-
-func createNftTransferWithMockArguments(shardID uint32, numShards uint32, pauseHandler vmcommon.ESDTPauseHandler) *esdtNFTTransfer {
+func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, pauseHandler vmcommon.ESDTPauseHandler) *esdtNFTTransfer {
 	marshalizer := &mock.MarshalizerMock{}
-	hasher := &mock.HasherMock{}
-	shardCoordinator, _ := vmcommon.NewMultiShardCoordinator(numShards, shardID)
-	trieStoreManager := createTrieStorageManager(createMemUnit(), marshalizer, hasher)
-	tr, _ := trie.NewTrie(trieStoreManager, marshalizer, hasher, 6)
-	accounts, _ := vmcommon.NewAccountsDB(tr, hasher, marshalizer, factory.NewAccountCreator())
+	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
+	shardCoordinator.CurrentShard = selfShard
+	mapAccounts := make(map[string]vmcommon.UserAccountHandler)
+	accounts := &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			_, ok := mapAccounts[string(address)]
+			if !ok {
+				mapAccounts[string(address)] = mock.NewUserAccount(address)
+			}
+			return mapAccounts[string(address)], nil
+		},
+		GetExistingAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			_, ok := mapAccounts[string(address)]
+			if !ok {
+				mapAccounts[string(address)] = mock.NewUserAccount(address)
+			}
+			return mapAccounts[string(address)], nil
+		},
+	}
 
 	nftTransfer, _ := NewESDTNFTTransferFunc(
 		1,
@@ -163,7 +146,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 
 	nftTransfer, err = NewESDTNFTTransferFunc(
 		0,
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		nil,
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
@@ -174,7 +157,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 
 	nftTransfer, err = NewESDTNFTTransferFunc(
 		0,
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		&mock.PauseHandlerStub{},
 		nil,
 		&mock.ShardCoordinatorStub{},
@@ -185,7 +168,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 
 	nftTransfer, err = NewESDTNFTTransferFunc(
 		0,
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		&mock.PauseHandlerStub{},
 		&mock.AccountsStub{},
 		nil,
@@ -200,7 +183,7 @@ func TestNewESDTNFTTransferFunc(t *testing.T) {
 
 	nftTransfer, err := NewESDTNFTTransferFunc(
 		0,
-		&mock.MarshalizerStub{},
+		&mock.MarshalizerMock{},
 		&mock.PauseHandlerStub{},
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
@@ -286,8 +269,8 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 			},
 		})
 	senderAddress := bytes.Repeat([]byte{2}, 32)
-	pkConv, _ := pubkeyConverter.NewBech32PubkeyConverter(32)
-	destinationAddress, _ := pkConv.Decode("erd1qqqqqqqqqqqqqpgqrchxzx5uu8sv3ceg8nx8cxc0gesezure5awqn46gtd")
+	destinationAddress := bytes.Repeat([]byte{0}, 32)
+	destinationAddress[25] = 1
 	sender, err := nftTransfer.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 	destination, err := nftTransfer.accounts.LoadAccount(destinationAddress)
@@ -361,8 +344,8 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoesNotHo
 	_ = nftTransferDestinationShard.setPayableHandler(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{1}, 32)
-	pkConv, _ := pubkeyConverter.NewBech32PubkeyConverter(32)
-	destinationAddress, _ := pkConv.Decode("erd1qqqqqqqqqqqqqpgqrchxzx5uu8sv3ceg8nx8cxc0gesezure5awqn46gtd")
+	destinationAddress := bytes.Repeat([]byte{0}, 32)
+	destinationAddress[25] = 1
 	sender, err := nftTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -408,7 +391,6 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoesNotHo
 	testNFTTokenShouldExist(t, nftTransferSenderShard.marshalizer, sender, tokenName, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
 
 	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
-	log.Info("executing on destination shard", "function", funcName, "args", args)
 
 	destination, err := nftTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
@@ -495,8 +477,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(
 
 	testNFTTokenShouldExist(t, nftTransferSenderShard.marshalizer, sender, tokenName, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
 
-	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
-	log.Info("executing on destination shard", "function", funcName, "args", args)
+	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
 	destinationNumTokens := big.NewInt(1000)
 	destination, err := nftTransferDestinationShard.accounts.LoadAccount(destinationAddress)
