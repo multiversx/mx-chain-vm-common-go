@@ -63,8 +63,50 @@ const BuiltInFunctionESDTNFTCreate = "ESDTNFTCreate"
 // BuiltInFunctionESDTNFTAddQuantity is the key for the elrond standard digital token NFT add quantity built-in function
 const BuiltInFunctionESDTNFTAddQuantity = "ESDTNFTAddQuantity"
 
+// BuiltInFunctionClaimDeveloperRewards is the key for the claim developer rewards built-in function
+const BuiltInFunctionClaimDeveloperRewards = "ClaimDeveloperRewards"
+
+// BuiltInFunctionChangeOwnerAddress is the key for the change owner built in function built-in function
+const BuiltInFunctionChangeOwnerAddress = "ChangeOwnerAddress"
+
+// BuiltInFunctionSaveKeyValue is the key for the save key value built-in function
+const BuiltInFunctionSaveKeyValue = "SaveKeyValue"
+
+// BuiltInFunctionESDTFreeze is the key for the elrond standard digital token freeze built-in function
+const BuiltInFunctionESDTFreeze = "ESDTFreeze"
+
+// BuiltInFunctionESDTUnFreeze is the key for the elrond standard digital token unfreeze built-in function
+const BuiltInFunctionESDTUnFreeze = "ESDTUnFreeze"
+
+// BuiltInFunctionESDTWipe is the key for the elrond standard digital token wipe built-in function
+const BuiltInFunctionESDTWipe = "ESDTWipe"
+
+// BuiltInFunctionESDTPause is the key for the elrond standard digital token pause built-in function
+const BuiltInFunctionESDTPause = "ESDTPause"
+
+// BuiltInFunctionESDTUnPause is the key for the elrond standard digital token unpause built-in function
+const BuiltInFunctionESDTUnPause = "ESDTUnPause"
+
+// BuiltInFunctionSetESDTRole is the key for the elrond standard digital token set built-in function
+const BuiltInFunctionSetESDTRole = "ESDTSetRole"
+
+// BuiltInFunctionUnSetESDTRole is the key for the elrond standard digital token unset built-in function
+const BuiltInFunctionUnSetESDTRole = "ESDTUnSetRole"
+
+// BuiltInFunctionESDTLocalMint is the key for the elrond standard digital token local mint built-in function
+const BuiltInFunctionESDTLocalMint = "ESDTLocalMint"
+
+// BuiltInFunctionESDTLocalBurn is the key for the elrond standard digital token local burn built-in function
+const BuiltInFunctionESDTLocalBurn = "ESDTLocalBurn"
+
 // BuiltInFunctionESDTNFTBurn is the key for the elrond standard digital token NFT burn built-in function
 const BuiltInFunctionESDTNFTBurn = "ESDTNFTBurn"
+
+// BaseOperationCostString represents the field name for base operation costs
+const BaseOperationCostString = "BaseOperationCost"
+
+// BuiltInCostString represents the field name for built in operation costs
+const BuiltInCostString = "BuiltInCost"
 
 // ESDTType defines the possible types in case of ESDT tokens
 type ESDTType uint32
