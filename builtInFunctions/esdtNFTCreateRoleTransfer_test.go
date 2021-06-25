@@ -121,12 +121,9 @@ func TestESDTNFTCreateRoleTransfer_ProcessAtCurrentShard(t *testing.T) {
 
 	destAcc, _ := e.accounts.LoadAccount(currentOwner)
 	userAcc := destAcc.(vmcommon.UserAccountHandler)
-	vmOutput, err := e.ProcessBuiltinFunction(nil, userAcc, vmInput)
-	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrNotEnoughGas)
 
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
-	err = saveRolesToAccount(userAcc, esdtTokenRoleKey, &esdt.ESDTRoles{Roles: [][]byte{[]byte(vmcommon.ESDTRoleNFTCreate), []byte(vmcommon.ESDTRoleNFTAddQuantity)}}, e.marshalizer)
+	err := saveRolesToAccount(userAcc, esdtTokenRoleKey, &esdt.ESDTRoles{Roles: [][]byte{[]byte(vmcommon.ESDTRoleNFTCreate), []byte(vmcommon.ESDTRoleNFTAddQuantity)}}, e.marshalizer)
 	assert.Nil(t, err)
 	_ = saveLatestNonce(userAcc, tokenID, 100)
 	_ = e.accounts.SaveAccount(userAcc)
@@ -134,7 +131,7 @@ func TestESDTNFTCreateRoleTransfer_ProcessAtCurrentShard(t *testing.T) {
 	destAcc, _ = e.accounts.LoadAccount(currentOwner)
 	userAcc = destAcc.(vmcommon.UserAccountHandler)
 
-	vmOutput, err = e.ProcessBuiltinFunction(nil, userAcc, vmInput)
+	vmOutput, err := e.ProcessBuiltinFunction(nil, userAcc, vmInput)
 	assert.Nil(t, err)
 	assert.Equal(t, len(vmOutput.OutputAccounts), 1)
 

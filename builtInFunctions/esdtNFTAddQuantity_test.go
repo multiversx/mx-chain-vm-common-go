@@ -328,7 +328,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
-	_ = userAcc.DataTrieTracker().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+string(tokenKey)), esdtDataBytes)
+	_ = userAcc.DataTrieTracker().SaveKeyValue(tokenKey, esdtDataBytes)
 
 	output, err := eqf.ProcessBuiltinFunction(
 		userAcc,

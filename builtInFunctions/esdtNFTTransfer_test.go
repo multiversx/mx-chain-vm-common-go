@@ -34,6 +34,10 @@ func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, paus
 	marshalizer := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard
+	shardCoordinator.ComputeIdCalled = func(address []byte) uint32 {
+		lastByte := uint32(address[len(address)-1])
+		return lastByte
+	}
 	mapAccounts := make(map[string]vmcommon.UserAccountHandler)
 	accounts := &mock.AccountsStub{
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
