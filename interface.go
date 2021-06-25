@@ -229,3 +229,21 @@ type AccountsAdapter interface {
 	RecreateTrie(rootHash []byte) error
 	IsInterfaceNil() bool
 }
+
+// BuiltinFunction defines the methods for the built-in protocol smart contract functions
+type BuiltinFunction interface {
+	ProcessBuiltinFunction(acntSnd, acntDst UserAccountHandler, vmInput *ContractCallInput) (*VMOutput, error)
+	SetNewGasConfig(gasCost *GasCost)
+	IsInterfaceNil() bool
+}
+
+// BuiltInFunctionContainer defines the methods for the built-in protocol container
+type BuiltInFunctionContainer interface {
+	Get(key string) (BuiltinFunction, error)
+	Add(key string, function BuiltinFunction) error
+	Replace(key string, function BuiltinFunction) error
+	Remove(key string)
+	Len() int
+	Keys() map[string]struct{}
+	IsInterfaceNil() bool
+}
