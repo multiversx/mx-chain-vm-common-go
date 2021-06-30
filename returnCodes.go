@@ -70,4 +70,7 @@ const (
 
 	// UpgradeFailed is returned when the upgrade of the contract has failed
 	UpgradeFailed ReturnCode = 11
+
+	// SimulateFailed is returned when tx simulation fails execution
+	SimulateFailed ReturnCode = 12
 )
