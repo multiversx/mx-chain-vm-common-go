@@ -142,7 +142,8 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		},
 	}
 
-	err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
+	var esdtDataBytes []byte
+	esdtDataBytes, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -153,6 +154,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTCreate, vmInput.CallerAddr, tokenID, nextNonce)
+	logEntry.Topics = append(logEntry.Topics, esdtDataBytes)
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
@@ -234,33 +236,33 @@ func saveESDTNFTToken(
 	esdtData *esdt.ESDigitalToken,
 	marshalizer vmcommon.Marshalizer,
 	pauseHandler vmcommon.ESDTPauseHandler,
-) error {
+) ([]byte, error) {
 	if esdtData.TokenMetaData == nil {
-		return ErrNFTDoesNotHaveMetadata
+		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
 	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, pauseHandler)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	nonce := esdtData.TokenMetaData.Nonce
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, pauseHandler)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if esdtData.Value.Cmp(zero) <= 0 {
-		return acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
+		return nil, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
 
 	marshaledData, err := marshalizer.Marshal(esdtData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
+	return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
 }
 
 func checkESDTNFTCreateBurnAddInput(
