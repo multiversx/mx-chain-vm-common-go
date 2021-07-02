@@ -9,6 +9,7 @@ import (
 )
 
 type esdtNFTAddQuantity struct {
+	*baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
 	pauseHandler vmcommon.ESDTPauseHandler

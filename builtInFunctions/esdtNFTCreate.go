@@ -14,6 +14,7 @@ import (
 var noncePrefix = []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTNFTLatestNonceIdentifier)
 
 type esdtNFTCreate struct {
+	*baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
 	pauseHandler vmcommon.ESDTPauseHandler

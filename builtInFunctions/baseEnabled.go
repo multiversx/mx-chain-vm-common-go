@@ -28,3 +28,16 @@ func (b *baseEnabled) EpochConfirmed(epoch uint32, _ uint64) {
 func (b *baseEnabled) IsInterfaceNil() bool {
 	return b == nil
 }
+
+type baseAlwaysActive struct {
+}
+
+// IsActive returns true as this built in function was always active
+func (b *baseAlwaysActive) IsActive() bool {
+	return true
+}
+
+// IsInterfaceNil returns true if there is no value under the interface
+func (b *baseAlwaysActive) IsInterfaceNil() bool {
+	return b == nil
+}

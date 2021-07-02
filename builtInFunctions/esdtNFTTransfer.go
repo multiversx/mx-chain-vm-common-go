@@ -14,6 +14,7 @@ import (
 )
 
 type esdtNFTTransfer struct {
+	*baseAlwaysActive
 	keyPrefix        []byte
 	marshalizer      vmcommon.Marshalizer
 	pauseHandler     vmcommon.ESDTPauseHandler

@@ -8,6 +8,7 @@ import (
 )
 
 type esdtFreezeWipe struct {
+	*baseAlwaysActive
 	marshalizer vmcommon.Marshalizer
 	keyPrefix   []byte
 	wipe        bool

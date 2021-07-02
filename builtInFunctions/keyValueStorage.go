@@ -11,6 +11,7 @@ import (
 )
 
 type saveKeyValueStorage struct {
+	*baseAlwaysActive
 	gasConfig    vmcommon.BaseOperationCost
 	funcGasCost  uint64
 	mutExecution sync.RWMutex

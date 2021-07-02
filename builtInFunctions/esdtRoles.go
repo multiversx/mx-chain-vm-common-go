@@ -11,6 +11,7 @@ import (
 var roleKeyPrefix = []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTRoleIdentifier + vmcommon.ESDTKeyIdentifier)
 
 type esdtRoles struct {
+	*baseAlwaysActive
 	set         bool
 	marshalizer vmcommon.Marshalizer
 }

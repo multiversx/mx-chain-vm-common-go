@@ -9,6 +9,7 @@ import (
 )
 
 type esdtNFTBurn struct {
+	*baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
 	pauseHandler vmcommon.ESDTPauseHandler

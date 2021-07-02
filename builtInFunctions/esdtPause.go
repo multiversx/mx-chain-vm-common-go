@@ -8,6 +8,7 @@ import (
 )
 
 type esdtPause struct {
+	*baseAlwaysActive
 	keyPrefix []byte
 	pause     bool
 	accounts  vmcommon.AccountsAdapter

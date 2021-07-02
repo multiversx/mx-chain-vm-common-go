@@ -10,6 +10,7 @@ import (
 )
 
 type esdtLocalMint struct {
+	*baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
 	pauseHandler vmcommon.ESDTPauseHandler
