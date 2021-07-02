@@ -5,13 +5,16 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtNFTAddUri struct {
+	*baseEnabled
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
 	pauseHandler vmcommon.ESDTPauseHandler
+	rolesHandler vmcommon.ESDTRoleHandler
 	gasConfig    vmcommon.BaseOperationCost
 	funcGasCost  uint64
 	mutExecution sync.RWMutex
@@ -23,12 +26,18 @@ func NewESDTNFTAddUriFunc(
 	gasConfig vmcommon.BaseOperationCost,
 	marshalizer vmcommon.Marshalizer,
 	pauseHandler vmcommon.ESDTPauseHandler,
+	rolesHandler vmcommon.ESDTRoleHandler,
+	activationEpoch uint32,
+	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTAddUri, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(pauseHandler) {
 		return nil, ErrNilPauseHandler
+	}
+	if check.IfNil(rolesHandler) {
+		return nil, ErrNilRolesHandler
 	}
 
 	e := &esdtNFTAddUri{
@@ -38,7 +47,16 @@ func NewESDTNFTAddUriFunc(
 		mutExecution: sync.RWMutex{},
 		pauseHandler: pauseHandler,
 		gasConfig:    gasConfig,
+		rolesHandler: rolesHandler,
 	}
+
+	e.baseEnabled = &baseEnabled{
+		function:        vmcommon.BuiltInFunctionESDTNFTAddURI,
+		activationEpoch: activationEpoch,
+		flagActivated:   atomic.Flag{},
+	}
+
+	epochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
 }
@@ -59,7 +77,7 @@ func (e *esdtNFTAddUri) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 // Requires 3 arguments:
 // arg0 - token identifier
 // arg1 - nonce
-// arg2 - quantity to add
+// arg2 - attributes to add
 func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -73,6 +91,11 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 	}
 	if len(vmInput.Arguments) < 3 {
 		return nil, ErrInvalidArguments
+	}
+
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(vmcommon.ESDTRoleNFTAddURI))
+	if err != nil {
+		return nil, err
 	}
 
 	lenURIs := 0
@@ -98,7 +121,7 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTAddQuantity, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
+	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTAddURI, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - e.funcGasCost - gasCostForStore,

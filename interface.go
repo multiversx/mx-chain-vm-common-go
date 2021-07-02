@@ -251,3 +251,15 @@ type AcceptPayableHandler interface {
 	SetPayableHandler(payableHandler PayableHandler) error
 	IsInterfaceNil() bool
 }
+
+// EpochSubscriberHandler defines the behavior of a component that can be notified if a new epoch was confirmed
+type EpochSubscriberHandler interface {
+	EpochConfirmed(epoch uint32, timestamp uint64)
+	IsInterfaceNil() bool
+}
+
+// EpochNotifier can notify upon an epoch change and provide the current epoch
+type EpochNotifier interface {
+	RegisterNotifyHandler(handler EpochSubscriberHandler)
+	IsInterfaceNil() bool
+}

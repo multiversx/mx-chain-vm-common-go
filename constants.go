@@ -57,11 +57,26 @@ const ESDTRoleNFTAddQuantity = "ESDTRoleNFTAddQuantity"
 // ESDTRoleNFTBurn is the constant string for the local role of burn for ESDT NFT tokens
 const ESDTRoleNFTBurn = "ESDTRoleNFTBurn"
 
+// ESDTRoleNFTAddURI is the constant string for the local role of adding a URI for ESDT NFT tokens
+const ESDTRoleNFTAddURI = "ESDTRoleNFTAddURI"
+
+// ESDTRoleNFTUpdateAttributes is the constant string for the local role of create for ESDT NFT tokens
+const ESDTRoleNFTUpdateAttributes = "ESDTRoleNFTUpdateAttributes"
+
 // BuiltInFunctionESDTNFTCreate is the key for the elrond standard digital token NFT create built-in function
 const BuiltInFunctionESDTNFTCreate = "ESDTNFTCreate"
 
 // BuiltInFunctionESDTNFTAddQuantity is the key for the elrond standard digital token NFT add quantity built-in function
 const BuiltInFunctionESDTNFTAddQuantity = "ESDTNFTAddQuantity"
+
+// BuiltInFunctionESDTNFTAddURI is the key for the elrond standard digital token NFT add URI built-in function
+const BuiltInFunctionESDTNFTAddURI = "ESDTNFTAddURI"
+
+// BuiltInFunctionESDTNFTUpdateAttributes is the key for the elrond standard digital token NFT update attributes built-in function
+const BuiltInFunctionESDTNFTUpdateAttributes = "ESDTNFTUpdateAttributes"
+
+// BuiltInFunctionMultiESDTNFTTransfer is the key for the elrond standard digital token multi transfer built-in function
+const BuiltInFunctionMultiESDTNFTTransfer = "MultiESDTNFTTransfer"
 
 // BuiltInFunctionClaimDeveloperRewards is the key for the claim developer rewards built-in function
 const BuiltInFunctionClaimDeveloperRewards = "ClaimDeveloperRewards"
