@@ -8,22 +8,26 @@ import (
 
 // ArgsCreateBuiltInFunctionContainer -
 type ArgsCreateBuiltInFunctionContainer struct {
-	GasMap               map[string]map[string]uint64
-	MapDNSAddresses      map[string]struct{}
-	EnableUserNameChange bool
-	Marshalizer          vmcommon.Marshalizer
-	Accounts             vmcommon.AccountsAdapter
-	ShardCoordinator     vmcommon.Coordinator
+	GasMap                              map[string]map[string]uint64
+	MapDNSAddresses                     map[string]struct{}
+	EnableUserNameChange                bool
+	Marshalizer                         vmcommon.Marshalizer
+	Accounts                            vmcommon.AccountsAdapter
+	ShardCoordinator                    vmcommon.Coordinator
+	EpochNotifier                       vmcommon.EpochNotifier
+	ESDTNFTImprovementV1ActivationEpoch uint32
 }
 
 type builtInFuncFactory struct {
-	mapDNSAddresses      map[string]struct{}
-	enableUserNameChange bool
-	marshalizer          vmcommon.Marshalizer
-	accounts             vmcommon.AccountsAdapter
-	builtInFunctions     vmcommon.BuiltInFunctionContainer
-	gasConfig            *vmcommon.GasCost
-	shardCoordinator     vmcommon.Coordinator
+	mapDNSAddresses                     map[string]struct{}
+	enableUserNameChange                bool
+	marshalizer                         vmcommon.Marshalizer
+	accounts                            vmcommon.AccountsAdapter
+	builtInFunctions                    vmcommon.BuiltInFunctionContainer
+	gasConfig                           *vmcommon.GasCost
+	shardCoordinator                    vmcommon.Coordinator
+	epochNotifier                       vmcommon.EpochNotifier
+	eSDTNFTImprovementV1ActivationEpoch uint32
 }
 
 // NewBuiltInFunctionsFactory creates a factory which will instantiate the built in functions contracts
@@ -40,13 +44,18 @@ func NewBuiltInFunctionsFactory(args ArgsCreateBuiltInFunctionContainer) (*built
 	if check.IfNil(args.ShardCoordinator) {
 		return nil, ErrNilShardCoordinator
 	}
+	if check.IfNil(args.EpochNotifier) {
+		return nil, ErrNilEpochHandler
+	}
 
 	b := &builtInFuncFactory{
-		mapDNSAddresses:      args.MapDNSAddresses,
-		enableUserNameChange: args.EnableUserNameChange,
-		marshalizer:          args.Marshalizer,
-		accounts:             args.Accounts,
-		shardCoordinator:     args.ShardCoordinator,
+		mapDNSAddresses:                     args.MapDNSAddresses,
+		enableUserNameChange:                args.EnableUserNameChange,
+		marshalizer:                         args.Marshalizer,
+		accounts:                            args.Accounts,
+		shardCoordinator:                    args.ShardCoordinator,
+		epochNotifier:                       args.EpochNotifier,
+		eSDTNFTImprovementV1ActivationEpoch: args.ESDTNFTImprovementV1ActivationEpoch,
 	}
 
 	var err error
@@ -256,6 +265,33 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
+	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshalizer, pauseFunc, setRoleFunc, b.eSDTNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTUpdateAttributes, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshalizer, pauseFunc, setRoleFunc, b.eSDTNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTAddURI, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	newFunc, err = NewESDTNFTMultiTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.marshalizer, pauseFunc, b.accounts, b.shardCoordinator, b.gasConfig.BaseOperationCost, b.eSDTNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTCreate, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
 	return b.builtInFunctions, nil
 }
 
@@ -292,34 +328,26 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 
 // SetPayableHandler sets the payable interface to the needed functions
 func SetPayableHandler(container vmcommon.BuiltInFunctionContainer, payableHandler vmcommon.PayableHandler) error {
-	builtInFunc, err := container.Get(vmcommon.BuiltInFunctionESDTTransfer)
-	if err != nil {
-		return err
-	}
+	listOfTransferFunc := []string{
+		vmcommon.BuiltInFunctionMultiESDTNFTTransfer,
+		vmcommon.BuiltInFunctionESDTNFTTransfer,
+		vmcommon.BuiltInFunctionESDTTransfer}
 
-	esdtTransferFunc, ok := builtInFunc.(vmcommon.AcceptPayableHandler)
-	if !ok {
-		return ErrWrongTypeAssertion
-	}
+	for _, transferFunc := range listOfTransferFunc {
+		builtInFunc, err := container.Get(transferFunc)
+		if err != nil {
+			return err
+		}
 
-	err = esdtTransferFunc.SetPayableHandler(payableHandler)
-	if err != nil {
-		return err
-	}
+		esdtTransferFunc, ok := builtInFunc.(vmcommon.AcceptPayableHandler)
+		if !ok {
+			return ErrWrongTypeAssertion
+		}
 
-	builtInFunc, err = container.Get(vmcommon.BuiltInFunctionESDTNFTTransfer)
-	if err != nil {
-		return err
-	}
-
-	esdtNFTTransferFunc, ok := builtInFunc.(vmcommon.AcceptPayableHandler)
-	if !ok {
-		return ErrWrongTypeAssertion
-	}
-
-	err = esdtNFTTransferFunc.SetPayableHandler(payableHandler)
-	if err != nil {
-		return err
+		err = esdtTransferFunc.SetPayableHandler(payableHandler)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
