@@ -146,6 +146,8 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		return nil, fmt.Errorf("%w, invalid number of arguments", ErrInvalidArguments)
 	}
 
+	vmOutput := &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided}
+	vmOutput.Logs = make([]*vmcommon.LogEntry, numOfTransfers)
 	startIndex := uint64(1)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex * i
@@ -172,10 +174,13 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				return nil, err
 			}
 		}
+
+		logEntry := newEntryForNFT(vmcommon.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, tokenID, nonce)
+		logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
+		vmOutput.Logs[i] = logEntry
 	}
 
 	// no need to consume gas on destination - sender already paid for it
-	vmOutput := &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided}
 	if len(vmInput.Arguments) > int(minNumOfArguments) && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
 		var callArgs [][]byte
 		if len(vmInput.Arguments) > int(minNumOfArguments)+1 {
@@ -229,6 +234,12 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		return nil, err
 	}
 
+	vmOutput := &vmcommon.VMOutput{
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: vmInput.GasProvided - multiTransferCost,
+		Logs:         make([]*vmcommon.LogEntry, numOfTransfers),
+	}
+
 	startIndex := uint64(2)
 	listEsdtData := make([]*esdt.ESDigitalToken, numOfTransfers)
 	listTokenID := make([][]byte, numOfTransfers)
@@ -241,11 +252,10 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	vmOutput := &vmcommon.VMOutput{
-		ReturnCode:   vmcommon.Ok,
-		GasRemaining: vmInput.GasProvided - multiTransferCost,
+		logEntry := newEntryForNFT(vmcommon.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, listTokenID[i], nonce)
+		logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
+		vmOutput.Logs[i] = logEntry
 	}
 
 	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTokenID, dstAddress)
@@ -280,7 +290,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
+	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +438,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 		esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 	}
 
-	err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.pauseHandler)
+	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.pauseHandler)
 	if err != nil {
 		return err
 	}
