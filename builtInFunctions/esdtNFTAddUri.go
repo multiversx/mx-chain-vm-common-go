@@ -119,7 +119,7 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 
 	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
 
-	err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
+	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
 	if err != nil {
 		return nil, err
 	}
