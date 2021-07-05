@@ -253,7 +253,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) 
 		&vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue:   big.NewInt(0),
-				Arguments:   [][]byte{[]byte("arg0"), []byte("arg1"), []byte("arg2")},
+				Arguments:   [][]byte{[]byte("arg0"), {0}, []byte("arg2")},
 				CallerAddr:  []byte("address 1"),
 				GasProvided: 12,
 			},

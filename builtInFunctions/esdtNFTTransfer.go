@@ -328,7 +328,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 		return err
 	}
 
-	if esdtDataToTransfer.TokenMetaData != nil {
+	if currentESDTData.TokenMetaData != nil {
 		if !bytes.Equal(currentESDTData.TokenMetaData.Hash, esdtDataToTransfer.TokenMetaData.Hash) {
 			return ErrWrongNFTOnDestination
 		}

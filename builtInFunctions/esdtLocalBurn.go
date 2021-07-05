@@ -80,7 +80,7 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[1])
 	esdtTokenKey := append(e.keyPrefix, tokenID...)
-	err = addToESDTBalance(vmInput.CallerAddr, acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.pauseHandler)
+	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.pauseHandler)
 	if err != nil {
 		return nil, err
 	}

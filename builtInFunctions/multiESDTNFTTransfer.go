@@ -137,41 +137,60 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		return nil, ErrInvalidRcvAddr
 	}
 
-	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
-	marshalledNFTTransfer := vmInput.Arguments[3]
-	esdtTransferData := &esdt.ESDigitalToken{}
-	err = e.marshalizer.Unmarshal(esdtTransferData, marshalledNFTTransfer)
-	if err != nil {
-		return nil, err
+	numOfTransfers := big.NewInt(0).SetBytes(vmInput.Arguments[0]).Uint64()
+	if numOfTransfers == 0 {
+		return nil, fmt.Errorf("%w, 0 tokens to transfer", ErrInvalidArguments)
+	}
+	minNumOfArguments := numOfTransfers*argumentsPerTransfer + 1
+	if uint64(len(vmInput.Arguments)) < minNumOfArguments {
+		return nil, fmt.Errorf("%w, invalid number of arguments", ErrInvalidArguments)
 	}
 
-	err = e.addNFTToDestination(vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, vmcommon.MinLenArgumentsESDTNFTTransfer))
-	if err != nil {
-		return nil, err
+	startIndex := uint64(1)
+	for i := uint64(0); i < numOfTransfers; i++ {
+		tokenStartIndex := startIndex * i
+		tokenID := vmInput.Arguments[tokenStartIndex]
+		nonce := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+1]).Uint64()
+
+		esdtTokenKey := append(e.keyPrefix, tokenID...)
+
+		if nonce > 0 {
+			marshalledNFTTransfer := vmInput.Arguments[tokenStartIndex+2]
+			esdtTransferData := &esdt.ESDigitalToken{}
+			err = e.marshalizer.Unmarshal(esdtTransferData, marshalledNFTTransfer)
+			if err != nil {
+				return nil, err
+			}
+
+			err = e.addNFTToDestination(vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, int(minNumOfArguments)))
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err = addToESDTBalance(acntDst, esdtTokenKey, big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2]), e.marshalizer, e.pauseHandler)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// no need to consume gas on destination - sender already paid for it
 	vmOutput := &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided}
-	if len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
+	if len(vmInput.Arguments) > int(minNumOfArguments) && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
 		var callArgs [][]byte
-		if len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTNFTTransfer+1 {
-			callArgs = vmInput.Arguments[vmcommon.MinLenArgumentsESDTNFTTransfer+1:]
+		if len(vmInput.Arguments) > int(minNumOfArguments)+1 {
+			callArgs = vmInput.Arguments[minNumOfArguments+1:]
 		}
 
 		addOutputTransferToVMOutput(
 			vmInput.CallerAddr,
-			string(vmInput.Arguments[vmcommon.MinLenArgumentsESDTNFTTransfer]),
+			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
 			vmInput.RecipientAddr,
 			vmInput.GasLocked,
 			vmInput.CallType,
 			vmOutput)
 	}
-
-	tokenNonce := esdtTransferData.TokenMetaData.Nonce
-	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTTransfer, vmInput.CallerAddr, vmInput.Arguments[0], tokenNonce)
-	logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
-	vmOutput.Logs = []*vmcommon.LogEntry{logEntry}
 
 	return vmOutput, nil
 }

@@ -84,7 +84,7 @@ func (e *esdtBurn) ProcessBuiltinFunction(
 		return nil, ErrNotEnoughGas
 	}
 
-	err = addToESDTBalance(vmInput.CallerAddr, acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.pauseHandler)
+	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.pauseHandler)
 	if err != nil {
 		return nil, err
 	}

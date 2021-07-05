@@ -94,7 +94,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			return nil, ErrNotEnoughGas
 		}
 
-		err = addToESDTBalance(vmInput.CallerAddr, acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.pauseHandler)
+		err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.pauseHandler)
 		if err != nil {
 			return nil, err
 		}
@@ -110,18 +110,11 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 				return nil, errPayable
 			}
 			if !isPayable {
-				if !check.IfNil(acntSnd) {
-					err = addToESDTBalance(vmInput.CallerAddr, acntSnd, esdtTokenKey, value, e.marshalizer, e.pauseHandler)
-					if err != nil {
-						return nil, err
-					}
-				}
-
 				return nil, ErrAccountNotPayable
 			}
 		}
 
-		err = addToESDTBalance(vmInput.CallerAddr, acntDst, esdtTokenKey, value, e.marshalizer, e.pauseHandler)
+		err = addToESDTBalance(acntDst, esdtTokenKey, value, e.marshalizer, e.pauseHandler)
 		if err != nil {
 			return nil, err
 		}
@@ -213,7 +206,6 @@ func addOutputTransferToVMOutput(
 }
 
 func addToESDTBalance(
-	senderAddr []byte,
 	userAcnt vmcommon.UserAccountHandler,
 	key []byte,
 	value *big.Int,
@@ -229,7 +221,7 @@ func addToESDTBalance(
 		return ErrOnlyFungibleTokensHaveBalanceTransfer
 	}
 
-	err = checkFrozeAndPause(senderAddr, key, esdtData, pauseHandler)
+	err = checkFrozeAndPause(userAcnt.AddressBytes(), key, esdtData, pauseHandler)
 	if err != nil {
 		return err
 	}
