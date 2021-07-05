@@ -201,10 +201,6 @@ func getESDTNFTTokenOnSender(
 		return nil, ErrNewNFTDataOnSenderAddress
 	}
 
-	if esdtData.TokenMetaData == nil {
-		return nil, ErrNFTDoesNotHaveMetadata
-	}
-
 	return esdtData, nil
 }
 
@@ -236,16 +232,15 @@ func saveESDTNFTToken(
 	marshalizer vmcommon.Marshalizer,
 	pauseHandler vmcommon.ESDTPauseHandler,
 ) error {
-	if esdtData.TokenMetaData == nil {
-		return ErrNFTDoesNotHaveMetadata
-	}
-
 	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, pauseHandler)
 	if err != nil {
 		return err
 	}
 
-	nonce := esdtData.TokenMetaData.Nonce
+	nonce := uint64(0)
+	if esdtData.TokenMetaData != nil {
+		nonce = esdtData.TokenMetaData.Nonce
+	}
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, pauseHandler)
 	if err != nil {

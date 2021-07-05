@@ -178,6 +178,9 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
+	if nonce == 0 {
+		return nil, ErrNFTDoesNotHaveMetadata
+	}
 	esdtData, err := getESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce, e.marshalizer)
 	if err != nil {
 		return nil, err
@@ -264,11 +267,13 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		addNFTTransferToVMOutput(
 			vmInput.CallerAddr,
 			dstAddress,
+			vmcommon.BuiltInFunctionESDTNFTTransfer,
 			nftTransferCallArgs,
 			vmInput.GasLocked,
 			gasToTransfer,
 			vmInput.CallType,
-			vmOutput)
+			vmOutput,
+		)
 
 		return nil
 	}
@@ -309,7 +314,12 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 		}
 	}
 
-	currentESDTData, _, err := getESDTNFTTokenOnDestination(userAccount, esdtTokenKey, esdtDataToTransfer.TokenMetaData.Nonce, e.marshalizer)
+	nonce := uint64(0)
+	if esdtDataToTransfer.TokenMetaData != nil {
+		nonce = esdtDataToTransfer.TokenMetaData.Nonce
+	}
+
+	currentESDTData, _, err := getESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce, e.marshalizer)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
@@ -318,12 +328,12 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 		return err
 	}
 
-	if currentESDTData.TokenMetaData != nil {
+	if esdtDataToTransfer.TokenMetaData != nil {
 		if !bytes.Equal(currentESDTData.TokenMetaData.Hash, esdtDataToTransfer.TokenMetaData.Hash) {
 			return ErrWrongNFTOnDestination
 		}
-		esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 	}
+	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
 	err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.pauseHandler)
 	if err != nil {
@@ -336,13 +346,14 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 func addNFTTransferToVMOutput(
 	senderAddress []byte,
 	recipient []byte,
+	funcToCall string,
 	arguments [][]byte,
 	gasLocked uint64,
 	gasLimit uint64,
 	callType vmcommon.CallType,
 	vmOutput *vmcommon.VMOutput,
 ) {
-	nftTransferTxData := vmcommon.BuiltInFunctionESDTNFTTransfer
+	nftTransferTxData := funcToCall
 	for _, arg := range arguments {
 		nftTransferTxData += "@" + hex.EncodeToString(arg)
 	}
