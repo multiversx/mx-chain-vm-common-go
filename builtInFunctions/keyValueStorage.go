@@ -2,13 +2,17 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sync"
 
-	"github.com/ElrondNetwork/elrond-vm-common"
+	logger "github.com/ElrondNetwork/elrond-go-logger"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
+
+var log = logger.GetOrCreate("vmcommon/builtInFunctions")
 
 type saveKeyValueStorage struct {
 	gasConfig    vmcommon.BaseOperationCost
@@ -87,6 +91,10 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 			return nil, ErrNotEnoughGas
 		}
 
+		log.Warn("ProcessBuiltinFunction: SaveKeyValue",
+			"key", hex.EncodeToString(key),
+			"value", hex.EncodeToString(value),
+		)
 		err = acntDst.AccountDataHandler().SaveKeyValue(key, value)
 		if err != nil {
 			return nil, err
