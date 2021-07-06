@@ -99,6 +99,10 @@ func (s *saveUserName) ProcessBuiltinFunction(
 		return nil, ErrUserNameChangeIsDisabled
 	}
 
+	log.Warn("Save UserName",
+		"user", hex.EncodeToString(vmInput.Arguments[0]),
+	)
+
 	acntDst.SetUserName(vmInput.Arguments[0])
 
 	return &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided - s.gasCost, ReturnCode: vmcommon.Ok}, nil
