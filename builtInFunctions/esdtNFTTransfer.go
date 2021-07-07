@@ -126,7 +126,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	err = e.addNFTToDestination(vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, vmcommon.MinLenArgumentsESDTNFTTransfer))
+	err = e.addNFTToDestination(vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, vmcommon.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
+	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, ErrWrongTypeAssertion
 		}
 
-		err = e.addNFTToDestination(dstAddress, userAccount, esdtData, esdtTokenKey, mustVerifyPayable(vmInput, vmcommon.MinLenArgumentsESDTNFTTransfer))
+		err = e.addNFTToDestination(dstAddress, userAccount, esdtData, esdtTokenKey, mustVerifyPayable(vmInput, vmcommon.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -302,6 +302,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	esdtDataToTransfer *esdt.ESDigitalToken,
 	esdtTokenKey []byte,
 	mustVerifyPayable bool,
+	isReturnWithError bool,
 ) error {
 	if mustVerifyPayable {
 		isPayable, errIsPayable := e.payableHandler.IsPayable(dstAddress)
@@ -317,7 +318,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
-	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.pauseHandler)
+	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.pauseHandler, isReturnWithError)
 	if err != nil {
 		return err
 	}
@@ -329,7 +330,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 		esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 	}
 
-	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.pauseHandler)
+	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.pauseHandler, isReturnWithError)
 	if err != nil {
 		return err
 	}
