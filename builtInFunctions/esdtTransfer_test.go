@@ -197,6 +197,10 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	_ = marshalizer.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(100)) == 0)
 
+	input.ReturnCallAfterError = true
+	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
+	assert.Nil(t, err)
+
 	esdtToken = &esdt.ESDigitalToken{Value: big.NewInt(100), Properties: esdtNotFrozen.ToBytes()}
 	marshaledData, _ = marshalizer.Marshal(esdtToken)
 	_ = accDst.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
@@ -213,8 +217,13 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 		return accDst, nil
 	}
 
+	input.ReturnCallAfterError = false
 	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
 	assert.Equal(t, err, ErrESDTTokenIsPaused)
+
+	input.ReturnCallAfterError = true
+	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
+	assert.Nil(t, err)
 }
 
 func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {

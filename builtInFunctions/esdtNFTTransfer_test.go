@@ -563,6 +563,10 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	assert.Equal(t, ErrESDTIsFrozenForAccount, err)
+
+	vmInput.ReturnCallAfterError = true
+	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	assert.Nil(t, err)
 }
 
 func TestESDTNFTTransfer_NotEnoughGas(t *testing.T) {
