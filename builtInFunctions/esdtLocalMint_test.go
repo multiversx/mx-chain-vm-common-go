@@ -169,6 +169,14 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	expectedVMOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: 450,
+		Logs: []*vmcommon.LogEntry{
+			{
+				Identifier: []byte("ESDTLocalMint"),
+				Address:    nil,
+				Topics:     [][]byte{[]byte("arg1"), big.NewInt(1).Bytes()},
+				Data:       nil,
+			},
+		},
 	}
 	require.Equal(t, expectedVMOutput, vmOutput)
 
