@@ -94,7 +94,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			return nil, ErrNotEnoughGas
 		}
 
-		err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.pauseHandler)
+		err = addToESDTBalance(vmInput.CallerAddr, acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -114,7 +114,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		err = addToESDTBalance(acntDst, esdtTokenKey, value, e.marshalizer, e.pauseHandler)
+		err = addToESDTBalance(vmInput.CallerAddr, acntDst, esdtTokenKey, value, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -211,6 +211,7 @@ func addToESDTBalance(
 	value *big.Int,
 	marshalizer vmcommon.Marshalizer,
 	pauseHandler vmcommon.ESDTPauseHandler,
+	isReturnWithError bool,
 ) error {
 	esdtData, err := getESDTDataFromKey(userAcnt, key, marshalizer)
 	if err != nil {
@@ -221,7 +222,7 @@ func addToESDTBalance(
 		return ErrOnlyFungibleTokensHaveBalanceTransfer
 	}
 
-	err = checkFrozeAndPause(userAcnt.AddressBytes(), key, esdtData, pauseHandler)
+	err = checkFrozeAndPause(senderAddr, key, esdtData, pauseHandler, isReturnWithError)
 	if err != nil {
 		return err
 	}
@@ -244,7 +245,11 @@ func checkFrozeAndPause(
 	key []byte,
 	esdtData *esdt.ESDigitalToken,
 	pauseHandler vmcommon.ESDTPauseHandler,
+	isReturnWithError bool,
 ) error {
+	if isReturnWithError {
+		return nil
+	}
 	if bytes.Equal(senderAddr, vmcommon.ESDTSCAddress) {
 		return nil
 	}

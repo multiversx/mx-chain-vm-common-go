@@ -74,7 +74,7 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 		RecipientAddr: addr,
 	}
 
-	_, err := skv.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err := skv.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.Equal(t, ErrInvalidArguments, err)
 
 	_, err = skv.ProcessBuiltinFunction(nil, acc, nil)
@@ -87,20 +87,20 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 	_, err = skv.ProcessBuiltinFunction(nil, nil, vmInput)
 	require.Equal(t, ErrNilSCDestAccount, err)
 
-	_, err = skv.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err = skv.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.Nil(t, err)
 	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
 	require.True(t, bytes.Equal(retrievedValue, value))
 
 	vmInput.CallerAddr = []byte("other")
-	_, err = skv.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err = skv.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.True(t, errors.Is(err, ErrOperationNotPermitted))
 
 	key = []byte(vmcommon.ElrondProtectedKeyPrefix + "is the king")
 	value = []byte("value")
 	vmInput.Arguments = [][]byte{key, value}
 
-	_, err = skv.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err = skv.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.True(t, errors.Is(err, ErrOperationNotPermitted))
 }
 
@@ -132,14 +132,14 @@ func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 	value := []byte("value")
 	vmInput.Arguments = [][]byte{key, value, key, value, key}
 
-	_, err := skv.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err := skv.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.Equal(t, err, ErrInvalidArguments)
 
 	key2 := []byte("key2")
 	value2 := []byte("value2")
 	vmInput.Arguments = [][]byte{key, value, key2, value2}
 
-	_, err = skv.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err = skv.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.Nil(t, err)
 	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
 	require.True(t, bytes.Equal(retrievedValue, value))
@@ -148,6 +148,6 @@ func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 
 	vmInput.GasProvided = 1
 	vmInput.Arguments = [][]byte{[]byte("key3"), []byte("value")}
-	_, err = skv.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err = skv.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.Equal(t, err, ErrNotEnoughGas)
 }

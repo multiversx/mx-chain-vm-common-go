@@ -144,7 +144,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	var esdtDataBytes []byte
-	esdtDataBytes, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
+	esdtDataBytes, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -233,8 +233,9 @@ func saveESDTNFTToken(
 	esdtData *esdt.ESDigitalToken,
 	marshalizer vmcommon.Marshalizer,
 	pauseHandler vmcommon.ESDTPauseHandler,
+	isReturnWithError bool,
 ) ([]byte, error) {
-	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, pauseHandler)
+	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, pauseHandler, isReturnWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +245,7 @@ func saveESDTNFTToken(
 		nonce = esdtData.TokenMetaData.Nonce
 	}
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, pauseHandler)
+	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, pauseHandler, isReturnWithError)
 	if err != nil {
 		return nil, err
 	}
