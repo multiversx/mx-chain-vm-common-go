@@ -60,7 +60,7 @@ const ESDTRoleNFTBurn = "ESDTRoleNFTBurn"
 // ESDTRoleNFTAddURI is the constant string for the local role of adding a URI for ESDT NFT tokens
 const ESDTRoleNFTAddURI = "ESDTRoleNFTAddURI"
 
-// ESDTRoleNFTUpdateAttributes is the constant string for the local role of create for ESDT NFT tokens
+// ESDTRoleNFTUpdateAttributes is the constant string for the local role of updating attributes for ESDT NFT tokens
 const ESDTRoleNFTUpdateAttributes = "ESDTRoleNFTUpdateAttributes"
 
 // BuiltInFunctionESDTNFTCreate is the key for the elrond standard digital token NFT create built-in function

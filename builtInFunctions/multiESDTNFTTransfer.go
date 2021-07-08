@@ -68,7 +68,7 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e.baseEnabled = &baseEnabled{
-		function:        vmcommon.BuiltInFunctionESDTNFTAddURI,
+		function:        vmcommon.BuiltInFunctionMultiESDTNFTTransfer,
 		activationEpoch: activationEpoch,
 		flagActivated:   atomic.Flag{},
 	}
@@ -150,16 +150,16 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	vmOutput.Logs = make([]*vmcommon.LogEntry, numOfTransfers)
 	startIndex := uint64(1)
 	for i := uint64(0); i < numOfTransfers; i++ {
-		tokenStartIndex := startIndex * i
+		tokenStartIndex := startIndex + i*argumentsPerTransfer
 		tokenID := vmInput.Arguments[tokenStartIndex]
 		nonce := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+1]).Uint64()
 
 		esdtTokenKey := append(e.keyPrefix, tokenID...)
 
 		if nonce > 0 {
-			marshalledNFTTransfer := vmInput.Arguments[tokenStartIndex+2]
+			marshaledNFTTransfer := vmInput.Arguments[tokenStartIndex+2]
 			esdtTransferData := &esdt.ESDigitalToken{}
-			err = e.marshalizer.Unmarshal(esdtTransferData, marshalledNFTTransfer)
+			err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
 			if err != nil {
 				return nil, err
 			}
@@ -353,28 +353,26 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 	listTokenIDs [][]byte,
 	dstAddress []byte,
 ) error {
-
 	multiTransferCallArgs := make([][]byte, 0, argumentsPerTransfer*uint64(len(listESDTTransferData))+1)
 	numTokenTransfer := big.NewInt(int64(len(listESDTTransferData))).Bytes()
 	multiTransferCallArgs = append(multiTransferCallArgs, numTokenTransfer)
 
 	for i, esdtTransferData := range listESDTTransferData {
-
 		multiTransferCallArgs = append(multiTransferCallArgs, listTokenIDs[i])
 		if esdtTransferData.TokenMetaData != nil {
-			marshalledNFTTransfer, err := e.marshalizer.Marshal(esdtTransferData)
+			marshaledNFTTransfer, err := e.marshalizer.Marshal(esdtTransferData)
 			if err != nil {
 				return err
 			}
 
-			gasForTransfer := uint64(len(marshalledNFTTransfer)) * e.gasConfig.DataCopyPerByte
+			gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
 			if gasForTransfer > vmOutput.GasRemaining {
 				return ErrNotEnoughGas
 			}
 			vmOutput.GasRemaining -= gasForTransfer
 
 			multiTransferCallArgs = append(multiTransferCallArgs, big.NewInt(0).SetUint64(esdtTransferData.TokenMetaData.Nonce).Bytes())
-			multiTransferCallArgs = append(multiTransferCallArgs, marshalledNFTTransfer)
+			multiTransferCallArgs = append(multiTransferCallArgs, marshaledNFTTransfer)
 		} else {
 			multiTransferCallArgs = append(multiTransferCallArgs, []byte{0})
 			multiTransferCallArgs = append(multiTransferCallArgs, esdtTransferData.Value.Bytes())

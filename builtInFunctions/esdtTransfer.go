@@ -14,7 +14,7 @@ import (
 var zero = big.NewInt(0)
 
 type esdtTransfer struct {
-	*baseAlwaysActive
+	baseAlwaysActive
 	funcGasCost      uint64
 	marshalizer      vmcommon.Marshalizer
 	keyPrefix        []byte

@@ -39,6 +39,9 @@ func NewESDTNFTUpdateAttributesFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(epochNotifier) {
+		return nil, ErrNilEpochHandler
+	}
 
 	e := &esdtNFTupdate{
 		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
@@ -51,7 +54,7 @@ func NewESDTNFTUpdateAttributesFunc(
 	}
 
 	e.baseEnabled = &baseEnabled{
-		function:        vmcommon.BuiltInFunctionESDTNFTAddURI,
+		function:        vmcommon.BuiltInFunctionESDTNFTUpdateAttributes,
 		activationEpoch: activationEpoch,
 		flagActivated:   atomic.Flag{},
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 type saveUserName struct {
-	*baseAlwaysActive
+	baseAlwaysActive
 	gasCost         uint64
 	mapDnsAddresses map[string]struct{}
 	enableChange    bool

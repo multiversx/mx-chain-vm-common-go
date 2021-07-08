@@ -10,7 +10,7 @@ import (
 )
 
 type claimDeveloperRewards struct {
-	*baseAlwaysActive
+	baseAlwaysActive
 	gasCost      uint64
 	mutExecution sync.RWMutex
 }

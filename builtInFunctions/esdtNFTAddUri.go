@@ -39,6 +39,9 @@ func NewESDTNFTAddUriFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(epochNotifier) {
+		return nil, ErrNilEpochHandler
+	}
 
 	e := &esdtNFTAddUri{
 		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
@@ -98,11 +101,7 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	lenURIs := 0
-	for _, uri := range vmInput.Arguments[2:] {
-		lenURIs += len(uri)
-	}
-	gasCostForStore := uint64(lenURIs) * e.gasConfig.StorePerByte
+	gasCostForStore := e.getGasCostForURIStore(vmInput)
 	if vmInput.GasProvided < e.funcGasCost+gasCostForStore {
 		return nil, ErrNotEnoughGas
 	}
@@ -131,6 +130,14 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 		Logs:         []*vmcommon.LogEntry{logEntry},
 	}
 	return vmOutput, nil
+}
+
+func (e *esdtNFTAddUri) getGasCostForURIStore(vmInput *vmcommon.ContractCallInput) uint64 {
+	lenURIs := 0
+	for _, uri := range vmInput.Arguments[2:] {
+		lenURIs += len(uri)
+	}
+	return uint64(lenURIs) * e.gasConfig.StorePerByte
 }
 
 // IsInterfaceNil returns true if underlying object in nil

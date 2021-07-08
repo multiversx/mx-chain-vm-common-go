@@ -10,7 +10,7 @@ import (
 )
 
 type esdtBurn struct {
-	*baseAlwaysActive
+	baseAlwaysActive
 	funcGasCost  uint64
 	marshalizer  vmcommon.Marshalizer
 	keyPrefix    []byte
