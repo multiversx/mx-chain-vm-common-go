@@ -36,9 +36,10 @@ func TestNewESDTNFTAddUriFunc(t *testing.T) {
 	require.Equal(t, ErrNilEpochHandler, err)
 
 	// should work
-	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 1, &mock.EpochNotifierStub{})
 	require.False(t, check.IfNil(e))
 	require.NoError(t, err)
+	require.False(t, e.IsActive())
 }
 
 func TestESDTNFTAddUri_SetNewGasConfig_NilGasCost(t *testing.T) {
