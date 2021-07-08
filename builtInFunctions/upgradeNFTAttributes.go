@@ -115,7 +115,7 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 
 	esdtData.TokenMetaData.Attributes = vmInput.Arguments[2]
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
+	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

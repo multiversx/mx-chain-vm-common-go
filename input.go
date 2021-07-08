@@ -80,6 +80,9 @@ type VMInput struct {
 
 	// ESDTTransfers
 	ESDTTransfers []*ESDTTransfer
+
+	// ReturnCallAfterError
+	ReturnCallAfterError bool
 }
 
 // ESDTTransfer defines the structure for and ESDT / NFT transfer

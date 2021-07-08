@@ -164,12 +164,18 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				return nil, err
 			}
 
-			err = e.addNFTToDestination(vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, int(minNumOfArguments)))
+			err = e.addNFTToDestination(
+				vmInput.RecipientAddr,
+				acntDst,
+				esdtTransferData,
+				esdtTokenKey,
+				mustVerifyPayable(vmInput, int(minNumOfArguments)),
+				vmInput.ReturnCallAfterError)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			err = addToESDTBalance(acntDst, esdtTokenKey, big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2]), e.marshalizer, e.pauseHandler)
+			err = addToESDTBalance(acntDst, esdtTokenKey, big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2]), e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 			if err != nil {
 				return nil, err
 			}
@@ -248,7 +254,15 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		listTokenID[i] = vmInput.Arguments[tokenStartIndex]
 		nonce := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+1]).Uint64()
 		quantityToTransfer := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2])
-		listEsdtData[i], err = e.transferOneTokenOnSenderShard(acntSnd, acntDst, dstAddress, listTokenID[i], nonce, quantityToTransfer, verifyPayable)
+		listEsdtData[i], err = e.transferOneTokenOnSenderShard(
+			acntSnd,
+			acntDst,
+			dstAddress,
+			listTokenID[i],
+			nonce,
+			quantityToTransfer,
+			verifyPayable,
+			vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -256,6 +270,13 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		logEntry := newEntryForNFT(vmcommon.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, listTokenID[i], nonce)
 		logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
 		vmOutput.Logs[i] = logEntry
+	}
+
+	if !check.IfNil(acntDst) {
+		err = e.accounts.SaveAccount(acntDst)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTokenID, dstAddress)
@@ -274,6 +295,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	nonce uint64,
 	quantityToTransfer *big.Int,
 	verifyPayable bool,
+	isReturnCallWithError bool,
 ) (*esdt.ESDigitalToken, error) {
 	if quantityToTransfer.Cmp(zero) <= 0 {
 		return nil, ErrInvalidNFTQuantity
@@ -290,7 +312,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler)
+	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, isReturnCallWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +320,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	esdtData.Value.Set(quantityToTransfer)
 
 	if !check.IfNil(acntDst) {
-		err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, verifyPayable)
+		err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, verifyPayable, isReturnCallWithError)
 		if err != nil {
 			return nil, err
 		}
@@ -411,6 +433,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 	esdtDataToTransfer *esdt.ESDigitalToken,
 	esdtTokenKey []byte,
 	mustVerifyPayable bool,
+	isReturnCallWithError bool,
 ) error {
 	if mustVerifyPayable {
 		isPayable, errIsPayable := e.payableHandler.IsPayable(dstAddress)
@@ -426,7 +449,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
-	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.pauseHandler)
+	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.pauseHandler, isReturnCallWithError)
 	if err != nil {
 		return err
 	}
@@ -438,7 +461,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 		esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 	}
 
-	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.pauseHandler)
+	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.pauseHandler, isReturnCallWithError)
 	if err != nil {
 		return err
 	}
