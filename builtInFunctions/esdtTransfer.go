@@ -86,6 +86,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 
 	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, e.funcGasCost)
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	tokenID := vmInput.Arguments[0]
 
 	if !check.IfNil(acntSnd) {
 		// gas is paid only by sender
@@ -134,6 +135,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 				vmInput.CallType,
 				vmOutput)
 
+			addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr, acntDst.AddressBytes())
 			return vmOutput, nil
 		}
 
@@ -142,6 +144,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput.GasRemaining = vmInput.GasProvided
 		}
 
+		addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr, acntDst.AddressBytes())
 		return vmOutput, nil
 	}
 
@@ -157,6 +160,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
+	addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr)
 	return vmOutput, nil
 }
 
