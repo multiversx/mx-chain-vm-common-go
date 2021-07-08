@@ -95,7 +95,7 @@ func (e *esdtNFTMultiTransfer) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	}
 
 	e.mutExecution.Lock()
-	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTTransfer
+	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTMultiTransfer
 	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
 }

@@ -265,7 +265,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshalizer, pauseFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.marshalizer, pauseFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +274,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshalizer, pauseFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, b.marshalizer, pauseFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTMultiTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.marshalizer, pauseFunc, b.accounts, b.shardCoordinator, b.gasConfig.BaseOperationCost, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTMultiTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTMultiTransfer, b.marshalizer, pauseFunc, b.accounts, b.shardCoordinator, b.gasConfig.BaseOperationCost, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}

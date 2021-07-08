@@ -71,7 +71,7 @@ func (e *esdtNFTupdate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	}
 
 	e.mutExecution.Lock()
-	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTAddQuantity
+	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTUpdateAttributes
 	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
 }
