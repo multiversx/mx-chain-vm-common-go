@@ -92,11 +92,14 @@ func createMockGasCost() vmcommon.GasCost {
 			ESDTNFTBurn:              170,
 			ESDTNFTTransfer:          180,
 			ESDTNFTChangeCreateOwner: 190,
+			ESDTNFTUpdateAttributes:  200,
+			ESDTNFTAddURI:            210,
+			ESDTNFTMultiTransfer:     220,
 		},
 	}
 }
 
-func createESDTToken(
+func createESDTNFTToken(
 	tokenName []byte,
 	nftType vmcommon.ESDTType,
 	nonce uint64,
@@ -109,12 +112,16 @@ func createESDTToken(
 	esdtData := &esdt.ESDigitalToken{
 		Type:  uint32(nftType),
 		Value: value,
-		TokenMetaData: &esdt.MetaData{
+	}
+
+	if nonce > 0 {
+		esdtData.TokenMetaData = &esdt.MetaData{
 			URIs:  [][]byte{[]byte("uri")},
 			Nonce: nonce,
 			Hash:  []byte("NFT hash"),
-		},
+		}
 	}
+
 	buff, _ := marshalizer.Marshal(esdtData)
 
 	_ = account.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, buff)
@@ -284,7 +291,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = nftTransfer.accounts.SaveAccount(sender)
 	_ = nftTransfer.accounts.SaveAccount(destination)
 	_, _ = nftTransfer.accounts.Commit()
@@ -357,7 +364,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoesNotHo
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = nftTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = nftTransferSenderShard.accounts.Commit()
 
@@ -448,7 +455,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = nftTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = nftTransferSenderShard.accounts.Commit()
 
@@ -486,7 +493,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(
 	destinationNumTokens := big.NewInt(1000)
 	destination, err := nftTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
-	createESDTToken(tokenName, vmcommon.NonFungible, tokenNonce, destinationNumTokens, nftTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, destinationNumTokens, nftTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
 	_ = nftTransferDestinationShard.accounts.SaveAccount(destination)
 	_, _ = nftTransferDestinationShard.accounts.Commit()
 
@@ -531,7 +538,7 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
 	esdtFrozen := ESDTUserMetadata{Frozen: true}
 
 	_ = transferFunc.accounts.SaveAccount(sender)
@@ -584,7 +591,7 @@ func TestESDTNFTTransfer_NotEnoughGas(t *testing.T) {
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()
 	//reload sender account

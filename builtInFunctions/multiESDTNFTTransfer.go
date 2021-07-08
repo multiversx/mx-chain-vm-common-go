@@ -268,7 +268,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		}
 
 		logEntry := newEntryForNFT(vmcommon.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, listTokenID[i], nonce)
-		logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
+		logEntry.Topics = append(logEntry.Topics, dstAddress)
 		vmOutput.Logs[i] = logEntry
 	}
 
@@ -443,7 +443,12 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 		}
 	}
 
-	currentESDTData, _, err := getESDTNFTTokenOnDestination(userAccount, esdtTokenKey, esdtDataToTransfer.TokenMetaData.Nonce, e.marshalizer)
+	nonce := uint64(0)
+	if esdtDataToTransfer.TokenMetaData != nil {
+		nonce = esdtDataToTransfer.TokenMetaData.Nonce
+	}
+
+	currentESDTData, _, err := getESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce, e.marshalizer)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
