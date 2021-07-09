@@ -78,6 +78,15 @@ type VMInput struct {
 	// PrevTxHash
 	PrevTxHash []byte
 
+	// ESDTTransfers
+	ESDTTransfers []*ESDTTransfer
+
+	// ReturnCallAfterError
+	ReturnCallAfterError bool
+}
+
+// ESDTTransfer defines the structure for and ESDT / NFT transfer
+type ESDTTransfer struct {
 	// ESDTValue is the value (amount of tokens) transferred by the transaction.
 	// Before reaching the VM this value is subtracted from sender balance (CallerAddr)
 	// and to added to the smart contract balance.
@@ -92,9 +101,6 @@ type VMInput struct {
 
 	// ESDTTokenNonce is the nonce for the given NFT token
 	ESDTTokenNonce uint64
-
-	// ReturnCallAfterError is true when the contract call input is created as return when processing failed
-	ReturnCallAfterError bool
 }
 
 // ContractCreateInput VM input when creating a new contract.

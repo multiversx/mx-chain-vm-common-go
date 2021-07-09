@@ -17,6 +17,7 @@ func TestNewChangeOwnerAddressFunc(t *testing.T) {
 	coa := NewChangeOwnerAddressFunc(gasCost)
 	require.False(t, check.IfNil(coa))
 	require.Equal(t, gasCost, coa.gasCost)
+	require.True(t, coa.IsActive())
 }
 
 func TestChangeOwnerAddress_SetNewGasConfig(t *testing.T) {

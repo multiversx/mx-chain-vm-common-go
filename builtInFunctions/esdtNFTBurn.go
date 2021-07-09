@@ -9,6 +9,7 @@ import (
 )
 
 type esdtNFTBurn struct {
+	baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
 	pauseHandler vmcommon.ESDTPauseHandler
@@ -84,6 +85,9 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
+	if nonce == 0 {
+		return nil, ErrNFTDoesNotHaveMetadata
+	}
 	esdtData, err := getESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce, e.marshalizer)
 	if err != nil {
 		return nil, err

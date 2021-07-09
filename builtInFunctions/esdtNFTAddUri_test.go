@@ -12,70 +12,76 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewESDTNFTAddQuantityFunc(t *testing.T) {
+func TestNewESDTNFTAddUriFunc(t *testing.T) {
 	t.Parallel()
 
 	// nil marshalizer
-	eqf, err := NewESDTNFTAddQuantityFunc(10, nil, nil, nil)
-	require.True(t, check.IfNil(eqf))
+	e, err := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, nil, nil, nil, 0, &mock.EpochNotifierStub{})
+	require.True(t, check.IfNil(e))
 	require.Equal(t, ErrNilMarshalizer, err)
 
 	// nil pause handler
-	eqf, err = NewESDTNFTAddQuantityFunc(10, &mock.MarshalizerMock{}, nil, nil)
-	require.True(t, check.IfNil(eqf))
+	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, nil, nil, 0, &mock.EpochNotifierStub{})
+	require.True(t, check.IfNil(e))
 	require.Equal(t, ErrNilPauseHandler, err)
 
 	// nil roles handler
-	eqf, err = NewESDTNFTAddQuantityFunc(10, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, nil)
-	require.True(t, check.IfNil(eqf))
+	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, nil, 0, &mock.EpochNotifierStub{})
+	require.True(t, check.IfNil(e))
 	require.Equal(t, ErrNilRolesHandler, err)
 
+	// nil epoch notifier
+	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, nil)
+	require.True(t, check.IfNil(e))
+	require.Equal(t, ErrNilEpochHandler, err)
+
 	// should work
-	eqf, err = NewESDTNFTAddQuantityFunc(10, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{})
-	require.False(t, check.IfNil(eqf))
+	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 1, &mock.EpochNotifierStub{})
+	require.False(t, check.IfNil(e))
 	require.NoError(t, err)
+	require.False(t, e.IsActive())
 }
 
-func TestEsdtNFTAddQuantity_SetNewGasConfig_NilGasCost(t *testing.T) {
+func TestESDTNFTAddUri_SetNewGasConfig_NilGasCost(t *testing.T) {
 	t.Parallel()
 
 	defaultGasCost := uint64(10)
-	eqf, _ := NewESDTNFTAddQuantityFunc(defaultGasCost, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	e, _ := NewESDTNFTAddUriFunc(defaultGasCost, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
-	eqf.SetNewGasConfig(nil)
-	require.Equal(t, defaultGasCost, eqf.funcGasCost)
+	e.SetNewGasConfig(nil)
+	require.Equal(t, defaultGasCost, e.funcGasCost)
 }
 
-func TestEsdtNFTAddQuantity_SetNewGasConfig_ShouldWork(t *testing.T) {
+func TestESDTNFTAddUri_SetNewGasConfig_ShouldWork(t *testing.T) {
 	t.Parallel()
 
 	defaultGasCost := uint64(10)
 	newGasCost := uint64(37)
-	eqf, _ := NewESDTNFTAddQuantityFunc(defaultGasCost, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	e, _ := NewESDTNFTAddUriFunc(defaultGasCost, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
-	eqf.SetNewGasConfig(
+	e.SetNewGasConfig(
 		&vmcommon.GasCost{
 			BuiltInCost: vmcommon.BuiltInCost{
-				ESDTNFTAddQuantity: newGasCost,
+				ESDTNFTAddURI: newGasCost,
 			},
 		},
 	)
 
-	require.Equal(t, newGasCost, eqf.funcGasCost)
+	require.Equal(t, newGasCost, e.funcGasCost)
 }
 
-func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnAddInput(t *testing.T) {
+func TestESDTNFTAddUri_ProcessBuiltinFunctionErrorOnCheckInput(t *testing.T) {
 	t.Parallel()
 
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
 	// nil vm input
-	output, err := eqf.ProcessBuiltinFunction(mock.NewAccountWrapMock([]byte("addr")), nil, nil)
+	output, err := e.ProcessBuiltinFunction(mock.NewAccountWrapMock([]byte("addr")), nil, nil)
 	require.Nil(t, output)
 	require.Equal(t, ErrNilVmInput, err)
 
 	// vm input - value not zero
-	output, err = eqf.ProcessBuiltinFunction(
+	output, err = e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
 		&vmcommon.ContractCallInput{
@@ -88,7 +94,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 	require.Equal(t, ErrBuiltInFunctionCalledWithValue, err)
 
 	// vm input - invalid number of arguments
-	output, err = eqf.ProcessBuiltinFunction(
+	output, err = e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
 		&vmcommon.ContractCallInput{
@@ -102,7 +108,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 	require.Equal(t, ErrInvalidArguments, err)
 
 	// vm input - invalid number of arguments
-	output, err = eqf.ProcessBuiltinFunction(
+	output, err = e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
 		&vmcommon.ContractCallInput{
@@ -116,7 +122,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 	require.Equal(t, ErrInvalidArguments, err)
 
 	// vm input - invalid receiver
-	output, err = eqf.ProcessBuiltinFunction(
+	output, err = e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
 		&vmcommon.ContractCallInput{
@@ -132,7 +138,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 	require.Equal(t, ErrInvalidRcvAddr, err)
 
 	// nil user account
-	output, err = eqf.ProcessBuiltinFunction(
+	output, err = e.ProcessBuiltinFunction(
 		nil,
 		nil,
 		&vmcommon.ContractCallInput{
@@ -148,7 +154,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 	require.Equal(t, ErrNilUserAccount, err)
 
 	// not enough gas
-	output, err = eqf.ProcessBuiltinFunction(
+	output, err = e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
 		&vmcommon.ContractCallInput{
@@ -165,11 +171,11 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 	require.Equal(t, ErrNotEnoughGas, err)
 }
 
-func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionInvalidNumberOfArguments(t *testing.T) {
+func TestESDTNFTAddUri_ProcessBuiltinFunctionInvalidNumberOfArguments(t *testing.T) {
 	t.Parallel()
 
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{})
-	output, err := eqf.ProcessBuiltinFunction(
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
 		&vmcommon.ContractCallInput{
@@ -186,7 +192,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionInvalidNumberOfArguments(t *te
 	require.Equal(t, ErrInvalidArguments, err)
 }
 
-func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *testing.T) {
+func TestESDTNFTAddUri_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *testing.T) {
 	t.Parallel()
 
 	localErr := errors.New("err")
@@ -195,8 +201,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *
 			return localErr
 		},
 	}
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, rolesHandler)
-	output, err := eqf.ProcessBuiltinFunction(
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, rolesHandler, 0, &mock.EpochNotifierStub{})
+	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
 		&vmcommon.ContractCallInput{
@@ -214,11 +220,11 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *
 	require.Equal(t, localErr, err)
 }
 
-func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.T) {
+func TestESDTNFTAddUri_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.T) {
 	t.Parallel()
 
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{})
-	output, err := eqf.ProcessBuiltinFunction(
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
 		&vmcommon.ContractCallInput{
@@ -237,17 +243,17 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.
 	require.Equal(t, ErrNewNFTDataOnSenderAddress, err)
 }
 
-func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
+func TestESDTNFTAddUri_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, marshalizer, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
-	output, err := eqf.ProcessBuiltinFunction(
+	output, err := e.ProcessBuiltinFunction(
 		userAcc,
 		nil,
 		&vmcommon.ContractCallInput{
@@ -265,7 +271,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) 
 	require.Equal(t, ErrNFTDoesNotHaveMetadata, err)
 }
 
-func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused(t *testing.T) {
+func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
@@ -275,7 +281,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsP
 		},
 	}
 
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, marshalizer, pauseHandler, &mock.ESDTRoleHandlerStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, pauseHandler, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -287,7 +293,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsP
 	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(vmcommon.ElrondProtectedKeyPrefix+vmcommon.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 
-	output, err := eqf.ProcessBuiltinFunction(
+	output, err := e.ProcessBuiltinFunction(
 		userAcc,
 		nil,
 		&vmcommon.ContractCallInput{
@@ -305,7 +311,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsP
 	require.Equal(t, ErrESDTTokenIsPaused, err)
 }
 
-func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
+func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	t.Parallel()
 
 	tokenIdentifier := "testTkn"
@@ -313,11 +319,10 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 
 	nonce := big.NewInt(33)
 	initialValue := big.NewInt(5)
-	valueToAdd := big.NewInt(37)
-	expectedValue := big.NewInt(0).Add(initialValue, valueToAdd)
+	URIToAdd := []byte("NewURI")
 
 	marshalizer := &mock.MarshalizerMock{}
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, marshalizer, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -330,13 +335,13 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 
-	output, err := eqf.ProcessBuiltinFunction(
+	output, err := e.ProcessBuiltinFunction(
 		userAcc,
 		nil,
 		&vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue:   big.NewInt(0),
-				Arguments:   [][]byte{[]byte(tokenIdentifier), nonce.Bytes(), valueToAdd.Bytes()},
+				Arguments:   [][]byte{[]byte(tokenIdentifier), nonce.Bytes(), URIToAdd},
 				CallerAddr:  []byte("address 1"),
 				GasProvided: 12,
 			},
@@ -354,5 +359,5 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 
 	finalTokenData := esdt.ESDigitalToken{}
 	_ = marshalizer.Unmarshal(&finalTokenData, res)
-	require.Equal(t, expectedValue.Bytes(), finalTokenData.Value.Bytes())
+	require.Equal(t, finalTokenData.TokenMetaData.URIs[0], URIToAdd)
 }

@@ -5,26 +5,31 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
-type esdtNFTAddQuantity struct {
-	baseAlwaysActive
+type esdtNFTAddUri struct {
+	*baseEnabled
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
 	pauseHandler vmcommon.ESDTPauseHandler
 	rolesHandler vmcommon.ESDTRoleHandler
+	gasConfig    vmcommon.BaseOperationCost
 	funcGasCost  uint64
 	mutExecution sync.RWMutex
 }
 
-// NewESDTNFTAddQuantityFunc returns the esdt NFT add quantity built-in function component
-func NewESDTNFTAddQuantityFunc(
+// NewESDTNFTAddUriFunc returns the esdt NFT add URI built-in function component
+func NewESDTNFTAddUriFunc(
 	funcGasCost uint64,
+	gasConfig vmcommon.BaseOperationCost,
 	marshalizer vmcommon.Marshalizer,
 	pauseHandler vmcommon.ESDTPauseHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
-) (*esdtNFTAddQuantity, error) {
+	activationEpoch uint32,
+	epochNotifier vmcommon.EpochNotifier,
+) (*esdtNFTAddUri, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
@@ -34,27 +39,40 @@ func NewESDTNFTAddQuantityFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(epochNotifier) {
+		return nil, ErrNilEpochHandler
+	}
 
-	e := &esdtNFTAddQuantity{
+	e := &esdtNFTAddUri{
 		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
 		marshalizer:  marshalizer,
-		pauseHandler: pauseHandler,
-		rolesHandler: rolesHandler,
 		funcGasCost:  funcGasCost,
 		mutExecution: sync.RWMutex{},
+		pauseHandler: pauseHandler,
+		gasConfig:    gasConfig,
+		rolesHandler: rolesHandler,
 	}
+
+	e.baseEnabled = &baseEnabled{
+		function:        vmcommon.BuiltInFunctionESDTNFTAddURI,
+		activationEpoch: activationEpoch,
+		flagActivated:   atomic.Flag{},
+	}
+
+	epochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
-func (e *esdtNFTAddQuantity) SetNewGasConfig(gasCost *vmcommon.GasCost) {
+func (e *esdtNFTAddUri) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	if gasCost == nil {
 		return
 	}
 
 	e.mutExecution.Lock()
-	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTAddQuantity
+	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTAddURI
+	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
 }
 
@@ -62,8 +80,8 @@ func (e *esdtNFTAddQuantity) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 // Requires 3 arguments:
 // arg0 - token identifier
 // arg1 - nonce
-// arg2 - quantity to add
-func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
+// arg2 - attributes to add
+func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
@@ -78,9 +96,14 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, ErrInvalidArguments
 	}
 
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(vmcommon.ESDTRoleNFTAddQuantity))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(vmcommon.ESDTRoleNFTAddURI))
 	if err != nil {
 		return nil, err
+	}
+
+	gasCostForStore := e.getGasCostForURIStore(vmInput)
+	if vmInput.GasProvided < e.funcGasCost+gasCostForStore {
+		return nil, ErrNotEnoughGas
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
@@ -93,23 +116,31 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	esdtData.Value.Add(esdtData.Value, big.NewInt(0).SetBytes(vmInput.Arguments[2]))
+	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
 
 	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
 
-	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTAddQuantity, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
+	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTAddURI, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
-		GasRemaining: vmInput.GasProvided - e.funcGasCost,
+		GasRemaining: vmInput.GasProvided - e.funcGasCost - gasCostForStore,
 		Logs:         []*vmcommon.LogEntry{logEntry},
 	}
 	return vmOutput, nil
 }
 
+func (e *esdtNFTAddUri) getGasCostForURIStore(vmInput *vmcommon.ContractCallInput) uint64 {
+	lenURIs := 0
+	for _, uri := range vmInput.Arguments[2:] {
+		lenURIs += len(uri)
+	}
+	return uint64(lenURIs) * e.gasConfig.StorePerByte
+}
+
 // IsInterfaceNil returns true if underlying object in nil
-func (e *esdtNFTAddQuantity) IsInterfaceNil() bool {
+func (e *esdtNFTAddUri) IsInterfaceNil() bool {
 	return e == nil
 }

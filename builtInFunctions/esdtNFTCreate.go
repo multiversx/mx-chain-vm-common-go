@@ -14,6 +14,7 @@ import (
 var noncePrefix = []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTNFTLatestNonceIdentifier)
 
 type esdtNFTCreate struct {
+	baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
 	pauseHandler vmcommon.ESDTPauseHandler
@@ -202,10 +203,6 @@ func getESDTNFTTokenOnSender(
 		return nil, ErrNewNFTDataOnSenderAddress
 	}
 
-	if esdtData.TokenMetaData == nil {
-		return nil, ErrNFTDoesNotHaveMetadata
-	}
-
 	return esdtData, nil
 }
 
@@ -238,16 +235,15 @@ func saveESDTNFTToken(
 	pauseHandler vmcommon.ESDTPauseHandler,
 	isReturnWithError bool,
 ) ([]byte, error) {
-	if esdtData.TokenMetaData == nil {
-		return nil, ErrNFTDoesNotHaveMetadata
-	}
-
 	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, pauseHandler, isReturnWithError)
 	if err != nil {
 		return nil, err
 	}
 
-	nonce := esdtData.TokenMetaData.Nonce
+	nonce := uint64(0)
+	if esdtData.TokenMetaData != nil {
+		nonce = esdtData.TokenMetaData.Nonce
+	}
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, pauseHandler, isReturnWithError)
 	if err != nil {
