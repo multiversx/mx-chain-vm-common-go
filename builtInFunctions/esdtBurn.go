@@ -101,6 +101,8 @@ func (e *esdtBurn) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
+	addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTBurn), vmInput.Arguments[0], value, vmInput.CallerAddr)
+
 	return vmOutput, nil
 }
 

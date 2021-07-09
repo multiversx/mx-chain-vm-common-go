@@ -2,6 +2,7 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"math/big"
 
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
@@ -74,6 +75,10 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 	}
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
+	if e.wipe {
+		addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTWipe), vmInput.Arguments[0], big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
+	}
+
 	return vmOutput, nil
 }
 
