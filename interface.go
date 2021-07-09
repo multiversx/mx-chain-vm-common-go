@@ -232,6 +232,7 @@ type AccountsAdapter interface {
 type BuiltinFunction interface {
 	ProcessBuiltinFunction(acntSnd, acntDst UserAccountHandler, vmInput *ContractCallInput) (*VMOutput, error)
 	SetNewGasConfig(gasCost *GasCost)
+	IsActive() bool
 	IsInterfaceNil() bool
 }
 
