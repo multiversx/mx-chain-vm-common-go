@@ -10,13 +10,6 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 )
 
-type ParsedESDTTransfers struct {
-	ESDTTransfers []*vmcommon.ESDTTransfer
-	RcvAddr       []byte
-	CallFunction  string
-	CallArgs      [][]byte
-}
-
 // ErrNotESDTTransferInput signals invalid ESDT transfer input error
 var ErrNotESDTTransferInput = errors.New("not ESDT transfer input")
 
@@ -59,7 +52,7 @@ func (e *esdtTransferParser) ParseESDTTransfers(
 	rcvAddr []byte,
 	function string,
 	args [][]byte,
-) (*ParsedESDTTransfers, error) {
+) (*vmcommon.ParsedESDTTransfers, error) {
 	switch function {
 	case vmcommon.BuiltInFunctionESDTTransfer:
 		return e.parseSingleESDTTransfer(rcvAddr, args)
@@ -72,11 +65,11 @@ func (e *esdtTransferParser) ParseESDTTransfers(
 	}
 }
 
-func (e *esdtTransferParser) parseSingleESDTTransfer(rcvAddr []byte, args [][]byte) (*ParsedESDTTransfers, error) {
+func (e *esdtTransferParser) parseSingleESDTTransfer(rcvAddr []byte, args [][]byte) (*vmcommon.ParsedESDTTransfers, error) {
 	if len(args) < MinArgsForESDTTransfer {
 		return nil, ErrNotEnoughArguments
 	}
-	esdtTransfers := &ParsedESDTTransfers{
+	esdtTransfers := &vmcommon.ParsedESDTTransfers{
 		ESDTTransfers: make([]*vmcommon.ESDTTransfer, 1),
 		RcvAddr:       rcvAddr,
 		CallArgs:      make([][]byte, 0),
@@ -98,11 +91,11 @@ func (e *esdtTransferParser) parseSingleESDTTransfer(rcvAddr []byte, args [][]by
 	return esdtTransfers, nil
 }
 
-func (e *esdtTransferParser) parseSingleESDTNFTTransfer(sndAddr, rcvAddr []byte, args [][]byte) (*ParsedESDTTransfers, error) {
+func (e *esdtTransferParser) parseSingleESDTNFTTransfer(sndAddr, rcvAddr []byte, args [][]byte) (*vmcommon.ParsedESDTTransfers, error) {
 	if len(args) < MinArgsForESDTNFTTransfer {
 		return nil, ErrNotEnoughArguments
 	}
-	esdtTransfers := &ParsedESDTTransfers{
+	esdtTransfers := &vmcommon.ParsedESDTTransfers{
 		ESDTTransfers: make([]*vmcommon.ESDTTransfer, 1),
 		RcvAddr:       rcvAddr,
 		CallArgs:      make([][]byte, 0),
@@ -128,11 +121,11 @@ func (e *esdtTransferParser) parseSingleESDTNFTTransfer(sndAddr, rcvAddr []byte,
 	return esdtTransfers, nil
 }
 
-func (e *esdtTransferParser) parseMultiESDTNFTTransfer(sndAddr, rcvAddr []byte, args [][]byte) (*ParsedESDTTransfers, error) {
+func (e *esdtTransferParser) parseMultiESDTNFTTransfer(sndAddr, rcvAddr []byte, args [][]byte) (*vmcommon.ParsedESDTTransfers, error) {
 	if len(args) < MinArgsForMultiESDTNFTTransfer {
 		return nil, ErrNotEnoughArguments
 	}
-	esdtTransfers := &ParsedESDTTransfers{
+	esdtTransfers := &vmcommon.ParsedESDTTransfers{
 		RcvAddr:      rcvAddr,
 		CallArgs:     make([][]byte, 0),
 		CallFunction: "",
@@ -180,4 +173,9 @@ func (e *esdtTransferParser) parseMultiESDTNFTTransfer(sndAddr, rcvAddr []byte, 
 	}
 
 	return esdtTransfers, nil
+}
+
+// IsInterfaceNil returns true if underlying object is nil
+func (e *esdtTransferParser) IsInterfaceNil() bool {
+	return e == nil
 }
