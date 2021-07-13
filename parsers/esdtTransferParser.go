@@ -137,11 +137,11 @@ func (e *esdtTransferParser) parseMultiESDTNFTTransfer(sndAddr, rcvAddr []byte, 
 	if bytes.Equal(sndAddr, rcvAddr) {
 		esdtTransfers.RcvAddr = args[0]
 		numOfTransfer.SetBytes(args[1])
-		startIndex = 0
+		startIndex = 2
 		isTxAtSender = true
 	}
 
-	minLenArgs := ArgsPerTransfer * numOfTransfer.Uint64()
+	minLenArgs := ArgsPerTransfer*numOfTransfer.Uint64() + startIndex
 
 	if uint64(len(args)) > minLenArgs {
 		esdtTransfers.CallFunction = string(args[minLenArgs])
@@ -151,7 +151,7 @@ func (e *esdtTransferParser) parseMultiESDTNFTTransfer(sndAddr, rcvAddr []byte, 
 	}
 
 	esdtTransfers.ESDTTransfers = make([]*vmcommon.ESDTTransfer, numOfTransfer.Uint64())
-	for i := startIndex; i < numOfTransfer.Uint64(); i++ {
+	for i := uint64(0); i < numOfTransfer.Uint64(); i++ {
 		tokenStartIndex := startIndex + i*ArgsPerTransfer
 		esdtTransfers.ESDTTransfers[i] = &vmcommon.ESDTTransfer{
 			ESDTValue:      big.NewInt(0).SetBytes(args[tokenStartIndex+2]),
