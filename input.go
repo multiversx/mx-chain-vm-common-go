@@ -133,3 +133,11 @@ type ContractCallInput struct {
 	// the smart contract is allowed or not
 	AllowInitFunction bool
 }
+
+// ParsedESDTTransfers defines the struct for the parsed esdt transfers
+type ParsedESDTTransfers struct {
+	ESDTTransfers []*ESDTTransfer
+	RcvAddr       []byte
+	CallFunction  string
+	CallArgs      [][]byte
+}

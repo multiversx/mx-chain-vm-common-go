@@ -264,3 +264,9 @@ type EpochNotifier interface {
 	RegisterNotifyHandler(handler EpochSubscriberHandler)
 	IsInterfaceNil() bool
 }
+
+// ESDTTransferParser can parse single and multi ESDT / NFT transfers
+type ESDTTransferParser interface {
+	ParseESDTTransfers(sndAddr []byte, rcvAddr []byte, function string, args [][]byte) (*ParsedESDTTransfers, error)
+	IsInterfaceNil() bool
+}
