@@ -142,6 +142,9 @@ func (e *esdtTransferParser) parseMultiESDTNFTTransfer(sndAddr, rcvAddr []byte, 
 	}
 
 	minLenArgs := ArgsPerTransfer*numOfTransfer.Uint64() + startIndex
+	if uint64(len(args)) < minLenArgs {
+		return nil, ErrNotEnoughArguments
+	}
 
 	if uint64(len(args)) > minLenArgs {
 		esdtTransfers.CallFunction = string(args[minLenArgs])
