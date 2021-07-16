@@ -7,9 +7,9 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/atomic"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 )
 

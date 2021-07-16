@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
