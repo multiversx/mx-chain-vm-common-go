@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 )
 
 // StorageUpdate represents a change in the account storage (insert, update or delete)
@@ -76,7 +78,7 @@ type OutputTransfer struct {
 	// Data to be used in cross call
 	Data []byte
 	// CallType is set if it is a smart contract invocation
-	CallType CallType
+	CallType vm.CallType
 	// SenderAddress is the actual sender for the given output transfer, this is needed when
 	// contract A calls contract B and contract B does the transfers
 	SenderAddress []byte

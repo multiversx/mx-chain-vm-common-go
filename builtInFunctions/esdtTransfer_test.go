@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -237,7 +238,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 		VMInput: vmcommon.VMInput{
 			GasProvided: 50,
 			CallValue:   big.NewInt(0),
-			CallType:    vmcommon.AsynchronousCallBack,
+			CallType:    vm.AsynchronousCallBack,
 		},
 	}
 	key := []byte("key")

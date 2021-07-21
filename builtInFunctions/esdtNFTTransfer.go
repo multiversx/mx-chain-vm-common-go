@@ -8,9 +8,10 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 )
 
 type esdtNFTTransfer struct {
@@ -356,7 +357,7 @@ func addNFTTransferToVMOutput(
 	arguments [][]byte,
 	gasLocked uint64,
 	gasLimit uint64,
-	callType vmcommon.CallType,
+	callType vm.CallType,
 	vmOutput *vmcommon.VMOutput,
 ) {
 	nftTransferTxData := funcToCall

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type changeOwnerAddress struct {

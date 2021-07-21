@@ -6,9 +6,10 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 )
 
 var zero = big.NewInt(0)
@@ -140,7 +141,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			return vmOutput, nil
 		}
 
-		if vmInput.CallType == vmcommon.AsynchronousCallBack && check.IfNil(acntSnd) {
+		if vmInput.CallType == vm.AsynchronousCallBack && check.IfNil(acntSnd) {
 			// gas was already consumed on sender shard
 			vmOutput.GasRemaining = vmInput.GasProvided
 		}
@@ -166,7 +167,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 }
 
 func mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int) bool {
-	if vmInput.CallType == vmcommon.AsynchronousCallBack || vmInput.CallType == vmcommon.ESDTTransferAndExecute {
+	if vmInput.CallType == vm.AsynchronousCall || vmInput.CallType == vm.ESDTTransferAndExecute {
 		return false
 	}
 	if bytes.Equal(vmInput.CallerAddr, vmcommon.ESDTSCAddress) {
@@ -186,7 +187,7 @@ func addOutputTransferToVMOutput(
 	arguments [][]byte,
 	recipient []byte,
 	gasLocked uint64,
-	callType vmcommon.CallType,
+	callType vm.CallType,
 	vmOutput *vmcommon.VMOutput,
 ) {
 	esdtTransferTxData := function

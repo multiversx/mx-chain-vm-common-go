@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"math/big"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtFreezeWipe struct {

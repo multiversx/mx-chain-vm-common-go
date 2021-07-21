@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type saveUserName struct {
@@ -85,7 +86,7 @@ func (s *saveUserName) ProcessBuiltinFunction(
 			GasLimit:      vmInput.GasProvided,
 			GasLocked:     vmInput.GasLocked,
 			Data:          []byte(setUserNameTxData),
-			CallType:      vmcommon.AsynchronousCall,
+			CallType:      vm.AsynchronousCall,
 			SenderAddress: vmInput.CallerAddr,
 		}
 		vmOutput.OutputAccounts[string(vmInput.RecipientAddr)] = &vmcommon.OutputAccount{
