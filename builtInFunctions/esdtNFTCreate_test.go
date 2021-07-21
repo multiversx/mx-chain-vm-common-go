@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
@@ -223,7 +224,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	createdEsdt, latestNonce := readNFTData(t, sender, nftCreate.marshalizer, []byte(token), 1, address)
 	assert.Equal(t, uint64(1), latestNonce)
 	expectedEsdt := &esdt.ESDigitalToken{
-		Type:       uint32(vmcommon.NonFungible),
+		Type:       uint32(core.NonFungible),
 		Value:      quantity,
 		Properties: nil,
 		TokenMetaData: &esdt.MetaData{
@@ -245,7 +246,7 @@ func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshalizer 
 	require.Nil(t, err)
 	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
 
-	createdTokenID := []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier)
+	createdTokenID := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier)
 	createdTokenID = append(createdTokenID, tokenID...)
 	tokenKey := computeESDTNFTTokenKey(createdTokenID, nonce)
 	data, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(tokenKey)

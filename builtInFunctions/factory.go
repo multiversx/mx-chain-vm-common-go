@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/mitchellh/mapstructure"
@@ -92,13 +93,13 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	b.builtInFunctions = NewBuiltInFunctionContainer()
 	var newFunc vmcommon.BuiltinFunction
 	newFunc = NewClaimDeveloperRewardsFunc(b.gasConfig.BuiltInCost.ClaimDeveloperRewards)
-	err := b.builtInFunctions.Add(vmcommon.BuiltInFunctionClaimDeveloperRewards, newFunc)
+	err := b.builtInFunctions.Add(core.BuiltInFunctionClaimDeveloperRewards, newFunc)
 	if err != nil {
 		return nil, err
 	}
 
 	newFunc = NewChangeOwnerAddressFunc(b.gasConfig.BuiltInCost.ChangeOwnerAddress)
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionChangeOwnerAddress, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionChangeOwnerAddress, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionSetUserName, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionSetUserName, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +117,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionSaveKeyValue, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionSaveKeyValue, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +126,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTPause, pauseFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTPause, pauseFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTTransfer, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTTransfer, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTBurn, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTBurn, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +153,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTFreeze, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTFreeze, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +162,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTUnFreeze, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnFreeze, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTWipe, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTWipe, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +180,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTUnPause, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnPause, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +189,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionUnSetESDTRole, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionUnSetESDTRole, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +198,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionSetESDTRole, setRoleFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionSetESDTRole, setRoleFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +207,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTLocalBurn, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTLocalBurn, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +216,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTLocalMint, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTLocalMint, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +225,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTAddQuantity, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTAddQuantity, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +234,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTBurn, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTBurn, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +243,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTCreate, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTCreate, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +252,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTTransfer, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTTransfer, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +261,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTCreateRoleTransfer, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTCreateRoleTransfer, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +270,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTUpdateAttributes, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTUpdateAttributes, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +279,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTNFTAddURI, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTAddURI, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +288,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionMultiESDTNFTTransfer, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionMultiESDTNFTTransfer, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +298,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, error) {
 	baseOps := &vmcommon.BaseOperationCost{}
-	err := mapstructure.Decode(gasMap[vmcommon.BaseOperationCostString], baseOps)
+	err := mapstructure.Decode(gasMap[core.BaseOperationCostString], baseOps)
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +309,7 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 	}
 
 	builtInOps := &vmcommon.BuiltInCost{}
-	err = mapstructure.Decode(gasMap[vmcommon.BuiltInCostString], builtInOps)
+	err = mapstructure.Decode(gasMap[core.BuiltInCostString], builtInOps)
 	if err != nil {
 		return nil, err
 	}
@@ -329,9 +330,9 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 // SetPayableHandler sets the payable interface to the needed functions
 func SetPayableHandler(container vmcommon.BuiltInFunctionContainer, payableHandler vmcommon.PayableHandler) error {
 	listOfTransferFunc := []string{
-		vmcommon.BuiltInFunctionMultiESDTNFTTransfer,
-		vmcommon.BuiltInFunctionESDTNFTTransfer,
-		vmcommon.BuiltInFunctionESDTTransfer}
+		core.BuiltInFunctionMultiESDTNFTTransfer,
+		core.BuiltInFunctionESDTNFTTransfer,
+		core.BuiltInFunctionESDTTransfer}
 
 	for _, transferFunc := range listOfTransferFunc {
 		builtInFunc, err := container.Get(transferFunc)

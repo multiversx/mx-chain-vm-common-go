@@ -3,12 +3,13 @@ package builtInFunctions
 import (
 	"bytes"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
-var roleKeyPrefix = []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTRoleIdentifier + vmcommon.ESDTKeyIdentifier)
+var roleKeyPrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTRoleIdentifier + core.ESDTKeyIdentifier)
 
 type esdtRoles struct {
 	baseAlwaysActive
@@ -46,7 +47,7 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	if !bytes.Equal(vmInput.CallerAddr, vmcommon.ESDTSCAddress) {
+	if !bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		return nil, ErrAddressIsNotESDTSystemSC
 	}
 	if check.IfNil(acntDst) {

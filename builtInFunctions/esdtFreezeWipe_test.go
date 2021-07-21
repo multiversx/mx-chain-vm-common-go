@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
@@ -46,7 +47,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 	_, err = freeze.ProcessBuiltinFunction(nil, nil, input)
 	assert.Equal(t, err, ErrAddressIsNotESDTSystemSC)
 
-	input.CallerAddr = vmcommon.ESDTSCAddress
+	input.CallerAddr = core.ESDTSCAddress
 	_, err = freeze.ProcessBuiltinFunction(nil, nil, input)
 	assert.Equal(t, err, ErrNilUserAccount)
 
@@ -80,7 +81,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	key := []byte("key")
 
 	input.Arguments = [][]byte{key}
-	input.CallerAddr = vmcommon.ESDTSCAddress
+	input.CallerAddr = core.ESDTSCAddress
 	input.RecipientAddr = []byte("dst")
 	esdtKey := append(freeze.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(10)}

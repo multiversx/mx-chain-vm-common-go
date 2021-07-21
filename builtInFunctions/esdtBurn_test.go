@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
@@ -38,7 +39,7 @@ func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Equal(t, err, ErrAddressIsNotESDTSystemSC)
 
-	input.RecipientAddr = vmcommon.ESDTSCAddress
+	input.RecipientAddr = core.ESDTSCAddress
 	input.GasProvided = burnFunc.funcGasCost - 1
 	accSnd := mock.NewUserAccount([]byte("dst"))
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
@@ -67,7 +68,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 			GasProvided: 50,
 			CallValue:   big.NewInt(0),
 		},
-		RecipientAddr: vmcommon.ESDTSCAddress,
+		RecipientAddr: core.ESDTSCAddress,
 	}
 	key := []byte("key")
 	value := big.NewInt(10).Bytes()

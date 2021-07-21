@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
@@ -56,7 +57,7 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e := &esdtNFTMultiTransfer{
-		keyPrefix:        []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		marshalizer:      marshalizer,
 		pauseHandler:     pauseHandler,
 		funcGasCost:      funcGasCost,
@@ -68,7 +69,7 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e.baseEnabled = &baseEnabled{
-		function:        vmcommon.BuiltInFunctionMultiESDTNFTTransfer,
+		function:        core.BuiltInFunctionMultiESDTNFTTransfer,
 		activationEpoch: activationEpoch,
 		flagActivated:   atomic.Flag{},
 	}
@@ -181,7 +182,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		logEntry := newEntryForNFT(vmcommon.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, tokenID, nonce)
+		logEntry := newEntryForNFT(core.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, tokenID, nonce)
 		logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
 		vmOutput.Logs[i] = logEntry
 	}
@@ -217,7 +218,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	if e.shardCoordinator.ComputeId(dstAddress) == vmcommon.MetachainShardId {
+	if e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId {
 		return nil, ErrInvalidRcvAddr
 	}
 	numOfTransfers := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
@@ -267,7 +268,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			return nil, err
 		}
 
-		logEntry := newEntryForNFT(vmcommon.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, listTokenID[i], nonce)
+		logEntry := newEntryForNFT(core.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, listTokenID[i], nonce)
 		logEntry.Topics = append(logEntry.Topics, dstAddress)
 		vmOutput.Logs[i] = logEntry
 	}
@@ -395,7 +396,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 		addNFTTransferToVMOutput(
 			vmInput.CallerAddr,
 			dstAddress,
-			vmcommon.BuiltInFunctionMultiESDTNFTTransfer,
+			core.BuiltInFunctionMultiESDTNFTTransfer,
 			multiTransferCallArgs,
 			vmInput.GasLocked,
 			gasToTransfer,

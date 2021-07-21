@@ -6,12 +6,13 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
-var noncePrefix = []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTNFTLatestNonceIdentifier)
+var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
 
 type esdtNFTCreate struct {
 	baseAlwaysActive
@@ -43,7 +44,7 @@ func NewESDTNFTCreateFunc(
 	}
 
 	e := &esdtNFTCreate{
-		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		marshalizer:  marshalizer,
 		pauseHandler: pauseHandler,
 		rolesHandler: rolesHandler,
@@ -92,7 +93,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	tokenID := vmInput.Arguments[0]
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(vmcommon.ESDTRoleNFTCreate))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTCreate))
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[3]).Uint64())
-	if royalties > vmcommon.MaxRoyalty {
+	if royalties > core.MaxRoyalty {
 		return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 	}
 
@@ -122,7 +123,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, fmt.Errorf("%w, invalid quantity", ErrInvalidArguments)
 	}
 	if quantity.Cmp(big.NewInt(1)) > 0 {
-		err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(vmcommon.ESDTRoleNFTAddQuantity))
+		err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +131,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 
 	nextNonce := nonce + 1
 	esdtData := &esdt.ESDigitalToken{
-		Type:  uint32(vmcommon.NonFungible),
+		Type:  uint32(core.NonFungible),
 		Value: quantity,
 		TokenMetaData: &esdt.MetaData{
 			Nonce:      nextNonce,
@@ -154,7 +155,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTCreate, vmInput.CallerAddr, tokenID, nextNonce)
+	logEntry := newEntryForNFT(core.BuiltInFunctionESDTNFTCreate, vmInput.CallerAddr, tokenID, nextNonce)
 	logEntry.Topics = append(logEntry.Topics, esdtDataBytes)
 
 	vmOutput := &vmcommon.VMOutput{
@@ -213,7 +214,7 @@ func getESDTNFTTokenOnDestination(
 	marshalizer vmcommon.Marshalizer,
 ) (*esdt.ESDigitalToken, bool, error) {
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(vmcommon.Fungible)}
+	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
 	marshaledData, err := accnt.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, true, nil

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"math/big"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
@@ -44,11 +45,11 @@ func (e *esdtTransferParser) ParseESDTTransfers(
 	args [][]byte,
 ) (*vmcommon.ParsedESDTTransfers, error) {
 	switch function {
-	case vmcommon.BuiltInFunctionESDTTransfer:
+	case core.BuiltInFunctionESDTTransfer:
 		return e.parseSingleESDTTransfer(rcvAddr, args)
-	case vmcommon.BuiltInFunctionESDTNFTTransfer:
+	case core.BuiltInFunctionESDTNFTTransfer:
 		return e.parseSingleESDTNFTTransfer(sndAddr, rcvAddr, args)
-	case vmcommon.BuiltInFunctionMultiESDTNFTTransfer:
+	case core.BuiltInFunctionMultiESDTNFTTransfer:
 		return e.parseMultiESDTNFTTransfer(sndAddr, rcvAddr, args)
 	default:
 		return nil, ErrNotESDTTransferInput
@@ -74,7 +75,7 @@ func (e *esdtTransferParser) parseSingleESDTTransfer(rcvAddr []byte, args [][]by
 	esdtTransfers.ESDTTransfers[0] = &vmcommon.ESDTTransfer{
 		ESDTValue:      big.NewInt(0).SetBytes(args[1]),
 		ESDTTokenName:  args[0],
-		ESDTTokenType:  uint32(vmcommon.Fungible),
+		ESDTTokenType:  uint32(core.Fungible),
 		ESDTTokenNonce: 0,
 	}
 
@@ -104,7 +105,7 @@ func (e *esdtTransferParser) parseSingleESDTNFTTransfer(sndAddr, rcvAddr []byte,
 	esdtTransfers.ESDTTransfers[0] = &vmcommon.ESDTTransfer{
 		ESDTValue:      big.NewInt(0).SetBytes(args[2]),
 		ESDTTokenName:  args[0],
-		ESDTTokenType:  uint32(vmcommon.NonFungible),
+		ESDTTokenType:  uint32(core.NonFungible),
 		ESDTTokenNonce: big.NewInt(0).SetBytes(args[1]).Uint64(),
 	}
 
@@ -164,11 +165,11 @@ func (e *esdtTransferParser) createNewESDTTransfer(
 	esdtTransfer := &vmcommon.ESDTTransfer{
 		ESDTValue:      big.NewInt(0).SetBytes(args[tokenStartIndex+2]),
 		ESDTTokenName:  args[tokenStartIndex],
-		ESDTTokenType:  uint32(vmcommon.Fungible),
+		ESDTTokenType:  uint32(core.Fungible),
 		ESDTTokenNonce: big.NewInt(0).SetBytes(args[tokenStartIndex+1]).Uint64(),
 	}
 	if esdtTransfer.ESDTTokenNonce > 0 {
-		esdtTransfer.ESDTTokenType = uint32(vmcommon.NonFungible)
+		esdtTransfer.ESDTTokenType = uint32(core.NonFungible)
 		if !isTxAtSender {
 			transferESDTData := &esdt.ESDigitalToken{}
 			err := e.marshalizer.Unmarshal(transferESDTData, args[tokenStartIndex+2])

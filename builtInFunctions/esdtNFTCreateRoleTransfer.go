@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"math/big"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
@@ -35,7 +36,7 @@ func NewESDTNFTCreateRoleTransfer(
 	}
 
 	e := &esdtNFTCreateRoleTransfer{
-		keyPrefix:        []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		marshalizer:      marshalizer,
 		accounts:         accounts,
 		shardCoordinator: shardCoordinator,
@@ -66,7 +67,7 @@ func (e *esdtNFTCreateRoleTransfer) ProcessBuiltinFunction(
 	}
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
-	if bytes.Equal(vmInput.CallerAddr, vmcommon.ESDTSCAddress) {
+	if bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		outAcc, errExec := e.executeTransferNFTCreateChangeAtCurrentOwner(acntDst, vmInput)
 		if errExec != nil {
 			return nil, errExec
@@ -146,7 +147,7 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtCurrentOwner
 	}
 	outTransfer := vmcommon.OutputTransfer{
 		Value: big.NewInt(0),
-		Data: []byte(vmcommon.BuiltInFunctionESDTNFTCreateRoleTransfer + "@" +
+		Data: []byte(core.BuiltInFunctionESDTNFTCreateRoleTransfer + "@" +
 			hex.EncodeToString(tokenID) + "@" + hex.EncodeToString(big.NewInt(0).SetUint64(nonce).Bytes())),
 		SenderAddress: vmInput.CallerAddr,
 	}
@@ -164,7 +165,7 @@ func (e *esdtNFTCreateRoleTransfer) deleteCreateRoleFromAccount(
 		return err
 	}
 
-	deleteRoles(roles, [][]byte{[]byte(vmcommon.ESDTRoleNFTCreate)})
+	deleteRoles(roles, [][]byte{[]byte(core.ESDTRoleNFTCreate)})
 	return saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshalizer)
 }
 
@@ -178,12 +179,12 @@ func (e *esdtNFTCreateRoleTransfer) addCreateRoleToAccount(
 	}
 
 	for _, role := range roles.Roles {
-		if bytes.Equal(role, []byte(vmcommon.ESDTRoleNFTCreate)) {
+		if bytes.Equal(role, []byte(core.ESDTRoleNFTCreate)) {
 			return nil
 		}
 	}
 
-	roles.Roles = append(roles.Roles, []byte(vmcommon.ESDTRoleNFTCreate))
+	roles.Roles = append(roles.Roles, []byte(core.ESDTRoleNFTCreate))
 	return saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshalizer)
 }
 

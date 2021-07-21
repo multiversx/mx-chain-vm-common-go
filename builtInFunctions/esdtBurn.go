@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
@@ -34,7 +35,7 @@ func NewESDTBurnFunc(
 	e := &esdtBurn{
 		funcGasCost:  funcGasCost,
 		marshalizer:  marshalizer,
-		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		pauseHandler: pauseHandler,
 	}
 
@@ -71,7 +72,7 @@ func (e *esdtBurn) ProcessBuiltinFunction(
 	if value.Cmp(zero) <= 0 {
 		return nil, ErrNegativeValue
 	}
-	if !bytes.Equal(vmInput.RecipientAddr, vmcommon.ESDTSCAddress) {
+	if !bytes.Equal(vmInput.RecipientAddr, core.ESDTSCAddress) {
 		return nil, ErrAddressIsNotESDTSystemSC
 	}
 	if check.IfNil(acntSnd) {
@@ -94,7 +95,7 @@ func (e *esdtBurn) ProcessBuiltinFunction(
 	if vmcommon.IsSmartContractAddress(vmInput.CallerAddr) {
 		addOutputTransferToVMOutput(
 			vmInput.CallerAddr,
-			vmcommon.BuiltInFunctionESDTBurn,
+			core.BuiltInFunctionESDTBurn,
 			vmInput.Arguments,
 			vmInput.RecipientAddr,
 			vmInput.GasLocked,
@@ -102,7 +103,7 @@ func (e *esdtBurn) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTBurn), vmInput.Arguments[0], value, vmInput.CallerAddr)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTBurn), vmInput.Arguments[0], value, vmInput.CallerAddr)
 
 	return vmOutput, nil
 }
