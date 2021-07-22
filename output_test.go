@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +14,7 @@ func TestGetFirstReturnData_VMOutputWithNoReturnDataShouldErr(t *testing.T) {
 		ReturnData: [][]byte{},
 	}
 
-	_, err := vmOutput.GetFirstReturnData(AsBigInt)
+	_, err := vmOutput.GetFirstReturnData(vm.AsBigInt)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "no return data")
 }
@@ -35,10 +36,10 @@ func TestGetFirstReturnData(t *testing.T) {
 		ReturnData: [][]byte{value.Bytes()},
 	}
 
-	dataAsBigInt, _ := vmOutput.GetFirstReturnData(AsBigInt)
-	dataAsBigIntString, _ := vmOutput.GetFirstReturnData(AsBigIntString)
-	dataAsString, _ := vmOutput.GetFirstReturnData(AsString)
-	dataAsHex, _ := vmOutput.GetFirstReturnData(AsHex)
+	dataAsBigInt, _ := vmOutput.GetFirstReturnData(vm.AsBigInt)
+	dataAsBigIntString, _ := vmOutput.GetFirstReturnData(vm.AsBigIntString)
+	dataAsString, _ := vmOutput.GetFirstReturnData(vm.AsString)
+	dataAsHex, _ := vmOutput.GetFirstReturnData(vm.AsHex)
 
 	assert.Equal(t, value, dataAsBigInt)
 	assert.Equal(t, "100", dataAsBigIntString)
