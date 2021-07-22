@@ -5,8 +5,10 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type saveUserName struct {
@@ -79,13 +81,13 @@ func (s *saveUserName) ProcessBuiltinFunction(
 		// cross-shard call, in sender shard only the gas is taken out
 		vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 		vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
-		setUserNameTxData := vmcommon.BuiltInFunctionSetUserName + "@" + hex.EncodeToString(vmInput.Arguments[0])
+		setUserNameTxData := core.BuiltInFunctionSetUserName + "@" + hex.EncodeToString(vmInput.Arguments[0])
 		outTransfer := vmcommon.OutputTransfer{
 			Value:         big.NewInt(0),
 			GasLimit:      vmInput.GasProvided,
 			GasLocked:     vmInput.GasLocked,
 			Data:          []byte(setUserNameTxData),
-			CallType:      vmcommon.AsynchronousCall,
+			CallType:      vm.AsynchronousCall,
 			SenderAddress: vmInput.CallerAddr,
 		}
 		vmOutput.OutputAccounts[string(vmInput.RecipientAddr)] = &vmcommon.OutputAccount{

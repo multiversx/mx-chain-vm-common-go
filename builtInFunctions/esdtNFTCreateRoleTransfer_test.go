@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -67,7 +68,7 @@ func TestESDTNFTCreateRoleTransfer_ProcessWithErrors(t *testing.T) {
 	assert.Equal(t, err, ErrNilUserAccount)
 	assert.Nil(t, vmOutput)
 
-	vmInput.CallerAddr = vmcommon.ESDTSCAddress
+	vmInput.CallerAddr = core.ESDTSCAddress
 	vmInput.Arguments = [][]byte{{1}, {2}, {3}}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, &mock.UserAccountStub{}, vmInput)
 	assert.Equal(t, err, ErrInvalidArguments)
@@ -116,14 +117,14 @@ func TestESDTNFTCreateRoleTransfer_ProcessAtCurrentShard(t *testing.T) {
 	destinationAddr := bytes.Repeat([]byte{2}, 32)
 	vmInput := &vmcommon.ContractCallInput{}
 	vmInput.CallValue = big.NewInt(0)
-	vmInput.CallerAddr = vmcommon.ESDTSCAddress
+	vmInput.CallerAddr = core.ESDTSCAddress
 	vmInput.Arguments = [][]byte{tokenID, destinationAddr}
 
 	destAcc, _ := e.accounts.LoadAccount(currentOwner)
 	userAcc := destAcc.(vmcommon.UserAccountHandler)
 
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
-	err := saveRolesToAccount(userAcc, esdtTokenRoleKey, &esdt.ESDTRoles{Roles: [][]byte{[]byte(vmcommon.ESDTRoleNFTCreate), []byte(vmcommon.ESDTRoleNFTAddQuantity)}}, e.marshalizer)
+	err := saveRolesToAccount(userAcc, esdtTokenRoleKey, &esdt.ESDTRoles{Roles: [][]byte{[]byte(core.ESDTRoleNFTCreate), []byte(core.ESDTRoleNFTAddQuantity)}}, e.marshalizer)
 	assert.Nil(t, err)
 	_ = saveLatestNonce(userAcc, tokenID, 100)
 	_ = e.accounts.SaveAccount(userAcc)
@@ -199,6 +200,6 @@ func checkNFTCreateRoleExists(t *testing.T, e *esdtNFTCreateRoleTransfer, addr [
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
 	roles, _, _ := getESDTRolesForAcnt(e.marshalizer, userAcc, esdtTokenRoleKey)
 	assert.Equal(t, 1, len(roles.Roles))
-	index, _ := doesRoleExist(roles, []byte(vmcommon.ESDTRoleNFTCreate))
+	index, _ := doesRoleExist(roles, []byte(core.ESDTRoleNFTCreate))
 	assert.Equal(t, expectedIndex, index)
 }

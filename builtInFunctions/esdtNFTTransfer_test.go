@@ -7,15 +7,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var keyPrefix = []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier)
+var keyPrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier)
 
 func createNftTransferWithStubArguments() *esdtNFTTransfer {
 	nftTransfer, _ := NewESDTNFTTransferFunc(
@@ -101,7 +102,7 @@ func createMockGasCost() vmcommon.GasCost {
 
 func createESDTNFTToken(
 	tokenName []byte,
-	nftType vmcommon.ESDTType,
+	nftType core.ESDTType,
 	nonce uint64,
 	value *big.Int,
 	marshalizer vmcommon.Marshalizer,
@@ -250,7 +251,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionInvalidArgumentsShouldErr(t *test
 	assert.Equal(t, ErrInvalidArguments, err)
 
 	nftTransfer.shardCoordinator = &mock.ShardCoordinatorStub{ComputeIdCalled: func(address []byte) uint32 {
-		return vmcommon.MetachainShardId
+		return core.MetachainShardId
 	}}
 
 	tokenName := []byte("token")
@@ -259,7 +260,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionInvalidArgumentsShouldErr(t *test
 		VMInput: vmcommon.VMInput{
 			CallValue:   big.NewInt(0),
 			CallerAddr:  senderAddress,
-			Arguments:   [][]byte{tokenName, big.NewInt(1).Bytes(), big.NewInt(1).Bytes(), vmcommon.ESDTSCAddress},
+			Arguments:   [][]byte{tokenName, big.NewInt(1).Bytes(), big.NewInt(1).Bytes(), core.ESDTSCAddress},
 			GasProvided: 1,
 		},
 		RecipientAddr: senderAddress,
@@ -291,7 +292,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, nftTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = nftTransfer.accounts.SaveAccount(sender)
 	_ = nftTransfer.accounts.SaveAccount(destination)
 	_, _ = nftTransfer.accounts.Commit()
@@ -364,7 +365,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoesNotHo
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, nftTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = nftTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = nftTransferSenderShard.accounts.Commit()
 
@@ -455,7 +456,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, nftTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, nftTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = nftTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = nftTransferSenderShard.accounts.Commit()
 
@@ -493,7 +494,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(
 	destinationNumTokens := big.NewInt(1000)
 	destination, err := nftTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
-	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, destinationNumTokens, nftTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, destinationNumTokens, nftTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
 	_ = nftTransferDestinationShard.accounts.SaveAccount(destination)
 	_, _ = nftTransferDestinationShard.accounts.Commit()
 
@@ -538,7 +539,7 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
 	esdtFrozen := ESDTUserMetadata{Frozen: true}
 
 	_ = transferFunc.accounts.SaveAccount(sender)
@@ -591,7 +592,7 @@ func TestESDTNFTTransfer_NotEnoughGas(t *testing.T) {
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(tokenName, vmcommon.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()
 	//reload sender account

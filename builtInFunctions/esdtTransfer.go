@@ -6,9 +6,11 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 )
 
 var zero = big.NewInt(0)
@@ -44,7 +46,7 @@ func NewESDTTransferFunc(
 	e := &esdtTransfer{
 		funcGasCost:      funcGasCost,
 		marshalizer:      marshalizer,
-		keyPrefix:        []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		pauseHandler:     pauseHandler,
 		payableHandler:   &disabledPayableHandler{},
 		shardCoordinator: shardCoordinator,
@@ -76,7 +78,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	if e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == vmcommon.MetachainShardId {
+	if e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId {
 		return nil, ErrInvalidRcvAddr
 	}
 
@@ -101,11 +103,11 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		}
 	}
 
-	isSCCallAfter := vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) && len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTTransfer
+	isSCCallAfter := vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) && len(vmInput.Arguments) > core.MinLenArgumentsESDTTransfer
 
 	vmOutput := &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}
 	if !check.IfNil(acntDst) {
-		if mustVerifyPayable(vmInput, vmcommon.MinLenArgumentsESDTTransfer) {
+		if mustVerifyPayable(vmInput, core.MinLenArgumentsESDTTransfer) {
 			isPayable, errPayable := e.payableHandler.IsPayable(vmInput.RecipientAddr)
 			if errPayable != nil {
 				return nil, errPayable
@@ -123,29 +125,29 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		if isSCCallAfter {
 			vmOutput.GasRemaining, err = vmcommon.SafeSubUint64(vmInput.GasProvided, e.funcGasCost)
 			var callArgs [][]byte
-			if len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTTransfer+1 {
-				callArgs = vmInput.Arguments[vmcommon.MinLenArgumentsESDTTransfer+1:]
+			if len(vmInput.Arguments) > core.MinLenArgumentsESDTTransfer+1 {
+				callArgs = vmInput.Arguments[core.MinLenArgumentsESDTTransfer+1:]
 			}
 
 			addOutputTransferToVMOutput(
 				vmInput.CallerAddr,
-				string(vmInput.Arguments[vmcommon.MinLenArgumentsESDTTransfer]),
+				string(vmInput.Arguments[core.MinLenArgumentsESDTTransfer]),
 				callArgs,
 				vmInput.RecipientAddr,
 				vmInput.GasLocked,
 				vmInput.CallType,
 				vmOutput)
 
-			addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr, acntDst.AddressBytes())
+			addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr, acntDst.AddressBytes())
 			return vmOutput, nil
 		}
 
-		if vmInput.CallType == vmcommon.AsynchronousCallBack && check.IfNil(acntSnd) {
+		if vmInput.CallType == vm.AsynchronousCallBack && check.IfNil(acntSnd) {
 			// gas was already consumed on sender shard
 			vmOutput.GasRemaining = vmInput.GasProvided
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr, acntDst.AddressBytes())
+		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr, acntDst.AddressBytes())
 		return vmOutput, nil
 	}
 
@@ -153,7 +155,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	if vmcommon.IsSmartContractAddress(vmInput.CallerAddr) {
 		addOutputTransferToVMOutput(
 			vmInput.CallerAddr,
-			vmcommon.BuiltInFunctionESDTTransfer,
+			core.BuiltInFunctionESDTTransfer,
 			vmInput.Arguments,
 			vmInput.RecipientAddr,
 			vmInput.GasLocked,
@@ -161,15 +163,15 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, value, vmInput.CallerAddr)
 	return vmOutput, nil
 }
 
 func mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int) bool {
-	if vmInput.CallType == vmcommon.AsynchronousCallBack || vmInput.CallType == vmcommon.ESDTTransferAndExecute {
+	if vmInput.CallType == vm.AsynchronousCall || vmInput.CallType == vm.ESDTTransferAndExecute {
 		return false
 	}
-	if bytes.Equal(vmInput.CallerAddr, vmcommon.ESDTSCAddress) {
+	if bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		return false
 	}
 
@@ -186,7 +188,7 @@ func addOutputTransferToVMOutput(
 	arguments [][]byte,
 	recipient []byte,
 	gasLocked uint64,
-	callType vmcommon.CallType,
+	callType vm.CallType,
 	vmOutput *vmcommon.VMOutput,
 ) {
 	esdtTransferTxData := function
@@ -222,7 +224,7 @@ func addToESDTBalance(
 		return err
 	}
 
-	if esdtData.Type != uint32(vmcommon.Fungible) {
+	if esdtData.Type != uint32(core.Fungible) {
 		return ErrOnlyFungibleTokensHaveBalanceTransfer
 	}
 
@@ -254,7 +256,7 @@ func checkFrozeAndPause(
 	if isReturnWithError {
 		return nil
 	}
-	if bytes.Equal(senderAddr, vmcommon.ESDTSCAddress) {
+	if bytes.Equal(senderAddr, core.ESDTSCAddress) {
 		return nil
 	}
 
@@ -303,7 +305,7 @@ func getESDTDataFromKey(
 	key []byte,
 	marshalizer vmcommon.Marshalizer,
 ) (*esdt.ESDigitalToken, error) {
-	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(vmcommon.Fungible)}
+	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
 	marshaledData, err := userAcnt.AccountDataHandler().RetrieveValue(key)
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, nil

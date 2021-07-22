@@ -4,8 +4,9 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtNFTAddQuantity struct {
@@ -36,7 +37,7 @@ func NewESDTNFTAddQuantityFunc(
 	}
 
 	e := &esdtNFTAddQuantity{
-		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		marshalizer:  marshalizer,
 		pauseHandler: pauseHandler,
 		rolesHandler: rolesHandler,
@@ -78,7 +79,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, ErrInvalidArguments
 	}
 
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(vmcommon.ESDTRoleNFTAddQuantity))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTAddQuantity, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
+	logEntry := newEntryForNFT(core.BuiltInFunctionESDTNFTAddQuantity, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - e.funcGasCost,

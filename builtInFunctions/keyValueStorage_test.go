@@ -6,8 +6,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -96,7 +97,7 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 	_, err = skv.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.True(t, errors.Is(err, ErrOperationNotPermitted))
 
-	key = []byte(vmcommon.ElrondProtectedKeyPrefix + "is the king")
+	key = []byte(core.ElrondProtectedKeyPrefix + "is the king")
 	value = []byte("value")
 	vmInput.Arguments = [][]byte{key, value}
 

@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtLocalBurn struct {
@@ -37,7 +38,7 @@ func NewESDTLocalBurnFunc(
 	}
 
 	e := &esdtLocalBurn{
-		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		marshalizer:  marshalizer,
 		pauseHandler: pauseHandler,
 		rolesHandler: rolesHandler,
@@ -73,7 +74,7 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 	}
 
 	tokenID := vmInput.Arguments[0]
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(vmcommon.ESDTRoleLocalBurn))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalBurn))
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - e.funcGasCost}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTLocalBurn), vmInput.Arguments[0], value, vmInput.CallerAddr)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTLocalBurn), vmInput.Arguments[0], value, vmInput.CallerAddr)
 
 	return vmOutput, nil
 }
@@ -107,7 +108,7 @@ func checkBasicESDTArguments(vmInput *vmcommon.ContractCallInput) error {
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return ErrBuiltInFunctionCalledWithValue
 	}
-	if len(vmInput.Arguments) < vmcommon.MinLenArgumentsESDTTransfer {
+	if len(vmInput.Arguments) < core.MinLenArgumentsESDTTransfer {
 		return ErrInvalidArguments
 	}
 	return nil

@@ -3,7 +3,7 @@ package vmcommon
 import (
 	"math/big"
 
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 )
 
 // FunctionNames (alias) is a map of function names

@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
@@ -49,7 +50,7 @@ func TestESDTPause_ProcessBuiltInFunction(t *testing.T) {
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Equal(t, err, ErrAddressIsNotESDTSystemSC)
 
-	input.CallerAddr = vmcommon.ESDTSCAddress
+	input.CallerAddr = core.ESDTSCAddress
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Equal(t, err, ErrOnlySystemAccountAccepted)
 
@@ -57,7 +58,7 @@ func TestESDTPause_ProcessBuiltInFunction(t *testing.T) {
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
 
-	pauseKey := []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier + string(key))
+	pauseKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(key))
 	assert.True(t, pauseFunc.IsPaused(pauseKey))
 
 	esdtPauseFalse, _ := NewESDTPauseFunc(&mock.AccountsStub{

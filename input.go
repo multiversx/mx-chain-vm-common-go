@@ -2,26 +2,8 @@ package vmcommon
 
 import (
 	"math/big"
-)
 
-// CallType specifies the type of SC invocation (in terms of asynchronicity)
-type CallType int
-
-const (
-	// DirectCall means that the call is an explicit SC invocation originating from a user Transaction
-	DirectCall CallType = iota
-
-	// AsynchronousCall means that the invocation was performed from within
-	// another SmartContract from another Shard, using asyncCall
-	AsynchronousCall
-
-	// AsynchronousCallBack means that an AsynchronousCall was performed
-	// previously, and now the control returns to the caller SmartContract's callBack method
-	AsynchronousCallBack
-
-	// ESDTTransferAndExecute means that there is a smart contract execution after the ESDT transfer
-	// this is needed in order to skip the check whether a contract is payable or not
-	ESDTTransferAndExecute
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 )
 
 // VMInput contains the common fields between the 2 types of SC call.
@@ -45,7 +27,7 @@ type VMInput struct {
 	// CallType is the type of SmartContract call
 	// Based on this value, the VM is informed of whether the call is direct,
 	// asynchronous, or asynchronous callback.
-	CallType CallType
+	CallType vm.CallType
 
 	// GasPrice multiplied by the gas burned by the transaction yields the transaction fee.
 	// A larger GasPrice will incentivize block proposers to include the transaction in a block sooner,
