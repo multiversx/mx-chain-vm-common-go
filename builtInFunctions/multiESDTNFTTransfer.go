@@ -148,7 +148,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	}
 
 	vmOutput := &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided}
-	vmOutput.Logs = make([]*vmcommon.LogEntry, numOfTransfers)
+	vmOutput.Logs = make([]*vmcommon.LogEntry, 0, numOfTransfers)
 	startIndex := uint64(1)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
@@ -157,6 +157,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 
 		esdtTokenKey := append(e.keyPrefix, tokenID...)
 
+		value := big.NewInt(0)
 		if nonce > 0 {
 			marshaledNFTTransfer := vmInput.Arguments[tokenStartIndex+2]
 			esdtTransferData := &esdt.ESDigitalToken{}
@@ -175,16 +176,17 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			if err != nil {
 				return nil, err
 			}
+			value = esdtTransferData.Value
 		} else {
-			err = addToESDTBalance(acntDst, esdtTokenKey, big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2]), e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
+			transferredValue := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2])
+			err = addToESDTBalance(acntDst, esdtTokenKey, transferredValue, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 			if err != nil {
 				return nil, err
 			}
+			value = transferredValue
 		}
 
-		logEntry := newEntryForNFT(core.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, tokenID, nonce)
-		logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
-		vmOutput.Logs[i] = logEntry
+		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionMultiESDTNFTTransfer), tokenID, nonce, value, vmInput.CallerAddr, acntDst.AddressBytes())
 	}
 
 	// no need to consume gas on destination - sender already paid for it
@@ -244,7 +246,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - multiTransferCost,
-		Logs:         make([]*vmcommon.LogEntry, numOfTransfers),
+		Logs:         make([]*vmcommon.LogEntry, 0, numOfTransfers),
 	}
 
 	startIndex := uint64(2)
@@ -268,9 +270,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			return nil, err
 		}
 
-		logEntry := newEntryForNFT(core.BuiltInFunctionMultiESDTNFTTransfer, vmInput.CallerAddr, listTokenID[i], nonce)
-		logEntry.Topics = append(logEntry.Topics, dstAddress)
-		vmOutput.Logs[i] = logEntry
+		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionMultiESDTNFTTransfer), listTokenID[i], nonce, quantityToTransfer, vmInput.CallerAddr, dstAddress)
 	}
 
 	if !check.IfNil(acntDst) {
