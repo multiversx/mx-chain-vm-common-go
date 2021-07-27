@@ -163,7 +163,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, acntDst.AddressBytes())
 	return vmOutput, nil
 }
 
