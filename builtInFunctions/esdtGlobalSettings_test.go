@@ -60,13 +60,13 @@ func TestESDTPause_ProcessBuiltInFunction(t *testing.T) {
 	pauseKey := []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier + string(key))
 	assert.True(t, pauseFunc.IsPaused(pauseKey))
 
-	esdtPauseFalse, _ := NewESDTPauseFunc(&mock.AccountsStub{
+	esdtGlobalSettingsFalse, _ := NewESDTPauseFunc(&mock.AccountsStub{
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
 	}, false)
 
-	_, err = esdtPauseFalse.ProcessBuiltinFunction(nil, nil, input)
+	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
 
 	assert.False(t, pauseFunc.IsPaused(pauseKey))

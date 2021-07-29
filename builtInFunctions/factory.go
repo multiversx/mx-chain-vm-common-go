@@ -16,6 +16,8 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	ShardCoordinator                    vmcommon.Coordinator
 	EpochNotifier                       vmcommon.EpochNotifier
 	ESDTNFTImprovementV1ActivationEpoch uint32
+	ESDTTransferRoleEnableEpoch         uint32
+	GlobalBurnMintDisableEpoch          uint32
 }
 
 type builtInFuncFactory struct {
@@ -28,6 +30,8 @@ type builtInFuncFactory struct {
 	shardCoordinator                    vmcommon.Coordinator
 	epochNotifier                       vmcommon.EpochNotifier
 	esdtNFTImprovementV1ActivationEpoch uint32
+	esdtTransferRoleEnableEpoch         uint32
+	globalBurnMintDisableEpoch          uint32
 }
 
 // NewBuiltInFunctionsFactory creates a factory which will instantiate the built in functions contracts
@@ -56,6 +60,8 @@ func NewBuiltInFunctionsFactory(args ArgsCreateBuiltInFunctionContainer) (*built
 		shardCoordinator:                    args.ShardCoordinator,
 		epochNotifier:                       args.EpochNotifier,
 		esdtNFTImprovementV1ActivationEpoch: args.ESDTNFTImprovementV1ActivationEpoch,
+		esdtTransferRoleEnableEpoch:         args.ESDTTransferRoleEnableEpoch,
+		globalBurnMintDisableEpoch:          args.GlobalBurnMintDisableEpoch,
 	}
 
 	var err error
@@ -139,7 +145,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshalizer, pauseFunc)
+	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshalizer, pauseFunc, b.globalBurnMintDisableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}

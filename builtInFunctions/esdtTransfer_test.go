@@ -155,8 +155,8 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 
 	marshalizer := &mock.MarshalizerMock{}
 	accountStub := &mock.AccountsStub{}
-	esdtPauseFunc, _ := NewESDTPauseFunc(accountStub, true)
-	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, esdtPauseFunc, &mock.ShardCoordinatorStub{})
+	esdtGlobalSettingsFunc, _ := NewESDTPauseFunc(accountStub, true)
+	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{})
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{

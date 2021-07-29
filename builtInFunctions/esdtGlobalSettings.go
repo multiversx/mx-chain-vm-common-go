@@ -7,7 +7,7 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
-type esdtPause struct {
+type esdtGlobalSettings struct {
 	baseAlwaysActive
 	keyPrefix []byte
 	pause     bool
@@ -18,12 +18,12 @@ type esdtPause struct {
 func NewESDTPauseFunc(
 	accounts vmcommon.AccountsAdapter,
 	pause bool,
-) (*esdtPause, error) {
+) (*esdtGlobalSettings, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
 
-	e := &esdtPause{
+	e := &esdtGlobalSettings{
 		keyPrefix: []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
 		pause:     pause,
 		accounts:  accounts,
@@ -33,11 +33,11 @@ func NewESDTPauseFunc(
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
-func (e *esdtPause) SetNewGasConfig(_ *vmcommon.GasCost) {
+func (e *esdtGlobalSettings) SetNewGasConfig(_ *vmcommon.GasCost) {
 }
 
 // ProcessBuiltinFunction resolves ESDT pause function call
-func (e *esdtPause) ProcessBuiltinFunction(
+func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	_, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
@@ -68,7 +68,7 @@ func (e *esdtPause) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-func (e *esdtPause) togglePause(token []byte) error {
+func (e *esdtGlobalSettings) togglePause(token []byte) error {
 	systemSCAccount, err := e.getSystemAccount()
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (e *esdtPause) togglePause(token []byte) error {
 	return e.accounts.SaveAccount(systemSCAccount)
 }
 
-func (e *esdtPause) getSystemAccount() (vmcommon.UserAccountHandler, error) {
+func (e *esdtGlobalSettings) getSystemAccount() (vmcommon.UserAccountHandler, error) {
 	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (e *esdtPause) getSystemAccount() (vmcommon.UserAccountHandler, error) {
 }
 
 // IsPaused returns true if the token is paused
-func (e *esdtPause) IsPaused(pauseKey []byte) bool {
+func (e *esdtGlobalSettings) IsPaused(pauseKey []byte) bool {
 	systemSCAccount, err := e.getSystemAccount()
 	if err != nil {
 		return false
@@ -116,6 +116,6 @@ func (e *esdtPause) IsPaused(pauseKey []byte) bool {
 }
 
 // IsInterfaceNil returns true if underlying object in nil
-func (e *esdtPause) IsInterfaceNil() bool {
+func (e *esdtGlobalSettings) IsInterfaceNil() bool {
 	return e == nil
 }

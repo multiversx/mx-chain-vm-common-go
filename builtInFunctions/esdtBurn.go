@@ -6,11 +6,12 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtBurn struct {
-	baseAlwaysActive
+	*baseDisabled
 	funcGasCost  uint64
 	marshalizer  vmcommon.Marshalizer
 	keyPrefix    []byte
@@ -23,6 +24,8 @@ func NewESDTBurnFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
 	pauseHandler vmcommon.ESDTPauseHandler,
+	disableEpoch uint32,
+	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtBurn, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
@@ -37,6 +40,14 @@ func NewESDTBurnFunc(
 		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
 		pauseHandler: pauseHandler,
 	}
+
+	e.baseDisabled = &baseDisabled{
+		function:          vmcommon.BuiltInFunctionESDTBurn,
+		deActivationEpoch: disableEpoch,
+		flagActivated:     atomic.Flag{},
+	}
+
+	epochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
 }
