@@ -127,7 +127,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	pauseFunc, err := NewESDTPauseFunc(b.accounts, true)
+	pauseFunc, err := NewESDTGlobalSettingsFunc(b.accounts, true)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTPauseFunc(b.accounts, false)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, false)
 	if err != nil {
 		return nil, err
 	}

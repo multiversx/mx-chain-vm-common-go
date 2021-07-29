@@ -4,20 +4,25 @@ import (
 	"bytes"
 
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtGlobalSettings struct {
-	baseAlwaysActive
+	*baseEnabled
 	keyPrefix []byte
-	pause     bool
+	set       bool
+	function  string
 	accounts  vmcommon.AccountsAdapter
 }
 
-// NewESDTPauseFunc returns the esdt pause/un-pause built-in function component
-func NewESDTPauseFunc(
+// NewESDTGlobalSettingsFunc returns the esdt pause/un-pause built-in function component
+func NewESDTGlobalSettingsFunc(
 	accounts vmcommon.AccountsAdapter,
-	pause bool,
+	set bool,
+	function string,
+	activationEpoch uint32,
+	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtGlobalSettings, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -25,9 +30,17 @@ func NewESDTPauseFunc(
 
 	e := &esdtGlobalSettings{
 		keyPrefix: []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
-		pause:     pause,
+		set:       set,
 		accounts:  accounts,
 	}
+
+	e.baseEnabled = &baseEnabled{
+		function:        function,
+		activationEpoch: activationEpoch,
+		flagActivated:   atomic.Flag{},
+	}
+
+	epochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
 }
@@ -59,7 +72,7 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 
-	err := e.togglePause(esdtTokenKey)
+	err := e.toggleSetting(esdtTokenKey)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +81,7 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-func (e *esdtGlobalSettings) togglePause(token []byte) error {
+func (e *esdtGlobalSettings) toggleSetting(token []byte) error {
 	systemSCAccount, err := e.getSystemAccount()
 	if err != nil {
 		return err
@@ -76,6 +89,11 @@ func (e *esdtGlobalSettings) togglePause(token []byte) error {
 
 	val, _ := systemSCAccount.AccountDataHandler().RetrieveValue(token)
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
+
+	switch e.function {
+	case
+	}
+
 	esdtMetaData.Paused = e.pause
 	err = systemSCAccount.AccountDataHandler().SaveKeyValue(token, esdtMetaData.ToBytes())
 	if err != nil {
