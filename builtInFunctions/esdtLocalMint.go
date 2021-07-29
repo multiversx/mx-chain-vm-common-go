@@ -12,38 +12,38 @@ import (
 
 type esdtLocalMint struct {
 	baseAlwaysActive
-	keyPrefix    []byte
-	marshalizer  vmcommon.Marshalizer
-	pauseHandler vmcommon.ESDTGlobalSettingsHandler
-	rolesHandler vmcommon.ESDTRoleHandler
-	funcGasCost  uint64
-	mutExecution sync.RWMutex
+	keyPrefix             []byte
+	marshalizer           vmcommon.Marshalizer
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	rolesHandler          vmcommon.ESDTRoleHandler
+	funcGasCost           uint64
+	mutExecution          sync.RWMutex
 }
 
 // NewESDTLocalMintFunc returns the esdt local mint built-in function component
 func NewESDTLocalMintFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtLocalMint, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(pauseHandler) {
-		return nil, ErrNilPauseHandler
+	if check.IfNil(globalSettingsHandler) {
+		return nil, ErrNilGlobalSettingsHandler
 	}
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
 
 	e := &esdtLocalMint{
-		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:  marshalizer,
-		pauseHandler: pauseHandler,
-		rolesHandler: rolesHandler,
-		funcGasCost:  funcGasCost,
-		mutExecution: sync.RWMutex{},
+		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:           marshalizer,
+		globalSettingsHandler: globalSettingsHandler,
+		rolesHandler:          rolesHandler,
+		funcGasCost:           funcGasCost,
+		mutExecution:          sync.RWMutex{},
 	}
 
 	return e, nil
@@ -85,7 +85,7 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[1])
 	esdtTokenKey := append(e.keyPrefix, tokenID...)
-	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Set(value), e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
+	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Set(value), e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

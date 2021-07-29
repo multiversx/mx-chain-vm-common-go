@@ -12,13 +12,13 @@ import (
 
 type esdtNFTupdate struct {
 	*baseEnabled
-	keyPrefix    []byte
-	marshalizer  vmcommon.Marshalizer
-	pauseHandler vmcommon.ESDTGlobalSettingsHandler
-	rolesHandler vmcommon.ESDTRoleHandler
-	gasConfig    vmcommon.BaseOperationCost
-	funcGasCost  uint64
-	mutExecution sync.RWMutex
+	keyPrefix             []byte
+	marshalizer           vmcommon.Marshalizer
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	rolesHandler          vmcommon.ESDTRoleHandler
+	gasConfig             vmcommon.BaseOperationCost
+	funcGasCost           uint64
+	mutExecution          sync.RWMutex
 }
 
 // NewESDTNFTAddUriFunc returns the esdt NFT update attribute built-in function component
@@ -26,7 +26,7 @@ func NewESDTNFTUpdateAttributesFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	activationEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
@@ -34,8 +34,8 @@ func NewESDTNFTUpdateAttributesFunc(
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(pauseHandler) {
-		return nil, ErrNilPauseHandler
+	if check.IfNil(globalSettingsHandler) {
+		return nil, ErrNilGlobalSettingsHandler
 	}
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
@@ -45,13 +45,13 @@ func NewESDTNFTUpdateAttributesFunc(
 	}
 
 	e := &esdtNFTupdate{
-		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:  marshalizer,
-		funcGasCost:  funcGasCost,
-		mutExecution: sync.RWMutex{},
-		pauseHandler: pauseHandler,
-		gasConfig:    gasConfig,
-		rolesHandler: rolesHandler,
+		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:           marshalizer,
+		funcGasCost:           funcGasCost,
+		mutExecution:          sync.RWMutex{},
+		globalSettingsHandler: globalSettingsHandler,
+		gasConfig:             gasConfig,
+		rolesHandler:          rolesHandler,
 	}
 
 	e.baseEnabled = &baseEnabled{
@@ -119,7 +119,7 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 
 	esdtData.TokenMetaData.Attributes = vmInput.Arguments[2]
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
+	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

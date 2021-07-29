@@ -11,38 +11,38 @@ import (
 
 type esdtNFTAddQuantity struct {
 	baseAlwaysActive
-	keyPrefix    []byte
-	marshalizer  vmcommon.Marshalizer
-	pauseHandler vmcommon.ESDTGlobalSettingsHandler
-	rolesHandler vmcommon.ESDTRoleHandler
-	funcGasCost  uint64
-	mutExecution sync.RWMutex
+	keyPrefix             []byte
+	marshalizer           vmcommon.Marshalizer
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	rolesHandler          vmcommon.ESDTRoleHandler
+	funcGasCost           uint64
+	mutExecution          sync.RWMutex
 }
 
 // NewESDTNFTAddQuantityFunc returns the esdt NFT add quantity built-in function component
 func NewESDTNFTAddQuantityFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtNFTAddQuantity, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(pauseHandler) {
-		return nil, ErrNilPauseHandler
+	if check.IfNil(globalSettingsHandler) {
+		return nil, ErrNilGlobalSettingsHandler
 	}
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
 
 	e := &esdtNFTAddQuantity{
-		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:  marshalizer,
-		pauseHandler: pauseHandler,
-		rolesHandler: rolesHandler,
-		funcGasCost:  funcGasCost,
-		mutExecution: sync.RWMutex{},
+		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:           marshalizer,
+		globalSettingsHandler: globalSettingsHandler,
+		rolesHandler:          rolesHandler,
+		funcGasCost:           funcGasCost,
+		mutExecution:          sync.RWMutex{},
 	}
 
 	return e, nil
@@ -96,7 +96,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 
 	esdtData.Value.Add(esdtData.Value, big.NewInt(0).SetBytes(vmInput.Arguments[2]))
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
+	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

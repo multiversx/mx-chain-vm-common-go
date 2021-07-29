@@ -137,8 +137,8 @@ func (e *esdtGlobalSettings) getSystemAccount() (vmcommon.UserAccountHandler, er
 }
 
 // IsPaused returns true if the token is paused
-func (e *esdtGlobalSettings) IsPaused(pauseKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(pauseKey)
+func (e *esdtGlobalSettings) IsPaused(tokenKey []byte) bool {
+	esdtMetadata, err := e.getGlobalMetadata(tokenKey)
 	if err != nil {
 		return false
 	}
