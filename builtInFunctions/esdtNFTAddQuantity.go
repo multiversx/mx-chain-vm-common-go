@@ -94,19 +94,21 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	esdtData.Value.Add(esdtData.Value, big.NewInt(0).SetBytes(vmInput.Arguments[2]))
+	value := big.NewInt(0).SetBytes(vmInput.Arguments[2])
+	esdtData.Value.Add(esdtData.Value, value)
 
 	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
 
-	logEntry := newEntryForNFT(core.BuiltInFunctionESDTNFTAddQuantity, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - e.funcGasCost,
-		Logs:         []*vmcommon.LogEntry{logEntry},
 	}
+
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTAddQuantity), vmInput.Arguments[0], nonce, value, vmInput.CallerAddr)
+
 	return vmOutput, nil
 }
 

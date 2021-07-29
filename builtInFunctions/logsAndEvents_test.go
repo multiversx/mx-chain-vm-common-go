@@ -12,11 +12,12 @@ import (
 func TestNewEntryForNFT(t *testing.T) {
 	t.Parallel()
 
-	entry := newEntryForNFT(core.BuiltInFunctionESDTNFTCreate, []byte("caller"), []byte("my-token"), 5)
+	vmOutput := &vmcommon.VMOutput{}
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), []byte("my-token"), 5, big.NewInt(1), []byte("caller"), []byte("receiver"))
 	require.Equal(t, &vmcommon.LogEntry{
 		Identifier: []byte(core.BuiltInFunctionESDTNFTCreate),
 		Address:    []byte("caller"),
-		Topics:     [][]byte{[]byte("my-token"), big.NewInt(0).SetUint64(5).Bytes()},
+		Topics:     [][]byte{[]byte("my-token"), big.NewInt(0).SetUint64(5).Bytes(), big.NewInt(1).Bytes(), []byte("receiver")},
 		Data:       nil,
-	}, entry)
+	}, vmOutput.Logs[0])
 }

@@ -158,7 +158,7 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 			{
 				Identifier: []byte("ESDTLocalBurn"),
 				Address:    nil,
-				Topics:     [][]byte{[]byte("arg1"), big.NewInt(1).Bytes()},
+				Topics:     [][]byte{[]byte("arg1"), big.NewInt(0).Bytes(), big.NewInt(1).Bytes()},
 				Data:       nil,
 			},
 		},
