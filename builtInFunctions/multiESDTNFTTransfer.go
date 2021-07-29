@@ -18,7 +18,7 @@ type esdtNFTMultiTransfer struct {
 	*baseEnabled
 	keyPrefix        []byte
 	marshalizer      vmcommon.Marshalizer
-	pauseHandler     vmcommon.ESDTPauseHandler
+	pauseHandler     vmcommon.ESDTGlobalSettingsHandler
 	payableHandler   vmcommon.PayableHandler
 	funcGasCost      uint64
 	accounts         vmcommon.AccountsAdapter
@@ -33,7 +33,7 @@ const argumentsPerTransfer = uint64(3)
 func NewESDTNFTMultiTransferFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,

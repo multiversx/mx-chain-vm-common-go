@@ -8,6 +8,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
 type esdtBurn struct {
@@ -15,7 +16,7 @@ type esdtBurn struct {
 	funcGasCost  uint64
 	marshalizer  vmcommon.Marshalizer
 	keyPrefix    []byte
-	pauseHandler vmcommon.ESDTPauseHandler
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler
 	mutExecution sync.RWMutex
 }
 
@@ -23,7 +24,7 @@ type esdtBurn struct {
 func NewESDTBurnFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	disableEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtBurn, error) {
@@ -42,7 +43,7 @@ func NewESDTBurnFunc(
 	}
 
 	e.baseDisabled = &baseDisabled{
-		function:          vmcommon.BuiltInFunctionESDTBurn,
+		function:          core.BuiltInFunctionESDTBurn,
 		deActivationEpoch: disableEpoch,
 		flagActivated:     atomic.Flag{},
 	}

@@ -16,33 +16,33 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		argsFunc func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTPauseHandler, r vmcommon.ESDTRoleHandler)
+		argsFunc func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler)
 		exError  error
 	}{
 		{
 			name: "NilMarshalizer",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTPauseHandler, r vmcommon.ESDTRoleHandler) {
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, nil, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}
 			},
 			exError: ErrNilMarshalizer,
 		},
 		{
 			name: "NilPauseHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTPauseHandler, r vmcommon.ESDTRoleHandler) {
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, &mock.MarshalizerMock{}, nil, &mock.ESDTRoleHandlerStub{}
 			},
 			exError: ErrNilPauseHandler,
 		},
 		{
 			name: "NilRolesHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTPauseHandler, r vmcommon.ESDTRoleHandler) {
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, nil
 			},
 			exError: ErrNilRolesHandler,
 		},
 		{
 			name: "Ok",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTPauseHandler, r vmcommon.ESDTRoleHandler) {
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, &mock.MarshalizerMock{}, &mock.PauseHandlerStub{}, &mock.ESDTRoleHandlerStub{}
 			},
 			exError: nil,

@@ -20,7 +20,7 @@ type esdtTransfer struct {
 	funcGasCost      uint64
 	marshalizer      vmcommon.Marshalizer
 	keyPrefix        []byte
-	pauseHandler     vmcommon.ESDTPauseHandler
+	pauseHandler     vmcommon.ESDTGlobalSettingsHandler
 	payableHandler   vmcommon.PayableHandler
 	shardCoordinator vmcommon.Coordinator
 	mutExecution     sync.RWMutex
@@ -30,7 +30,7 @@ type esdtTransfer struct {
 func NewESDTTransferFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	shardCoordinator vmcommon.Coordinator,
 ) (*esdtTransfer, error) {
 	if check.IfNil(marshalizer) {
@@ -216,7 +216,7 @@ func addToESDTBalance(
 	key []byte,
 	value *big.Int,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	isReturnWithError bool,
 ) error {
 	esdtData, err := getESDTDataFromKey(userAcnt, key, marshalizer)
@@ -250,7 +250,7 @@ func checkFrozeAndPause(
 	senderAddr []byte,
 	key []byte,
 	esdtData *esdt.ESDigitalToken,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	isReturnWithError bool,
 ) error {
 	if isReturnWithError {

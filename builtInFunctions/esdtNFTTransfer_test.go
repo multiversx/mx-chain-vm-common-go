@@ -31,7 +31,7 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 	return nftTransfer
 }
 
-func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, pauseHandler vmcommon.ESDTPauseHandler) *esdtNFTTransfer {
+func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, pauseHandler vmcommon.ESDTGlobalSettingsHandler) *esdtNFTTransfer {
 	marshalizer := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard

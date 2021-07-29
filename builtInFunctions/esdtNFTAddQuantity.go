@@ -13,7 +13,7 @@ type esdtNFTAddQuantity struct {
 	baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
-	pauseHandler vmcommon.ESDTPauseHandler
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler vmcommon.ESDTRoleHandler
 	funcGasCost  uint64
 	mutExecution sync.RWMutex
@@ -23,7 +23,7 @@ type esdtNFTAddQuantity struct {
 func NewESDTNFTAddQuantityFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtNFTAddQuantity, error) {
 	if check.IfNil(marshalizer) {

@@ -14,7 +14,7 @@ type esdtNFTAddUri struct {
 	*baseEnabled
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
-	pauseHandler vmcommon.ESDTPauseHandler
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler vmcommon.ESDTRoleHandler
 	gasConfig    vmcommon.BaseOperationCost
 	funcGasCost  uint64
@@ -26,7 +26,7 @@ func NewESDTNFTAddUriFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	activationEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,

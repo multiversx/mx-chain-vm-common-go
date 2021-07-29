@@ -18,7 +18,7 @@ type esdtNFTCreate struct {
 	baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
-	pauseHandler vmcommon.ESDTPauseHandler
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler vmcommon.ESDTRoleHandler
 	funcGasCost  uint64
 	gasConfig    vmcommon.BaseOperationCost
@@ -30,7 +30,7 @@ func NewESDTNFTCreateFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtNFTCreate, error) {
 	if check.IfNil(marshalizer) {
@@ -233,7 +233,7 @@ func saveESDTNFTToken(
 	esdtTokenKey []byte,
 	esdtData *esdt.ESDigitalToken,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	isReturnWithError bool,
 ) ([]byte, error) {
 	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, pauseHandler, isReturnWithError)

@@ -19,7 +19,7 @@ type esdtNFTTransfer struct {
 	baseAlwaysActive
 	keyPrefix        []byte
 	marshalizer      vmcommon.Marshalizer
-	pauseHandler     vmcommon.ESDTPauseHandler
+	pauseHandler     vmcommon.ESDTGlobalSettingsHandler
 	payableHandler   vmcommon.PayableHandler
 	funcGasCost      uint64
 	accounts         vmcommon.AccountsAdapter
@@ -32,7 +32,7 @@ type esdtNFTTransfer struct {
 func NewESDTNFTTransferFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,

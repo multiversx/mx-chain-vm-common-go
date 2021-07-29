@@ -30,7 +30,7 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 	return multiTransfer
 }
 
-func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, pauseHandler vmcommon.ESDTPauseHandler) *esdtNFTMultiTransfer {
+func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, pauseHandler vmcommon.ESDTGlobalSettingsHandler) *esdtNFTMultiTransfer {
 	marshalizer := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard

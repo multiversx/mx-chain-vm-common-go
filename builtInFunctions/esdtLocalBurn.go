@@ -14,7 +14,7 @@ type esdtLocalBurn struct {
 	baseAlwaysActive
 	keyPrefix    []byte
 	marshalizer  vmcommon.Marshalizer
-	pauseHandler vmcommon.ESDTPauseHandler
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler vmcommon.ESDTRoleHandler
 	funcGasCost  uint64
 	mutExecution sync.RWMutex
@@ -24,7 +24,7 @@ type esdtLocalBurn struct {
 func NewESDTLocalBurnFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	pauseHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtLocalBurn, error) {
 	if check.IfNil(marshalizer) {

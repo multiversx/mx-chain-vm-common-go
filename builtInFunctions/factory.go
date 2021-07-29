@@ -128,7 +128,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	pauseFunc, err := NewESDTGlobalSettingsFunc(b.accounts, true)
+	pauseFunc, err := NewESDTGlobalSettingsFunc(b.accounts, true, core.BuiltInFunctionESDTPause, 0, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, false)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, false, core.BuiltInFunctionESDTUnPause, 0, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -295,6 +295,24 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionMultiESDTNFTTransfer, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, true, core.BuiltInFunctionESDTSetLimitedTransfer, b.esdtTransferRoleEnableEpoch, b.epochNotifier)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTSetLimitedTransfer, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, b.esdtTransferRoleEnableEpoch, b.epochNotifier)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnSetLimitedTransfer, newFunc)
 	if err != nil {
 		return nil, err
 	}

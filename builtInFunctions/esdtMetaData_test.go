@@ -23,7 +23,7 @@ func TestESDTGlobalMetaData_ToBytesWhenTransfer(t *testing.T) {
 	t.Parallel()
 
 	esdtMetaData := &ESDTGlobalMetadata{
-		TransferThroughAccountsWithRole: true,
+		LimitedTransfer: true,
 	}
 
 	expected := make([]byte, lengthOfESDTMetadata)
@@ -36,8 +36,8 @@ func TestESDTGlobalMetaData_ToBytesWhenTransferAndPause(t *testing.T) {
 	t.Parallel()
 
 	esdtMetaData := &ESDTGlobalMetadata{
-		Paused:                          true,
-		TransferThroughAccountsWithRole: true,
+		Paused:          true,
+		LimitedTransfer: true,
 	}
 
 	expected := make([]byte, lengthOfESDTMetadata)
@@ -149,11 +149,11 @@ func TestESDTUserMetadataFromBytes_ShouldSetFrozenToFalse(t *testing.T) {
 
 func TestESDTGlobalMetadata_FromBytes(t *testing.T) {
 	require.True(t, ESDTGlobalMetadataFromBytes([]byte{1, 0}).Paused)
-	require.False(t, ESDTGlobalMetadataFromBytes([]byte{1, 0}).TransferThroughAccountsWithRole)
-	require.True(t, ESDTGlobalMetadataFromBytes([]byte{4, 0}).TransferThroughAccountsWithRole)
+	require.False(t, ESDTGlobalMetadataFromBytes([]byte{1, 0}).LimitedTransfer)
+	require.True(t, ESDTGlobalMetadataFromBytes([]byte{4, 0}).LimitedTransfer)
 	require.False(t, ESDTGlobalMetadataFromBytes([]byte{4, 0}).Paused)
-	require.False(t, ESDTGlobalMetadataFromBytes([]byte{0, 0}).TransferThroughAccountsWithRole)
+	require.False(t, ESDTGlobalMetadataFromBytes([]byte{0, 0}).LimitedTransfer)
 	require.False(t, ESDTGlobalMetadataFromBytes([]byte{0, 0}).Paused)
 	require.True(t, ESDTGlobalMetadataFromBytes([]byte{5, 0}).Paused)
-	require.True(t, ESDTGlobalMetadataFromBytes([]byte{5, 0}).TransferThroughAccountsWithRole)
+	require.True(t, ESDTGlobalMetadataFromBytes([]byte{5, 0}).LimitedTransfer)
 }
