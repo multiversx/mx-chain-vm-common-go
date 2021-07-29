@@ -26,6 +26,9 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		&mock.EpochNotifierStub{},
 	)
 
 	return nftTransfer
@@ -64,6 +67,9 @@ func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, glob
 		accounts,
 		shardCoordinator,
 		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		&mock.EpochNotifierStub{},
 	)
 
 	return nftTransfer
@@ -152,6 +158,9 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
 	assert.Equal(t, ErrNilMarshalizer, err)
@@ -163,6 +172,9 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
 	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
@@ -174,6 +186,9 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
 	assert.Equal(t, ErrNilAccountsAdapter, err)
@@ -185,9 +200,40 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.AccountsStub{},
 		nil,
 		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
 	assert.Equal(t, ErrNilShardCoordinator, err)
+
+	nftTransfer, err = NewESDTNFTTransferFunc(
+		0,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.AccountsStub{},
+		&mock.ShardCoordinatorStub{},
+		vmcommon.BaseOperationCost{},
+		nil,
+		1000,
+		&mock.EpochNotifierStub{},
+	)
+	assert.True(t, check.IfNil(nftTransfer))
+	assert.Equal(t, ErrNilRolesHandler, err)
+
+	nftTransfer, err = NewESDTNFTTransferFunc(
+		0,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.AccountsStub{},
+		&mock.ShardCoordinatorStub{},
+		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		nil,
+	)
+	assert.True(t, check.IfNil(nftTransfer))
+	assert.Equal(t, ErrNilEpochHandler, err)
 }
 
 func TestNewESDTNFTTransferFunc(t *testing.T) {
@@ -200,6 +246,9 @@ func TestNewESDTNFTTransferFunc(t *testing.T) {
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		&mock.EpochNotifierStub{},
 	)
 	assert.False(t, check.IfNil(nftTransfer))
 	assert.Nil(t, err)

@@ -18,7 +18,7 @@ func TestESDTPause_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, true)
+	}, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
 	_, err := pauseFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -65,7 +65,7 @@ func TestESDTPause_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, false)
+	}, false, core.BuiltInFunctionESDTUnPause, 0, &mock.EpochNotifierStub{})
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)

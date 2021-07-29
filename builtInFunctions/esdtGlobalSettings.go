@@ -13,7 +13,6 @@ type esdtGlobalSettings struct {
 	*baseEnabled
 	keyPrefix []byte
 	set       bool
-	function  string
 	accounts  vmcommon.AccountsAdapter
 }
 

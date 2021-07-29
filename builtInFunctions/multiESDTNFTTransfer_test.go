@@ -25,6 +25,8 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 
 	return multiTransfer
@@ -65,6 +67,8 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 
 	return multiTransfer
@@ -82,6 +86,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilMarshalizer, err)
@@ -95,6 +101,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
@@ -108,6 +116,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilAccountsAdapter, err)
@@ -121,6 +131,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilShardCoordinator, err)
@@ -134,9 +146,26 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		0,
 		nil,
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilEpochHandler, err)
+
+	multiTransfer, err = NewESDTNFTMultiTransferFunc(
+		0,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.AccountsStub{},
+		&mock.ShardCoordinatorStub{},
+		vmcommon.BaseOperationCost{},
+		0,
+		&mock.EpochNotifierStub{},
+		nil,
+		1000,
+	)
+	assert.True(t, check.IfNil(multiTransfer))
+	assert.Equal(t, ErrNilRolesHandler, err)
 }
 
 func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
@@ -151,6 +180,8 @@ func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.False(t, check.IfNil(multiTransfer))
 	assert.Nil(t, err)
