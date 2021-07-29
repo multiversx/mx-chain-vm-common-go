@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -52,7 +53,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_NilAccountDestShouldErr(t *testing.T) 
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, nil, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:  big.NewInt(0),
-			CallerAddr: vmcommon.ESDTSCAddress,
+			CallerAddr: core.ESDTSCAddress,
 			Arguments:  [][]byte{[]byte("1"), []byte("2")},
 		},
 	})
@@ -75,7 +76,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldErr(t *testing.T) {
 	}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:  big.NewInt(0),
-			CallerAddr: vmcommon.ESDTSCAddress,
+			CallerAddr: core.ESDTSCAddress,
 			Arguments:  [][]byte{[]byte("1"), []byte("2")},
 		},
 	})
@@ -103,7 +104,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldWorkEvenIfAccntTrieI
 	}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:  big.NewInt(0),
-			CallerAddr: vmcommon.ESDTSCAddress,
+			CallerAddr: core.ESDTSCAddress,
 			Arguments:  [][]byte{[]byte("1"), []byte("2")},
 		},
 	})
@@ -127,7 +128,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesShouldWork(t *testing.T) {
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					roles := &esdt.ESDTRoles{}
 					_ = marshalizer.Unmarshal(roles, value)
-					require.Equal(t, roles.Roles, [][]byte{[]byte(vmcommon.ESDTRoleLocalMint)})
+					require.Equal(t, roles.Roles, [][]byte{[]byte(core.ESDTRoleLocalMint)})
 					return nil
 				},
 			}
@@ -136,8 +137,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesShouldWork(t *testing.T) {
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, acc, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:  big.NewInt(0),
-			CallerAddr: vmcommon.ESDTSCAddress,
-			Arguments:  [][]byte{[]byte("1"), []byte(vmcommon.ESDTRoleLocalMint)},
+			CallerAddr: core.ESDTSCAddress,
+			Arguments:  [][]byte{[]byte("1"), []byte(core.ESDTRoleLocalMint)},
 		},
 	})
 	require.Nil(t, err)
@@ -166,8 +167,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_SaveFailedShouldErr(t *testing.T) {
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, acc, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:  big.NewInt(0),
-			CallerAddr: vmcommon.ESDTSCAddress,
-			Arguments:  [][]byte{[]byte("1"), []byte(vmcommon.ESDTRoleLocalMint)},
+			CallerAddr: core.ESDTSCAddress,
+			Arguments:  [][]byte{[]byte("1"), []byte(core.ESDTRoleLocalMint)},
 		},
 	})
 	require.Equal(t, localErr, err)
@@ -198,8 +199,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesDoesNotExistsShouldWork(t *t
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, acc, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:  big.NewInt(0),
-			CallerAddr: vmcommon.ESDTSCAddress,
-			Arguments:  [][]byte{[]byte("1"), []byte(vmcommon.ESDTRoleLocalMint)},
+			CallerAddr: core.ESDTSCAddress,
+			Arguments:  [][]byte{[]byte("1"), []byte(core.ESDTRoleLocalMint)},
 		},
 	})
 	require.Nil(t, err)
@@ -216,7 +217,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesShouldWork(t *testing.T) {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{
-						Roles: [][]byte{[]byte(vmcommon.ESDTRoleLocalMint)},
+						Roles: [][]byte{[]byte(core.ESDTRoleLocalMint)},
 					}
 					return marshalizer.Marshal(roles)
 				},
@@ -232,8 +233,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesShouldWork(t *testing.T) {
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, acc, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:  big.NewInt(0),
-			CallerAddr: vmcommon.ESDTSCAddress,
-			Arguments:  [][]byte{[]byte("1"), []byte(vmcommon.ESDTRoleLocalMint)},
+			CallerAddr: core.ESDTSCAddress,
+			Arguments:  [][]byte{[]byte("1"), []byte(core.ESDTRoleLocalMint)},
 		},
 	})
 	require.Nil(t, err)
@@ -245,7 +246,7 @@ func TestEsdtRoles_CheckAllowedToExecuteNilAccountShouldErr(t *testing.T) {
 	marshalizer := &mock.MarshalizerMock{}
 	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
 
-	err := esdtRolesF.CheckAllowedToExecute(nil, []byte("ID"), []byte(vmcommon.ESDTRoleLocalBurn))
+	err := esdtRolesF.CheckAllowedToExecute(nil, []byte("ID"), []byte(core.ESDTRoleLocalBurn))
 	require.Equal(t, ErrNilUserAccount, err)
 }
 
@@ -263,7 +264,7 @@ func TestEsdtRoles_CheckAllowedToExecuteCannotGetESDTRole(t *testing.T) {
 				},
 			}
 		},
-	}, []byte("ID"), []byte(vmcommon.ESDTRoleLocalBurn))
+	}, []byte("ID"), []byte(core.ESDTRoleLocalBurn))
 	require.Error(t, err)
 }
 
@@ -281,7 +282,7 @@ func TestEsdtRoles_CheckAllowedToExecuteIsNewNotAllowed(t *testing.T) {
 				},
 			}
 		},
-	}, []byte("ID"), []byte(vmcommon.ESDTRoleLocalBurn))
+	}, []byte("ID"), []byte(core.ESDTRoleLocalBurn))
 	require.Equal(t, ErrActionNotAllowed, err)
 }
 
@@ -296,13 +297,13 @@ func TestEsdtRoles_CheckAllowed_ShouldWork(t *testing.T) {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{
-						Roles: [][]byte{[]byte(vmcommon.ESDTRoleLocalMint)},
+						Roles: [][]byte{[]byte(core.ESDTRoleLocalMint)},
 					}
 					return marshalizer.Marshal(roles)
 				},
 			}
 		},
-	}, []byte("ID"), []byte(vmcommon.ESDTRoleLocalMint))
+	}, []byte("ID"), []byte(core.ESDTRoleLocalMint))
 	require.Nil(t, err)
 }
 
@@ -317,12 +318,12 @@ func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{
-						Roles: [][]byte{[]byte(vmcommon.ESDTRoleLocalBurn)},
+						Roles: [][]byte{[]byte(core.ESDTRoleLocalBurn)},
 					}
 					return marshalizer.Marshal(roles)
 				},
 			}
 		},
-	}, []byte("ID"), []byte(vmcommon.ESDTRoleLocalMint))
+	}, []byte("ID"), []byte(core.ESDTRoleLocalMint))
 	require.Equal(t, ErrActionNotAllowed, err)
 }

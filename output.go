@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 )
 
 // StorageUpdate represents a change in the account storage (insert, update or delete)
@@ -76,7 +78,7 @@ type OutputTransfer struct {
 	// Data to be used in cross call
 	Data []byte
 	// CallType is set if it is a smart contract invocation
-	CallType CallType
+	CallType vm.CallType
 	// SenderAddress is the actual sender for the given output transfer, this is needed when
 	// contract A calls contract B and contract B does the transfers
 	SenderAddress []byte
@@ -147,23 +149,8 @@ type VMOutput struct {
 	Logs []*LogEntry
 }
 
-// ReturnDataKind specifies how to interpret VMOutputs's return data.
-// More specifically, how to interpret returned data's first item.
-type ReturnDataKind int
-
-const (
-	// AsBigInt to interpret as big int
-	AsBigInt ReturnDataKind = 1 << iota
-	// AsBigIntString to interpret as big int string
-	AsBigIntString
-	// AsString to interpret as string
-	AsString
-	// AsHex to interpret as hex
-	AsHex
-)
-
 // GetFirstReturnData is a helper function that returns the first ReturnData of VMOutput, interpreted as specified.
-func (vmOutput *VMOutput) GetFirstReturnData(asType ReturnDataKind) (interface{}, error) {
+func (vmOutput *VMOutput) GetFirstReturnData(asType vm.ReturnDataKind) (interface{}, error) {
 	if len(vmOutput.ReturnData) == 0 {
 		return nil, fmt.Errorf("no return data")
 	}
@@ -171,13 +158,13 @@ func (vmOutput *VMOutput) GetFirstReturnData(asType ReturnDataKind) (interface{}
 	returnData := vmOutput.ReturnData[0]
 
 	switch asType {
-	case AsBigInt:
+	case vm.AsBigInt:
 		return big.NewInt(0).SetBytes(returnData), nil
-	case AsBigIntString:
+	case vm.AsBigIntString:
 		return big.NewInt(0).SetBytes(returnData).String(), nil
-	case AsString:
+	case vm.AsString:
 		return string(returnData), nil
-	case AsHex:
+	case vm.AsHex:
 		return hex.EncodeToString(returnData), nil
 	}
 

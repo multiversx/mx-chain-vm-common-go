@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtLocalMint struct {
@@ -37,7 +38,7 @@ func NewESDTLocalMintFunc(
 	}
 
 	e := &esdtLocalMint{
-		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		marshalizer:  marshalizer,
 		pauseHandler: pauseHandler,
 		rolesHandler: rolesHandler,
@@ -73,13 +74,13 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 	}
 
 	tokenID := vmInput.Arguments[0]
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(vmcommon.ESDTRoleLocalMint))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalMint))
 	if err != nil {
 		return nil, err
 	}
 
-	if len(vmInput.Arguments[1]) > vmcommon.MaxLenForESDTIssueMint {
-		return nil, fmt.Errorf("%w max length for esdt issue is %d", ErrInvalidArguments, vmcommon.MaxLenForESDTIssueMint)
+	if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
+		return nil, fmt.Errorf("%w max length for esdt issue is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 	}
 
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[1])
@@ -91,7 +92,7 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - e.funcGasCost}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTLocalMint), vmInput.Arguments[0], value, vmInput.CallerAddr)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTLocalMint), vmInput.Arguments[0], value, vmInput.CallerAddr)
 
 	return vmOutput, nil
 }

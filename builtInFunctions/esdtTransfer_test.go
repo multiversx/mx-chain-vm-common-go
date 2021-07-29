@@ -5,8 +5,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,9 +48,9 @@ func TestESDTTransfer_ProcessBuiltInFunctionErrors(t *testing.T) {
 	assert.Equal(t, err, ErrNotEnoughGas)
 
 	input.GasProvided = transferFunc.funcGasCost
-	input.RecipientAddr = vmcommon.ESDTSCAddress
+	input.RecipientAddr = core.ESDTSCAddress
 	shardC.ComputeIdCalled = func(address []byte) uint32 {
-		return vmcommon.MetachainShardId
+		return core.MetachainShardId
 	}
 	_, err = transferFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Equal(t, err, ErrInvalidRcvAddr)
@@ -207,7 +209,7 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 
 	systemAccount := mock.NewUserAccount(vmcommon.SystemAccountAddress)
 	esdtGlobal := ESDTGlobalMetadata{Paused: true}
-	pauseKey := []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier + string(key))
+	pauseKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(key))
 	_ = systemAccount.AccountDataHandler().SaveKeyValue(pauseKey, esdtGlobal.ToBytes())
 
 	accountStub.LoadAccountCalled = func(address []byte) (vmcommon.AccountHandler, error) {
@@ -237,14 +239,14 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 		VMInput: vmcommon.VMInput{
 			GasProvided: 50,
 			CallValue:   big.NewInt(0),
-			CallType:    vmcommon.AsynchronousCallBack,
+			CallType:    vm.AsynchronousCallBack,
 		},
 	}
 	key := []byte("key")
 	value := big.NewInt(10).Bytes()
 	input.Arguments = [][]byte{key, value}
 	accSnd := mock.NewUserAccount([]byte("snd"))
-	accDst := mock.NewUserAccount(vmcommon.ESDTSCAddress)
+	accDst := mock.NewUserAccount(core.ESDTSCAddress)
 
 	esdtKey := append(transferFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(100)}

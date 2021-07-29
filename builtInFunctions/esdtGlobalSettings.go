@@ -3,8 +3,9 @@ package builtInFunctions
 import (
 	"bytes"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
@@ -28,9 +29,9 @@ func NewESDTGlobalSettingsFunc(
 		return nil, ErrNilAccountsAdapter
 	}
 
-	e := &esdtGlobalSettings{
-		keyPrefix: []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
-		set:       set,
+	e := &esdtPause{
+		keyPrefix: []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		pause:     pause,
 		accounts:  accounts,
 	}
 
@@ -63,7 +64,7 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	if len(vmInput.Arguments) != 1 {
 		return nil, ErrInvalidArguments
 	}
-	if !bytes.Equal(vmInput.CallerAddr, vmcommon.ESDTSCAddress) {
+	if !bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		return nil, ErrAddressIsNotESDTSystemSC
 	}
 	if !vmcommon.IsSystemAccountAddress(vmInput.RecipientAddr) {

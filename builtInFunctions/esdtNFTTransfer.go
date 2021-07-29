@@ -8,9 +8,11 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
-	"github.com/ElrondNetwork/elrond-vm-common/data/esdt"
 )
 
 type esdtNFTTransfer struct {
@@ -49,7 +51,7 @@ func NewESDTNFTTransferFunc(
 	}
 
 	e := &esdtNFTTransfer{
-		keyPrefix:        []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		marshalizer:      marshalizer,
 		pauseHandler:     pauseHandler,
 		funcGasCost:      funcGasCost,
@@ -127,22 +129,22 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	err = e.addNFTToDestination(vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, vmcommon.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
+	err = e.addNFTToDestination(vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
 
 	// no need to consume gas on destination - sender already paid for it
 	vmOutput := &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided}
-	if len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
+	if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
 		var callArgs [][]byte
-		if len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTNFTTransfer+1 {
-			callArgs = vmInput.Arguments[vmcommon.MinLenArgumentsESDTNFTTransfer+1:]
+		if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer+1 {
+			callArgs = vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer+1:]
 		}
 
 		addOutputTransferToVMOutput(
 			vmInput.CallerAddr,
-			string(vmInput.Arguments[vmcommon.MinLenArgumentsESDTNFTTransfer]),
+			string(vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer]),
 			callArgs,
 			vmInput.RecipientAddr,
 			vmInput.GasLocked,
@@ -151,7 +153,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	}
 
 	tokenNonce := esdtTransferData.TokenMetaData.Nonce
-	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTTransfer, vmInput.CallerAddr, vmInput.Arguments[0], tokenNonce)
+	logEntry := newEntryForNFT(core.BuiltInFunctionESDTNFTTransfer, vmInput.CallerAddr, vmInput.Arguments[0], tokenNonce)
 	logEntry.Topics = append(logEntry.Topics, acntDst.AddressBytes())
 	vmOutput.Logs = []*vmcommon.LogEntry{logEntry}
 
@@ -169,7 +171,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	if e.shardCoordinator.ComputeId(dstAddress) == vmcommon.MetachainShardId {
+	if e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId {
 		return nil, ErrInvalidRcvAddr
 	}
 	if vmInput.GasProvided < e.funcGasCost {
@@ -209,7 +211,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, ErrWrongTypeAssertion
 		}
 
-		err = e.addNFTToDestination(dstAddress, userAccount, esdtData, esdtTokenKey, mustVerifyPayable(vmInput, vmcommon.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
+		err = e.addNFTToDestination(dstAddress, userAccount, esdtData, esdtTokenKey, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +232,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 
 	tokenNonce := esdtData.TokenMetaData.Nonce
-	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTTransfer, vmInput.CallerAddr, vmInput.Arguments[0], tokenNonce)
+	logEntry := newEntryForNFT(core.BuiltInFunctionESDTNFTTransfer, vmInput.CallerAddr, vmInput.Arguments[0], tokenNonce)
 	logEntry.Topics = append(logEntry.Topics, dstAddress)
 	vmOutput.Logs = []*vmcommon.LogEntry{logEntry}
 
@@ -257,11 +259,11 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	nftTransferCallArgs := make([][]byte, 0)
 	nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[:3]...)
 	nftTransferCallArgs = append(nftTransferCallArgs, marshaledNFTTransfer)
-	if len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTNFTTransfer {
+	if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer {
 		nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[4:]...)
 	}
 
-	isSCCallAfter := len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(dstAddress)
+	isSCCallAfter := len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(dstAddress)
 
 	if e.shardCoordinator.SelfId() != e.shardCoordinator.ComputeId(dstAddress) {
 		gasToTransfer := uint64(0)
@@ -272,7 +274,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		addNFTTransferToVMOutput(
 			vmInput.CallerAddr,
 			dstAddress,
-			vmcommon.BuiltInFunctionESDTNFTTransfer,
+			core.BuiltInFunctionESDTNFTTransfer,
 			nftTransferCallArgs,
 			vmInput.GasLocked,
 			gasToTransfer,
@@ -285,13 +287,13 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 
 	if isSCCallAfter {
 		var callArgs [][]byte
-		if len(vmInput.Arguments) > vmcommon.MinLenArgumentsESDTNFTTransfer+1 {
-			callArgs = vmInput.Arguments[vmcommon.MinLenArgumentsESDTNFTTransfer+1:]
+		if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer+1 {
+			callArgs = vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer+1:]
 		}
 
 		addOutputTransferToVMOutput(
 			vmInput.CallerAddr,
-			string(vmInput.Arguments[vmcommon.MinLenArgumentsESDTNFTTransfer]),
+			string(vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer]),
 			callArgs,
 			dstAddress,
 			vmInput.GasLocked,
@@ -356,7 +358,7 @@ func addNFTTransferToVMOutput(
 	arguments [][]byte,
 	gasLocked uint64,
 	gasLimit uint64,
-	callType vmcommon.CallType,
+	callType vm.CallType,
 	vmOutput *vmcommon.VMOutput,
 ) {
 	nftTransferTxData := funcToCall

@@ -4,9 +4,10 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/atomic"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtNFTupdate struct {
@@ -44,7 +45,7 @@ func NewESDTNFTUpdateAttributesFunc(
 	}
 
 	e := &esdtNFTupdate{
-		keyPrefix:    []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		marshalizer:  marshalizer,
 		funcGasCost:  funcGasCost,
 		mutExecution: sync.RWMutex{},
@@ -54,7 +55,7 @@ func NewESDTNFTUpdateAttributesFunc(
 	}
 
 	e.baseEnabled = &baseEnabled{
-		function:        vmcommon.BuiltInFunctionESDTNFTUpdateAttributes,
+		function:        core.BuiltInFunctionESDTNFTUpdateAttributes,
 		activationEpoch: activationEpoch,
 		flagActivated:   atomic.Flag{},
 	}
@@ -96,7 +97,7 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 		return nil, ErrInvalidArguments
 	}
 
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(vmcommon.ESDTRoleNFTUpdateAttributes))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTUpdateAttributes))
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +124,7 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	logEntry := newEntryForNFT(vmcommon.BuiltInFunctionESDTNFTUpdateAttributes, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
+	logEntry := newEntryForNFT(core.BuiltInFunctionESDTNFTUpdateAttributes, vmInput.CallerAddr, vmInput.Arguments[0], nonce)
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - e.funcGasCost - gasCostForStore,

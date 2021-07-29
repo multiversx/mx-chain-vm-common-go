@@ -2,6 +2,8 @@ package vmcommon
 
 import (
 	"bytes"
+
+	"github.com/ElrondNetwork/elrond-go-core/core"
 )
 
 // SystemAccountAddress is the hard-coded address in which we save global settings on all shards
@@ -88,11 +90,11 @@ func IsSmartContractOnMetachain(identifier []byte, rcvAddress []byte) bool {
 
 // IsAllowedToSaveUnderKey returns if saving key-value in data tries under given key is allowed
 func IsAllowedToSaveUnderKey(key []byte) bool {
-	prefixLen := len(ElrondProtectedKeyPrefix)
+	prefixLen := len(core.ElrondProtectedKeyPrefix)
 	if len(key) < prefixLen {
 		return true
 	}
 
 	trimmedKey := key[:prefixLen]
-	return !bytes.Equal(trimmedKey, []byte(ElrondProtectedKeyPrefix))
+	return !bytes.Equal(trimmedKey, []byte(core.ElrondProtectedKeyPrefix))
 }

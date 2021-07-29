@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"math/big"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/check"
 )
 
 type esdtFreezeWipe struct {
@@ -28,7 +29,7 @@ func NewESDTFreezeWipeFunc(
 
 	e := &esdtFreezeWipe{
 		marshalizer: marshalizer,
-		keyPrefix:   []byte(vmcommon.ElrondProtectedKeyPrefix + vmcommon.ESDTKeyIdentifier),
+		keyPrefix:   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		freeze:      freeze,
 		wipe:        wipe,
 	}
@@ -54,7 +55,7 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 	if len(vmInput.Arguments) != 1 {
 		return nil, ErrInvalidArguments
 	}
-	if !bytes.Equal(vmInput.CallerAddr, vmcommon.ESDTSCAddress) {
+	if !bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		return nil, ErrAddressIsNotESDTSystemSC
 	}
 	if check.IfNil(acntDst) {
@@ -77,7 +78,7 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 	if e.wipe {
-		addESDTEntryInVMOutput(vmOutput, []byte(vmcommon.BuiltInFunctionESDTWipe), vmInput.Arguments[0], big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
+		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTWipe), vmInput.Arguments[0], big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
 	}
 
 	return vmOutput, nil

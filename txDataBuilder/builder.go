@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"math/big"
 
-	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-go-core/core"
 )
 
 // txDataBuilder constructs a string to be used for transaction arguments
@@ -144,17 +144,17 @@ func (builder *txDataBuilder) IssueESDT(token string, ticker string, supply int6
 
 // TransferESDT appends to the data string all the elements required to request an ESDT transfer.
 func (builder *txDataBuilder) TransferESDT(token string, value int64) *txDataBuilder {
-	return builder.Func(vmcommon.BuiltInFunctionESDTTransfer).Str(token).Int64(value)
+	return builder.Func(core.BuiltInFunctionESDTTransfer).Str(token).Int64(value)
 }
 
 //TransferESDTNFT appends to the data string all the elements required to request an ESDT NFT transfer.
 func (builder *txDataBuilder) TransferESDTNFT(token string, nonce int, value int64) *txDataBuilder {
-	return builder.Func(vmcommon.BuiltInFunctionESDTNFTTransfer).Str(token).Int(nonce).Int64(value)
+	return builder.Func(core.BuiltInFunctionESDTNFTTransfer).Str(token).Int(nonce).Int64(value)
 }
 
 // BurnESDT appends to the data string all the elements required to burn ESDT tokens.
 func (builder *txDataBuilder) BurnESDT(token string, value int64) *txDataBuilder {
-	return builder.Func(vmcommon.BuiltInFunctionESDTBurn).Str(token).Int64(value)
+	return builder.Func(core.BuiltInFunctionESDTBurn).Str(token).Int64(value)
 }
 
 // CanFreeze appends "canFreeze" followed by the provided boolean value.
