@@ -88,6 +88,8 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 			return nil, ErrNotEnoughGas
 		}
 
+		//key-value test point
+
 		err = acntSnd.AccountDataHandler().SaveKeyValue(key, value)
 		if err != nil {
 			return nil, err
