@@ -349,7 +349,9 @@ func getESDTDataFromKey(
 }
 
 // will return nil if transfer is not limited
-// if the destination is not in current shard it will return nil
+// if we are at sender shard, the sender or the destination must have the transfer role
+// we cannot transfer a limited esdt to destination shard, as there we do not know if that token was transferred or not
+// by an account with transfer account
 func checkIfTransferCanHappenWithLimitedTransfer(
 	tokenID []byte,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
@@ -360,19 +362,15 @@ func checkIfTransferCanHappenWithLimitedTransfer(
 	if isReturnWithError {
 		return nil
 	}
-
+	if check.IfNil(acntSnd) {
+		return nil
+	}
 	if !globalSettingsHandler.IsLimitedTransfer(tokenID) {
 		return nil
 	}
 
-	if !check.IfNil(acntSnd) {
-		errSender := roleHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleTransfer))
-		if errSender == nil {
-			return nil
-		}
-	}
-
-	if check.IfNil(acntDst) {
+	errSender := roleHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleTransfer))
+	if errSender == nil {
 		return nil
 	}
 

@@ -338,6 +338,11 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 
 	esdtData.Value.Set(quantityToTransfer)
 
+	err = checkIfTransferCanHappenWithLimitedTransfer(esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, isReturnCallWithError)
+	if err != nil {
+		return nil, err
+	}
+
 	if !check.IfNil(acntDst) {
 		err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, verifyPayable, isReturnCallWithError)
 		if err != nil {

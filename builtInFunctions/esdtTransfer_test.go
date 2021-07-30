@@ -228,6 +228,91 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
+	t.Parallel()
+
+	marshalizer := &mock.MarshalizerMock{}
+	accountStub := &mock.AccountsStub{}
+	rolesHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			if bytes.Equal(action, []byte(core.ESDTRoleTransfer)) {
+				return ErrActionNotAllowed
+			}
+			return nil
+		},
+	}
+	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, true, core.BuiltInFunctionESDTSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
+	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, rolesHandler, 1000, &mock.EpochNotifierStub{})
+	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
+
+	input := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			GasProvided: 50,
+			CallValue:   big.NewInt(0),
+		},
+	}
+	key := []byte("key")
+	value := big.NewInt(10).Bytes()
+	input.Arguments = [][]byte{key, value}
+	accSnd := mock.NewUserAccount([]byte("snd"))
+	accDst := mock.NewUserAccount([]byte("dst"))
+
+	esdtKey := append(transferFunc.keyPrefix, key...)
+	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(100)}
+	marshaledData, _ := marshalizer.Marshal(esdtToken)
+	_ = accSnd.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
+
+	esdtToken = &esdt.ESDigitalToken{Value: big.NewInt(100)}
+	marshaledData, _ = marshalizer.Marshal(esdtToken)
+	_ = accDst.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
+
+	systemAccount := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+	esdtGlobal := ESDTGlobalMetadata{LimitedTransfer: true}
+	pauseKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(key))
+	_ = systemAccount.AccountDataHandler().SaveKeyValue(pauseKey, esdtGlobal.ToBytes())
+
+	accountStub.LoadAccountCalled = func(address []byte) (vmcommon.AccountHandler, error) {
+		if bytes.Equal(address, vmcommon.SystemAccountAddress) {
+			return systemAccount, nil
+		}
+		return accDst, nil
+	}
+
+	_, err := transferFunc.ProcessBuiltinFunction(nil, accDst, input)
+	assert.Nil(t, err)
+
+	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
+	assert.Equal(t, err, ErrActionNotAllowed)
+
+	_, err = transferFunc.ProcessBuiltinFunction(accSnd, nil, input)
+	assert.Equal(t, err, ErrActionNotAllowed)
+
+	input.ReturnCallAfterError = true
+	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
+	assert.Nil(t, err)
+
+	input.ReturnCallAfterError = false
+	rolesHandler.CheckAllowedToExecuteCalled = func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+		if bytes.Equal(account.AddressBytes(), accSnd.Address) {
+			return nil
+		}
+		return ErrActionNotAllowed
+	}
+
+	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
+	assert.Nil(t, err)
+
+	rolesHandler.CheckAllowedToExecuteCalled = func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+		if bytes.Equal(account.AddressBytes(), accDst.Address) {
+			return nil
+		}
+		return ErrActionNotAllowed
+	}
+
+	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
+	assert.Nil(t, err)
+}
+
 func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	t.Parallel()
 

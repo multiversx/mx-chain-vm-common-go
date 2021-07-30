@@ -145,11 +145,6 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
-	err = checkIfTransferCanHappenWithLimitedTransfer(esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, vmInput.ReturnCallAfterError)
-	if err != nil {
-		return nil, err
-	}
-
 	marshaledNFTTransfer := vmInput.Arguments[3]
 	esdtTransferData := &esdt.ESDigitalToken{}
 	err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
@@ -207,10 +202,6 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
-	err := checkIfTransferCanHappenWithLimitedTransfer(esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, nil, vmInput.ReturnCallAfterError)
-	if err != nil {
-		return nil, err
-	}
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
 	if nonce == 0 {
 		return nil, ErrNFTDoesNotHaveMetadata
@@ -233,12 +224,15 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 	esdtData.Value.Set(quantityToTransfer)
 
+	var userAccount vmcommon.UserAccountHandler
 	if e.shardCoordinator.SelfId() == e.shardCoordinator.ComputeId(dstAddress) {
 		accountHandler, errLoad := e.accounts.LoadAccount(dstAddress)
 		if errLoad != nil {
 			return nil, errLoad
 		}
-		userAccount, ok := accountHandler.(vmcommon.UserAccountHandler)
+
+		var ok bool
+		userAccount, ok = accountHandler.(vmcommon.UserAccountHandler)
 		if !ok {
 			return nil, ErrWrongTypeAssertion
 		}
@@ -252,6 +246,11 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	err = checkIfTransferCanHappenWithLimitedTransfer(esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
+	if err != nil {
+		return nil, err
 	}
 
 	vmOutput := &vmcommon.VMOutput{

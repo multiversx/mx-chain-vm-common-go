@@ -67,7 +67,14 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
-		&mock.ESDTRoleHandlerStub{},
+		&mock.ESDTRoleHandlerStub{
+			CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+				if bytes.Equal(action, []byte(core.ESDTRoleTransfer)) {
+					return ErrActionNotAllowed
+				}
+				return nil
+			},
+		},
 		1000,
 	)
 
@@ -518,7 +525,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	t.Parallel()
 
-	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	globalSettings := &mock.GlobalSettingsHandlerStub{}
+	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, globalSettings)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
@@ -566,6 +574,15 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	assert.Equal(t, ErrESDTIsFrozenForAccount, err)
 
+	globalSettings.IsLimiterTransferCalled = func(token []byte) bool {
+		return true
+	}
+	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	assert.Equal(t, ErrActionNotAllowed, err)
+
+	globalSettings.IsLimiterTransferCalled = func(token []byte) bool {
+		return false
+	}
 	vmInput.ReturnCallAfterError = true
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	assert.Nil(t, err)

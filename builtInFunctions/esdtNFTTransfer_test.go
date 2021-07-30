@@ -67,7 +67,14 @@ func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, glob
 		accounts,
 		shardCoordinator,
 		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
+		&mock.ESDTRoleHandlerStub{
+			CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+				if bytes.Equal(action, []byte(core.ESDTRoleTransfer)) {
+					return ErrActionNotAllowed
+				}
+				return nil
+			},
+		},
 		1000,
 		&mock.EpochNotifierStub{},
 	)
@@ -575,7 +582,8 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(
 func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 	t.Parallel()
 
-	transferFunc := createNftTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	globalSettings := &mock.GlobalSettingsHandlerStub{}
+	transferFunc := createNftTransferWithMockArguments(0, 1, globalSettings)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
@@ -620,6 +628,55 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	assert.Equal(t, ErrESDTIsFrozenForAccount, err)
+
+	vmInput.ReturnCallAfterError = true
+	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	assert.Nil(t, err)
+}
+
+func TestESDTNFTTransfer_WithLimitedTransfer(t *testing.T) {
+	t.Parallel()
+
+	globalSettings := &mock.GlobalSettingsHandlerStub{}
+	transferFunc := createNftTransferWithMockArguments(0, 1, globalSettings)
+	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
+
+	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
+	destinationAddress := bytes.Repeat([]byte{1}, 32)
+	destinationAddress[31] = 0
+	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	tokenName := []byte("token")
+	tokenNonce := uint64(1)
+
+	initialTokens := big.NewInt(3)
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+
+	_ = transferFunc.accounts.SaveAccount(sender)
+	_, _ = transferFunc.accounts.Commit()
+	//reload sender account
+	sender, err = transferFunc.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
+	quantityBytes := big.NewInt(1).Bytes()
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{tokenName, nonceBytes, quantityBytes, destinationAddress},
+			GasProvided: 1,
+		},
+		RecipientAddr: senderAddress,
+	}
+
+	destination, _ := transferFunc.accounts.LoadAccount(destinationAddress)
+	globalSettings.IsLimiterTransferCalled = func(token []byte) bool {
+		return true
+	}
+	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	assert.Equal(t, ErrActionNotAllowed, err)
 
 	vmInput.ReturnCallAfterError = true
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
