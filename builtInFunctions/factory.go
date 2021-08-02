@@ -18,7 +18,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	EpochNotifier                       vmcommon.EpochNotifier
 	ESDTNFTImprovementV1ActivationEpoch uint32
 	ESDTTransferRoleEnableEpoch         uint32
-	GlobalBurnMintDisableEpoch          uint32
+	GlobalMintBurnDisableEpoch          uint32
 	ESDTTransferToMetaEnableEpoch       uint32
 }
 
@@ -33,7 +33,7 @@ type builtInFuncFactory struct {
 	epochNotifier                       vmcommon.EpochNotifier
 	esdtNFTImprovementV1ActivationEpoch uint32
 	esdtTransferRoleEnableEpoch         uint32
-	globalBurnMintDisableEpoch          uint32
+	globalMintBurnDisableEpoch          uint32
 	esdtTransferToMetaEnableEpoch       uint32
 }
 
@@ -64,7 +64,7 @@ func NewBuiltInFunctionsFactory(args ArgsCreateBuiltInFunctionContainer) (*built
 		epochNotifier:                       args.EpochNotifier,
 		esdtNFTImprovementV1ActivationEpoch: args.ESDTNFTImprovementV1ActivationEpoch,
 		esdtTransferRoleEnableEpoch:         args.ESDTTransferRoleEnableEpoch,
-		globalBurnMintDisableEpoch:          args.GlobalBurnMintDisableEpoch,
+		globalMintBurnDisableEpoch:          args.GlobalMintBurnDisableEpoch,
 		esdtTransferToMetaEnableEpoch:       args.ESDTTransferToMetaEnableEpoch,
 	}
 
@@ -158,7 +158,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshalizer, globalSettingsFunc, b.globalBurnMintDisableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshalizer, globalSettingsFunc, b.globalMintBurnDisableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
