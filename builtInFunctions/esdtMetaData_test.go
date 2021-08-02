@@ -19,6 +19,33 @@ func TestESDTGlobalMetaData_ToBytesWhenPaused(t *testing.T) {
 	require.Equal(t, expected, actual)
 }
 
+func TestESDTGlobalMetaData_ToBytesWhenTransfer(t *testing.T) {
+	t.Parallel()
+
+	esdtMetaData := &ESDTGlobalMetadata{
+		LimitedTransfer: true,
+	}
+
+	expected := make([]byte, lengthOfESDTMetadata)
+	expected[0] = 2
+	actual := esdtMetaData.ToBytes()
+	require.Equal(t, expected, actual)
+}
+
+func TestESDTGlobalMetaData_ToBytesWhenTransferAndPause(t *testing.T) {
+	t.Parallel()
+
+	esdtMetaData := &ESDTGlobalMetadata{
+		Paused:          true,
+		LimitedTransfer: true,
+	}
+
+	expected := make([]byte, lengthOfESDTMetadata)
+	expected[0] = 3
+	actual := esdtMetaData.ToBytes()
+	require.Equal(t, expected, actual)
+}
+
 func TestESDTGlobalMetaData_ToBytesWhenNotPaused(t *testing.T) {
 	t.Parallel()
 
@@ -118,4 +145,15 @@ func TestESDTUserMetadataFromBytes_ShouldSetFrozenToFalse(t *testing.T) {
 
 	result := ESDTUserMetadataFromBytes(input)
 	require.False(t, result.Frozen)
+}
+
+func TestESDTGlobalMetadata_FromBytes(t *testing.T) {
+	require.True(t, ESDTGlobalMetadataFromBytes([]byte{1, 0}).Paused)
+	require.False(t, ESDTGlobalMetadataFromBytes([]byte{1, 0}).LimitedTransfer)
+	require.True(t, ESDTGlobalMetadataFromBytes([]byte{2, 0}).LimitedTransfer)
+	require.False(t, ESDTGlobalMetadataFromBytes([]byte{2, 0}).Paused)
+	require.False(t, ESDTGlobalMetadataFromBytes([]byte{0, 0}).LimitedTransfer)
+	require.False(t, ESDTGlobalMetadataFromBytes([]byte{0, 0}).Paused)
+	require.True(t, ESDTGlobalMetadataFromBytes([]byte{3, 0}).Paused)
+	require.True(t, ESDTGlobalMetadataFromBytes([]byte{3, 0}).LimitedTransfer)
 }

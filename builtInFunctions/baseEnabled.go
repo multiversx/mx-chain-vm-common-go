@@ -7,6 +7,19 @@ import (
 
 var log = logger.GetOrCreate("vmCommon/builtInFunctions")
 
+type baseAlwaysActive struct {
+}
+
+// IsActive returns true as this built in function was always active
+func (b baseAlwaysActive) IsActive() bool {
+	return true
+}
+
+// IsInterfaceNil returns true if there is no value under the interface
+func (b baseAlwaysActive) IsInterfaceNil() bool {
+	return false
+}
+
 type baseEnabled struct {
 	function        string
 	activationEpoch uint32
@@ -29,15 +42,24 @@ func (b *baseEnabled) IsInterfaceNil() bool {
 	return b == nil
 }
 
-type baseAlwaysActive struct {
+type baseDisabled struct {
+	function          string
+	deActivationEpoch uint32
+	flagActivated     atomic.Flag
 }
 
-// IsActive returns true as this built in function was always active
-func (b baseAlwaysActive) IsActive() bool {
-	return true
+// IsActive returns true if function is activated
+func (b *baseDisabled) IsActive() bool {
+	return b.flagActivated.IsSet()
+}
+
+// EpochConfirmed is called whenever a new epoch is confirmed
+func (b *baseDisabled) EpochConfirmed(epoch uint32, _ uint64) {
+	b.flagActivated.Toggle(epoch < b.deActivationEpoch)
+	log.Debug("built in function", "name: ", b.function, "enabled", b.flagActivated.IsSet())
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (b baseAlwaysActive) IsInterfaceNil() bool {
-	return false
+func (b *baseDisabled) IsInterfaceNil() bool {
+	return b == nil
 }

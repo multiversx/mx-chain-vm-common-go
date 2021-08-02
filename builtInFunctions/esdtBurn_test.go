@@ -14,8 +14,8 @@ import (
 func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
-	pauseHandler := &mock.PauseHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, pauseHandler)
+	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
+	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, globalSettingsHandler, 1000, &mock.EpochNotifierStub{})
 	_, err := burnFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -48,7 +48,7 @@ func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Equal(t, err, ErrNilUserAccount)
 
-	pauseHandler.IsPausedCalled = func(token []byte) bool {
+	globalSettingsHandler.IsPausedCalled = func(token []byte) bool {
 		return true
 	}
 	input.GasProvided = burnFunc.funcGasCost
@@ -60,8 +60,8 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	pauseHandler := &mock.PauseHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, marshalizer, pauseHandler)
+	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
+	burnFunc, _ := NewESDTBurnFunc(10, marshalizer, globalSettingsHandler, 1000, &mock.EpochNotifierStub{})
 
 	input := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -86,7 +86,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	_, err := burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
 
-	pauseHandler.IsPausedCalled = func(token []byte) bool {
+	globalSettingsHandler.IsPausedCalled = func(token []byte) bool {
 		return true
 	}
 	esdtToken = &esdt.ESDigitalToken{Value: big.NewInt(100), Properties: esdtNotFrozen.ToBytes()}
@@ -96,7 +96,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Equal(t, err, ErrESDTTokenIsPaused)
 
-	pauseHandler.IsPausedCalled = func(token []byte) bool {
+	globalSettingsHandler.IsPausedCalled = func(token []byte) bool {
 		return false
 	}
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)

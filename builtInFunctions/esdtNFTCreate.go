@@ -16,13 +16,13 @@ var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonce
 
 type esdtNFTCreate struct {
 	baseAlwaysActive
-	keyPrefix    []byte
-	marshalizer  vmcommon.Marshalizer
-	pauseHandler vmcommon.ESDTPauseHandler
-	rolesHandler vmcommon.ESDTRoleHandler
-	funcGasCost  uint64
-	gasConfig    vmcommon.BaseOperationCost
-	mutExecution sync.RWMutex
+	keyPrefix             []byte
+	marshalizer           vmcommon.Marshalizer
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	rolesHandler          vmcommon.ESDTRoleHandler
+	funcGasCost           uint64
+	gasConfig             vmcommon.BaseOperationCost
+	mutExecution          sync.RWMutex
 }
 
 // NewESDTNFTCreateFunc returns the esdt NFT create built-in function component
@@ -30,27 +30,27 @@ func NewESDTNFTCreateFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtNFTCreate, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(pauseHandler) {
-		return nil, ErrNilPauseHandler
+	if check.IfNil(globalSettingsHandler) {
+		return nil, ErrNilGlobalSettingsHandler
 	}
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
 
 	e := &esdtNFTCreate{
-		keyPrefix:    []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:  marshalizer,
-		pauseHandler: pauseHandler,
-		rolesHandler: rolesHandler,
-		funcGasCost:  funcGasCost,
-		gasConfig:    gasConfig,
-		mutExecution: sync.RWMutex{},
+		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:           marshalizer,
+		globalSettingsHandler: globalSettingsHandler,
+		rolesHandler:          rolesHandler,
+		funcGasCost:           funcGasCost,
+		gasConfig:             gasConfig,
+		mutExecution:          sync.RWMutex{},
 	}
 
 	return e, nil
@@ -145,7 +145,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	var esdtDataBytes []byte
-	esdtDataBytes, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
+	esdtDataBytes, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -232,10 +232,10 @@ func saveESDTNFTToken(
 	esdtTokenKey []byte,
 	esdtData *esdt.ESDigitalToken,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	isReturnWithError bool,
 ) ([]byte, error) {
-	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, pauseHandler, isReturnWithError)
+	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, globalSettingsHandler, isReturnWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func saveESDTNFTToken(
 		nonce = esdtData.TokenMetaData.Nonce
 	}
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, pauseHandler, isReturnWithError)
+	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, globalSettingsHandler, isReturnWithError)
 	if err != nil {
 		return nil, err
 	}

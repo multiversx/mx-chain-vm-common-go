@@ -20,7 +20,7 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 		1,
 		vmcommon.BaseOperationCost{},
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 	)
 
@@ -34,7 +34,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		0,
 		vmcommon.BaseOperationCost{},
 		nil,
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 	)
 	assert.True(t, check.IfNil(nftCreate))
@@ -48,13 +48,13 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 	)
 	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilPauseHandler, err)
+	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
 
 	nftCreate, err = NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		nil,
 	)
 	assert.True(t, check.IfNil(nftCreate))
@@ -68,7 +68,7 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 		0,
 		vmcommon.BaseOperationCost{},
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 	)
 	assert.False(t, check.IfNil(nftCreate))
@@ -156,7 +156,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 		0,
 		vmcommon.BaseOperationCost{},
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{
 			CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 				return expectedErr
@@ -184,7 +184,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		0,
 		vmcommon.BaseOperationCost{},
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 	)
 	address := bytes.Repeat([]byte{1}, 32)

@@ -19,18 +19,20 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 	multiTransfer, _ := NewESDTNFTMultiTransferFunc(
 		0,
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 
 	return multiTransfer
 }
 
-func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, pauseHandler vmcommon.ESDTPauseHandler) *esdtNFTMultiTransfer {
+func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler) *esdtNFTMultiTransfer {
 	marshalizer := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard
@@ -59,12 +61,21 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 	multiTransfer, _ := NewESDTNFTMultiTransferFunc(
 		1,
 		marshalizer,
-		pauseHandler,
+		globalSettingsHandler,
 		accounts,
 		shardCoordinator,
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{
+			CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+				if bytes.Equal(action, []byte(core.ESDTRoleTransfer)) {
+					return ErrActionNotAllowed
+				}
+				return nil
+			},
+		},
+		1000,
 	)
 
 	return multiTransfer
@@ -76,12 +87,14 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 	multiTransfer, err := NewESDTNFTMultiTransferFunc(
 		0,
 		nil,
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilMarshalizer, err)
@@ -95,19 +108,23 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
-	assert.Equal(t, ErrNilPauseHandler, err)
+	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
 
 	multiTransfer, err = NewESDTNFTMultiTransferFunc(
 		0,
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		nil,
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilAccountsAdapter, err)
@@ -115,12 +132,14 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 	multiTransfer, err = NewESDTNFTMultiTransferFunc(
 		0,
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.AccountsStub{},
 		nil,
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilShardCoordinator, err)
@@ -128,15 +147,32 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 	multiTransfer, err = NewESDTNFTMultiTransferFunc(
 		0,
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
 		0,
 		nil,
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilEpochHandler, err)
+
+	multiTransfer, err = NewESDTNFTMultiTransferFunc(
+		0,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.AccountsStub{},
+		&mock.ShardCoordinatorStub{},
+		vmcommon.BaseOperationCost{},
+		0,
+		&mock.EpochNotifierStub{},
+		nil,
+		1000,
+	)
+	assert.True(t, check.IfNil(multiTransfer))
+	assert.Equal(t, ErrNilRolesHandler, err)
 }
 
 func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
@@ -145,12 +181,14 @@ func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
 	multiTransfer, err := NewESDTNFTMultiTransferFunc(
 		0,
 		&mock.MarshalizerMock{},
-		&mock.PauseHandlerStub{},
+		&mock.GlobalSettingsHandlerStub{},
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
 		0,
 		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
 	)
 	assert.False(t, check.IfNil(multiTransfer))
 	assert.Nil(t, err)
@@ -224,7 +262,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionInvalidArgumentsShouldErr(t 
 func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.T) {
 	t.Parallel()
 
-	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.PauseHandlerStub{})
+	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
 	_ = multiTransfer.SetPayableHandler(
 		&mock.PayableHandlerStub{
 			IsPayableCalled: func(address []byte) (bool, error) {
@@ -304,10 +342,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 		},
 	}
 
-	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.PauseHandlerStub{})
+	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
 	_ = multiTransferSenderShard.SetPayableHandler(payableHandler)
 
-	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.PauseHandlerStub{})
+	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
 	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{1}, 32)
@@ -399,10 +437,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 		},
 	}
 
-	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.PauseHandlerStub{})
+	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
 	_ = multiTransferSenderShard.SetPayableHandler(payableHandler)
 
-	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.PauseHandlerStub{})
+	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
 	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
@@ -487,7 +525,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	t.Parallel()
 
-	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.PauseHandlerStub{})
+	globalSettings := &mock.GlobalSettingsHandlerStub{}
+	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, globalSettings)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
@@ -535,6 +574,15 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	assert.Equal(t, ErrESDTIsFrozenForAccount, err)
 
+	globalSettings.IsLimiterTransferCalled = func(token []byte) bool {
+		return true
+	}
+	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	assert.Equal(t, ErrActionNotAllowed, err)
+
+	globalSettings.IsLimiterTransferCalled = func(token []byte) bool {
+		return false
+	}
 	vmInput.ReturnCallAfterError = true
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	assert.Nil(t, err)
@@ -543,7 +591,7 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 func TestESDTNFTMultiTransfer_NotEnoughGas(t *testing.T) {
 	t.Parallel()
 
-	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.PauseHandlerStub{})
+	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard

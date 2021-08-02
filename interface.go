@@ -182,9 +182,10 @@ type Marshalizer interface {
 	IsInterfaceNil() bool
 }
 
-// ESDTPauseHandler provides IsPaused function for an ESDT token
-type ESDTPauseHandler interface {
+// ESDTGlobalSettingsHandler provides global settings functions for an ESDT token
+type ESDTGlobalSettingsHandler interface {
 	IsPaused(token []byte) bool
+	IsLimitedTransfer(tokenKey []byte) bool
 	IsInterfaceNil() bool
 }
 

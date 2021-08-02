@@ -13,35 +13,42 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
 type esdtNFTTransfer struct {
 	baseAlwaysActive
-	keyPrefix        []byte
-	marshalizer      vmcommon.Marshalizer
-	pauseHandler     vmcommon.ESDTPauseHandler
-	payableHandler   vmcommon.PayableHandler
-	funcGasCost      uint64
-	accounts         vmcommon.AccountsAdapter
-	shardCoordinator vmcommon.Coordinator
-	gasConfig        vmcommon.BaseOperationCost
-	mutExecution     sync.RWMutex
+	keyPrefix                 []byte
+	marshalizer               vmcommon.Marshalizer
+	globalSettingsHandler     vmcommon.ESDTGlobalSettingsHandler
+	payableHandler            vmcommon.PayableHandler
+	funcGasCost               uint64
+	accounts                  vmcommon.AccountsAdapter
+	shardCoordinator          vmcommon.Coordinator
+	gasConfig                 vmcommon.BaseOperationCost
+	mutExecution              sync.RWMutex
+	rolesHandler              vmcommon.ESDTRoleHandler
+	transferToMetaEnableEpoch uint32
+	flagTransferToMeta        atomic.Flag
 }
 
 // NewESDTNFTTransferFunc returns the esdt NFT transfer built-in function component
 func NewESDTNFTTransferFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	pauseHandler vmcommon.ESDTPauseHandler,
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
+	rolesHandler vmcommon.ESDTRoleHandler,
+	transferToMetaEnableEpoch uint32,
+	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTTransfer, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(pauseHandler) {
-		return nil, ErrNilPauseHandler
+	if check.IfNil(globalSettingsHandler) {
+		return nil, ErrNilGlobalSettingsHandler
 	}
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -49,20 +56,36 @@ func NewESDTNFTTransferFunc(
 	if check.IfNil(shardCoordinator) {
 		return nil, ErrNilShardCoordinator
 	}
-
-	e := &esdtNFTTransfer{
-		keyPrefix:        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:      marshalizer,
-		pauseHandler:     pauseHandler,
-		funcGasCost:      funcGasCost,
-		accounts:         accounts,
-		shardCoordinator: shardCoordinator,
-		gasConfig:        gasConfig,
-		mutExecution:     sync.RWMutex{},
-		payableHandler:   &disabledPayableHandler{},
+	if check.IfNil(rolesHandler) {
+		return nil, ErrNilRolesHandler
+	}
+	if check.IfNil(epochNotifier) {
+		return nil, ErrNilEpochHandler
 	}
 
+	e := &esdtNFTTransfer{
+		keyPrefix:                 []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:               marshalizer,
+		globalSettingsHandler:     globalSettingsHandler,
+		funcGasCost:               funcGasCost,
+		accounts:                  accounts,
+		shardCoordinator:          shardCoordinator,
+		gasConfig:                 gasConfig,
+		mutExecution:              sync.RWMutex{},
+		payableHandler:            &disabledPayableHandler{},
+		rolesHandler:              rolesHandler,
+		transferToMetaEnableEpoch: transferToMetaEnableEpoch,
+	}
+
+	epochNotifier.RegisterNotifyHandler(e)
+
 	return e, nil
+}
+
+// EpochConfirmed is called whenever a new epoch is confirmed
+func (e *esdtNFTTransfer) EpochConfirmed(epoch uint32, _ uint64) {
+	e.flagTransferToMeta.Toggle(epoch >= e.transferToMetaEnableEpoch)
+	log.Debug("ESDT NFT transfer to metachain enabled", e.flagTransferToMeta.IsSet())
 }
 
 // SetPayableHandler will set the payable handler to the function
@@ -170,7 +193,8 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	if e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId {
+	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !e.flagTransferToMeta.IsSet()
+	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
 	if vmInput.GasProvided < e.funcGasCost {
@@ -193,19 +217,22 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.pauseHandler, vmInput.ReturnCallAfterError)
+	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
 
 	esdtData.Value.Set(quantityToTransfer)
 
+	var userAccount vmcommon.UserAccountHandler
 	if e.shardCoordinator.SelfId() == e.shardCoordinator.ComputeId(dstAddress) {
 		accountHandler, errLoad := e.accounts.LoadAccount(dstAddress)
 		if errLoad != nil {
 			return nil, errLoad
 		}
-		userAccount, ok := accountHandler.(vmcommon.UserAccountHandler)
+
+		var ok bool
+		userAccount, ok = accountHandler.(vmcommon.UserAccountHandler)
 		if !ok {
 			return nil, ErrWrongTypeAssertion
 		}
@@ -219,6 +246,11 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	err = checkIfTransferCanHappenWithLimitedTransfer(esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
+	if err != nil {
+		return nil, err
 	}
 
 	vmOutput := &vmcommon.VMOutput{
@@ -328,7 +360,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
-	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.pauseHandler, isReturnWithError)
+	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.globalSettingsHandler, isReturnWithError)
 	if err != nil {
 		return err
 	}
@@ -340,7 +372,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	}
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.pauseHandler, isReturnWithError)
+	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.globalSettingsHandler, isReturnWithError)
 	if err != nil {
 		return err
 	}
