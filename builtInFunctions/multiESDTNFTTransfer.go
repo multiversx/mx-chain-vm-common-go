@@ -238,7 +238,8 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	if e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId {
+	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !e.flagTransferToMeta.IsSet()
+	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
 	numOfTransfers := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()

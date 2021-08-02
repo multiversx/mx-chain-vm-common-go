@@ -102,7 +102,8 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	if e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !e.flagTransferToMeta.IsSet() {
+	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !e.flagTransferToMeta.IsSet()
+	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
 
