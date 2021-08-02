@@ -92,7 +92,7 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - e.funcGasCost}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTLocalMint), vmInput.Arguments[0], value, vmInput.CallerAddr)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTLocalMint), vmInput.Arguments[0], 0, value, vmInput.CallerAddr)
 
 	return vmOutput, nil
 }
