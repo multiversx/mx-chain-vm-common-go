@@ -5,7 +5,7 @@ const lengthOfESDTMetadata = 2
 const (
 	// MetadataPaused is the location of paused flag in the esdt global meta data
 	MetadataPaused = 1
-	// MetadataLimitedTransfer is the location of paused flag in the esdt global meta data
+	// MetadataLimitedTransfer is the location of limited transfer flag in the esdt global meta data
 	MetadataLimitedTransfer = 2
 )
 
