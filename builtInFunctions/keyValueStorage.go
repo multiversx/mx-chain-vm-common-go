@@ -44,13 +44,13 @@ func (k *saveKeyValueStorage) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 
 // ProcessBuiltinFunction will save the value for the selected key
 func (k *saveKeyValueStorage) ProcessBuiltinFunction(
-	acntSnd, _ vmcommon.UserAccountHandler,
+	acntSnd, acntDest vmcommon.UserAccountHandler,
 	input *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	k.mutExecution.RLock()
 	defer k.mutExecution.RUnlock()
 
-	err := checkArgumentsForSaveKeyValue(acntSnd, input)
+	err := checkArgumentsForSaveKeyValue(acntDest, input)
 	if err != nil {
 		return nil, err
 	}
