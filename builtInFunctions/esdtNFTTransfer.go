@@ -85,7 +85,7 @@ func NewESDTNFTTransferFunc(
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (e *esdtNFTTransfer) EpochConfirmed(epoch uint32, _ uint64) {
 	e.flagTransferToMeta.Toggle(epoch >= e.transferToMetaEnableEpoch)
-	log.Debug("ESDT NFT transfer to metachain enabled", e.flagTransferToMeta.IsSet())
+	log.Debug("ESDT NFT transfer to metachain flag", "enabled", e.flagTransferToMeta.IsSet())
 }
 
 // SetPayableHandler will set the payable handler to the function

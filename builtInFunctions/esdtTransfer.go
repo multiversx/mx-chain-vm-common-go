@@ -76,7 +76,7 @@ func NewESDTTransferFunc(
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (e *esdtTransfer) EpochConfirmed(epoch uint32, _ uint64) {
 	e.flagTransferToMeta.Toggle(epoch >= e.transferToMetaEnableEpoch)
-	log.Debug("ESDT transfer to metachain enabled", e.flagTransferToMeta.IsSet())
+	log.Debug("ESDT transfer to metachain flag", "enabled", e.flagTransferToMeta.IsSet())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
