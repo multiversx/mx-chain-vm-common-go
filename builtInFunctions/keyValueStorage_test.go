@@ -105,6 +105,42 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 	require.True(t, errors.Is(err, ErrOperationNotPermitted))
 }
 
+func TestSaveKeyValueStorage_ProcessBuiltinFunctionNilAccountSender(t *testing.T) {
+	t.Parallel()
+
+	funcGasCost := uint64(1)
+	gasConfig := vmcommon.BaseOperationCost{
+		StorePerByte:      1,
+		ReleasePerByte:    1,
+		DataCopyPerByte:   1,
+		PersistPerByte:    1,
+		CompilePerByte:    1,
+		AoTPreparePerByte: 1,
+	}
+
+	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
+
+	addr := []byte("addr")
+	acc := mock.NewUserAccount(addr)
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallerAddr:  addr,
+			GasProvided: 50,
+			CallValue:   big.NewInt(0),
+		},
+		RecipientAddr: addr,
+	}
+
+	key := []byte("key")
+	value := []byte("value")
+	vmInput.Arguments = [][]byte{key, value}
+
+	_, err := skv.ProcessBuiltinFunction(nil, acc, vmInput)
+	require.Nil(t, err)
+	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
+	require.True(t, bytes.Equal(retrievedValue, value))
+}
+
 func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 	t.Parallel()
 
