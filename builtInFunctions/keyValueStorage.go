@@ -44,7 +44,7 @@ func (k *saveKeyValueStorage) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 
 // ProcessBuiltinFunction will save the value for the selected key
 func (k *saveKeyValueStorage) ProcessBuiltinFunction(
-	acntSnd, acntDest vmcommon.UserAccountHandler,
+	_, acntDest vmcommon.UserAccountHandler,
 	input *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	k.mutExecution.RLock()
@@ -71,7 +71,7 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 			return nil, fmt.Errorf("%w it is not allowed to save under key %s", ErrOperationNotPermitted, key)
 		}
 
-		oldValue, _ := acntSnd.AccountDataHandler().RetrieveValue(key)
+		oldValue, _ := acntDest.AccountDataHandler().RetrieveValue(key)
 		if bytes.Equal(oldValue, value) {
 			continue
 		}
@@ -90,7 +90,7 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 
 		//key-value test point
 
-		err = acntSnd.AccountDataHandler().SaveKeyValue(key, value)
+		err = acntDest.AccountDataHandler().SaveKeyValue(key, value)
 		if err != nil {
 			return nil, err
 		}
