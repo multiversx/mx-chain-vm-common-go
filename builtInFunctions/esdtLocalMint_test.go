@@ -173,7 +173,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 			{
 				Identifier: []byte("ESDTLocalMint"),
 				Address:    nil,
-				Topics:     [][]byte{[]byte("arg1"), big.NewInt(0).Bytes(), big.NewInt(1).Bytes()},
+				Topics:     [][]byte{[]byte("arg1"), big.NewInt(1).Bytes()},
 				Data:       nil,
 			},
 		},

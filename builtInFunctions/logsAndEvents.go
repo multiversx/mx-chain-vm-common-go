@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"encoding/hex"
 	"math/big"
 
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
@@ -17,11 +18,18 @@ func addESDTEntryInVMOutput(vmOutput *vmcommon.VMOutput, identifier []byte, toke
 }
 
 func newEntryForESDT(identifier, tokenID []byte, nonce uint64, value *big.Int, args ...[]byte) *vmcommon.LogEntry {
-	nonceBig := big.NewInt(0).SetUint64(nonce)
+	tokenIdentifier := tokenID
+	if nonce != 0 {
+		nonceBig := big.NewInt(0).SetUint64(nonce)
+		hexEncodedNonce := hex.EncodeToString(nonceBig.Bytes())
+
+		tokenIdentifier = append(tokenIdentifier, []byte("-")...)
+		tokenIdentifier = append(tokenIdentifier, []byte(hexEncodedNonce)...)
+	}
 
 	logEntry := &vmcommon.LogEntry{
 		Identifier: identifier,
-		Topics:     [][]byte{tokenID, nonceBig.Bytes(), value.Bytes()},
+		Topics:     [][]byte{tokenIdentifier, value.Bytes()},
 	}
 
 	if len(args) > 0 {
