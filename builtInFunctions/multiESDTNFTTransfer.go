@@ -181,7 +181,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			esdtTransferData := &esdt.ESDigitalToken{}
 			err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
 
 			err = e.addNFTToDestination(
@@ -192,14 +192,14 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				mustVerifyPayable(vmInput, int(minNumOfArguments)),
 				vmInput.ReturnCallAfterError)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
 			value = esdtTransferData.Value
 		} else {
 			transferredValue := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2])
 			err = addToESDTBalance(acntDst, esdtTokenKey, transferredValue, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
 			value = transferredValue
 		}
@@ -286,7 +286,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			verifyPayable,
 			vmInput.ReturnCallAfterError)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%w for token %s", err, string(listTokenID[i]))
 		}
 
 		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionMultiESDTNFTTransfer), listTokenID[i], nonce, quantityToTransfer, vmInput.CallerAddr, dstAddress)
