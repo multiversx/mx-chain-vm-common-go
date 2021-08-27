@@ -345,7 +345,11 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	if !check.IfNil(acntDst) {
-		err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, verifyPayable, isReturnCallWithError)
+		if nonce > 0 {
+			err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, verifyPayable, isReturnCallWithError)
+		} else {
+			err = addToESDTBalance(acntDst, esdtTokenKey, esdtData.Value, e.marshalizer, e.globalSettingsHandler, isReturnCallWithError)
+		}
 		if err != nil {
 			return nil, err
 		}

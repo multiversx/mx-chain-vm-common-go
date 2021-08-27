@@ -279,12 +279,16 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte("token1")
+	token2 := []byte("token2")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
 	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
 	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
+
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransfer.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransfer.marshalizer, destination.(vmcommon.UserAccountHandler))
+
 	_ = multiTransfer.accounts.SaveAccount(sender)
 	_ = multiTransfer.accounts.SaveAccount(destination)
 	_, _ = multiTransfer.accounts.Commit()
@@ -326,8 +330,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 
 	testNFTTokenShouldExist(t, multiTransfer.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
 	testNFTTokenShouldExist(t, multiTransfer.marshalizer, sender, token2, 0, big.NewInt(2))
-	testNFTTokenShouldExist(t, multiTransfer.marshalizer, destination, token1, tokenNonce, big.NewInt(1))
-	testNFTTokenShouldExist(t, multiTransfer.marshalizer, destination, token2, 0, big.NewInt(1))
+	testNFTTokenShouldExist(t, multiTransfer.marshalizer, destination, token1, tokenNonce, big.NewInt(4))
+	testNFTTokenShouldExist(t, multiTransfer.marshalizer, destination, token2, 0, big.NewInt(4))
 	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
 	assert.Equal(t, scCallFunctionAsHex, funcName)
 	require.Equal(t, 1, len(args))
@@ -356,7 +360,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte("token1")
+	token2 := []byte("token2")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -544,7 +548,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte("token1")
+	token2 := []byte("token2")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -581,13 +585,15 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 	require.Nil(t, err)
 
 	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token2, 0, big.NewInt(2))
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token2, 0, big.NewInt(2))          //3 initial - 1 transferred
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
-	destinationNumTokens := big.NewInt(1000)
+	destinationNumTokens1 := big.NewInt(1000)
+	destinationNumTokens2 := big.NewInt(1000)
 	destination, err := multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens, multiTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens1, multiTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, destinationNumTokens2, multiTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
 	_ = multiTransferDestinationShard.accounts.SaveAccount(destination)
 	_, _ = multiTransferDestinationShard.accounts.Commit()
 
@@ -612,9 +618,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 	destination, err = multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
 
-	expected := big.NewInt(0).Add(destinationNumTokens, big.NewInt(1))
-	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token1, tokenNonce, expected)
-	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token2, 0, big.NewInt(1))
+	expectedTokens1 := big.NewInt(0).Add(destinationNumTokens1, big.NewInt(1))
+	expectedTokens2 := big.NewInt(0).Add(destinationNumTokens2, big.NewInt(1))
+	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token1, tokenNonce, expectedTokens1)
+	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token2, 0, expectedTokens2)
 }
 
 func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *testing.T) {
@@ -638,7 +645,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte("token1")
+	token2 := []byte("token2")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -722,7 +729,7 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte("token1")
+	token2 := []byte("token2")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -788,7 +795,7 @@ func TestESDTNFTMultiTransfer_NotEnoughGas(t *testing.T) {
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte("token1")
+	token2 := []byte("token2")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
