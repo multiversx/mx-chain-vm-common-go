@@ -165,9 +165,16 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		return nil, fmt.Errorf("%w, invalid number of arguments", ErrInvalidArguments)
 	}
 
+	verifyPayable := mustVerifyPayable(vmInput, int(minNumOfArguments))
 	vmOutput := &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided}
 	vmOutput.Logs = make([]*vmcommon.LogEntry, 0, numOfTransfers)
 	startIndex := uint64(1)
+
+	err = e.checkIfPayable(verifyPayable, vmInput.RecipientAddr)
+	if err != nil {
+		return nil, err
+	}
+
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
 		tokenID := vmInput.Arguments[tokenStartIndex]
@@ -189,7 +196,6 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				acntDst,
 				esdtTransferData,
 				esdtTokenKey,
-				mustVerifyPayable(vmInput, int(minNumOfArguments)),
 				vmInput.ReturnCallAfterError)
 			if err != nil {
 				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
@@ -262,6 +268,13 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		return nil, err
 	}
 
+	if !check.IfNil(acntDst) {
+		err = e.checkIfPayable(verifyPayable, dstAddress)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - multiTransferCost,
@@ -283,7 +296,6 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			listTokenID[i],
 			nonce,
 			quantityToTransfer,
-			verifyPayable,
 			vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, fmt.Errorf("%w for token %s", err, string(listTokenID[i]))
@@ -314,7 +326,6 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	tokenID []byte,
 	nonce uint64,
 	quantityToTransfer *big.Int,
-	verifyPayable bool,
 	isReturnCallWithError bool,
 ) (*esdt.ESDigitalToken, error) {
 	if quantityToTransfer.Cmp(zero) <= 0 {
@@ -346,7 +357,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 
 	if !check.IfNil(acntDst) {
 		if nonce > 0 {
-			err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, verifyPayable, isReturnCallWithError)
+			err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, isReturnCallWithError)
 		} else {
 			err = addToESDTBalance(acntDst, esdtTokenKey, esdtData.Value, e.marshalizer, e.globalSettingsHandler, isReturnCallWithError)
 		}
@@ -454,24 +465,32 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 	return nil
 }
 
+func (e *esdtNFTMultiTransfer) checkIfPayable(
+	mustVerifyPayable bool,
+	dstAddress []byte,
+) error {
+	if !mustVerifyPayable {
+		return nil
+	}
+
+	isPayable, errIsPayable := e.payableHandler.IsPayable(dstAddress)
+	if errIsPayable != nil {
+		return errIsPayable
+	}
+	if !isPayable {
+		return ErrAccountNotPayable
+	}
+
+	return nil
+}
+
 func (e *esdtNFTMultiTransfer) addNFTToDestination(
 	dstAddress []byte,
 	userAccount vmcommon.UserAccountHandler,
 	esdtDataToTransfer *esdt.ESDigitalToken,
 	esdtTokenKey []byte,
-	mustVerifyPayable bool,
 	isReturnCallWithError bool,
 ) error {
-	if mustVerifyPayable {
-		isPayable, errIsPayable := e.payableHandler.IsPayable(dstAddress)
-		if errIsPayable != nil {
-			return errIsPayable
-		}
-		if !isPayable {
-			return ErrAccountNotPayable
-		}
-	}
-
 	nonce := uint64(0)
 	if esdtDataToTransfer.TokenMetaData != nil {
 		nonce = esdtDataToTransfer.TokenMetaData.Nonce
