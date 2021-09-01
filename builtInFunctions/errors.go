@@ -208,3 +208,6 @@ var ErrWrongTypeInContainer = errors.New("wrong type of object inside container"
 
 // ErrEmptyFunctionName signals that an empty function name has been provided
 var ErrEmptyFunctionName = errors.New("empty function name")
+
+// ErrInsufficientQuantityESDT signals the funds are insufficient for the ESDT transfer
+var ErrInsufficientQuantityESDT = errors.New("insufficient quantity")

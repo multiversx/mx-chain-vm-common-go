@@ -339,7 +339,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	if esdtData.Value.Cmp(quantityToTransfer) < 0 {
-		return nil, ErrInvalidNFTQuantity
+		return nil, computeInsufficientQuantityESDTError(tokenID, nonce)
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
@@ -367,6 +367,15 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	return esdtData, nil
+}
+
+func computeInsufficientQuantityESDTError(tokenID []byte, nonce uint64) error {
+	err := fmt.Errorf("%w for token: %s", ErrInsufficientQuantityESDT, string(tokenID))
+	if nonce > 0 {
+		err = fmt.Errorf("%w nonce %d", err, nonce)
+	}
+
+	return err
 }
 
 func (e *esdtNFTMultiTransfer) loadAccountIfInShard(dstAddress []byte) (vmcommon.UserAccountHandler, error) {
