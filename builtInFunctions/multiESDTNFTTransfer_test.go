@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"testing"
@@ -827,4 +828,14 @@ func TestESDTNFTMultiTransfer_NotEnoughGas(t *testing.T) {
 
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), sender.(vmcommon.UserAccountHandler), vmInput)
 	assert.Equal(t, err, ErrNotEnoughGas)
+}
+
+func TestComputeInsufficientQuantityESDTError(t *testing.T) {
+	t.Parallel()
+
+	resErr := computeInsufficientQuantityESDTError([]byte("my-token"), 0)
+	require.Equal(t, errors.New("insufficient quantity for token: my-token").Error(), resErr.Error())
+
+	resErr = computeInsufficientQuantityESDTError([]byte("my-token-2"), 5)
+	require.Equal(t, errors.New("insufficient quantity for token: my-token-2 nonce 5").Error(), resErr.Error())
 }
