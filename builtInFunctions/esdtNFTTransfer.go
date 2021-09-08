@@ -292,7 +292,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[4:]...)
 	}
 
-	isSCCallAfter := len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(dstAddress)
+	isSCCallAfter := determineIsSCCallAfter(vmInput, dstAddress, core.MinLenArgumentsESDTNFTTransfer)
 
 	if e.shardCoordinator.SelfId() != e.shardCoordinator.ComputeId(dstAddress) {
 		gasToTransfer := uint64(0)

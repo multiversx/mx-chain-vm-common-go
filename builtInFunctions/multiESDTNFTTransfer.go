@@ -433,7 +433,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 		multiTransferCallArgs = append(multiTransferCallArgs, vmInput.Arguments[minNumOfArguments:]...)
 	}
 
-	isSCCallAfter := uint64(len(vmInput.Arguments)) > minNumOfArguments && vmcommon.IsSmartContractAddress(dstAddress)
+	isSCCallAfter := determineIsSCCallAfter(vmInput, dstAddress, int(minNumOfArguments))
 
 	if e.shardCoordinator.SelfId() != e.shardCoordinator.ComputeId(dstAddress) {
 		gasToTransfer := uint64(0)
