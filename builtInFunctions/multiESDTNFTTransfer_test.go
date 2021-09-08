@@ -11,7 +11,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	"github.com/ElrondNetwork/elrond-vm-common"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -828,6 +828,47 @@ func TestESDTNFTMultiTransfer_NotEnoughGas(t *testing.T) {
 
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), sender.(vmcommon.UserAccountHandler), vmInput)
 	assert.Equal(t, err, ErrNotEnoughGas)
+}
+
+func TestESDTNFTMultiTransfer_WithEgldValue(t *testing.T) {
+	t.Parallel()
+
+	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
+
+	senderAddress := bytes.Repeat([]byte{2}, 32)
+	destinationAddress := bytes.Repeat([]byte{1}, 32)
+	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	token1 := []byte("token1")
+	token2 := []byte("token2")
+	tokenNonce := uint64(1)
+
+	initialTokens := big.NewInt(3)
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	_ = transferFunc.accounts.SaveAccount(sender)
+	_, _ = transferFunc.accounts.Commit()
+
+	sender, err = transferFunc.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
+	quantityBytes := big.NewInt(1).Bytes()
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(1),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{destinationAddress, big.NewInt(2).Bytes(), token1, nonceBytes, quantityBytes, token2, big.NewInt(0).Bytes(), quantityBytes},
+			GasProvided: 100000,
+		},
+		RecipientAddr: senderAddress,
+	}
+
+	output, err := transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), sender.(vmcommon.UserAccountHandler), vmInput)
+	require.Nil(t, output)
+	require.Equal(t, ErrBuiltInFunctionCalledWithValue, err)
 }
 
 func TestComputeInsufficientQuantityESDTError(t *testing.T) {
