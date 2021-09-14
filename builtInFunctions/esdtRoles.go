@@ -69,13 +69,16 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 	}
 
 	for _, arg := range vmInput.Arguments[1:] {
-		if bytes.Equal(arg, []byte(core.ESDTRoleNFTCreateMultiShard)) {
-			err = saveLatestNonce(acntDst, vmInput.Arguments[0], computeStartNonce(vmInput.RecipientAddr))
-			if err != nil {
-				return nil, err
-			}
-			break
+		if !bytes.Equal(arg, []byte(core.ESDTRoleNFTCreateMultiShard)) {
+			continue
 		}
+
+		err = saveLatestNonce(acntDst, vmInput.Arguments[0], computeStartNonce(vmInput.RecipientAddr))
+		if err != nil {
+			return nil, err
+		}
+
+		break
 	}
 
 	err = saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshalizer)
@@ -87,7 +90,7 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-// Nonces on multi shard NFT create ar from (LastByte * MaxUint64 / 256), this is in order to differentiate them
+// Nonces on multi shard NFT create are from (LastByte * MaxUint64 / 256), this is in order to differentiate them
 // even like this, if one contract makes 1000 NFT create on each block, it would need 14 million years to occupy the whole space
 // 2 ^ 64 / 256 / 1000 / 14400 / 365 ~= 14 million
 func computeStartNonce(destAddress []byte) uint64 {
@@ -154,21 +157,12 @@ func (e *esdtRoles) CheckAllowedToExecute(account vmcommon.UserAccountHandler, t
 	if isNew {
 		return ErrActionNotAllowed
 	}
-	if !searchForRole(roles, action) {
+	_, exist := doesRoleExist(roles, action)
+	if !exist {
 		return ErrActionNotAllowed
 	}
 
 	return nil
-}
-
-func searchForRole(roles *esdt.ESDTRoles, action []byte) bool {
-	for _, role := range roles.Roles {
-		if bytes.Equal(role, action) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // IsInterfaceNil returns true if underlying object in nil
