@@ -2,6 +2,7 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"math"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
@@ -67,6 +68,19 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 		deleteRoles(roles, vmInput.Arguments[1:])
 	}
 
+	for _, arg := range vmInput.Arguments[1:] {
+		if !bytes.Equal(arg, []byte(core.ESDTRoleNFTCreateMultiShard)) {
+			continue
+		}
+
+		err = saveLatestNonce(acntDst, vmInput.Arguments[0], computeStartNonce(vmInput.RecipientAddr))
+		if err != nil {
+			return nil, err
+		}
+
+		break
+	}
+
 	err = saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshalizer)
 	if err != nil {
 		return nil, err
@@ -74,6 +88,15 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 	return vmOutput, nil
+}
+
+// Nonces on multi shard NFT create are from (LastByte * MaxUint64 / 256), this is in order to differentiate them
+// even like this, if one contract makes 1000 NFT create on each block, it would need 14 million years to occupy the whole space
+// 2 ^ 64 / 256 / 1000 / 14400 / 365 ~= 14 million
+func computeStartNonce(destAddress []byte) uint64 {
+	lastByteOfAddress := uint64(destAddress[len(destAddress)-1])
+	startNonce := (math.MaxUint64 / 256) * lastByteOfAddress
+	return startNonce
 }
 
 func deleteRoles(roles *esdt.ESDTRoles, deleteRoles [][]byte) {
@@ -134,14 +157,12 @@ func (e *esdtRoles) CheckAllowedToExecute(account vmcommon.UserAccountHandler, t
 	if isNew {
 		return ErrActionNotAllowed
 	}
-
-	for _, role := range roles.Roles {
-		if bytes.Equal(role, action) {
-			return nil
-		}
+	_, exist := doesRoleExist(roles, action)
+	if !exist {
+		return ErrActionNotAllowed
 	}
 
-	return ErrActionNotAllowed
+	return nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil

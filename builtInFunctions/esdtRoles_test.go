@@ -1,7 +1,9 @@
 package builtInFunctions
 
 import (
+	"bytes"
 	"errors"
+	"math"
 	"math/big"
 	"testing"
 
@@ -142,6 +144,55 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesShouldWork(t *testing.T) {
 		},
 	})
 	require.Nil(t, err)
+}
+
+func TestEsdtRoles_ProcessBuiltinFunction_SetRolesMultiNFT(t *testing.T) {
+	t.Parallel()
+
+	marshalizer := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, true)
+
+	tokenID := []byte("tokenID")
+	roleKey := append(roleKeyPrefix, tokenID...)
+
+	saveNonceCalled := false
+	acc := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+					roles := &esdt.ESDTRoles{}
+					return marshalizer.Marshal(roles)
+				},
+				SaveKeyValueCalled: func(key []byte, value []byte) error {
+					if bytes.Equal(key, roleKey) {
+						roles := &esdt.ESDTRoles{}
+						_ = marshalizer.Unmarshal(roles, value)
+						require.Equal(t, roles.Roles, [][]byte{[]byte(core.ESDTRoleNFTCreate), []byte(core.ESDTRoleNFTCreateMultiShard)})
+						return nil
+					}
+
+					if bytes.Equal(key, getNonceKey(tokenID)) {
+						saveNonceCalled = true
+						require.Equal(t, uint64(math.MaxUint64/256), big.NewInt(0).SetBytes(value).Uint64())
+					}
+
+					return nil
+				},
+			}
+		},
+	}
+	dstAddr := bytes.Repeat([]byte{1}, 32)
+	_, err := esdtRolesF.ProcessBuiltinFunction(nil, acc, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:  big.NewInt(0),
+			CallerAddr: core.ESDTSCAddress,
+			Arguments:  [][]byte{tokenID, []byte(core.ESDTRoleNFTCreate), []byte(core.ESDTRoleNFTCreateMultiShard)},
+		},
+		RecipientAddr: dstAddr,
+	})
+
+	require.Nil(t, err)
+	require.True(t, saveNonceCalled)
 }
 
 func TestEsdtRoles_ProcessBuiltinFunction_SaveFailedShouldErr(t *testing.T) {
