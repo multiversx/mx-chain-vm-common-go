@@ -528,6 +528,96 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationAddT
 	require.Equal(t, "esdt token is paused for token token2", err.Error())
 }
 
+func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsOneTransfer(t *testing.T) {
+	t.Parallel()
+
+	payableHandler := &mock.PayableHandlerStub{
+		IsPayableCalled: func(address []byte) (bool, error) {
+			return true, nil
+		},
+	}
+
+	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
+	_ = multiTransferSenderShard.SetPayableHandler(payableHandler)
+
+	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
+	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
+
+	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
+	destinationAddress := bytes.Repeat([]byte{1}, 32)
+	sender, err := multiTransferSenderShard.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	token1 := []byte("token1")
+	tokenNonce := uint64(1)
+
+	initialTokens := big.NewInt(3)
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
+	_, _ = multiTransferSenderShard.accounts.Commit()
+
+	//reload sender account
+	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
+	quantityBytes := big.NewInt(1).Bytes()
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{destinationAddress, big.NewInt(1).Bytes(), token1, nonceBytes, quantityBytes},
+			GasProvided: 100000,
+		},
+		RecipientAddr: senderAddress,
+	}
+
+	vmOutput, err := multiTransferSenderShard.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
+	require.Nil(t, err)
+	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
+
+	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
+	_, _ = multiTransferSenderShard.accounts.Commit()
+
+	//reload sender account
+	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
+	_, args := extractScResultsFromVmOutput(t, vmOutput)
+
+	destinationNumTokens1 := big.NewInt(1000)
+	destination, err := multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens1, multiTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
+	_ = multiTransferDestinationShard.accounts.SaveAccount(destination)
+	_, _ = multiTransferDestinationShard.accounts.Commit()
+
+	destination, err = multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+
+	vmInput = &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:  big.NewInt(0),
+			CallerAddr: senderAddress,
+			Arguments:  args,
+		},
+		RecipientAddr: destinationAddress,
+	}
+
+	vmOutput, err = multiTransferDestinationShard.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
+	require.Nil(t, err)
+	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
+	_ = multiTransferDestinationShard.accounts.SaveAccount(destination)
+	_, _ = multiTransferDestinationShard.accounts.Commit()
+
+	destination, err = multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+
+	expectedTokens1 := big.NewInt(0).Add(destinationNumTokens1, big.NewInt(1))
+	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token1, tokenNonce, expectedTokens1)
+}
+
 func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(t *testing.T) {
 	t.Parallel()
 
