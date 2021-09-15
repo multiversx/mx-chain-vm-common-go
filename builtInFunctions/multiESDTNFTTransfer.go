@@ -140,7 +140,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	if len(vmInput.Arguments) < 5 {
+	if len(vmInput.Arguments) < 4 {
 		return nil, ErrInvalidArguments
 	}
 
