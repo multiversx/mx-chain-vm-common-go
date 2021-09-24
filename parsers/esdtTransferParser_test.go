@@ -1,6 +1,7 @@
 package parsers
 
 import (
+	"bytes"
 	"math/big"
 	"testing"
 
@@ -9,6 +10,9 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
+
+var sndAddr = bytes.Repeat([]byte{1}, 32)
+var dstAddr = bytes.Repeat([]byte{1}, 32)
 
 func TestNewESDTTransferParser(t *testing.T) {
 	t.Parallel()
@@ -37,7 +41,7 @@ func TestEsdtTransferParser_ParseSingleESDTFunction(t *testing.T) {
 	esdtParser, _ := NewESDTTransferParser(&mock.MarshalizerMock{})
 	parsedData, err := esdtParser.ParseESDTTransfers(
 		nil,
-		[]byte("address"),
+		dstAddr,
 		core.BuiltInFunctionESDTTransfer,
 		[][]byte{[]byte("one")},
 	)
@@ -46,19 +50,19 @@ func TestEsdtTransferParser_ParseSingleESDTFunction(t *testing.T) {
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
 		nil,
-		[]byte("address"),
+		dstAddr,
 		core.BuiltInFunctionESDTTransfer,
 		[][]byte{[]byte("one"), big.NewInt(10).Bytes()},
 	)
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 1)
 	assert.Equal(t, len(parsedData.CallArgs), 0)
-	assert.Equal(t, parsedData.RcvAddr, []byte("address"))
+	assert.Equal(t, parsedData.RcvAddr, dstAddr)
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTValue.Uint64(), big.NewInt(10).Uint64())
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
 		nil,
-		[]byte("address"),
+		dstAddr,
 		core.BuiltInFunctionESDTTransfer,
 		[][]byte{[]byte("one"), big.NewInt(10).Bytes(), []byte("function"), []byte("arg")},
 	)
@@ -74,7 +78,7 @@ func TestEsdtTransferParser_ParseSingleNFTTransfer(t *testing.T) {
 	esdtParser, _ := NewESDTTransferParser(&mock.MarshalizerMock{})
 	parsedData, err := esdtParser.ParseESDTTransfers(
 		nil,
-		[]byte("address"),
+		dstAddr,
 		core.BuiltInFunctionESDTNFTTransfer,
 		[][]byte{[]byte("one"), []byte("two")},
 	)
@@ -82,37 +86,37 @@ func TestEsdtTransferParser_ParseSingleNFTTransfer(t *testing.T) {
 	assert.Nil(t, parsedData)
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("address"),
-		[]byte("address"),
+		sndAddr,
+		sndAddr,
 		core.BuiltInFunctionESDTNFTTransfer,
-		[][]byte{[]byte("one"), big.NewInt(10).Bytes(), big.NewInt(10).Bytes(), []byte("dest")},
+		[][]byte{[]byte("one"), big.NewInt(10).Bytes(), big.NewInt(10).Bytes(), dstAddr},
 	)
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 1)
 	assert.Equal(t, len(parsedData.CallArgs), 0)
-	assert.Equal(t, parsedData.RcvAddr, []byte("dest"))
+	assert.Equal(t, parsedData.RcvAddr, dstAddr)
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTValue.Uint64(), big.NewInt(10).Uint64())
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTTokenNonce, big.NewInt(10).Uint64())
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("address"),
-		[]byte("address"),
+		sndAddr,
+		sndAddr,
 		core.BuiltInFunctionESDTNFTTransfer,
-		[][]byte{[]byte("one"), big.NewInt(10).Bytes(), big.NewInt(10).Bytes(), []byte("dest"), []byte("function"), []byte("arg")})
+		[][]byte{[]byte("one"), big.NewInt(10).Bytes(), big.NewInt(10).Bytes(), dstAddr, []byte("function"), []byte("arg")})
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 1)
 	assert.Equal(t, len(parsedData.CallArgs), 1)
 	assert.Equal(t, parsedData.CallFunction, "function")
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("snd"),
-		[]byte("address"),
+		sndAddr,
+		dstAddr,
 		core.BuiltInFunctionESDTNFTTransfer,
-		[][]byte{[]byte("one"), big.NewInt(10).Bytes(), big.NewInt(10).Bytes(), []byte("dest"), []byte("function"), []byte("arg")})
+		[][]byte{[]byte("one"), big.NewInt(10).Bytes(), big.NewInt(10).Bytes(), dstAddr, []byte("function"), []byte("arg")})
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 1)
 	assert.Equal(t, len(parsedData.CallArgs), 1)
-	assert.Equal(t, parsedData.RcvAddr, []byte("address"))
+	assert.Equal(t, parsedData.RcvAddr, dstAddr)
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTValue.Uint64(), big.NewInt(10).Uint64())
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTTokenNonce, big.NewInt(10).Uint64())
 }
@@ -123,7 +127,7 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferOne(t *testing.T) {
 	esdtParser, _ := NewESDTTransferParser(&mock.MarshalizerMock{})
 	parsedData, err := esdtParser.ParseESDTTransfers(
 		nil,
-		[]byte("address"),
+		sndAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
 		[][]byte{[]byte("one"), []byte("two")},
 	)
@@ -131,32 +135,32 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferOne(t *testing.T) {
 	assert.Nil(t, parsedData)
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("address"),
-		[]byte("address"),
+		sndAddr,
+		sndAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
-		[][]byte{[]byte("dest"), big.NewInt(1).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes()},
+		[][]byte{dstAddr, big.NewInt(1).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes()},
 	)
 	assert.Equal(t, err, ErrNotEnoughArguments)
 	assert.Nil(t, parsedData)
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("address"),
-		[]byte("address"),
+		sndAddr,
+		sndAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
-		[][]byte{[]byte("dest"), big.NewInt(1).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes()},
+		[][]byte{dstAddr, big.NewInt(1).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes()},
 	)
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 1)
 	assert.Equal(t, len(parsedData.CallArgs), 0)
-	assert.Equal(t, parsedData.RcvAddr, []byte("dest"))
+	assert.Equal(t, parsedData.RcvAddr, dstAddr)
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTValue.Uint64(), big.NewInt(20).Uint64())
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTTokenNonce, big.NewInt(10).Uint64())
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("address"),
-		[]byte("address"),
+		sndAddr,
+		sndAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
-		[][]byte{[]byte("dest"), big.NewInt(1).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes(), []byte("function"), []byte("arg")})
+		[][]byte{dstAddr, big.NewInt(1).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes(), []byte("function"), []byte("arg")})
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 1)
 	assert.Equal(t, len(parsedData.CallArgs), 1)
@@ -166,14 +170,14 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferOne(t *testing.T) {
 	marshaled, _ := esdtParser.marshalizer.Marshal(esdtData)
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("snd"),
-		[]byte("address"),
+		sndAddr,
+		dstAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
 		[][]byte{big.NewInt(1).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), marshaled, []byte("function"), []byte("arg")})
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 1)
 	assert.Equal(t, len(parsedData.CallArgs), 1)
-	assert.Equal(t, parsedData.RcvAddr, []byte("address"))
+	assert.Equal(t, parsedData.RcvAddr, dstAddr)
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTValue.Uint64(), big.NewInt(20).Uint64())
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTTokenNonce, big.NewInt(10).Uint64())
 }
@@ -183,24 +187,24 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferMore(t *testing.T) {
 
 	esdtParser, _ := NewESDTTransferParser(&mock.MarshalizerMock{})
 	parsedData, err := esdtParser.ParseESDTTransfers(
-		[]byte("address"),
-		[]byte("address"),
+		sndAddr,
+		sndAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
-		[][]byte{[]byte("dest"), big.NewInt(2).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes()},
+		[][]byte{dstAddr, big.NewInt(2).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes()},
 	)
 	assert.Equal(t, err, ErrNotEnoughArguments)
 	assert.Nil(t, parsedData)
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("address"),
-		[]byte("address"),
+		sndAddr,
+		sndAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
-		[][]byte{[]byte("dest"), big.NewInt(2).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes(), []byte("tokenID"), big.NewInt(0).Bytes(), big.NewInt(20).Bytes()},
+		[][]byte{dstAddr, big.NewInt(2).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes(), []byte("tokenID"), big.NewInt(0).Bytes(), big.NewInt(20).Bytes()},
 	)
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 2)
 	assert.Equal(t, len(parsedData.CallArgs), 0)
-	assert.Equal(t, parsedData.RcvAddr, []byte("dest"))
+	assert.Equal(t, parsedData.RcvAddr, dstAddr)
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTValue.Uint64(), big.NewInt(20).Uint64())
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTTokenNonce, big.NewInt(10).Uint64())
 	assert.Equal(t, parsedData.ESDTTransfers[1].ESDTValue.Uint64(), big.NewInt(20).Uint64())
@@ -208,10 +212,10 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferMore(t *testing.T) {
 	assert.Equal(t, parsedData.ESDTTransfers[1].ESDTTokenType, uint32(core.Fungible))
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("address"),
-		[]byte("address"),
+		sndAddr,
+		sndAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
-		[][]byte{[]byte("dest"), big.NewInt(2).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes(), []byte("tokenID"), big.NewInt(0).Bytes(), big.NewInt(20).Bytes(), []byte("function"), []byte("arg")},
+		[][]byte{dstAddr, big.NewInt(2).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), big.NewInt(20).Bytes(), []byte("tokenID"), big.NewInt(0).Bytes(), big.NewInt(20).Bytes(), []byte("function"), []byte("arg")},
 	)
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 2)
@@ -221,15 +225,15 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferMore(t *testing.T) {
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(20)}
 	marshaled, _ := esdtParser.marshalizer.Marshal(esdtData)
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("snd"),
-		[]byte("address"),
+		sndAddr,
+		dstAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
 		[][]byte{big.NewInt(2).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), marshaled, []byte("tokenID"), big.NewInt(0).Bytes(), big.NewInt(20).Bytes()},
 	)
 	assert.Nil(t, err)
 	assert.Equal(t, len(parsedData.ESDTTransfers), 2)
 	assert.Equal(t, len(parsedData.CallArgs), 0)
-	assert.Equal(t, parsedData.RcvAddr, []byte("address"))
+	assert.Equal(t, parsedData.RcvAddr, dstAddr)
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTValue.Uint64(), big.NewInt(20).Uint64())
 	assert.Equal(t, parsedData.ESDTTransfers[0].ESDTTokenNonce, big.NewInt(10).Uint64())
 	assert.Equal(t, parsedData.ESDTTransfers[1].ESDTValue.Uint64(), big.NewInt(20).Uint64())
@@ -237,8 +241,8 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferMore(t *testing.T) {
 	assert.Equal(t, parsedData.ESDTTransfers[1].ESDTTokenType, uint32(core.Fungible))
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
-		[]byte("snd"),
-		[]byte("address"),
+		sndAddr,
+		dstAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
 		[][]byte{big.NewInt(2).Bytes(), []byte("tokenID"), big.NewInt(10).Bytes(), marshaled, []byte("tokenID"), big.NewInt(0).Bytes(), big.NewInt(20).Bytes(), []byte("function"), []byte("arg")},
 	)
