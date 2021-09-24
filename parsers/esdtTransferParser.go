@@ -50,7 +50,7 @@ func (e *esdtTransferParser) ParseESDTTransfers(
 	case core.BuiltInFunctionESDTNFTTransfer:
 		return e.parseSingleESDTNFTTransfer(sndAddr, rcvAddr, args)
 	case core.BuiltInFunctionMultiESDTNFTTransfer:
-		return e.parseMultiESDTNFTTransfer(sndAddr, rcvAddr, args)
+		return e.parseMultiESDTNFTTransfer(rcvAddr, args)
 	default:
 		return nil, ErrNotESDTTransferInput
 	}
@@ -112,7 +112,7 @@ func (e *esdtTransferParser) parseSingleESDTNFTTransfer(sndAddr, rcvAddr []byte,
 	return esdtTransfers, nil
 }
 
-func (e *esdtTransferParser) parseMultiESDTNFTTransfer(sndAddr, rcvAddr []byte, args [][]byte) (*vmcommon.ParsedESDTTransfers, error) {
+func (e *esdtTransferParser) parseMultiESDTNFTTransfer(rcvAddr []byte, args [][]byte) (*vmcommon.ParsedESDTTransfers, error) {
 	if len(args) < MinArgsForMultiESDTNFTTransfer {
 		return nil, ErrNotEnoughArguments
 	}
@@ -125,7 +125,9 @@ func (e *esdtTransferParser) parseMultiESDTNFTTransfer(sndAddr, rcvAddr []byte, 
 	numOfTransfer := big.NewInt(0).SetBytes(args[0])
 	startIndex := uint64(1)
 	isTxAtSender := false
-	if bytes.Equal(sndAddr, rcvAddr) {
+
+	isFirstArgumentAnAddress := len(args[0]) == len(rcvAddr) && !numOfTransfer.IsUint64()
+	if isFirstArgumentAnAddress {
 		esdtTransfers.RcvAddr = args[0]
 		numOfTransfer.SetBytes(args[1])
 		startIndex = 2
