@@ -87,6 +87,7 @@ func (e *esdtTransfer) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 
 	e.mutExecution.Lock()
 	e.funcGasCost = gasCost.BuiltInCost.ESDTTransfer
+	log.Warn("ESDTTransfer gas cost change", "gasCost", e.funcGasCost)
 	e.mutExecution.Unlock()
 }
 

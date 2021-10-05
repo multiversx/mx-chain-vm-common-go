@@ -107,6 +107,7 @@ func (e *esdtNFTTransfer) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.mutExecution.Lock()
 	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTTransfer
 	e.gasConfig = gasCost.BaseOperationCost
+	log.Warn("ESDTNFTTransfer gas cost change", "transfer gasCost", e.funcGasCost, "dataCopy", e.gasConfig.DataCopyPerByte)
 	e.mutExecution.Unlock()
 }
 
