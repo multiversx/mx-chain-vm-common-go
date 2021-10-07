@@ -12,15 +12,17 @@ import (
 // Note: current implementation might also return unmodified storage entries.
 type StorageUpdate struct {
 	// Offset is the storage key.
-	// The VM treats this as a big.Int.
 	Offset []byte
 
 	// Data is the new storage value.
-	// The VM treats this as a big.Int.
 	// Zero indicates missing data for the key (or even a missing key),
 	// therefore a value of zero here indicates that
 	// the storage map entry with the given key can be deleted.
 	Data []byte
+
+	// Written represents that this storage was change and needs to be persisted
+	// into the chain
+	Written bool
 }
 
 // OutputAccount shows the state of an account after contract execution.
