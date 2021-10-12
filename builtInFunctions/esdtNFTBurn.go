@@ -12,7 +12,7 @@ import (
 type esdtNFTBurn struct {
 	baseAlwaysActive
 	keyPrefix             []byte
-	marshalizer           vmcommon.Marshalizer
+	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	funcGasCost           uint64
@@ -22,12 +22,12 @@ type esdtNFTBurn struct {
 // NewESDTNFTBurnFunc returns the esdt NFT burn built-in function component
 func NewESDTNFTBurnFunc(
 	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
+	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtNFTBurn, error) {
-	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshalizer
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
@@ -38,7 +38,7 @@ func NewESDTNFTBurnFunc(
 
 	e := &esdtNFTBurn{
 		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:           marshalizer,
+		esdtStorageHandler:    esdtStorageHandler,
 		globalSettingsHandler: globalSettingsHandler,
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
@@ -86,7 +86,7 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
-	esdtData, err := getESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce, e.marshalizer)
+	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 
 	esdtData.Value.Sub(esdtData.Value, quantityToBurn)
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

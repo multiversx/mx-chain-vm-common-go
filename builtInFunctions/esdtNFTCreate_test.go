@@ -22,6 +22,7 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 		&mock.MarshalizerMock{},
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
+		createNewESDTDataStorageHandler(),
 	)
 
 	return nftCreate
@@ -36,6 +37,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(nftCreate))
 	assert.Equal(t, ErrNilMarshalizer, err)
@@ -46,6 +48,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.MarshalizerMock{},
 		nil,
 		&mock.ESDTRoleHandlerStub{},
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(nftCreate))
 	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
@@ -56,9 +59,21 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.MarshalizerMock{},
 		&mock.GlobalSettingsHandlerStub{},
 		nil,
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(nftCreate))
 	assert.Equal(t, ErrNilRolesHandler, err)
+
+	nftCreate, err = NewESDTNFTCreateFunc(
+		0,
+		vmcommon.BaseOperationCost{},
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ESDTRoleHandlerStub{},
+		nil,
+	)
+	assert.True(t, check.IfNil(nftCreate))
+	assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
 }
 
 func TestNewESDTNFTCreateFunc(t *testing.T) {
@@ -70,6 +85,7 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 		&mock.MarshalizerMock{},
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
+		createNewESDTDataStorageHandler(),
 	)
 	assert.False(t, check.IfNil(nftCreate))
 	assert.Nil(t, err)
@@ -162,6 +178,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 				return expectedErr
 			},
 		},
+		createNewESDTDataStorageHandler(),
 	)
 	sender := mock.NewAccountWrapMock([]byte("address"))
 	vmInput := &vmcommon.ContractCallInput{
@@ -186,6 +203,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		&mock.MarshalizerMock{},
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
+		createNewESDTDataStorageHandler(),
 	)
 	address := bytes.Repeat([]byte{1}, 32)
 	sender := mock.NewUserAccount(address)

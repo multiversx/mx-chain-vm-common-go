@@ -45,6 +45,7 @@ func NewESDTNFTMultiTransferFunc(
 	epochNotifier vmcommon.EpochNotifier,
 	roleHandler vmcommon.ESDTRoleHandler,
 	transferToMetaEnableEpoch uint32,
+	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 ) (*esdtNFTMultiTransfer, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
@@ -64,6 +65,9 @@ func NewESDTNFTMultiTransferFunc(
 	if check.IfNil(roleHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
+	}
 
 	e := &esdtNFTMultiTransfer{
 		keyPrefix:                 []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
@@ -77,6 +81,7 @@ func NewESDTNFTMultiTransferFunc(
 		payableHandler:            &disabledPayableHandler{},
 		rolesHandler:              roleHandler,
 		transferToMetaEnableEpoch: transferToMetaEnableEpoch,
+		esdtStorageHandler:        esdtStorageHandler,
 	}
 
 	e.baseEnabled = &baseEnabled{

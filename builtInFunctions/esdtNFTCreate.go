@@ -22,6 +22,7 @@ type esdtNFTCreate struct {
 	rolesHandler          vmcommon.ESDTRoleHandler
 	funcGasCost           uint64
 	gasConfig             vmcommon.BaseOperationCost
+	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	mutExecution          sync.RWMutex
 }
 
@@ -32,6 +33,7 @@ func NewESDTNFTCreateFunc(
 	marshalizer vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
+	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 ) (*esdtNFTCreate, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
@@ -42,6 +44,9 @@ func NewESDTNFTCreateFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
+	}
 
 	e := &esdtNFTCreate{
 		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
@@ -50,6 +55,7 @@ func NewESDTNFTCreateFunc(
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
 		gasConfig:             gasConfig,
+		esdtStorageHandler:    esdtStorageHandler,
 		mutExecution:          sync.RWMutex{},
 	}
 
@@ -145,7 +151,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	var esdtDataBytes []byte
-	esdtDataBytes, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+	esdtDataBytes, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nextNonce, esdtData, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
