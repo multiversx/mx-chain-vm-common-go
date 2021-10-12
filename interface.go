@@ -271,3 +271,11 @@ type ESDTTransferParser interface {
 	ParseESDTTransfers(sndAddr []byte, rcvAddr []byte, function string, args [][]byte) (*ParsedESDTTransfers, error)
 	IsInterfaceNil() bool
 }
+
+// ESDTNFTStorageHandler -
+type ESDTNFTStorageHandler interface {
+	SaveESDTNFTToken(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, isReturnWithError bool) ([]byte, error)
+	GetESDTNFTTokenOnSender(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error)
+	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
+	IsInterfaceNil() bool
+}
