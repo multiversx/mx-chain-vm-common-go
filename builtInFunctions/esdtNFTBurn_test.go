@@ -22,17 +22,17 @@ func TestNewESDTNFTBurnFunc(t *testing.T) {
 	require.Equal(t, ErrNilMarshalizer, err)
 
 	// nil pause handler
-	ebf, err = NewESDTNFTBurnFunc(10, &mock.MarshalizerMock{}, nil, nil)
+	ebf, err = NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), nil, nil)
 	require.True(t, check.IfNil(ebf))
 	require.Equal(t, ErrNilGlobalSettingsHandler, err)
 
 	// nil roles handler
-	ebf, err = NewESDTNFTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil)
+	ebf, err = NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, nil)
 	require.True(t, check.IfNil(ebf))
 	require.Equal(t, ErrNilRolesHandler, err)
 
 	// should work
-	ebf, err = NewESDTNFTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, err = NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 	require.False(t, check.IfNil(ebf))
 	require.NoError(t, err)
 }
@@ -41,7 +41,7 @@ func TestESDTNFTBurn_SetNewGasConfig_NilGasCost(t *testing.T) {
 	t.Parallel()
 
 	defaultGasCost := uint64(10)
-	ebf, _ := NewESDTNFTBurnFunc(defaultGasCost, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(defaultGasCost, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 
 	ebf.SetNewGasConfig(nil)
 	require.Equal(t, defaultGasCost, ebf.funcGasCost)
@@ -52,7 +52,7 @@ func TestEsdtNFTBurnFunc_SetNewGasConfig_ShouldWork(t *testing.T) {
 
 	defaultGasCost := uint64(10)
 	newGasCost := uint64(37)
-	ebf, _ := NewESDTNFTBurnFunc(defaultGasCost, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(defaultGasCost, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 
 	ebf.SetNewGasConfig(
 		&vmcommon.GasCost{
@@ -68,7 +68,7 @@ func TestEsdtNFTBurnFunc_SetNewGasConfig_ShouldWork(t *testing.T) {
 func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnAddInput(t *testing.T) {
 	t.Parallel()
 
-	ebf, _ := NewESDTNFTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 
 	// nil vm input
 	output, err := ebf.ProcessBuiltinFunction(mock.NewAccountWrapMock([]byte("addr")), nil, nil)
@@ -169,7 +169,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnAddI
 func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionInvalidNumberOfArguments(t *testing.T) {
 	t.Parallel()
 
-	ebf, _ := NewESDTNFTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 	output, err := ebf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -196,7 +196,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *tes
 			return localErr
 		},
 	}
-	ebf, _ := NewESDTNFTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, rolesHandler)
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, rolesHandler)
 	output, err := ebf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -218,7 +218,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *tes
 func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.T) {
 	t.Parallel()
 
-	ebf, _ := NewESDTNFTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 	output, err := ebf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -242,7 +242,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	ebf, _ := NewESDTNFTBurnFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
@@ -274,7 +274,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionInvalidBurnQuantity(t *testing.T)
 
 	marshalizer := &mock.MarshalizerMock{}
 
-	ebf, _ := NewESDTNFTBurnFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -313,7 +313,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaus
 		},
 	}
 
-	ebf, _ := NewESDTNFTBurnFunc(10, marshalizer, globalSettingsHandler, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), globalSettingsHandler, &mock.ESDTRoleHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -354,7 +354,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	expectedQuantity := big.NewInt(0).Sub(initialQuantity, quantityToBurn)
 
 	marshalizer := &mock.MarshalizerMock{}
-	ebf, _ := NewESDTNFTBurnFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{

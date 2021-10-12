@@ -20,3 +20,19 @@ func createNewESDTDataStorageHandler() *esdtDataStorage {
 	dataStore, _ := NewESDTDataStorage(args)
 	return dataStore
 }
+
+func createNewESDTDataStorageHandlerWithGlobalSettings(globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler) *esdtDataStorage {
+	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+	accounts := &mock.AccountsStub{LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+		return acnt, nil
+	}}
+	args := ArgsNewESDTDataStorage{
+		Accounts:                accounts,
+		GlobalSettingsHandler:   globalSettingsHandler,
+		Marshalizer:             &mock.MarshalizerMock{},
+		SaveToSystemEnableEpoch: 0,
+		EpochNotifier:           &mock.EpochNotifierStub{},
+	}
+	dataStore, _ := NewESDTDataStorage(args)
+	return dataStore
+}

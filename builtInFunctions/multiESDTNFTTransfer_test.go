@@ -79,7 +79,7 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 			},
 		},
 		1000,
-		createNewESDTDataStorageHandler(),
+		createNewESDTDataStorageHandlerWithGlobalSettings(globalSettingsHandler),
 	)
 
 	return multiTransfer
@@ -990,8 +990,10 @@ func TestComputeInsufficientQuantityESDTError(t *testing.T) {
 	t.Parallel()
 
 	resErr := computeInsufficientQuantityESDTError([]byte("my-token"), 0)
+	require.NotNil(t, resErr)
 	require.Equal(t, errors.New("insufficient quantity for token: my-token").Error(), resErr.Error())
 
 	resErr = computeInsufficientQuantityESDTError([]byte("my-token-2"), 5)
+	require.NotNil(t, resErr)
 	require.Equal(t, errors.New("insufficient quantity for token: my-token-2 nonce 5").Error(), resErr.Error())
 }
