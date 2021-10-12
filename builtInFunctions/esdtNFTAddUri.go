@@ -31,6 +31,9 @@ func NewESDTNFTAddUriFunc(
 	activationEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTAddUri, error) {
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
+	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
@@ -40,9 +43,7 @@ func NewESDTNFTAddUriFunc(
 	if check.IfNil(epochNotifier) {
 		return nil, ErrNilEpochHandler
 	}
-	if check.IfNil(esdtStorageHandler) {
-		return nil, ErrNilESDTNFTStorageHandler
-	}
+
 	e := &esdtNFTAddUri{
 		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		esdtStorageHandler:    esdtStorageHandler,

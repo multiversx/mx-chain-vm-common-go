@@ -79,7 +79,7 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 			},
 		},
 		1000,
-		createNewESDTDataStorageHandlerWithGlobalSettings(globalSettingsHandler),
+		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
 	)
 
 	return multiTransfer

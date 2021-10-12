@@ -19,7 +19,7 @@ func TestNewESDTNFTUpdateAttributesFunc(t *testing.T) {
 	// nil marshalizer
 	e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, nil, nil, nil, 0, &mock.EpochNotifierStub{})
 	require.True(t, check.IfNil(e))
-	require.Equal(t, ErrNilMarshalizer, err)
+	require.Equal(t, ErrNilESDTNFTStorageHandler, err)
 
 	// nil pause handler
 	e, err = NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), nil, nil, 0, &mock.EpochNotifierStub{})

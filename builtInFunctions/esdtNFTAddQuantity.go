@@ -26,14 +26,14 @@ func NewESDTNFTAddQuantityFunc(
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtNFTAddQuantity, error) {
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
+	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
-	}
-	if check.IfNil(esdtStorageHandler) {
-		return nil, ErrNilESDTNFTStorageHandler
 	}
 
 	e := &esdtNFTAddQuantity{

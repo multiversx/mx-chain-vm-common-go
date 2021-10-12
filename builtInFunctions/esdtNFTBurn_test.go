@@ -19,7 +19,7 @@ func TestNewESDTNFTBurnFunc(t *testing.T) {
 	// nil marshalizer
 	ebf, err := NewESDTNFTBurnFunc(10, nil, nil, nil)
 	require.True(t, check.IfNil(ebf))
-	require.Equal(t, ErrNilMarshalizer, err)
+	require.Equal(t, ErrNilESDTNFTStorageHandler, err)
 
 	// nil pause handler
 	ebf, err = NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), nil, nil)

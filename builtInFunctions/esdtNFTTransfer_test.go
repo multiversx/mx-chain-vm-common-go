@@ -77,7 +77,7 @@ func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, glob
 			},
 		},
 		1000,
-		createNewESDTDataStorageHandler(),
+		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
 		&mock.EpochNotifierStub{},
 	)
 
