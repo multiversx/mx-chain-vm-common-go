@@ -282,7 +282,7 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused
 		},
 	}
 
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -322,8 +322,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	initialValue := big.NewInt(5)
 	URIToAdd := []byte("NewURI")
 
+	esdtDataStorage := createNewESDTDataStorageHandler()
 	marshalizer := &mock.MarshalizerMock{}
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -354,11 +355,10 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 
-	res, err := userAcc.AccountDataHandler().RetrieveValue([]byte(key))
+	res, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
-	finalTokenData := esdt.ESDigitalToken{}
-	_ = marshalizer.Unmarshal(&finalTokenData, res)
-	require.Equal(t, finalTokenData.TokenMetaData.URIs[0], URIToAdd)
+	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey)
+	require.Equal(t, metaData.URIs[0], URIToAdd)
 }

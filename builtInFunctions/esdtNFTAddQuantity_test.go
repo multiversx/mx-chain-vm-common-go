@@ -276,7 +276,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsP
 		},
 	}
 
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), globalSettingsHandler, &mock.ESDTRoleHandlerStub{})
+	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}), globalSettingsHandler, &mock.ESDTRoleHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -349,7 +349,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 
-	res, err := userAcc.AccountDataHandler().RetrieveValue([]byte(key))
+	res, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 

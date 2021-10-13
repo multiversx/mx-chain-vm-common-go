@@ -22,7 +22,7 @@ type esdtDataStorage struct {
 	saveToSystemEnableEpoch uint32
 }
 
-// ArgsNewESDTDataStorage -
+// ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
 type ArgsNewESDTDataStorage struct {
 	Accounts                vmcommon.AccountsAdapter
 	GlobalSettingsHandler   vmcommon.ESDTGlobalSettingsHandler
@@ -31,7 +31,7 @@ type ArgsNewESDTDataStorage struct {
 	EpochNotifier           vmcommon.EpochNotifier
 }
 
-// NewESDTDataStorage -
+// NewESDTDataStorage creates a new esdt data storage handler
 func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -59,7 +59,7 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 	return e, nil
 }
 
-// GetESDTNFTTokenOnSender -
+// GetESDTNFTTokenOnSender gets the nft token on sender account
 func (e *esdtDataStorage) GetESDTNFTTokenOnSender(
 	accnt vmcommon.UserAccountHandler,
 	esdtTokenKey []byte,
@@ -76,7 +76,7 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnSender(
 	return esdtData, nil
 }
 
-// GetESDTNFTTokenOnDestination -
+// GetESDTNFTTokenOnDestination gets the nft token on destination account
 func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 	accnt vmcommon.UserAccountHandler,
 	esdtTokenKey []byte,
@@ -131,7 +131,7 @@ func (e *esdtDataStorage) getESDTMetaDataFromSystemAccount(
 	return esdtMetaData, nil
 }
 
-// SaveESDTNFTToken -
+// SaveESDTNFTToken saves the nft token to the account and system account
 func (e *esdtDataStorage) SaveESDTNFTToken(
 	acnt vmcommon.UserAccountHandler,
 	esdtTokenKey []byte,
@@ -218,7 +218,7 @@ func (e *esdtDataStorage) getSystemAccount() (vmcommon.UserAccountHandler, error
 	return userAcc, nil
 }
 
-// EpochConfirmed -
+// EpochConfirmed is called whenever a new epoch is confirmed
 func (e *esdtDataStorage) EpochConfirmed(epoch uint32, _ uint64) {
 	e.flagSaveToSystemAccount.Toggle(epoch >= e.saveToSystemEnableEpoch)
 	log.Debug("ESDT NFT save to system account", "enabled", e.flagSaveToSystemAccount.IsSet())
