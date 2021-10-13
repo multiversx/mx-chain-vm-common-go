@@ -83,7 +83,10 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 	nonce uint64,
 ) (*esdt.ESDigitalToken, bool, error) {
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(0),
+		Type:  uint32(core.Fungible),
+	}
 	marshaledData, err := accnt.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, true, nil

@@ -203,5 +203,5 @@ var ErrEmptyFunctionName = errors.New("empty function name")
 // ErrInsufficientQuantityESDT signals the funds are insufficient for the ESDT transfer
 var ErrInsufficientQuantityESDT = errors.New("insufficient quantity")
 
-// ErrNilESDTNFTStorageHandler signals that nil nft storage handler has been provided
+// ErrNilESDTNFTStorageHandler signals that a nil nft storage handler has been provided
 var ErrNilESDTNFTStorageHandler = errors.New("nil esdt nft storage handler")
