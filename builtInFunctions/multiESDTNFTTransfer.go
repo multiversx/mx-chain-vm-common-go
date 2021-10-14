@@ -16,16 +16,16 @@ import (
 
 type esdtNFTMultiTransfer struct {
 	*baseEnabled
-	keyPrefix             []byte
-	marshalizer           vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
-	payableHandler        vmcommon.PayableHandler
-	funcGasCost           uint64
-	accounts              vmcommon.AccountsAdapter
-	shardCoordinator      vmcommon.Coordinator
-	gasConfig             vmcommon.BaseOperationCost
-	mutExecution          sync.RWMutex
-
+	keyPrefix                 []byte
+	marshalizer               vmcommon.Marshalizer
+	globalSettingsHandler     vmcommon.ESDTGlobalSettingsHandler
+	payableHandler            vmcommon.PayableHandler
+	funcGasCost               uint64
+	accounts                  vmcommon.AccountsAdapter
+	shardCoordinator          vmcommon.Coordinator
+	gasConfig                 vmcommon.BaseOperationCost
+	mutExecution              sync.RWMutex
+	esdtStorageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler              vmcommon.ESDTRoleHandler
 	transferToMetaEnableEpoch uint32
 	flagTransferToMeta        atomic.Flag
@@ -45,6 +45,7 @@ func NewESDTNFTMultiTransferFunc(
 	epochNotifier vmcommon.EpochNotifier,
 	roleHandler vmcommon.ESDTRoleHandler,
 	transferToMetaEnableEpoch uint32,
+	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 ) (*esdtNFTMultiTransfer, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
@@ -64,6 +65,9 @@ func NewESDTNFTMultiTransferFunc(
 	if check.IfNil(roleHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
+	}
 
 	e := &esdtNFTMultiTransfer{
 		keyPrefix:                 []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
@@ -77,6 +81,7 @@ func NewESDTNFTMultiTransferFunc(
 		payableHandler:            &disabledPayableHandler{},
 		rolesHandler:              roleHandler,
 		transferToMetaEnableEpoch: transferToMetaEnableEpoch,
+		esdtStorageHandler:        esdtStorageHandler,
 	}
 
 	e.baseEnabled = &baseEnabled{
@@ -333,7 +338,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	esdtTokenKey := append(e.keyPrefix, tokenID...)
-	esdtData, err := getESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce, e.marshalizer)
+	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +348,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, isReturnCallWithError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nonce, esdtData, isReturnCallWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +510,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 		nonce = esdtDataToTransfer.TokenMetaData.Nonce
 	}
 
-	currentESDTData, _, err := getESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce, e.marshalizer)
+	currentESDTData, _, err := e.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
@@ -521,7 +526,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 		esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 	}
 
-	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.globalSettingsHandler, isReturnCallWithError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnCallWithError)
 	if err != nil {
 		return err
 	}

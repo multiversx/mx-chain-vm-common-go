@@ -12,9 +12,9 @@ import (
 type esdtNFTAddQuantity struct {
 	baseAlwaysActive
 	keyPrefix             []byte
-	marshalizer           vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
+	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -22,12 +22,12 @@ type esdtNFTAddQuantity struct {
 // NewESDTNFTAddQuantityFunc returns the esdt NFT add quantity built-in function component
 func NewESDTNFTAddQuantityFunc(
 	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
+	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtNFTAddQuantity, error) {
-	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshalizer
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
@@ -38,11 +38,11 @@ func NewESDTNFTAddQuantityFunc(
 
 	e := &esdtNFTAddQuantity{
 		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:           marshalizer,
 		globalSettingsHandler: globalSettingsHandler,
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
 		mutExecution:          sync.RWMutex{},
+		esdtStorageHandler:    esdtStorageHandler,
 	}
 
 	return e, nil
@@ -86,7 +86,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
-	esdtData, err := getESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce, e.marshalizer)
+	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[2])
 	esdtData.Value.Add(esdtData.Value, value)
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

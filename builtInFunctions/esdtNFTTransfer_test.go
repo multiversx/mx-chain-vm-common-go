@@ -28,6 +28,7 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
 
@@ -76,6 +77,7 @@ func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, glob
 			},
 		},
 		1000,
+		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
 		&mock.EpochNotifierStub{},
 	)
 
@@ -150,8 +152,10 @@ func testNFTTokenShouldExist(
 	expectedValue *big.Int,
 ) {
 	tokenId := append(keyPrefix, tokenName...)
-	esdtData, err := getESDTNFTTokenOnSender(account.(vmcommon.UserAccountHandler), tokenId, nonce, marshalizer)
-	require.Nil(tb, err)
+	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenId, nonce)
+	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
+	marshaledData, _ := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	_ = marshalizer.Unmarshal(esdtData, marshaledData)
 	assert.Equal(tb, expectedValue, esdtData.Value)
 }
 
@@ -167,6 +171,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
@@ -181,6 +186,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
@@ -195,6 +201,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
@@ -209,6 +216,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
@@ -223,6 +231,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		nil,
 		1000,
+		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
@@ -237,10 +246,26 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 		nil,
 	)
 	assert.True(t, check.IfNil(nftTransfer))
 	assert.Equal(t, ErrNilEpochHandler, err)
+
+	nftTransfer, err = NewESDTNFTTransferFunc(
+		0,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.AccountsStub{},
+		&mock.ShardCoordinatorStub{},
+		vmcommon.BaseOperationCost{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		nil,
+		&mock.EpochNotifierStub{},
+	)
+	assert.True(t, check.IfNil(nftTransfer))
+	assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
 }
 
 func TestNewESDTNFTTransferFunc(t *testing.T) {
@@ -255,6 +280,7 @@ func TestNewESDTNFTTransferFunc(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
 	assert.False(t, check.IfNil(nftTransfer))

@@ -13,7 +13,7 @@ import (
 type esdtNFTAddUri struct {
 	*baseEnabled
 	keyPrefix             []byte
-	marshalizer           vmcommon.Marshalizer
+	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	gasConfig             vmcommon.BaseOperationCost
@@ -25,14 +25,14 @@ type esdtNFTAddUri struct {
 func NewESDTNFTAddUriFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
-	marshalizer vmcommon.Marshalizer,
+	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	activationEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTAddUri, error) {
-	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshalizer
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
@@ -46,7 +46,7 @@ func NewESDTNFTAddUriFunc(
 
 	e := &esdtNFTAddUri{
 		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:           marshalizer,
+		esdtStorageHandler:    esdtStorageHandler,
 		funcGasCost:           funcGasCost,
 		mutExecution:          sync.RWMutex{},
 		globalSettingsHandler: globalSettingsHandler,
@@ -112,14 +112,14 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 	if nonce == 0 {
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
-	esdtData, err := getESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce, e.marshalizer)
+	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
 		return nil, err
 	}
 
 	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

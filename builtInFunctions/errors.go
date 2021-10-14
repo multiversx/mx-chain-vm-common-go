@@ -14,14 +14,8 @@ var ErrInsufficientFunds = errors.New("insufficient funds")
 // ErrNilValue signals the value is nil
 var ErrNilValue = errors.New("nil value")
 
-// ErrNilBootStorer signals that the provided boot storer is bil
-var ErrNilBootStorer = errors.New("nil boot storer")
-
 // ErrNilBlockHeader signals that an operation has been attempted to or with a nil block header
 var ErrNilBlockHeader = errors.New("nil block header")
-
-// ErrMissingHeader signals that header of the block is missing
-var ErrMissingHeader = errors.New("missing header")
 
 // ErrNilMarshalizer signals that an operation has been attempted to or with a nil Marshalizer implementation
 var ErrNilMarshalizer = errors.New("nil Marshalizer")
@@ -73,9 +67,6 @@ var ErrNilScAddress = errors.New("nil SC address")
 
 // ErrNilPreProcessor signals that preprocessors is nil
 var ErrNilPreProcessor = errors.New("preprocessor is nil")
-
-// ErrNilGasHandler signals that gas handler is nil
-var ErrNilGasHandler = errors.New("nil gas handler")
 
 // ErrInvalidPeerAccount signals that a peer account is invalid
 var ErrInvalidPeerAccount = errors.New("invalid peer account")
@@ -211,3 +202,6 @@ var ErrEmptyFunctionName = errors.New("empty function name")
 
 // ErrInsufficientQuantityESDT signals the funds are insufficient for the ESDT transfer
 var ErrInsufficientQuantityESDT = errors.New("insufficient quantity")
+
+// ErrNilESDTNFTStorageHandler signals that a nil nft storage handler has been provided
+var ErrNilESDTNFTStorageHandler = errors.New("nil esdt nft storage handler")

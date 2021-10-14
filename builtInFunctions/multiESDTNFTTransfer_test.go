@@ -29,6 +29,7 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 	)
 
 	return multiTransfer
@@ -78,6 +79,7 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 			},
 		},
 		1000,
+		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
 	)
 
 	return multiTransfer
@@ -97,6 +99,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilMarshalizer, err)
@@ -112,6 +115,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
@@ -127,6 +131,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilAccountsAdapter, err)
@@ -142,6 +147,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilShardCoordinator, err)
@@ -157,6 +163,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilEpochHandler, err)
@@ -172,9 +179,26 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		nil,
 		1000,
+		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
 	assert.Equal(t, ErrNilRolesHandler, err)
+
+	multiTransfer, err = NewESDTNFTMultiTransferFunc(
+		0,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.AccountsStub{},
+		&mock.ShardCoordinatorStub{},
+		vmcommon.BaseOperationCost{},
+		0,
+		&mock.EpochNotifierStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		nil,
+	)
+	assert.True(t, check.IfNil(multiTransfer))
+	assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
 }
 
 func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
@@ -191,6 +215,7 @@ func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		createNewESDTDataStorageHandler(),
 	)
 	assert.False(t, check.IfNil(multiTransfer))
 	assert.Nil(t, err)
@@ -965,8 +990,10 @@ func TestComputeInsufficientQuantityESDTError(t *testing.T) {
 	t.Parallel()
 
 	resErr := computeInsufficientQuantityESDTError([]byte("my-token"), 0)
+	require.NotNil(t, resErr)
 	require.Equal(t, errors.New("insufficient quantity for token: my-token").Error(), resErr.Error())
 
 	resErr = computeInsufficientQuantityESDTError([]byte("my-token-2"), 5)
+	require.NotNil(t, resErr)
 	require.Equal(t, errors.New("insufficient quantity for token: my-token-2 nonce 5").Error(), resErr.Error())
 }

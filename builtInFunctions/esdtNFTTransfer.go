@@ -28,6 +28,7 @@ type esdtNFTTransfer struct {
 	gasConfig                 vmcommon.BaseOperationCost
 	mutExecution              sync.RWMutex
 	rolesHandler              vmcommon.ESDTRoleHandler
+	esdtStorageHandler        vmcommon.ESDTNFTStorageHandler
 	transferToMetaEnableEpoch uint32
 	flagTransferToMeta        atomic.Flag
 }
@@ -42,6 +43,7 @@ func NewESDTNFTTransferFunc(
 	gasConfig vmcommon.BaseOperationCost,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	transferToMetaEnableEpoch uint32,
+	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTTransfer, error) {
 	if check.IfNil(marshalizer) {
@@ -62,6 +64,9 @@ func NewESDTNFTTransferFunc(
 	if check.IfNil(epochNotifier) {
 		return nil, ErrNilEpochHandler
 	}
+	if check.IfNil(esdtStorageHandler) {
+		return nil, ErrNilESDTNFTStorageHandler
+	}
 
 	e := &esdtNFTTransfer{
 		keyPrefix:                 []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
@@ -75,6 +80,7 @@ func NewESDTNFTTransferFunc(
 		payableHandler:            &disabledPayableHandler{},
 		rolesHandler:              rolesHandler,
 		transferToMetaEnableEpoch: transferToMetaEnableEpoch,
+		esdtStorageHandler:        esdtStorageHandler,
 	}
 
 	epochNotifier.RegisterNotifyHandler(e)
@@ -203,7 +209,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
-	esdtData, err := getESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce, e.marshalizer)
+	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +223,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = saveESDTNFTToken(acntSnd, esdtTokenKey, esdtData, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +362,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 		nonce = esdtDataToTransfer.TokenMetaData.Nonce
 	}
 
-	currentESDTData, _, err := getESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce, e.marshalizer)
+	currentESDTData, _, err := e.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
@@ -372,7 +378,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	}
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	_, err = saveESDTNFTToken(userAccount, esdtTokenKey, esdtDataToTransfer, e.marshalizer, e.globalSettingsHandler, isReturnWithError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnWithError)
 	if err != nil {
 		return err
 	}
