@@ -20,6 +20,7 @@ type esdtDataStorage struct {
 	keyPrefix               []byte
 	flagSaveToSystemAccount atomic.Flag
 	saveToSystemEnableEpoch uint32
+	shardCoordinator        vmcommon.Coordinator
 }
 
 // ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
@@ -29,6 +30,7 @@ type ArgsNewESDTDataStorage struct {
 	Marshalizer             vmcommon.Marshalizer
 	SaveToSystemEnableEpoch uint32
 	EpochNotifier           vmcommon.EpochNotifier
+	ShardCoordinator        vmcommon.Coordinator
 }
 
 // NewESDTDataStorage creates a new esdt data storage handler
@@ -45,6 +47,9 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 	if check.IfNil(args.EpochNotifier) {
 		return nil, ErrNilEpochHandler
 	}
+	if check.IfNil(args.ShardCoordinator) {
+		return nil, ErrNilShardCoordinator
+	}
 
 	e := &esdtDataStorage{
 		accounts:                args.Accounts,
@@ -53,6 +58,7 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 		keyPrefix:               []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		flagSaveToSystemAccount: atomic.Flag{},
 		saveToSystemEnableEpoch: args.SaveToSystemEnableEpoch,
+		shardCoordinator:        args.ShardCoordinator,
 	}
 	args.EpochNotifier.RegisterNotifyHandler(e)
 
@@ -219,6 +225,30 @@ func (e *esdtDataStorage) getSystemAccount() (vmcommon.UserAccountHandler, error
 	}
 
 	return userAcc, nil
+}
+
+// WasAlreadySentToDestinationShard checks whether NFT metadata was sent to destination shard or not
+func (e *esdtDataStorage) WasAlreadySentToDestinationShard(
+	tickerID []byte,
+	nonce uint64,
+	dstAddress []byte,
+) bool {
+	if !e.flagSaveToSystemAccount.IsSet() {
+		return false
+	}
+	if e.shardCoordinator.ComputeId(dstAddress) == e.shardCoordinator.SelfId() {
+		return true
+	}
+
+	esdtTokenKey := append(e.keyPrefix, tickerID...)
+	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
+
+	metaData, err := e.getESDTMetaDataFromSystemAccount(esdtNFTTokenKey)
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 // EpochConfirmed is called whenever a new epoch is confirmed

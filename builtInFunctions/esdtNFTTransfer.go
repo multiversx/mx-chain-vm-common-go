@@ -371,11 +371,6 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 		return err
 	}
 
-	if currentESDTData.TokenMetaData != nil {
-		if !bytes.Equal(currentESDTData.TokenMetaData.Hash, esdtDataToTransfer.TokenMetaData.Hash) {
-			return ErrWrongNFTOnDestination
-		}
-	}
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnWithError)

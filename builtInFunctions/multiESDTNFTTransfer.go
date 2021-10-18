@@ -361,11 +361,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	if !check.IfNil(acntDst) {
-		if nonce > 0 {
-			err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, isReturnCallWithError)
-		} else {
-			err = addToESDTBalance(acntDst, esdtTokenKey, esdtData.Value, e.marshalizer, e.globalSettingsHandler, isReturnCallWithError)
-		}
+		err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, isReturnCallWithError)
 		if err != nil {
 			return nil, err
 		}
@@ -519,12 +515,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 		return err
 	}
 
-	if currentESDTData.TokenMetaData != nil {
-		if !bytes.Equal(currentESDTData.TokenMetaData.Hash, esdtDataToTransfer.TokenMetaData.Hash) {
-			return ErrWrongNFTOnDestination
-		}
-		esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
-	}
+	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnCallWithError)
 	if err != nil {

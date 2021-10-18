@@ -22,6 +22,7 @@ func createNewESDTDataStorageHandler() *esdtDataStorage {
 		Marshalizer:             &mock.MarshalizerMock{},
 		SaveToSystemEnableEpoch: 0,
 		EpochNotifier:           &mock.EpochNotifierStub{},
+		ShardCoordinator:        &mock.ShardCoordinatorStub{},
 	}
 	dataStore, _ := NewESDTDataStorage(args)
 	return dataStore
@@ -38,6 +39,7 @@ func createMockArgsForNewESDTDataStorage() ArgsNewESDTDataStorage {
 		Marshalizer:             &mock.MarshalizerMock{},
 		SaveToSystemEnableEpoch: 0,
 		EpochNotifier:           &mock.EpochNotifierStub{},
+		ShardCoordinator:        &mock.ShardCoordinatorStub{},
 	}
 	return args
 }
@@ -52,6 +54,7 @@ func createNewESDTDataStorageHandlerWithArgs(
 		Marshalizer:             &mock.MarshalizerMock{},
 		SaveToSystemEnableEpoch: 10,
 		EpochNotifier:           &mock.EpochNotifierStub{},
+		ShardCoordinator:        &mock.ShardCoordinatorStub{},
 	}
 	dataStore, _ := NewESDTDataStorage(args)
 	return dataStore
@@ -71,6 +74,12 @@ func TestNewESDTDataStorage(t *testing.T) {
 	e, err = NewESDTDataStorage(args)
 	assert.Nil(t, e)
 	assert.Equal(t, err, ErrNilAccountsAdapter)
+
+	args = createMockArgsForNewESDTDataStorage()
+	args.ShardCoordinator = nil
+	e, err = NewESDTDataStorage(args)
+	assert.Nil(t, e)
+	assert.Equal(t, err, ErrNilShardCoordinator)
 
 	args = createMockArgsForNewESDTDataStorage()
 	args.GlobalSettingsHandler = nil
