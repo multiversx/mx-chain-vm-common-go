@@ -124,6 +124,11 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	err = e.esdtStorageHandler.UpdateNFTMetaData(esdtTokenKey, nonce, esdtData)
+	if err != nil {
+		return nil, err
+	}
+
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - e.funcGasCost - gasCostForStore,

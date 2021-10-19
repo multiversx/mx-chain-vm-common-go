@@ -156,6 +156,11 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	err = e.esdtStorageHandler.UpdateNFTMetaData(esdtTokenKey, nonce, esdtData)
+	if err != nil {
+		return nil, err
+	}
+
 	err = saveLatestNonce(acntSnd, tokenID, nextNonce)
 	if err != nil {
 		return nil, err
