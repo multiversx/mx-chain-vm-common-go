@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -92,6 +93,10 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 	}
 	if nonce == 0 {
 		return nil, ErrNFTDoesNotHaveMetadata
+	}
+
+	if len(vmInput.Arguments[2]) > core.MaxLenForESDTIssueMint {
+		return nil, fmt.Errorf("%w max length for esdt issue is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 	}
 
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[2])

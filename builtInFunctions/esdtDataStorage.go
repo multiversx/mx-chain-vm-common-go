@@ -229,6 +229,9 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	if nonce == 0 {
 		return nil
 	}
+	if esdtData.TokenMetaData == nil {
+		return nil
+	}
 
 	systemAcc, err := e.getSystemAccount()
 	if err != nil {

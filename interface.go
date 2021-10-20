@@ -278,5 +278,6 @@ type ESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnSender(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	UpdateNFTMetaData(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error
+	WasAlreadySentToDestinationShard(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	IsInterfaceNil() bool
 }

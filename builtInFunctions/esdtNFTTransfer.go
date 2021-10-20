@@ -16,6 +16,9 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
+var oneValue = big.NewInt(1)
+var zeroByteArray = []byte{0}
+
 type esdtNFTTransfer struct {
 	baseAlwaysActive
 	keyPrefix                 []byte
@@ -150,15 +153,24 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 		return nil, ErrInvalidRcvAddr
 	}
 
-	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
-	marshaledNFTTransfer := vmInput.Arguments[3]
+	tickerID := vmInput.Arguments[0]
+	esdtTokenKey := append(e.keyPrefix, tickerID...)
+	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
+	value := big.NewInt(0).SetBytes(vmInput.Arguments[2])
+
 	esdtTransferData := &esdt.ESDigitalToken{}
-	err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
-	if err != nil {
-		return nil, err
+	if !bytes.Equal(vmInput.Arguments[3], zeroByteArray) {
+		marshaledNFTTransfer := vmInput.Arguments[3]
+		err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		esdtTransferData.Value = value
+		esdtTransferData.Type = uint32(core.NonFungible)
 	}
 
-	err = e.addNFTToDestination(vmInput.CallerAddr, vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
+	err = e.addNFTToDestination(vmInput.CallerAddr, vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, nonce, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -181,9 +193,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	tokenNonce := esdtTransferData.TokenMetaData.Nonce
-
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], tokenNonce, esdtTransferData.Value, vmInput.CallerAddr, acntDst.AddressBytes())
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, esdtTransferData.Value, vmInput.CallerAddr, acntDst.AddressBytes())
 
 	return vmOutput, nil
 }
@@ -207,7 +217,8 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, ErrNotEnoughGas
 	}
 
-	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	tickerID := vmInput.Arguments[0]
+	esdtTokenKey := append(e.keyPrefix, tickerID...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
 	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
@@ -243,7 +254,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, ErrWrongTypeAssertion
 		}
 
-		err = e.addNFTToDestination(vmInput.CallerAddr, dstAddress, userAccount, esdtData, esdtTokenKey, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
+		err = e.addNFTToDestination(vmInput.CallerAddr, dstAddress, userAccount, esdtData, esdtTokenKey, nonce, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -263,7 +274,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - e.funcGasCost,
 	}
-	err = e.createNFTOutputTransfers(vmInput, vmOutput, esdtData, dstAddress)
+	err = e.createNFTOutputTransfers(vmInput, vmOutput, esdtData, dstAddress, tickerID, nonce)
 	if err != nil {
 		return nil, err
 	}
@@ -279,21 +290,33 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	vmOutput *vmcommon.VMOutput,
 	esdtTransferData *esdt.ESDigitalToken,
 	dstAddress []byte,
+	tickerID []byte,
+	nonce uint64,
 ) error {
-	marshaledNFTTransfer, err := e.marshalizer.Marshal(esdtTransferData)
+	nftTransferCallArgs := make([][]byte, 0)
+	nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[:3]...)
+
+	wasAlreadySent, err := e.esdtStorageHandler.WasAlreadySentToDestinationShard(tickerID, nonce, dstAddress)
 	if err != nil {
 		return err
 	}
 
-	gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
-	if gasForTransfer > vmOutput.GasRemaining {
-		return ErrNotEnoughGas
-	}
-	vmOutput.GasRemaining -= gasForTransfer
+	if !wasAlreadySent || esdtTransferData.Value.Cmp(oneValue) == 0 {
+		marshaledNFTTransfer, err := e.marshalizer.Marshal(esdtTransferData)
+		if err != nil {
+			return err
+		}
 
-	nftTransferCallArgs := make([][]byte, 0)
-	nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[:3]...)
-	nftTransferCallArgs = append(nftTransferCallArgs, marshaledNFTTransfer)
+		gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
+		if gasForTransfer > vmOutput.GasRemaining {
+			return ErrNotEnoughGas
+		}
+		vmOutput.GasRemaining -= gasForTransfer
+		nftTransferCallArgs = append(nftTransferCallArgs, marshaledNFTTransfer)
+	} else {
+		nftTransferCallArgs = append(nftTransferCallArgs, []byte{0})
+	}
+
 	if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer {
 		nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[4:]...)
 	}
@@ -345,6 +368,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	userAccount vmcommon.UserAccountHandler,
 	esdtDataToTransfer *esdt.ESDigitalToken,
 	esdtTokenKey []byte,
+	nonce uint64,
 	mustVerifyPayable bool,
 	isReturnWithError bool,
 ) error {
@@ -358,11 +382,6 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 		}
 	}
 
-	nonce := uint64(0)
-	if esdtDataToTransfer.TokenMetaData != nil {
-		nonce = esdtDataToTransfer.TokenMetaData.Nonce
-	}
-
 	currentESDTData, _, err := e.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
@@ -373,7 +392,6 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	}
 
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
-
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnWithError)
 	if err != nil {
 		return err
