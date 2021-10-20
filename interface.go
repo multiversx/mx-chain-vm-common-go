@@ -274,7 +274,7 @@ type ESDTTransferParser interface {
 
 // ESDTNFTStorageHandler will handle the storage for the nft metadata
 type ESDTNFTStorageHandler interface {
-	SaveESDTNFTToken(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, isReturnWithError bool) ([]byte, error)
+	SaveESDTNFTToken(senderAddress []byte, acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, isReturnWithError bool) ([]byte, error)
 	GetESDTNFTTokenOnSender(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	UpdateNFTMetaData(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error

@@ -197,6 +197,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			}
 
 			err = e.addNFTToDestination(
+				vmInput.CallerAddr,
 				vmInput.RecipientAddr,
 				acntDst,
 				esdtTransferData,
@@ -348,7 +349,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nonce, esdtData, isReturnCallWithError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, isReturnCallWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +362,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	if !check.IfNil(acntDst) {
-		err = e.addNFTToDestination(dstAddress, acntDst, esdtData, esdtTokenKey, isReturnCallWithError)
+		err = e.addNFTToDestination(acntSnd.AddressBytes(), dstAddress, acntDst, esdtData, esdtTokenKey, isReturnCallWithError)
 		if err != nil {
 			return nil, err
 		}
@@ -495,6 +496,7 @@ func (e *esdtNFTMultiTransfer) checkIfPayable(
 }
 
 func (e *esdtNFTMultiTransfer) addNFTToDestination(
+	sndAddress []byte,
 	dstAddress []byte,
 	userAccount vmcommon.UserAccountHandler,
 	esdtDataToTransfer *esdt.ESDigitalToken,
@@ -517,7 +519,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnCallWithError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnCallWithError)
 	if err != nil {
 		return err
 	}

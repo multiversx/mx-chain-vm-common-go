@@ -151,7 +151,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	var esdtDataBytes []byte
-	esdtDataBytes, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nextNonce, esdtData, vmInput.ReturnCallAfterError)
+	esdtDataBytes, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nextNonce, esdtData, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

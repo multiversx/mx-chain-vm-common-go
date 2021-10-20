@@ -11,7 +11,6 @@ import (
 )
 
 //TODO: resolve GetESDTToken on blockchain hook
-const confirmCrossShardSend = 50
 
 type esdtDataStorage struct {
 	accounts                vmcommon.AccountsAdapter
@@ -21,7 +20,6 @@ type esdtDataStorage struct {
 	flagSaveToSystemAccount atomic.Flag
 	saveToSystemEnableEpoch uint32
 	shardCoordinator        vmcommon.Coordinator
-	blockchain              vmcommon.BlockchainHook
 }
 
 // ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
@@ -121,30 +119,30 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 
 func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
 	tokenKey []byte,
-) (*esdt.ESDigitalToken, error) {
+) (*esdt.ESDigitalToken, vmcommon.UserAccountHandler, error) {
 	systemAcc, err := e.getSystemAccount()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	marshaledData, err := systemAcc.AccountDataHandler().RetrieveValue(tokenKey)
 	if err != nil || len(marshaledData) == 0 {
-		return nil, nil
+		return nil, systemAcc, nil
 	}
 
 	esdtData := &esdt.ESDigitalToken{}
 	err = e.marshalizer.Unmarshal(esdtData, marshaledData)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return esdtData, nil
+	return esdtData, systemAcc, nil
 }
 
 func (e *esdtDataStorage) getESDTMetaDataFromSystemAccount(
 	tokenKey []byte,
 ) (*esdt.MetaData, error) {
-	esdtData, err := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+	esdtData, _, err := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +155,7 @@ func (e *esdtDataStorage) getESDTMetaDataFromSystemAccount(
 
 // SaveESDTNFTToken saves the nft token to the account and system account
 func (e *esdtDataStorage) SaveESDTNFTToken(
+	senderAddress []byte,
 	acnt vmcommon.UserAccountHandler,
 	esdtTokenKey []byte,
 	nonce uint64,
@@ -187,13 +186,18 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
 	}
 
-	err = e.saveESDTMetaDataToSystemAccount(esdtNFTTokenKey, nonce, esdtData, false)
+	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
+	err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, false)
 	if err != nil {
 		return nil, err
 	}
 
-	esdtData.TokenMetaData = nil
-	marshaledData, err := e.marshalizer.Marshal(esdtData)
+	esdtDataOnAccount := &esdt.ESDigitalToken{
+		Type:       esdtData.Type,
+		Value:      esdtData.Value,
+		Properties: esdtData.Properties,
+	}
+	marshaledData, err := e.marshalizer.Marshal(esdtDataOnAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -212,10 +216,11 @@ func (e *esdtDataStorage) UpdateNFTMetaData(
 	}
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	return e.saveESDTMetaDataToSystemAccount(esdtNFTTokenKey, nonce, esdtData, true)
+	return e.saveESDTMetaDataToSystemAccount(e.shardCoordinator.SelfId(), esdtNFTTokenKey, nonce, esdtData, true)
 }
 
 func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
+	senderShardID uint32,
 	esdtNFTTokenKey []byte,
 	nonce uint64,
 	esdtData *esdt.ESDigitalToken,
@@ -239,7 +244,16 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		Type:          esdtData.Type,
 		Value:         big.NewInt(0),
 		TokenMetaData: esdtData.TokenMetaData,
+		Properties:    make([]byte, e.shardCoordinator.NumberOfShards()),
 	}
+	selfID := e.shardCoordinator.SelfId()
+	if selfID != core.MetachainShardId {
+		esdtDataOnSystemAcc.Properties[selfID] = 1
+	}
+	if senderShardID != core.MetachainShardId {
+		esdtDataOnSystemAcc.Properties[senderShardID] = 1
+	}
+
 	marshaledData, err := e.marshalizer.Marshal(esdtDataOnSystemAcc)
 	if err != nil {
 		return err
@@ -268,27 +282,30 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShard(
 	tickerID []byte,
 	nonce uint64,
 	dstAddress []byte,
-) bool {
+) (bool, error) {
 	if !e.flagSaveToSystemAccount.IsSet() {
-		return false
+		return false, nil
 	}
 	if nonce == 0 {
-		return true
+		return true, nil
 	}
 	dstShardID := e.shardCoordinator.ComputeId(dstAddress)
 	if dstShardID == e.shardCoordinator.SelfId() {
-		return true
+		return true, nil
 	}
 	if dstShardID == core.MetachainShardId {
-		return true
+		return true, nil
 	}
 
 	esdtTokenKey := append(e.keyPrefix, tickerID...)
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
-	esdtData, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey)
-	if err != nil || esdtData == nil {
-		return false
+	esdtData, systemAcc, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey)
+	if err != nil {
+		return false, err
+	}
+	if esdtData == nil {
+		return false, nil
 	}
 
 	if uint32(len(esdtData.Properties)) < e.shardCoordinator.NumberOfShards() {
@@ -299,40 +316,22 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShard(
 		esdtData.Properties = newVector
 	}
 
-	e.blockchain.CurrentNonce()
-	if e.wasCrossShardConfirmed() {
-		return true
+	if esdtData.Properties[dstShardID] > 0 {
+		return true, nil
 	}
 
-	return true
+	esdtData.Properties[dstShardID] = 1
+	marshaledData, err := e.marshalizer.Marshal(esdtData)
+	if err != nil {
+		return false, err
+	}
+
+	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
+	return false, err
 }
 
-func (e *esdtDataStorage) wasCrossShardConfirmed() bool {
-
-}
-
-// ReturnWithError signals the system account data storage that NFT transfer returned with error
-func (e *esdtDataStorage) ReturnWithError(
-	tickerID []byte,
-	nonce uint64,
-	dstAddress []byte,
-) {
-	if !e.flagSaveToSystemAccount.IsSet() {
-		return
-	}
-	if nonce == 0 {
-		return
-	}
-	dstShardID := e.shardCoordinator.ComputeId(dstAddress)
-	if dstShardID == e.shardCoordinator.SelfId() {
-		return
-	}
-	if dstShardID == core.MetachainShardId {
-		return
-	}
-	if e.wasCrossShardConfirmed() {
-		return
-	}
+// SaveNFTMetaDataToSystemAccount this saves the NFT metadata to the system account even if there was an error in processing
+func (e *esdtDataStorage) SaveNFTMetaDataToSystemAccount() {
 
 }
 

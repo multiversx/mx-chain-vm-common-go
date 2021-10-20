@@ -147,7 +147,8 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetDataFromSystemAcc(t *tes
 	metaData := &esdt.MetaData{
 		Name: []byte("test"),
 	}
-	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(metaData)
+	esdtDataOnSystemAcc := &esdt.ESDigitalToken{TokenMetaData: metaData}
+	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
 	esdtDataGet, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)

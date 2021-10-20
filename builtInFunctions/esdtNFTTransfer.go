@@ -158,7 +158,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	err = e.addNFTToDestination(vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
+	err = e.addNFTToDestination(vmInput.CallerAddr, vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +243,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, ErrWrongTypeAssertion
 		}
 
-		err = e.addNFTToDestination(dstAddress, userAccount, esdtData, esdtTokenKey, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
+		err = e.addNFTToDestination(vmInput.CallerAddr, dstAddress, userAccount, esdtData, esdtTokenKey, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -340,6 +340,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 }
 
 func (e *esdtNFTTransfer) addNFTToDestination(
+	sndAddress []byte,
 	dstAddress []byte,
 	userAccount vmcommon.UserAccountHandler,
 	esdtDataToTransfer *esdt.ESDigitalToken,
@@ -373,7 +374,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnWithError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnWithError)
 	if err != nil {
 		return err
 	}
