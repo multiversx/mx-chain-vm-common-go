@@ -134,6 +134,9 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 			return nil, err
 		}
 	}
+	if len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
+		return nil, fmt.Errorf("%w max length for add nft quantity is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
+	}
 
 	nextNonce := nonce + 1
 	esdtData := &esdt.ESDigitalToken{

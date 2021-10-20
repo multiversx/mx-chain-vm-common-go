@@ -10,6 +10,8 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
+const maxLenForAddNFTQuantity = 32
+
 type esdtNFTAddQuantity struct {
 	baseAlwaysActive
 	keyPrefix             []byte
@@ -95,8 +97,8 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
-	if len(vmInput.Arguments[2]) > core.MaxLenForESDTIssueMint {
-		return nil, fmt.Errorf("%w max length for esdt issue is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+	if len(vmInput.Arguments[2]) > maxLenForAddNFTQuantity {
+		return nil, fmt.Errorf("%w max length for add nft quantity is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
 
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[2])
