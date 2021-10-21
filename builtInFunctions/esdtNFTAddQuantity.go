@@ -122,7 +122,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[2])
 	esdtData.Value.Add(esdtData.Value, value)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, false, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

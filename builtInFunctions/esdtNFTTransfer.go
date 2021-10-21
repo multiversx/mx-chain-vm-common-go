@@ -234,7 +234,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, false, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +392,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	}
 
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, isReturnWithError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnWithError)
 	if err != nil {
 		return err
 	}

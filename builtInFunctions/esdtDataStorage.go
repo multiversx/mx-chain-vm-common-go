@@ -167,6 +167,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtTokenKey []byte,
 	nonce uint64,
 	esdtData *esdt.ESDigitalToken,
+	isCreation bool,
 	isReturnWithError bool,
 ) ([]byte, error) {
 	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, e.globalSettingsHandler, isReturnWithError)
@@ -194,7 +195,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	}
 
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
-	err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, false)
+	err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, isCreation)
 	if err != nil {
 		return nil, err
 	}
@@ -210,20 +211,6 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	}
 
 	return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
-}
-
-// UpdateNFTMetaData updates the nft on system account and deletes information about which shard was it sent
-func (e *esdtDataStorage) UpdateNFTMetaData(
-	esdtTokenKey []byte,
-	nonce uint64,
-	esdtData *esdt.ESDigitalToken,
-) error {
-	if !e.flagSaveToSystemAccount.IsSet() {
-		return nil
-	}
-
-	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	return e.saveESDTMetaDataToSystemAccount(e.shardCoordinator.SelfId(), esdtNFTTokenKey, nonce, esdtData, true)
 }
 
 func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
@@ -269,7 +256,12 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		return err
 	}
 
-	return systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
+	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
+	if err != nil {
+		return err
+	}
+
+	return e.accounts.SaveAccount(systemAcc)
 }
 
 func (e *esdtDataStorage) getSystemAccount() (vmcommon.UserAccountHandler, error) {
@@ -337,7 +329,10 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShard(
 	}
 
 	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
-	return false, err
+	if err != nil {
+		return false, err
+	}
+	return false, e.accounts.SaveAccount(systemAcc)
 }
 
 // SaveNFTMetaDataToSystemAccount this saves the NFT metadata to the system account even if there was an error in processing
