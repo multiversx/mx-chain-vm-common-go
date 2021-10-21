@@ -33,6 +33,7 @@ type builtInFuncFactory struct {
 	gasConfig                           *vmcommon.GasCost
 	shardCoordinator                    vmcommon.Coordinator
 	epochNotifier                       vmcommon.EpochNotifier
+	esdtStorageHandler                  vmcommon.ESDTNFTStorageHandler
 	esdtNFTImprovementV1ActivationEpoch uint32
 	esdtTransferRoleEnableEpoch         uint32
 	globalMintBurnDisableEpoch          uint32
@@ -99,6 +100,11 @@ func (b *builtInFuncFactory) GasScheduleChange(gasSchedule map[string]map[string
 
 		builtInFunc.SetNewGasConfig(b.gasConfig)
 	}
+}
+
+// NFTStorageHandler will return the esdt storage handler from the built in functions factory
+func (b *builtInFuncFactory) NFTStorageHandler() vmcommon.ESDTNFTStorageHandler {
+	return b.esdtStorageHandler
 }
 
 // CreateBuiltInFunctionContainer will create the list of built-in functions
@@ -242,12 +248,12 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		SaveToSystemEnableEpoch: b.saveNFTToSystemAccountEnableEpoch,
 		EpochNotifier:           b.epochNotifier,
 	}
-	esdtStorageHandler, err := NewESDTDataStorage(args)
+	b.esdtStorageHandler, err = NewESDTDataStorage(args)
 	if err != nil {
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTAddQuantityFunc(b.gasConfig.BuiltInCost.ESDTNFTAddQuantity, esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.saveNFTToSystemAccountEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTAddQuantityFunc(b.gasConfig.BuiltInCost.ESDTNFTAddQuantity, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.saveNFTToSystemAccountEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +262,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTBurnFunc(b.gasConfig.BuiltInCost.ESDTNFTBurn, esdtStorageHandler, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTNFTBurnFunc(b.gasConfig.BuiltInCost.ESDTNFTBurn, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +271,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTCreateFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshalizer, globalSettingsFunc, setRoleFunc, esdtStorageHandler, b.saveNFTToSystemAccountEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTCreateFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshalizer, globalSettingsFunc, setRoleFunc, b.esdtStorageHandler, b.saveNFTToSystemAccountEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +280,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTTransfer, b.marshalizer, globalSettingsFunc, b.accounts, b.shardCoordinator, b.gasConfig.BaseOperationCost, setRoleFunc, b.esdtTransferToMetaEnableEpoch, esdtStorageHandler, b.epochNotifier)
+	newFunc, err = NewESDTNFTTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTTransfer, b.marshalizer, globalSettingsFunc, b.accounts, b.shardCoordinator, b.gasConfig.BaseOperationCost, setRoleFunc, b.esdtTransferToMetaEnableEpoch, b.esdtStorageHandler, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +298,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +307,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +316,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTMultiTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTMultiTransfer, b.marshalizer, globalSettingsFunc, b.accounts, b.shardCoordinator, b.gasConfig.BaseOperationCost, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier, setRoleFunc, b.esdtTransferToMetaEnableEpoch, esdtStorageHandler)
+	newFunc, err = NewESDTNFTMultiTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTMultiTransfer, b.marshalizer, globalSettingsFunc, b.accounts, b.shardCoordinator, b.gasConfig.BaseOperationCost, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier, setRoleFunc, b.esdtTransferToMetaEnableEpoch, b.esdtStorageHandler)
 	if err != nil {
 		return nil, err
 	}
