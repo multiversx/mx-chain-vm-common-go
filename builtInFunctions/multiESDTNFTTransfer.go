@@ -190,9 +190,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		value := big.NewInt(0)
 		if nonce > 0 {
 			esdtTransferData := &esdt.ESDigitalToken{}
-
-			//TODO: treat this better define some special code here - like adding a prefix
-			if len(vmInput.Arguments[tokenStartIndex+2]) > 32 {
+			if len(vmInput.Arguments[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
 				marshaledNFTTransfer := vmInput.Arguments[tokenStartIndex+2]
 				err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
 				if err != nil {
@@ -429,7 +427,9 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 				return err
 			}
 
-			if !wasAlreadySent || esdtTransfer.ESDTValue.Cmp(oneValue) == 0 {
+			sendCrossShardAsMarshalledData := !wasAlreadySent || esdtTransfer.ESDTValue.Cmp(oneValue) == 0 ||
+				len(esdtTransfer.ESDTValue.Bytes()) > vmcommon.MaxLengthForValueToOptTransfer
+			if sendCrossShardAsMarshalledData {
 				marshaledNFTTransfer, err := e.marshalizer.Marshal(listESDTData[i])
 				if err != nil {
 					return err

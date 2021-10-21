@@ -10,6 +10,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
 var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
@@ -24,6 +25,9 @@ type esdtNFTCreate struct {
 	gasConfig             vmcommon.BaseOperationCost
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	mutExecution          sync.RWMutex
+
+	valueLengthCheckEnableEpoch uint32
+	flagValueLengthCheck        atomic.Flag
 }
 
 // NewESDTNFTCreateFunc returns the esdt NFT create built-in function component
@@ -34,6 +38,8 @@ func NewESDTNFTCreateFunc(
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
+	valueLengthCheckEnableEpoch uint32,
+	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTCreate, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
@@ -47,19 +53,31 @@ func NewESDTNFTCreateFunc(
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
 	}
-
-	e := &esdtNFTCreate{
-		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:           marshalizer,
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		gasConfig:             gasConfig,
-		esdtStorageHandler:    esdtStorageHandler,
-		mutExecution:          sync.RWMutex{},
+	if check.IfNil(epochNotifier) {
+		return nil, ErrNilEpochHandler
 	}
 
+	e := &esdtNFTCreate{
+		keyPrefix:                   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:                 marshalizer,
+		globalSettingsHandler:       globalSettingsHandler,
+		rolesHandler:                rolesHandler,
+		funcGasCost:                 funcGasCost,
+		gasConfig:                   gasConfig,
+		esdtStorageHandler:          esdtStorageHandler,
+		mutExecution:                sync.RWMutex{},
+		valueLengthCheckEnableEpoch: valueLengthCheckEnableEpoch,
+	}
+
+	epochNotifier.RegisterNotifyHandler(e)
+
 	return e, nil
+}
+
+// EpochConfirmed is called whenever a new epoch is confirmed
+func (e *esdtNFTCreate) EpochConfirmed(epoch uint32, _ uint64) {
+	e.flagValueLengthCheck.Toggle(epoch >= e.valueLengthCheckEnableEpoch)
+	log.Debug("ESDT Add Quantity value length check", "enabled", e.flagValueLengthCheck.IsSet())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -134,7 +152,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 			return nil, err
 		}
 	}
-	if len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
+	if e.flagValueLengthCheck.IsSet() && len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for add nft quantity is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
 

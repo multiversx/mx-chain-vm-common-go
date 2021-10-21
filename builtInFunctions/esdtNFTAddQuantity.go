@@ -8,6 +8,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
 const maxLenForAddNFTQuantity = 32
@@ -20,6 +21,9 @@ type esdtNFTAddQuantity struct {
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
+
+	valueLengthCheckEnableEpoch uint32
+	flagValueLengthCheck        atomic.Flag
 }
 
 // NewESDTNFTAddQuantityFunc returns the esdt NFT add quantity built-in function component
@@ -28,6 +32,8 @@ func NewESDTNFTAddQuantityFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
+	valueLengthCheckEnableEpoch uint32,
+	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTAddQuantity, error) {
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
@@ -38,17 +44,29 @@ func NewESDTNFTAddQuantityFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-
-	e := &esdtNFTAddQuantity{
-		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		mutExecution:          sync.RWMutex{},
-		esdtStorageHandler:    esdtStorageHandler,
+	if check.IfNil(epochNotifier) {
+		return nil, ErrNilEpochHandler
 	}
 
+	e := &esdtNFTAddQuantity{
+		keyPrefix:                   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		globalSettingsHandler:       globalSettingsHandler,
+		rolesHandler:                rolesHandler,
+		funcGasCost:                 funcGasCost,
+		mutExecution:                sync.RWMutex{},
+		esdtStorageHandler:          esdtStorageHandler,
+		valueLengthCheckEnableEpoch: valueLengthCheckEnableEpoch,
+	}
+
+	epochNotifier.RegisterNotifyHandler(e)
+
 	return e, nil
+}
+
+// EpochConfirmed is called whenever a new epoch is confirmed
+func (e *esdtNFTAddQuantity) EpochConfirmed(epoch uint32, _ uint64) {
+	e.flagValueLengthCheck.Toggle(epoch >= e.valueLengthCheckEnableEpoch)
+	log.Debug("ESDT Add Quantity value length check", "enabled", e.flagValueLengthCheck.IsSet())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -97,7 +115,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
-	if len(vmInput.Arguments[2]) > maxLenForAddNFTQuantity {
+	if e.flagValueLengthCheck.IsSet() && len(vmInput.Arguments[2]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for add nft quantity is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
 

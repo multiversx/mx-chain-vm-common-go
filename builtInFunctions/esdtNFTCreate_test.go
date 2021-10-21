@@ -23,6 +23,8 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		0,
+		&mock.EpochNotifierStub{},
 	)
 
 	return nftCreate
@@ -38,6 +40,8 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		0,
+		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftCreate))
 	assert.Equal(t, ErrNilMarshalizer, err)
@@ -49,6 +53,8 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		0,
+		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftCreate))
 	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
@@ -60,6 +66,8 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		nil,
 		createNewESDTDataStorageHandler(),
+		0,
+		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftCreate))
 	assert.Equal(t, ErrNilRolesHandler, err)
@@ -71,9 +79,24 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		nil,
+		0,
+		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftCreate))
 	assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
+
+	nftCreate, err = NewESDTNFTCreateFunc(
+		0,
+		vmcommon.BaseOperationCost{},
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ESDTRoleHandlerStub{},
+		createNewESDTDataStorageHandler(),
+		0,
+		nil,
+	)
+	assert.True(t, check.IfNil(nftCreate))
+	assert.Equal(t, ErrNilEpochHandler, err)
 }
 
 func TestNewESDTNFTCreateFunc(t *testing.T) {
@@ -86,6 +109,8 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		0,
+		&mock.EpochNotifierStub{},
 	)
 	assert.False(t, check.IfNil(nftCreate))
 	assert.Nil(t, err)
@@ -179,6 +204,8 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 			},
 		},
 		createNewESDTDataStorageHandler(),
+		0,
+		&mock.EpochNotifierStub{},
 	)
 	sender := mock.NewAccountWrapMock([]byte("address"))
 	vmInput := &vmcommon.ContractCallInput{
@@ -205,6 +232,8 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		esdtDataStorage,
+		0,
+		&mock.EpochNotifierStub{},
 	)
 	address := bytes.Repeat([]byte{1}, 32)
 	sender := mock.NewUserAccount(address)
