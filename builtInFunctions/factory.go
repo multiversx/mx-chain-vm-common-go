@@ -247,6 +247,7 @@ func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		Marshalizer:             b.marshalizer,
 		SaveToSystemEnableEpoch: b.saveNFTToSystemAccountEnableEpoch,
 		EpochNotifier:           b.epochNotifier,
+		ShardCoordinator:        b.shardCoordinator,
 	}
 	b.esdtStorageHandler, err = NewESDTDataStorage(args)
 	if err != nil {
