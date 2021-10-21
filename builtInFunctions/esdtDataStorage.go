@@ -1,13 +1,17 @@
 package builtInFunctions
 
 import (
+	"bytes"
+	"fmt"
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/atomic"
+	"github.com/ElrondNetwork/elrond-vm-common/parsers"
 )
 
 //TODO: resolve GetESDTToken on blockchain hook
@@ -20,6 +24,7 @@ type esdtDataStorage struct {
 	flagSaveToSystemAccount atomic.Flag
 	saveToSystemEnableEpoch uint32
 	shardCoordinator        vmcommon.Coordinator
+	txDataParser            vmcommon.CallArgsParser
 }
 
 // ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
@@ -58,7 +63,9 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 		flagSaveToSystemAccount: atomic.Flag{},
 		saveToSystemEnableEpoch: args.SaveToSystemEnableEpoch,
 		shardCoordinator:        args.ShardCoordinator,
+		txDataParser:            parsers.NewCallArgsParser(),
 	}
+
 	args.EpochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
@@ -334,8 +341,96 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShard(
 }
 
 // SaveNFTMetaDataToSystemAccount this saves the NFT metadata to the system account even if there was an error in processing
-func (e *esdtDataStorage) SaveNFTMetaDataToSystemAccount() {
+func (e *esdtDataStorage) SaveNFTMetaDataToSystemAccount(
+	tx data.TransactionHandler,
+) error {
+	if !e.flagSaveToSystemAccount.IsSet() {
+		return nil
+	}
 
+	if check.IfNil(tx) {
+		return ErrNilTransactionHandler
+	}
+
+	sndShardID := e.shardCoordinator.ComputeId(tx.GetSndAddr())
+	dstShardID := e.shardCoordinator.ComputeId(tx.GetRcvAddr())
+	isCrossShardTxAtDest := sndShardID != dstShardID && e.shardCoordinator.SelfId() == dstShardID
+	if !isCrossShardTxAtDest {
+		return nil
+	}
+
+	function, arguments, err := e.txDataParser.ParseData(string(tx.GetData()))
+	if err != nil {
+		return nil
+	}
+	if len(arguments) < 4 {
+		return nil
+	}
+
+	switch function {
+	case core.BuiltInFunctionESDTNFTTransfer:
+		return e.addMetaDataToSystemAccountFromNFTTransfer(sndShardID, arguments)
+	case core.BuiltInFunctionMultiESDTNFTTransfer:
+
+		return nil
+	default:
+		return nil
+	}
+}
+
+func (e *esdtDataStorage) addMetaDataToSystemAccountFromNFTTransfer(
+	sndShardID uint32,
+	arguments [][]byte,
+) error {
+	if !bytes.Equal(arguments[3], zeroByteArray) {
+		esdtTransferData := &esdt.ESDigitalToken{}
+		err := e.marshalizer.Unmarshal(esdtTransferData, arguments[3])
+		if err != nil {
+			return err
+		}
+		esdtTokenKey := append(e.keyPrefix, arguments[0]...)
+		nonce := big.NewInt(0).SetBytes(arguments[1]).Uint64()
+		return e.saveESDTMetaDataToSystemAccount(sndShardID, esdtTokenKey, nonce, esdtTransferData, true)
+	}
+	return nil
+}
+
+func (e *esdtDataStorage) addMetaDataToSystemAccountFromMultiTransfer(
+	sndShardID uint32,
+	arguments [][]byte,
+) error {
+	numOfTransfers := big.NewInt(0).SetBytes(arguments[0]).Uint64()
+	if numOfTransfers == 0 {
+		return fmt.Errorf("%w, 0 tokens to transfer", ErrInvalidArguments)
+	}
+	minNumOfArguments := numOfTransfers*argumentsPerTransfer + 1
+	if uint64(len(arguments)) < minNumOfArguments {
+		return fmt.Errorf("%w, invalid number of arguments", ErrInvalidArguments)
+	}
+
+	startIndex := uint64(1)
+	for i := uint64(0); i < numOfTransfers; i++ {
+		tokenStartIndex := startIndex + i*argumentsPerTransfer
+		tokenID := arguments[tokenStartIndex]
+		nonce := big.NewInt(0).SetBytes(arguments[tokenStartIndex+1]).Uint64()
+
+		esdtTokenKey := append(e.keyPrefix, tokenID...)
+		if nonce > 0 && len(arguments[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
+			esdtTransferData := &esdt.ESDigitalToken{}
+			marshaledNFTTransfer := arguments[tokenStartIndex+2]
+			err := e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
+			if err != nil {
+				return fmt.Errorf("%w for token %s", err, string(tokenID))
+			}
+
+			err = e.saveESDTMetaDataToSystemAccount(sndShardID, esdtTokenKey, nonce, esdtTransferData, true)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // EpochConfirmed is called whenever a new epoch is confirmed

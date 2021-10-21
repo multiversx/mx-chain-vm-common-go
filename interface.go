@@ -3,6 +3,7 @@ package vmcommon
 import (
 	"math/big"
 
+	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 )
 
@@ -279,5 +280,18 @@ type ESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	UpdateNFTMetaData(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error
 	WasAlreadySentToDestinationShard(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
+	IsInterfaceNil() bool
+}
+
+// SimpleESDTNFTStorageHandler will handle get of ESDt data and save metadata to system acc
+type SimpleESDTNFTStorageHandler interface {
+	GetESDTNFTTokenOnDestination(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
+	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	IsInterfaceNil() bool
+}
+
+// CallArgsParser will handle parsing transaction data to function and arguments
+type CallArgsParser interface {
+	ParseData(data string) (string, [][]byte, error)
 	IsInterfaceNil() bool
 }
