@@ -7,7 +7,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-// ArgsCreateBuiltInFunctionContainer -
+// ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
 	GasMap                              map[string]map[string]uint64
 	MapDNSAddresses                     map[string]struct{}
@@ -103,7 +103,7 @@ func (b *builtInFuncFactory) GasScheduleChange(gasSchedule map[string]map[string
 }
 
 // NFTStorageHandler will return the esdt storage handler from the built in functions factory
-func (b *builtInFuncFactory) NFTStorageHandler() vmcommon.ESDTNFTStorageHandler {
+func (b *builtInFuncFactory) NFTStorageHandler() vmcommon.SimpleESDTNFTStorageHandler {
 	return b.esdtStorageHandler
 }
 
