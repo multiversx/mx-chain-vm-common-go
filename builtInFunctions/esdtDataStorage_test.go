@@ -1,11 +1,15 @@
 package builtInFunctions
 
 import (
+	"bytes"
+	"encoding/hex"
+	"errors"
 	"math/big"
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/smartContractResult"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
@@ -155,4 +159,316 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetDataFromSystemAcc(t *tes
 	assert.Nil(t, err)
 	esdtData.TokenMetaData = metaData
 	assert.Equal(t, esdtData, esdtDataGet)
+}
+
+func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationMarshalERR(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+		TokenMetaData: &esdt.MetaData{
+			Name: []byte("test"),
+		},
+	}
+
+	tokenIdentifier := "testTkn"
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	nonce := uint64(10)
+	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
+	esdtDataBytes = append(esdtDataBytes, esdtDataBytes...)
+	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+
+	_, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
+	assert.NotNil(t, err)
+
+	_, err = e.GetESDTNFTTokenOnSender(userAcc, []byte(key), nonce)
+	assert.NotNil(t, err)
+}
+
+func TestEsdtDataStorage_MarshalErrorOnSystemACC(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+	}
+
+	tokenIdentifier := "testTkn"
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	nonce := uint64(10)
+	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
+	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+
+	systemAcc, _ := e.getSystemAccount()
+	metaData := &esdt.MetaData{
+		Name: []byte("test"),
+	}
+	esdtDataOnSystemAcc := &esdt.ESDigitalToken{TokenMetaData: metaData}
+	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+	esdtMetaDataBytes = append(esdtMetaDataBytes, esdtMetaDataBytes...)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+	_, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
+	assert.NotNil(t, err)
+}
+
+func TestESDTDataStorage_saveDataToSystemAccNotNFTOrMetaData(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	err := e.saveESDTMetaDataToSystemAccount(0, []byte("TCK"), 0, nil, true)
+	assert.Nil(t, err)
+
+	err = e.saveESDTMetaDataToSystemAccount(0, []byte("TCK"), 1, &esdt.ESDigitalToken{}, true)
+	assert.Nil(t, err)
+}
+
+func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+	}
+
+	tokenIdentifier := "testTkn"
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	nonce := uint64(10)
+	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
+	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+
+	systemAcc, _ := e.getSystemAccount()
+	metaData := &esdt.MetaData{
+		Name: []byte("test"),
+	}
+	esdtDataOnSystemAcc := &esdt.ESDigitalToken{TokenMetaData: metaData}
+	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+	newMetaData := &esdt.MetaData{Name: []byte("newName")}
+	transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
+	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, false, false)
+	assert.Nil(t, err)
+
+	esdtDataGet, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
+	assert.Nil(t, err)
+	esdtData.TokenMetaData = metaData
+	esdtData.Value = big.NewInt(100)
+	assert.Equal(t, esdtData, esdtDataGet)
+}
+
+func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	shardCoordinator := &mock.ShardCoordinatorStub{}
+	args.ShardCoordinator = shardCoordinator
+	e, _ := NewESDTDataStorage(args)
+
+	tickerID := []byte("ticker")
+	dstAddress := []byte("dstAddress")
+	val, err := e.WasAlreadySentToDestinationShard(tickerID, 0, dstAddress)
+	assert.True(t, val)
+	assert.Nil(t, err)
+
+	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	assert.True(t, val)
+	assert.Nil(t, err)
+
+	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
+		return core.MetachainShardId
+	}
+	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	assert.True(t, val)
+	assert.Nil(t, err)
+
+	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
+		return 1
+	}
+	shardCoordinator.NumberOfShardsCalled = func() uint32 {
+		return 5
+	}
+	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	assert.False(t, val)
+	assert.Nil(t, err)
+
+	systemAcc, _ := e.getSystemAccount()
+	metaData := &esdt.MetaData{
+		Name: []byte("test"),
+	}
+	esdtDataOnSystemAcc := &esdt.ESDigitalToken{TokenMetaData: metaData}
+	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(tickerID)
+	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	assert.False(t, val)
+	assert.Nil(t, err)
+
+	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	assert.True(t, val)
+	assert.Nil(t, err)
+
+	shardCoordinator.NumberOfShardsCalled = func() uint32 {
+		return 10
+	}
+	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	assert.True(t, val)
+	assert.Nil(t, err)
+}
+
+func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	shardCoordinator := &mock.ShardCoordinatorStub{}
+	args.ShardCoordinator = shardCoordinator
+	e, _ := NewESDTDataStorage(args)
+
+	e.flagSaveToSystemAccount.Unset()
+	err := e.SaveNFTMetaDataToSystemAccount(nil)
+	assert.Nil(t, err)
+
+	e.flagSaveToSystemAccount.Set()
+	err = e.SaveNFTMetaDataToSystemAccount(nil)
+	assert.Equal(t, err, ErrNilTransactionHandler)
+
+	scr := &smartContractResult.SmartContractResult{
+		SndAddr: []byte("address1"),
+		RcvAddr: []byte("address2"),
+	}
+
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.Nil(t, err)
+
+	shardCoordinator.ComputeIdCalled = func(address []byte) uint32 {
+		if bytes.Equal(address, scr.SndAddr) {
+			return 0
+		}
+		if bytes.Equal(address, scr.RcvAddr) {
+			return 1
+		}
+		return 2
+	}
+	shardCoordinator.NumberOfShardsCalled = func() uint32 {
+		return 3
+	}
+	shardCoordinator.SelfIdCalled = func() uint32 {
+		return 1
+	}
+
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.Nil(t, err)
+
+	scr.Data = []byte("function")
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.Nil(t, err)
+
+	scr.Data = []byte("function@01@02@03@04")
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.Nil(t, err)
+
+	scr.Data = []byte(core.BuiltInFunctionESDTNFTTransfer + "@01@02@03@04")
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.NotNil(t, err)
+
+	scr.Data = []byte(core.BuiltInFunctionESDTNFTTransfer + "@01@02@03@00")
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.Nil(t, err)
+
+	tickerID := []byte("TCK")
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+		TokenMetaData: &esdt.MetaData{
+			Name: []byte("test"),
+		},
+	}
+	esdtMarshalled, _ := args.Marshalizer.Marshal(esdtData)
+	scr.Data = []byte(core.BuiltInFunctionESDTNFTTransfer + "@" + hex.EncodeToString(tickerID) + "@01@01@" + hex.EncodeToString(esdtMarshalled))
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.Nil(t, err)
+
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(tickerID)
+	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
+	esdtGetData, _, _ := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+
+	assert.Equal(t, esdtData.TokenMetaData, esdtGetData.TokenMetaData)
+}
+
+func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	shardCoordinator := &mock.ShardCoordinatorStub{}
+	args.ShardCoordinator = shardCoordinator
+	e, _ := NewESDTDataStorage(args)
+
+	scr := &smartContractResult.SmartContractResult{
+		SndAddr: []byte("address1"),
+		RcvAddr: []byte("address2"),
+	}
+
+	shardCoordinator.ComputeIdCalled = func(address []byte) uint32 {
+		if bytes.Equal(address, scr.SndAddr) {
+			return 0
+		}
+		if bytes.Equal(address, scr.RcvAddr) {
+			return 1
+		}
+		return 2
+	}
+	shardCoordinator.NumberOfShardsCalled = func() uint32 {
+		return 3
+	}
+	shardCoordinator.SelfIdCalled = func() uint32 {
+		return 1
+	}
+
+	tickerID := []byte("TCK")
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+		TokenMetaData: &esdt.MetaData{
+			Name: []byte("test"),
+		},
+	}
+	esdtMarshalled, _ := args.Marshalizer.Marshal(esdtData)
+	scr.Data = []byte(core.BuiltInFunctionMultiESDTNFTTransfer + "@00@" + hex.EncodeToString(tickerID) + "@01@01@" + hex.EncodeToString(esdtMarshalled))
+	err := e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.True(t, errors.Is(err, ErrInvalidArguments))
+
+	scr.Data = []byte(core.BuiltInFunctionMultiESDTNFTTransfer + "@02@" + hex.EncodeToString(tickerID) + "@01@01@" + hex.EncodeToString(esdtMarshalled))
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.True(t, errors.Is(err, ErrInvalidArguments))
+
+	scr.Data = []byte(core.BuiltInFunctionMultiESDTNFTTransfer + "@02@" + hex.EncodeToString(tickerID) + "@02@10@" +
+		hex.EncodeToString(tickerID) + "@01@" + hex.EncodeToString(esdtMarshalled))
+	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	assert.Nil(t, err)
+
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(tickerID)
+	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
+	esdtGetData, _, _ := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+
+	assert.Equal(t, esdtData.TokenMetaData, esdtGetData.TokenMetaData)
+
+	otherTokenKey := append([]byte(key), big.NewInt(2).Bytes()...)
+	esdtGetData, _, err = e.getESDTDigitalTokenDataFromSystemAccount(otherTokenKey)
+	assert.Nil(t, esdtGetData)
+	assert.Nil(t, err)
 }

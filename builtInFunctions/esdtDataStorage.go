@@ -14,8 +14,6 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common/parsers"
 )
 
-//TODO: resolve GetESDTToken on blockchain hook
-
 type esdtDataStorage struct {
 	accounts                vmcommon.AccountsAdapter
 	globalSettingsHandler   vmcommon.ESDTGlobalSettingsHandler
@@ -366,8 +364,7 @@ func (e *esdtDataStorage) SaveNFTMetaDataToSystemAccount(
 	case core.BuiltInFunctionESDTNFTTransfer:
 		return e.addMetaDataToSystemAccountFromNFTTransfer(sndShardID, arguments)
 	case core.BuiltInFunctionMultiESDTNFTTransfer:
-
-		return nil
+		return e.addMetaDataToSystemAccountFromMultiTransfer(sndShardID, arguments)
 	default:
 		return nil
 	}
@@ -385,7 +382,9 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromNFTTransfer(
 		}
 		esdtTokenKey := append(e.keyPrefix, arguments[0]...)
 		nonce := big.NewInt(0).SetBytes(arguments[1]).Uint64()
-		return e.saveESDTMetaDataToSystemAccount(sndShardID, esdtTokenKey, nonce, esdtTransferData, true)
+		esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
+
+		return e.saveESDTMetaDataToSystemAccount(sndShardID, esdtNFTTokenKey, nonce, esdtTransferData, true)
 	}
 	return nil
 }
@@ -409,7 +408,6 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromMultiTransfer(
 		tokenID := arguments[tokenStartIndex]
 		nonce := big.NewInt(0).SetBytes(arguments[tokenStartIndex+1]).Uint64()
 
-		esdtTokenKey := append(e.keyPrefix, tokenID...)
 		if nonce > 0 && len(arguments[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
 			esdtTransferData := &esdt.ESDigitalToken{}
 			marshaledNFTTransfer := arguments[tokenStartIndex+2]
@@ -418,7 +416,9 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromMultiTransfer(
 				return fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
 
-			err = e.saveESDTMetaDataToSystemAccount(sndShardID, esdtTokenKey, nonce, esdtTransferData, true)
+			esdtTokenKey := append(e.keyPrefix, tokenID...)
+			esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
+			err = e.saveESDTMetaDataToSystemAccount(sndShardID, esdtNFTTokenKey, nonce, esdtTransferData, true)
 			if err != nil {
 				return err
 			}
