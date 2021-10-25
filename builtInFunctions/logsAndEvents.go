@@ -48,12 +48,12 @@ func extractTokenIdentifierAndNonceESDTWipe(args []byte) ([]byte, uint64) {
 		return args, 0
 	}
 
-	if len(argsSplit[1]) > esdtRandomSequenceLength {
-		identifier := []byte(fmt.Sprintf("%s-%s", argsSplit[0], argsSplit[1][:esdtRandomSequenceLength]))
-		nonce := big.NewInt(0).SetBytes(argsSplit[1][esdtRandomSequenceLength:])
-
-		return identifier, nonce.Uint64()
+	if len(argsSplit[1]) < esdtRandomSequenceLength {
+		return args, 0
 	}
 
-	return args, 0
+	identifier := []byte(fmt.Sprintf("%s-%s", argsSplit[0], argsSplit[1][:esdtRandomSequenceLength]))
+	nonce := big.NewInt(0).SetBytes(argsSplit[1][esdtRandomSequenceLength:])
+
+	return identifier, nonce.Uint64()
 }
