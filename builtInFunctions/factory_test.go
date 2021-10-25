@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func createMockArguments() ArgsCreateBuiltInFunctionContainer {
@@ -72,5 +74,71 @@ func fillGasMapBuiltInCosts(value uint64) map[string]uint64 {
 }
 
 func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
+	args := createMockArguments()
+	args.GasMap[core.BuiltInCostString]["ClaimDeveloperRewards"] = 0
 
+	f, err := NewBuiltInFunctionsFactory(args)
+	assert.Nil(t, f)
+	assert.NotNil(t, err)
+
+	args = createMockArguments()
+	args.ShardCoordinator = nil
+	_, err = NewBuiltInFunctionsFactory(args)
+	assert.Equal(t, err, ErrNilShardCoordinator)
+
+	args = createMockArguments()
+	args.EpochNotifier = nil
+	_, err = NewBuiltInFunctionsFactory(args)
+	assert.Equal(t, err, ErrNilEpochHandler)
+
+	args = createMockArguments()
+	args.Marshalizer = nil
+	_, err = NewBuiltInFunctionsFactory(args)
+	assert.Equal(t, err, ErrNilMarshalizer)
+
+	args = createMockArguments()
+	args.Accounts = nil
+	_, err = NewBuiltInFunctionsFactory(args)
+	assert.Equal(t, err, ErrNilAccountsAdapter)
+
+	args = createMockArguments()
+	f, err = NewBuiltInFunctionsFactory(args)
+	assert.Nil(t, err)
+	assert.False(t, f.IsInterfaceNil())
+}
+
+func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
+	args := createMockArguments()
+	f, _ := NewBuiltInFunctionsFactory(args)
+
+	fillGasMapInternal(args.GasMap, 5)
+	args.GasMap[core.BuiltInCostString]["ClaimDeveloperRewards"] = 0
+	f.GasScheduleChange(args.GasMap)
+	assert.Equal(t, f.gasConfig.BuiltInCost.ClaimDeveloperRewards, uint64(1))
+
+	args.GasMap[core.BuiltInCostString]["ClaimDeveloperRewards"] = 5
+	f.GasScheduleChange(args.GasMap)
+	assert.Equal(t, f.gasConfig.BuiltInCost.ClaimDeveloperRewards, uint64(5))
+}
+
+func TestCreateBuiltInContainter_Create(t *testing.T) {
+	args := createMockArguments()
+	f, _ := NewBuiltInFunctionsFactory(args)
+
+	container, err := f.CreateBuiltInFunctionContainer()
+	assert.Nil(t, err)
+	assert.Equal(t, container.Len(), 25)
+
+	err = SetPayableHandler(container, nil)
+	assert.NotNil(t, err)
+
+	err = SetPayableHandler(container, &mock.PayableHandlerStub{})
+	assert.Nil(t, err)
+
+	fillGasMapInternal(args.GasMap, 5)
+	f.GasScheduleChange(args.GasMap)
+	assert.Equal(t, f.gasConfig.BuiltInCost.ClaimDeveloperRewards, uint64(5))
+
+	nftStorageHandler := f.NFTStorageHandler()
+	assert.False(t, check.IfNil(nftStorageHandler))
 }
