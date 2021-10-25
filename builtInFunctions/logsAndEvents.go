@@ -48,7 +48,7 @@ func extractTokenIdentifierAndNonceESDTWipe(args []byte) ([]byte, uint64) {
 		return args, 0
 	}
 
-	if len(argsSplit[1]) < esdtRandomSequenceLength {
+	if len(argsSplit[1]) <= esdtRandomSequenceLength {
 		return args, 0
 	}
 
