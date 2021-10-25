@@ -283,7 +283,7 @@ type ESDTNFTStorageHandler interface {
 	IsInterfaceNil() bool
 }
 
-// SimpleESDTNFTStorageHandler will handle get of ESDt data and save metadata to system acc
+// SimpleESDTNFTStorageHandler will handle get of ESDT data and save metadata to system acc
 type SimpleESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error

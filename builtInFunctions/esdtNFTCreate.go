@@ -77,7 +77,7 @@ func NewESDTNFTCreateFunc(
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (e *esdtNFTCreate) EpochConfirmed(epoch uint32, _ uint64) {
 	e.flagValueLengthCheck.Toggle(epoch >= e.valueLengthCheckEnableEpoch)
-	log.Debug("ESDT Add Quantity value length check", "enabled", e.flagValueLengthCheck.IsSet())
+	log.Debug("ESDT NFT Create quantity value length check", "enabled", e.flagValueLengthCheck.IsSet())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -153,7 +153,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		}
 	}
 	if e.flagValueLengthCheck.IsSet() && len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
-		return nil, fmt.Errorf("%w max length for add nft quantity is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
+		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
 
 	nextNonce := nonce + 1

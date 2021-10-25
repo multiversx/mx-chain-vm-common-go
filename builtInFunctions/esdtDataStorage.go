@@ -165,7 +165,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtTokenKey []byte,
 	nonce uint64,
 	esdtData *esdt.ESDigitalToken,
-	isCreation bool,
+	mustUpdate bool,
 	isReturnWithError bool,
 ) ([]byte, error) {
 	err := checkFrozeAndPause(acnt.AddressBytes(), esdtTokenKey, esdtData, e.globalSettingsHandler, isReturnWithError)
@@ -193,7 +193,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	}
 
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
-	err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, isCreation)
+	err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdate)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	esdtNFTTokenKey []byte,
 	nonce uint64,
 	esdtData *esdt.ESDigitalToken,
-	isUpdate bool,
+	mustUpdate bool,
 ) error {
 	if nonce == 0 {
 		return nil
@@ -231,7 +231,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	}
 
 	currentSaveData, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
-	if !isUpdate && len(currentSaveData) > 0 {
+	if !mustUpdate && len(currentSaveData) > 0 {
 		return nil
 	}
 
@@ -276,8 +276,8 @@ func (e *esdtDataStorage) getSystemAccount() (vmcommon.UserAccountHandler, error
 	return userAcc, nil
 }
 
-// WasAlreadySentToDestinationShard checks whether NFT metadata was sent to destination shard or not
-// saves destination shard as pending until it is confirmed
+// WasAlreadySentToDestinationShard checks whether NFT metadata was sent to destination shard or not and saves the
+// destination shard as sent
 func (e *esdtDataStorage) WasAlreadySentToDestinationShard(
 	tickerID []byte,
 	nonce uint64,
