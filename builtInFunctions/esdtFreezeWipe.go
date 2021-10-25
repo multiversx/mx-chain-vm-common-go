@@ -78,7 +78,8 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 	if e.wipe {
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTWipe), vmInput.Arguments[0], 0, big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
+		identifier, nonce := extractTokenIdentifierAndNonceESDTWipe(vmInput.Arguments[0])
+		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTWipe), identifier, nonce, big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
 	}
 
 	return vmOutput, nil

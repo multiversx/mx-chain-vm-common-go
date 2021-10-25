@@ -1,9 +1,16 @@
 package builtInFunctions
 
 import (
+	"bytes"
+	"fmt"
 	"math/big"
 
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+)
+
+const (
+	esdtIdentifierSeparator  = "-"
+	esdtRandomSequenceLength = 6
 )
 
 func addESDTEntryInVMOutput(vmOutput *vmcommon.VMOutput, identifier []byte, tokenID []byte, nonce uint64, value *big.Int, args ...[]byte) {
@@ -33,4 +40,20 @@ func newEntryForESDT(identifier, tokenID []byte, nonce uint64, value *big.Int, a
 	}
 
 	return logEntry
+}
+
+func extractTokenIdentifierAndNonceESDTWipe(args []byte) ([]byte, uint64) {
+	argsSplit := bytes.Split(args, []byte(esdtIdentifierSeparator))
+	if len(argsSplit) < 2 {
+		return args, 0
+	}
+
+	if len(argsSplit[1]) > esdtRandomSequenceLength {
+		identifier := []byte(fmt.Sprintf("%s-%s", argsSplit[0], argsSplit[1][:esdtRandomSequenceLength]))
+		nonce := big.NewInt(0).SetBytes(argsSplit[1][esdtRandomSequenceLength:])
+
+		return identifier, nonce.Uint64()
+	}
+
+	return args, 0
 }
