@@ -207,6 +207,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				acntDst,
 				esdtTransferData,
 				esdtTokenKey,
+				nonce,
 				vmInput.ReturnCallAfterError)
 			if err != nil {
 				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
@@ -371,7 +372,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	if !check.IfNil(acntDst) {
-		err = e.addNFTToDestination(acntSnd.AddressBytes(), dstAddress, acntDst, esdtData, esdtTokenKey, isReturnCallWithError)
+		err = e.addNFTToDestination(acntSnd.AddressBytes(), dstAddress, acntDst, esdtData, esdtTokenKey, transferData.ESDTTokenNonce, isReturnCallWithError)
 		if err != nil {
 			return nil, err
 		}
@@ -522,13 +523,9 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 	userAccount vmcommon.UserAccountHandler,
 	esdtDataToTransfer *esdt.ESDigitalToken,
 	esdtTokenKey []byte,
+	nonce uint64,
 	isReturnCallWithError bool,
 ) error {
-	nonce := uint64(0)
-	if esdtDataToTransfer.TokenMetaData != nil {
-		nonce = esdtDataToTransfer.TokenMetaData.Nonce
-	}
-
 	currentESDTData, _, err := e.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
