@@ -72,6 +72,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		globalMintBurnDisableEpoch:          args.GlobalMintBurnDisableEpoch,
 		esdtTransferToMetaEnableEpoch:       args.ESDTTransferToMetaEnableEpoch,
 		nftCreateMultiShardEnableEpoch:      args.NFTCreateMultiShardEnableEpoch,
+		saveNFTToSystemAccountEnableEpoch:   args.SaveNFTToSystemAccountEnableEpoch,
 	}
 
 	var err error
