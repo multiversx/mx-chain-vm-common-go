@@ -77,39 +77,39 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	args := createMockArguments()
 	args.GasMap[core.BuiltInCostString]["ClaimDeveloperRewards"] = 0
 
-	f, err := NewBuiltInFunctionsFactory(args)
+	f, err := NewBuiltInFunctionsCreator(args)
 	assert.Nil(t, f)
 	assert.NotNil(t, err)
 
 	args = createMockArguments()
 	args.ShardCoordinator = nil
-	_, err = NewBuiltInFunctionsFactory(args)
+	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilShardCoordinator)
 
 	args = createMockArguments()
 	args.EpochNotifier = nil
-	_, err = NewBuiltInFunctionsFactory(args)
+	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilEpochHandler)
 
 	args = createMockArguments()
 	args.Marshalizer = nil
-	_, err = NewBuiltInFunctionsFactory(args)
+	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilMarshalizer)
 
 	args = createMockArguments()
 	args.Accounts = nil
-	_, err = NewBuiltInFunctionsFactory(args)
+	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilAccountsAdapter)
 
 	args = createMockArguments()
-	f, err = NewBuiltInFunctionsFactory(args)
+	f, err = NewBuiltInFunctionsCreator(args)
 	assert.Nil(t, err)
 	assert.False(t, f.IsInterfaceNil())
 }
 
 func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
 	args := createMockArguments()
-	f, _ := NewBuiltInFunctionsFactory(args)
+	f, _ := NewBuiltInFunctionsCreator(args)
 
 	fillGasMapInternal(args.GasMap, 5)
 	args.GasMap[core.BuiltInCostString]["ClaimDeveloperRewards"] = 0
@@ -123,7 +123,7 @@ func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
 
 func TestCreateBuiltInContainter_Create(t *testing.T) {
 	args := createMockArguments()
-	f, _ := NewBuiltInFunctionsFactory(args)
+	f, _ := NewBuiltInFunctionsCreator(args)
 
 	container, err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)

@@ -24,7 +24,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	SaveNFTToSystemAccountEnableEpoch   uint32
 }
 
-type builtInFuncFactory struct {
+type builtInFuncCreator struct {
 	mapDNSAddresses                     map[string]struct{}
 	enableUserNameChange                bool
 	marshalizer                         vmcommon.Marshalizer
@@ -42,8 +42,8 @@ type builtInFuncFactory struct {
 	saveNFTToSystemAccountEnableEpoch   uint32
 }
 
-// NewBuiltInFunctionsFactory creates a factory which will instantiate the built in functions contracts
-func NewBuiltInFunctionsFactory(args ArgsCreateBuiltInFunctionContainer) (*builtInFuncFactory, error) {
+// NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
+func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*builtInFuncCreator, error) {
 	if check.IfNil(args.Marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
@@ -60,7 +60,7 @@ func NewBuiltInFunctionsFactory(args ArgsCreateBuiltInFunctionContainer) (*built
 		return nil, ErrNilEpochHandler
 	}
 
-	b := &builtInFuncFactory{
+	b := &builtInFuncCreator{
 		mapDNSAddresses:                     args.MapDNSAddresses,
 		enableUserNameChange:                args.EnableUserNameChange,
 		marshalizer:                         args.Marshalizer,
@@ -85,7 +85,7 @@ func NewBuiltInFunctionsFactory(args ArgsCreateBuiltInFunctionContainer) (*built
 }
 
 // GasScheduleChange is called when gas schedule is changed, thus all contracts must be updated
-func (b *builtInFuncFactory) GasScheduleChange(gasSchedule map[string]map[string]uint64) {
+func (b *builtInFuncCreator) GasScheduleChange(gasSchedule map[string]map[string]uint64) {
 	newGasConfig, err := createGasConfig(gasSchedule)
 	if err != nil {
 		return
@@ -103,12 +103,12 @@ func (b *builtInFuncFactory) GasScheduleChange(gasSchedule map[string]map[string
 }
 
 // NFTStorageHandler will return the esdt storage handler from the built in functions factory
-func (b *builtInFuncFactory) NFTStorageHandler() vmcommon.SimpleESDTNFTStorageHandler {
+func (b *builtInFuncCreator) NFTStorageHandler() vmcommon.SimpleESDTNFTStorageHandler {
 	return b.esdtStorageHandler
 }
 
 // CreateBuiltInFunctionContainer will create the list of built-in functions
-func (b *builtInFuncFactory) CreateBuiltInFunctionContainer() (vmcommon.BuiltInFunctionContainer, error) {
+func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInFunctionContainer, error) {
 
 	b.builtInFunctions = NewBuiltInFunctionContainer()
 	var newFunc vmcommon.BuiltinFunction
@@ -406,6 +406,6 @@ func SetPayableHandler(container vmcommon.BuiltInFunctionContainer, payableHandl
 }
 
 // IsInterfaceNil returns true if underlying object is nil
-func (b *builtInFuncFactory) IsInterfaceNil() bool {
+func (b *builtInFuncCreator) IsInterfaceNil() bool {
 	return b == nil
 }

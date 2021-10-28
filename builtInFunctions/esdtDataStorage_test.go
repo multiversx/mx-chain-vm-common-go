@@ -282,18 +282,18 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 
 	tickerID := []byte("ticker")
 	dstAddress := []byte("dstAddress")
-	val, err := e.WasAlreadySentToDestinationShard(tickerID, 0, dstAddress)
+	val, err := e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 0, dstAddress)
 	assert.True(t, val)
 	assert.Nil(t, err)
 
-	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.True(t, val)
 	assert.Nil(t, err)
 
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return core.MetachainShardId
 	}
-	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.True(t, val)
 	assert.Nil(t, err)
 
@@ -303,7 +303,7 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	shardCoordinator.NumberOfShardsCalled = func() uint32 {
 		return 5
 	}
-	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.False(t, val)
 	assert.Nil(t, err)
 
@@ -317,18 +317,18 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
-	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.False(t, val)
 	assert.Nil(t, err)
 
-	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.True(t, val)
 	assert.Nil(t, err)
 
 	shardCoordinator.NumberOfShardsCalled = func() uint32 {
 		return 10
 	}
-	val, err = e.WasAlreadySentToDestinationShard(tickerID, 1, dstAddress)
+	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.True(t, val)
 	assert.Nil(t, err)
 }

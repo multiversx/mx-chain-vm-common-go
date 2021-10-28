@@ -296,7 +296,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	nftTransferCallArgs := make([][]byte, 0)
 	nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[:3]...)
 
-	wasAlreadySent, err := e.esdtStorageHandler.WasAlreadySentToDestinationShard(tickerID, nonce, dstAddress)
+	wasAlreadySent, err := e.esdtStorageHandler.WasAlreadySentToDestinationShardAndUpdateState(tickerID, nonce, dstAddress)
 	if err != nil {
 		return err
 	}

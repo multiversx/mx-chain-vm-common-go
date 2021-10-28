@@ -14,6 +14,8 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common/parsers"
 )
 
+const existsOnShard = byte(1)
+
 type esdtDataStorage struct {
 	accounts                vmcommon.AccountsAdapter
 	globalSettingsHandler   vmcommon.ESDTGlobalSettingsHandler
@@ -243,13 +245,21 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	}
 	selfID := e.shardCoordinator.SelfId()
 	if selfID != core.MetachainShardId {
-		esdtDataOnSystemAcc.Properties[selfID] = 1
+		esdtDataOnSystemAcc.Properties[selfID] = existsOnShard
 	}
 	if senderShardID != core.MetachainShardId {
-		esdtDataOnSystemAcc.Properties[senderShardID] = 1
+		esdtDataOnSystemAcc.Properties[senderShardID] = existsOnShard
 	}
 
-	marshaledData, err := e.marshalizer.Marshal(esdtDataOnSystemAcc)
+	return e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
+}
+
+func (e *esdtDataStorage) marshalAndSaveData(
+	systemAcc vmcommon.UserAccountHandler,
+	esdtData *esdt.ESDigitalToken,
+	esdtNFTTokenKey []byte,
+) error {
+	marshaledData, err := e.marshalizer.Marshal(esdtData)
 	if err != nil {
 		return err
 	}
@@ -276,9 +286,11 @@ func (e *esdtDataStorage) getSystemAccount() (vmcommon.UserAccountHandler, error
 	return userAcc, nil
 }
 
-// WasAlreadySentToDestinationShard checks whether NFT metadata was sent to destination shard or not and saves the
-// destination shard as sent
-func (e *esdtDataStorage) WasAlreadySentToDestinationShard(
+//TODO: merge properties in case of shard merge
+
+// WasAlreadySentToDestinationShardAndUpdateState checks whether NFT metadata was sent to destination shard or not
+// and saves the destination shard as sent
+func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 	tickerID []byte,
 	nonce uint64,
 	dstAddress []byte,
@@ -309,28 +321,19 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShard(
 	}
 
 	if uint32(len(esdtData.Properties)) < e.shardCoordinator.NumberOfShards() {
-		newVector := make([]byte, e.shardCoordinator.NumberOfShards())
+		newSlice := make([]byte, e.shardCoordinator.NumberOfShards())
 		for i, val := range esdtData.Properties {
-			newVector[i] = val
+			newSlice[i] = val
 		}
-		esdtData.Properties = newVector
+		esdtData.Properties = newSlice
 	}
 
 	if esdtData.Properties[dstShardID] > 0 {
 		return true, nil
 	}
 
-	esdtData.Properties[dstShardID] = 1
-	marshaledData, err := e.marshalizer.Marshal(esdtData)
-	if err != nil {
-		return false, err
-	}
-
-	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
-	if err != nil {
-		return false, err
-	}
-	return false, e.accounts.SaveAccount(systemAcc)
+	esdtData.Properties[dstShardID] = existsOnShard
+	return false, e.marshalAndSaveData(systemAcc, esdtData, esdtNFTTokenKey)
 }
 
 // SaveNFTMetaDataToSystemAccount this saves the NFT metadata to the system account even if there was an error in processing
