@@ -101,7 +101,7 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 
 	esdtData.Value.Sub(esdtData.Value, quantityToBurn)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd, esdtTokenKey, nonce, esdtData, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, false, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

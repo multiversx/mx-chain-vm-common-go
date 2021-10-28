@@ -179,9 +179,6 @@ var ErrNFTDoesNotHaveMetadata = errors.New("NFT does not have metadata")
 // ErrInvalidNFTQuantity signals that invalid NFT quantity was provided
 var ErrInvalidNFTQuantity = errors.New("invalid NFT quantity")
 
-// ErrWrongNFTOnDestination signals the NFT is mismatched on destination - should never happen
-var ErrWrongNFTOnDestination = errors.New("wrong NFT on destination")
-
 // ErrNewNFTDataOnSenderAddress signals that a new NFT data was found on the sender address
 var ErrNewNFTDataOnSenderAddress = errors.New("new NFT data on sender")
 
@@ -205,3 +202,6 @@ var ErrInsufficientQuantityESDT = errors.New("insufficient quantity")
 
 // ErrNilESDTNFTStorageHandler signals that a nil nft storage handler has been provided
 var ErrNilESDTNFTStorageHandler = errors.New("nil esdt nft storage handler")
+
+// ErrNilTransactionHandler signals that a nil transaction handler has been provided
+var ErrNilTransactionHandler = errors.New("nil transaction handler")

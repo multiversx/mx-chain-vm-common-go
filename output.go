@@ -222,3 +222,6 @@ func (o *OutputAccount) MergeStorageUpdates(outAcc *OutputAccount) {
 		o.StorageUpdates[key] = update
 	}
 }
+
+// MaxLengthForValueToOptTransfer defines the maximum length for value to optimize cross shard transfer
+const MaxLengthForValueToOptTransfer = 32

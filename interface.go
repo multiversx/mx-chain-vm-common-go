@@ -3,6 +3,7 @@ package vmcommon
 import (
 	"math/big"
 
+	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 )
 
@@ -274,8 +275,23 @@ type ESDTTransferParser interface {
 
 // ESDTNFTStorageHandler will handle the storage for the nft metadata
 type ESDTNFTStorageHandler interface {
-	SaveESDTNFTToken(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, isReturnWithError bool) ([]byte, error)
+	SaveESDTNFTToken(senderAddress []byte, acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, isCreation bool, isReturnWithError bool) ([]byte, error)
 	GetESDTNFTTokenOnSender(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
+	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
+	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	IsInterfaceNil() bool
+}
+
+// SimpleESDTNFTStorageHandler will handle get of ESDT data and save metadata to system acc
+type SimpleESDTNFTStorageHandler interface {
+	GetESDTNFTTokenOnDestination(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
+	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	IsInterfaceNil() bool
+}
+
+// CallArgsParser will handle parsing transaction data to function and arguments
+type CallArgsParser interface {
+	ParseData(data string) (string, [][]byte, error)
 	IsInterfaceNil() bool
 }

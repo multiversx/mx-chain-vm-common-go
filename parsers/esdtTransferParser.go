@@ -172,7 +172,8 @@ func (e *esdtTransferParser) createNewESDTTransfer(
 	}
 	if esdtTransfer.ESDTTokenNonce > 0 {
 		esdtTransfer.ESDTTokenType = uint32(core.NonFungible)
-		if !isTxAtSender {
+
+		if !isTxAtSender && len(args[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
 			transferESDTData := &esdt.ESDigitalToken{}
 			err := e.marshalizer.Unmarshal(transferESDTData, args[tokenStartIndex+2])
 			if err != nil {
