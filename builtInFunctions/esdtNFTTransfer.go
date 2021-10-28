@@ -314,7 +314,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		vmOutput.GasRemaining -= gasForTransfer
 		nftTransferCallArgs = append(nftTransferCallArgs, marshaledNFTTransfer)
 	} else {
-		nftTransferCallArgs = append(nftTransferCallArgs, []byte{0})
+		nftTransferCallArgs = append(nftTransferCallArgs, zeroByteArray)
 	}
 
 	if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer {
