@@ -21,7 +21,6 @@ type AccountsStub struct {
 	SnapshotStateCalled      func(rootHash []byte)
 	SetStateCheckpointCalled func(rootHash []byte)
 	IsPruningEnabledCalled   func() bool
-	GetNumCheckpointsCalled  func() uint32
 	GetCodeCalled            func([]byte) []byte
 }
 
@@ -137,14 +136,6 @@ func (as *AccountsStub) IsPruningEnabled() bool {
 	return false
 }
 
-// GetNumCheckpoints -
-func (as *AccountsStub) GetNumCheckpoints() uint32 {
-	if as.GetNumCheckpointsCalled != nil {
-		return as.GetNumCheckpointsCalled()
-	}
-
-	return 0
-}
 
 // IsInterfaceNil returns true if there is no value under the interface
 func (as *AccountsStub) IsInterfaceNil() bool {
