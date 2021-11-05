@@ -9,6 +9,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
@@ -23,6 +24,7 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		&mock.AccountsStub{},
 		0,
 		&mock.EpochNotifierStub{},
 	)
@@ -40,6 +42,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		&mock.AccountsStub{},
 		0,
 		&mock.EpochNotifierStub{},
 	)
@@ -53,6 +56,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		&mock.AccountsStub{},
 		0,
 		&mock.EpochNotifierStub{},
 	)
@@ -66,6 +70,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		nil,
 		createNewESDTDataStorageHandler(),
+		&mock.AccountsStub{},
 		0,
 		&mock.EpochNotifierStub{},
 	)
@@ -79,6 +84,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		nil,
+		&mock.AccountsStub{},
 		0,
 		&mock.EpochNotifierStub{},
 	)
@@ -92,6 +98,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		&mock.AccountsStub{},
 		0,
 		nil,
 	)
@@ -109,6 +116,7 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
+		&mock.AccountsStub{},
 		0,
 		&mock.EpochNotifierStub{},
 	)
@@ -193,6 +201,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 	t.Parallel()
 
 	expectedErr := errors.New("expected error")
+	esdtDataStorage := createNewESDTDataStorageHandler()
 	nftCreate, _ := NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
@@ -203,7 +212,8 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 				return expectedErr
 			},
 		},
-		createNewESDTDataStorageHandler(),
+		esdtDataStorage,
+		esdtDataStorage.accounts,
 		0,
 		&mock.EpochNotifierStub{},
 	)
@@ -232,6 +242,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ESDTRoleHandlerStub{},
 		esdtDataStorage,
+		esdtDataStorage.accounts,
 		0,
 		&mock.EpochNotifierStub{},
 	)
@@ -281,6 +292,82 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		Nonce:      1,
 		Name:       []byte(name),
 		Creator:    address,
+		Royalties:  uint32(royalties),
+		Hash:       hash,
+		URIs:       uris,
+		Attributes: attibutes,
+	}
+
+	tokenKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + token)
+	tokenKey = append(tokenKey, big.NewInt(1).Bytes()...)
+
+	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey)
+	assert.Equal(t, tokenMetaData, metaData)
+}
+
+func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
+	t.Parallel()
+
+	accounts := createAccountsAdapterWithMap()
+	esdtDataStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts)
+	esdtDataStorage.flagSaveToSystemAccount.Set()
+	nftCreate, _ := NewESDTNFTCreateFunc(
+		0,
+		vmcommon.BaseOperationCost{},
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ESDTRoleHandlerStub{},
+		esdtDataStorage,
+		esdtDataStorage.accounts,
+		0,
+		&mock.EpochNotifierStub{},
+	)
+	address := bytes.Repeat([]byte{1}, 32)
+	userAddress := bytes.Repeat([]byte{2}, 32)
+	token := "token"
+	quantity := big.NewInt(2)
+	name := "name"
+	royalties := 100 //1%
+	hash := []byte("12345678901234567890123456789012")
+	attibutes := []byte("attributes")
+	uris := [][]byte{[]byte("uri1"), []byte("uri2")}
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallerAddr: userAddress,
+			CallValue:  big.NewInt(0),
+			Arguments: [][]byte{
+				[]byte(token),
+				quantity.Bytes(),
+				[]byte(name),
+				big.NewInt(int64(royalties)).Bytes(),
+				hash,
+				attibutes,
+				uris[0],
+				uris[1],
+				address,
+			},
+			CallType: vm.ExecOnDestByCaller,
+		},
+		RecipientAddr: userAddress,
+	}
+	vmOutput, err := nftCreate.ProcessBuiltinFunction(nil, nil, vmInput)
+	assert.Nil(t, err)
+	require.NotNil(t, vmOutput)
+
+	roleAcc, _ := nftCreate.getAccount(address)
+
+	createdEsdt, latestNonce := readNFTData(t, roleAcc, nftCreate.marshalizer, []byte(token), 1, address)
+	assert.Equal(t, uint64(1), latestNonce)
+	expectedEsdt := &esdt.ESDigitalToken{
+		Type:  uint32(core.NonFungible),
+		Value: quantity,
+	}
+	assert.Equal(t, expectedEsdt, createdEsdt)
+
+	tokenMetaData := &esdt.MetaData{
+		Nonce:      1,
+		Name:       []byte(name),
+		Creator:    userAddress,
 		Royalties:  uint32(royalties),
 		Hash:       hash,
 		URIs:       uris,

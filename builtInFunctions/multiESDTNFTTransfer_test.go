@@ -35,14 +35,7 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 	return multiTransfer
 }
 
-func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler) *esdtNFTMultiTransfer {
-	marshalizer := &mock.MarshalizerMock{}
-	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
-	shardCoordinator.CurrentShard = selfShard
-	shardCoordinator.ComputeIdCalled = func(address []byte) uint32 {
-		lastByte := uint32(address[len(address)-1])
-		return lastByte
-	}
+func createAccountsAdapterWithMap() vmcommon.AccountsAdapter {
 	mapAccounts := make(map[string]vmcommon.UserAccountHandler)
 	accounts := &mock.AccountsStub{
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
@@ -59,7 +52,23 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 			}
 			return mapAccounts[string(address)], nil
 		},
+		SaveAccountCalled: func(account vmcommon.AccountHandler) error {
+			mapAccounts[string(account.AddressBytes())] = account.(vmcommon.UserAccountHandler)
+			return nil
+		},
 	}
+	return accounts
+}
+
+func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler) *esdtNFTMultiTransfer {
+	marshalizer := &mock.MarshalizerMock{}
+	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
+	shardCoordinator.CurrentShard = selfShard
+	shardCoordinator.ComputeIdCalled = func(address []byte) uint32 {
+		lastByte := uint32(address[len(address)-1])
+		return lastByte
+	}
+	accounts := createAccountsAdapterWithMap()
 
 	multiTransfer, _ := NewESDTNFTMultiTransferFunc(
 		1,

@@ -9,6 +9,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
@@ -18,6 +19,7 @@ var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonce
 type esdtNFTCreate struct {
 	baseAlwaysActive
 	keyPrefix             []byte
+	accounts              vmcommon.AccountsAdapter
 	marshalizer           vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
@@ -38,6 +40,7 @@ func NewESDTNFTCreateFunc(
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
+	accounts vmcommon.AccountsAdapter,
 	valueLengthCheckEnableEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTCreate, error) {
@@ -56,6 +59,9 @@ func NewESDTNFTCreateFunc(
 	if check.IfNil(epochNotifier) {
 		return nil, ErrNilEpochHandler
 	}
+	if check.IfNil(accounts) {
+		return nil, ErrNilAccountsAdapter
+	}
 
 	e := &esdtNFTCreate{
 		keyPrefix:                   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
@@ -67,6 +73,7 @@ func NewESDTNFTCreateFunc(
 		esdtStorageHandler:          esdtStorageHandler,
 		mutExecution:                sync.RWMutex{},
 		valueLengthCheckEnableEpoch: valueLengthCheckEnableEpoch,
+		accounts:                    accounts,
 	}
 
 	epochNotifier.RegisterNotifyHandler(e)
@@ -112,17 +119,42 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	if len(vmInput.Arguments) < 7 {
+
+	minNumOfArgs := 7
+	if vmInput.CallType == vm.ExecOnDestByCaller {
+		minNumOfArgs = 8
+	}
+	lenArgs := len(vmInput.Arguments)
+	if lenArgs < minNumOfArgs {
 		return nil, fmt.Errorf("%w, wrong number of arguments", ErrInvalidArguments)
 	}
 
+	accountWithRoles := acntSnd
+	uris := vmInput.Arguments[6:]
+	if vmInput.CallType == vm.ExecOnDestByCaller {
+		scAddressWithRoles := vmInput.Arguments[lenArgs-1]
+		uris = vmInput.Arguments[6 : lenArgs-1]
+
+		if len(scAddressWithRoles) != len(vmInput.CallerAddr) {
+			return nil, ErrInvalidAddressLength
+		}
+		if bytes.Equal(scAddressWithRoles, vmInput.CallerAddr) {
+			return nil, ErrInvalidRcvAddr
+		}
+
+		accountWithRoles, err = e.getAccount(scAddressWithRoles)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	tokenID := vmInput.Arguments[0]
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTCreate))
+	err = e.rolesHandler.CheckAllowedToExecute(accountWithRoles, vmInput.Arguments[0], []byte(core.ESDTRoleNFTCreate))
 	if err != nil {
 		return nil, err
 	}
 
-	nonce, err := getLatestNonce(acntSnd, tokenID)
+	nonce, err := getLatestNonce(accountWithRoles, tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +179,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, fmt.Errorf("%w, invalid quantity", ErrInvalidArguments)
 	}
 	if quantity.Cmp(big.NewInt(1)) > 0 {
-		err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
+		err = e.rolesHandler.CheckAllowedToExecute(accountWithRoles, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
 		if err != nil {
 			return nil, err
 		}
@@ -167,19 +199,26 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 			Royalties:  royalties,
 			Hash:       vmInput.Arguments[4],
 			Attributes: vmInput.Arguments[5],
-			URIs:       vmInput.Arguments[6:],
+			URIs:       uris,
 		},
 	}
 
 	var esdtDataBytes []byte
-	esdtDataBytes, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
+	esdtDataBytes, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
 
-	err = saveLatestNonce(acntSnd, tokenID, nextNonce)
+	err = saveLatestNonce(accountWithRoles, tokenID, nextNonce)
 	if err != nil {
 		return nil, err
+	}
+
+	if vmInput.CallType == vm.ExecOnDestByCaller {
+		err = e.accounts.SaveAccount(accountWithRoles)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	vmOutput := &vmcommon.VMOutput{
@@ -191,6 +230,20 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), vmInput.Arguments[0], nextNonce, quantity, vmInput.CallerAddr, esdtDataBytes)
 
 	return vmOutput, nil
+}
+
+func (e *esdtNFTCreate) getAccount(address []byte) (vmcommon.UserAccountHandler, error) {
+	account, err := e.accounts.LoadAccount(address)
+	if err != nil {
+		return nil, err
+	}
+
+	userAcc, ok := account.(vmcommon.UserAccountHandler)
+	if !ok {
+		return nil, ErrWrongTypeAssertion
+	}
+
+	return userAcc, nil
 }
 
 func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, error) {
@@ -228,7 +281,7 @@ func checkESDTNFTCreateBurnAddInput(
 	if !bytes.Equal(vmInput.CallerAddr, vmInput.RecipientAddr) {
 		return ErrInvalidRcvAddr
 	}
-	if check.IfNil(account) {
+	if check.IfNil(account) && vmInput.CallType != vm.ExecOnDestByCaller {
 		return ErrNilUserAccount
 	}
 	if vmInput.GasProvided < funcGasCost {
