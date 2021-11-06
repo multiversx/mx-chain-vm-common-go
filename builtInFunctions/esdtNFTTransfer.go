@@ -177,7 +177,8 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 
 	tokenNonce := esdtTransferData.TokenMetaData.Nonce
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], tokenNonce, esdtTransferData.Value, vmInput.CallerAddr, acntDst.AddressBytes())
+	transferValue := big.NewInt(0).SetBytes(vmInput.Arguments[2])
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], tokenNonce, transferValue, vmInput.CallerAddr, acntDst.AddressBytes())
 
 	return vmOutput, nil
 }
