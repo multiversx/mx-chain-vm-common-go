@@ -193,7 +193,8 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, esdtTransferData.Value, vmInput.CallerAddr, acntDst.AddressBytes())
+	transferValue := big.NewInt(0).SetBytes(vmInput.Arguments[2])
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, transferValue, vmInput.CallerAddr, acntDst.AddressBytes())
 
 	return vmOutput, nil
 }
