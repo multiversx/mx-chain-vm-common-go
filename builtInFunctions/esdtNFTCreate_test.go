@@ -257,7 +257,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	name := "name"
 	royalties := 100 //1%
 	hash := []byte("12345678901234567890123456789012")
-	attibutes := []byte("attributes")
+	attributes := []byte("attributes")
 	uris := [][]byte{[]byte("uri1"), []byte("uri2")}
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -269,7 +269,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 				[]byte(name),
 				big.NewInt(int64(royalties)).Bytes(),
 				hash,
-				attibutes,
+				attributes,
 				uris[0],
 				uris[1],
 			},
@@ -295,7 +295,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		Royalties:  uint32(royalties),
 		Hash:       hash,
 		URIs:       uris,
-		Attributes: attibutes,
+		Attributes: attributes,
 	}
 
 	tokenKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + token)
@@ -329,7 +329,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 	name := "name"
 	royalties := 100 //1%
 	hash := []byte("12345678901234567890123456789012")
-	attibutes := []byte("attributes")
+	attributes := []byte("attributes")
 	uris := [][]byte{[]byte("uri1"), []byte("uri2")}
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -341,7 +341,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 				[]byte(name),
 				big.NewInt(int64(royalties)).Bytes(),
 				hash,
-				attibutes,
+				attributes,
 				uris[0],
 				uris[1],
 				address,
@@ -371,7 +371,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 		Royalties:  uint32(royalties),
 		Hash:       hash,
 		URIs:       uris,
-		Attributes: attibutes,
+		Attributes: attributes,
 	}
 
 	tokenKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + token)
