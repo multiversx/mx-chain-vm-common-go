@@ -166,7 +166,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 			return nil, err
 		}
 	} else {
-		esdtTransferData.Value = value
+		esdtTransferData.Value = big.NewInt(0).Set(value)
 		esdtTransferData.Type = uint32(core.NonFungible)
 	}
 
@@ -193,7 +193,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, esdtTransferData.Value, vmInput.CallerAddr, acntDst.AddressBytes())
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, value, vmInput.CallerAddr, acntDst.AddressBytes())
 
 	return vmOutput, nil
 }
