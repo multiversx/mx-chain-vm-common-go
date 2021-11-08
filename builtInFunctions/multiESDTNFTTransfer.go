@@ -420,7 +420,11 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 
 	for i, esdtTransfer := range listESDTTransfers {
 		multiTransferCallArgs = append(multiTransferCallArgs, esdtTransfer.ESDTTokenName)
-		multiTransferCallArgs = append(multiTransferCallArgs, big.NewInt(0).SetUint64(esdtTransfer.ESDTTokenNonce).Bytes())
+		nonceAsBytes := []byte{0}
+		if esdtTransfer.ESDTTokenNonce > 0 {
+			nonceAsBytes = big.NewInt(0).SetUint64(esdtTransfer.ESDTTokenNonce).Bytes()
+		}
+		multiTransferCallArgs = append(multiTransferCallArgs, nonceAsBytes)
 
 		if esdtTransfer.ESDTTokenNonce > 0 {
 			wasAlreadySent, err := e.esdtStorageHandler.WasAlreadySentToDestinationShardAndUpdateState(esdtTransfer.ESDTTokenName, esdtTransfer.ESDTTokenNonce, dstAddress)
