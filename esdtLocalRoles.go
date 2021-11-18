@@ -1,6 +1,6 @@
 package vmcommon
 
-const lengthOfEsdtLocalRoles = 64
+const lengthOfEsdtLocalRoles = 8
 
 type Bits byte
 
