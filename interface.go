@@ -94,6 +94,9 @@ type BlockchainHook interface {
 	// GetESDTToken loads the ESDT digital token for the given key
 	GetESDTToken(address []byte, tokenID []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 
+	// GetESDTToken loads the ESDT digital token for the given key
+	GetESDTLocalRoles(tokenID []byte) []byte
+
 	// GetSnapshot gets the number of entries in the journal as a snapshot id
 	GetSnapshot() int
 
