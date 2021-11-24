@@ -198,7 +198,7 @@ type ESDTRoleHandler interface {
 
 // PayableHandler provides IsPayable function which returns if an account is payable or not
 type PayableHandler interface {
-	IsPayable(address []byte) (bool, error)
+	IsPayable(sndAddress, rcvAddress []byte) (bool, error)
 	IsInterfaceNil() bool
 }
 

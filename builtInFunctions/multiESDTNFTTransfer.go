@@ -175,7 +175,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	vmOutput.Logs = make([]*vmcommon.LogEntry, 0, numOfTransfers)
 	startIndex := uint64(1)
 
-	err = e.checkIfPayable(verifyPayable, vmInput.RecipientAddr)
+	err = e.checkIfPayable(verifyPayable, vmInput.CallerAddr, vmInput.RecipientAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	}
 
 	if !check.IfNil(acntDst) {
-		err = e.checkIfPayable(verifyPayable, dstAddress)
+		err = e.checkIfPayable(verifyPayable, vmInput.CallerAddr, dstAddress)
 		if err != nil {
 			return nil, err
 		}
@@ -504,13 +504,14 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 
 func (e *esdtNFTMultiTransfer) checkIfPayable(
 	mustVerifyPayable bool,
+	sndAddress []byte,
 	dstAddress []byte,
 ) error {
 	if !mustVerifyPayable {
 		return nil
 	}
 
-	isPayable, errIsPayable := e.payableHandler.IsPayable(dstAddress)
+	isPayable, errIsPayable := e.payableHandler.IsPayable(sndAddress, dstAddress)
 	if errIsPayable != nil {
 		return errIsPayable
 	}

@@ -6,7 +6,7 @@ type PayableHandlerStub struct {
 }
 
 // IsPayable -
-func (p *PayableHandlerStub) IsPayable(address []byte) (bool, error) {
+func (p *PayableHandlerStub) IsPayable(_, address []byte) (bool, error) {
 	if p.IsPayableCalled != nil {
 		return p.IsPayableCalled(address)
 	}

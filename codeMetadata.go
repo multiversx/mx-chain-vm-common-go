@@ -9,11 +9,14 @@ const (
 	MetadataPayable = 2
 	// MetadataReadable is the bit for readable flag
 	MetadataReadable = 4
+	// MetadataPayableBySC is the bit for payable flag
+	MetadataPayableBySC = 4
 )
 
 // CodeMetadata represents smart contract code metadata
 type CodeMetadata struct {
 	Payable     bool
+	PayableBySC bool
 	Upgradeable bool
 	Readable    bool
 }
@@ -28,6 +31,7 @@ func CodeMetadataFromBytes(bytes []byte) CodeMetadata {
 		Upgradeable: (bytes[0] & MetadataUpgradeable) != 0,
 		Readable:    (bytes[0] & MetadataReadable) != 0,
 		Payable:     (bytes[1] & MetadataPayable) != 0,
+		PayableBySC: (bytes[1] & MetadataPayableBySC) != 0,
 	}
 }
 
@@ -43,6 +47,9 @@ func (metadata *CodeMetadata) ToBytes() []byte {
 	}
 	if metadata.Payable {
 		bytes[1] |= MetadataPayable
+	}
+	if metadata.PayableBySC {
+		bytes[1] |= MetadataPayableBySC
 	}
 
 	return bytes
