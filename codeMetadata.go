@@ -2,13 +2,18 @@ package vmcommon
 
 const lengthOfCodeMetadata = 2
 
+// Const group for the first byte of the metadata
 const (
 	// MetadataUpgradeable is the bit for upgradable flag
 	MetadataUpgradeable = 1
-	// MetadataPayable is the bit for payable flag
-	MetadataPayable = 2
 	// MetadataReadable is the bit for readable flag
 	MetadataReadable = 4
+)
+
+// Const group for the second byte of the metadata
+const (
+	// MetadataPayable is the bit for payable flag
+	MetadataPayable = 2
 	// MetadataPayableBySC is the bit for payable flag
 	MetadataPayableBySC = 4
 )
