@@ -373,7 +373,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	isReturnWithError bool,
 ) error {
 	if mustVerifyPayable {
-		isPayable, errIsPayable := e.payableHandler.IsPayable(dstAddress)
+		isPayable, errIsPayable := e.payableHandler.IsPayable(sndAddress, dstAddress)
 		if errIsPayable != nil {
 			return errIsPayable
 		}

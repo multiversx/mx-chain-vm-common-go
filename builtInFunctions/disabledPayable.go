@@ -5,7 +5,7 @@ type disabledPayableHandler struct {
 }
 
 // IsPayable returns false and error as this is a disabled payable handler
-func (d *disabledPayableHandler) IsPayable(_ []byte) (bool, error) {
+func (d *disabledPayableHandler) IsPayable(_, _ []byte) (bool, error) {
 	return false, ErrAccountNotPayable
 }
 
