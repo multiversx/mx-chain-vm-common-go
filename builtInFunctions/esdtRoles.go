@@ -63,7 +63,13 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 	}
 
 	if e.set {
-		roles.Roles = append(roles.Roles, vmInput.Arguments[1:]...)
+		for _, newRole := range vmInput.Arguments[1:] {
+			_, exist := doesRoleExist(roles, newRole)
+			if exist {
+				continue
+			}
+			roles.Roles = append(roles.Roles, newRole)
+		}
 	} else {
 		deleteRoles(roles, vmInput.Arguments[1:])
 	}
