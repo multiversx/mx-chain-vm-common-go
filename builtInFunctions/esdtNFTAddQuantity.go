@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
 const maxLenForAddNFTQuantity = 32
@@ -65,7 +65,7 @@ func NewESDTNFTAddQuantityFunc(
 
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (e *esdtNFTAddQuantity) EpochConfirmed(epoch uint32, _ uint64) {
-	e.flagValueLengthCheck.Toggle(epoch >= e.valueLengthCheckEnableEpoch)
+	e.flagValueLengthCheck.SetValue(epoch >= e.valueLengthCheckEnableEpoch)
 	log.Debug("ESDT Add Quantity value length check", "enabled", e.flagValueLengthCheck.IsSet())
 }
 

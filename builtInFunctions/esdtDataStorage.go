@@ -6,11 +6,11 @@ import (
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 	"github.com/ElrondNetwork/elrond-vm-common/parsers"
 )
 
@@ -433,7 +433,7 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromMultiTransfer(
 
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (e *esdtDataStorage) EpochConfirmed(epoch uint32, _ uint64) {
-	e.flagSaveToSystemAccount.Toggle(epoch >= e.saveToSystemEnableEpoch)
+	e.flagSaveToSystemAccount.SetValue(epoch >= e.saveToSystemEnableEpoch)
 	log.Debug("ESDT NFT save to system account", "enabled", e.flagSaveToSystemAccount.IsSet())
 }
 

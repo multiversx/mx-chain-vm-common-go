@@ -9,11 +9,11 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
 var oneValue = big.NewInt(1)
@@ -93,7 +93,7 @@ func NewESDTNFTTransferFunc(
 
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (e *esdtNFTTransfer) EpochConfirmed(epoch uint32, _ uint64) {
-	e.flagTransferToMeta.Toggle(epoch >= e.transferToMetaEnableEpoch)
+	e.flagTransferToMeta.SetValue(epoch >= e.transferToMetaEnableEpoch)
 	log.Debug("ESDT NFT transfer to metachain flag", "enabled", e.flagTransferToMeta.IsSet())
 }
 

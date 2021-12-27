@@ -1,8 +1,8 @@
 package builtInFunctions
 
 import (
+	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
-	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
 var log = logger.GetOrCreate("vmCommon/builtInFunctions")
@@ -33,7 +33,7 @@ func (b *baseEnabled) IsActive() bool {
 
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (b *baseEnabled) EpochConfirmed(epoch uint32, _ uint64) {
-	b.flagActivated.Toggle(epoch >= b.activationEpoch)
+	b.flagActivated.SetValue(epoch >= b.activationEpoch)
 	log.Debug("built in function", "name: ", b.function, "enabled", b.flagActivated.IsSet())
 }
 
@@ -55,7 +55,7 @@ func (b *baseDisabled) IsActive() bool {
 
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (b *baseDisabled) EpochConfirmed(epoch uint32, _ uint64) {
-	b.flagActivated.Toggle(epoch < b.deActivationEpoch)
+	b.flagActivated.SetValue(epoch < b.deActivationEpoch)
 	log.Debug("built in function", "name: ", b.function, "enabled", b.flagActivated.IsSet())
 }
 
