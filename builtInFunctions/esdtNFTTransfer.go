@@ -34,6 +34,8 @@ type esdtNFTTransfer struct {
 	esdtStorageHandler        vmcommon.ESDTNFTStorageHandler
 	transferToMetaEnableEpoch uint32
 	flagTransferToMeta        atomic.Flag
+	check0TransferEnableEpoch uint32
+	flagCheck0Transfer        atomic.Flag
 }
 
 // NewESDTNFTTransferFunc returns the esdt NFT transfer built-in function component
@@ -46,6 +48,7 @@ func NewESDTNFTTransferFunc(
 	gasConfig vmcommon.BaseOperationCost,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	transferToMetaEnableEpoch uint32,
+	checkZeroTransferEnableEpoch uint32,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTTransfer, error) {
@@ -83,6 +86,7 @@ func NewESDTNFTTransferFunc(
 		payableHandler:            &disabledPayableHandler{},
 		rolesHandler:              rolesHandler,
 		transferToMetaEnableEpoch: transferToMetaEnableEpoch,
+		check0TransferEnableEpoch: checkZeroTransferEnableEpoch,
 		esdtStorageHandler:        esdtStorageHandler,
 	}
 
@@ -95,6 +99,8 @@ func NewESDTNFTTransferFunc(
 func (e *esdtNFTTransfer) EpochConfirmed(epoch uint32, _ uint64) {
 	e.flagTransferToMeta.SetValue(epoch >= e.transferToMetaEnableEpoch)
 	log.Debug("ESDT NFT transfer to metachain flag", "enabled", e.flagTransferToMeta.IsSet())
+	e.flagCheck0Transfer.SetValue(epoch >= e.check0TransferEnableEpoch)
+	log.Debug("ESDT NFT transfer check zero transfer", "enabled", e.flagCheck0Transfer.IsSet())
 }
 
 // SetPayableHandler will set the payable handler to the function
@@ -230,6 +236,9 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 	quantityToTransfer := big.NewInt(0).SetBytes(vmInput.Arguments[2])
 	if esdtData.Value.Cmp(quantityToTransfer) < 0 {
+		return nil, ErrInvalidNFTQuantity
+	}
+	if e.flagCheck0Transfer.IsSet() && quantityToTransfer.Cmp(zero) <= 0 {
 		return nil, ErrInvalidNFTQuantity
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
