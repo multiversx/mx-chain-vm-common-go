@@ -28,6 +28,7 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -77,6 +78,7 @@ func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, glob
 			},
 		},
 		1000,
+		0,
 		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
 		&mock.EpochNotifierStub{},
 	)
@@ -171,6 +173,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -186,6 +189,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -201,6 +205,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -216,6 +221,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -231,6 +237,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		nil,
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -246,6 +253,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 		nil,
 	)
@@ -261,6 +269,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		nil,
 		&mock.EpochNotifierStub{},
 	)
@@ -280,6 +289,7 @@ func TestNewESDTNFTTransferFunc(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -386,6 +396,54 @@ func TestEsdtNFTTransfer_SenderDoesNotHaveNFT(t *testing.T) {
 
 	_, err = nftTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Equal(t, err, ErrNewNFTDataOnSenderAddress)
+}
+
+func TestEsdtNFTTransfer_ProcessWithZeroValue(t *testing.T) {
+	t.Parallel()
+
+	nftTransfer := createNftTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+
+	senderAddress := bytes.Repeat([]byte{2}, 32)
+	destinationAddress := bytes.Repeat([]byte{1}, 32)
+
+	sender, err := nftTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+	destination, err := nftTransfer.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+
+	tokenName := []byte("token")
+	tokenNonce := uint64(1)
+
+	initialTokens := big.NewInt(3)
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, nftTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
+	_ = nftTransfer.accounts.SaveAccount(sender)
+	_ = nftTransfer.accounts.SaveAccount(destination)
+	_, _ = nftTransfer.accounts.Commit()
+
+	//reload accounts
+	sender, err = nftTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+	destination, err = nftTransfer.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+
+	scCallFunctionAsHex := hex.EncodeToString([]byte("functionToCall"))
+	scCallArg := hex.EncodeToString([]byte("arg"))
+	nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
+	quantityBytes := big.NewInt(0).Bytes()
+	scCallArgs := [][]byte{[]byte(scCallFunctionAsHex), []byte(scCallArg)}
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{tokenName, nonceBytes, quantityBytes, destinationAddress},
+			GasProvided: 1,
+		},
+		RecipientAddr: senderAddress,
+	}
+	vmInput.Arguments = append(vmInput.Arguments, scCallArgs...)
+
+	_, err = nftTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	require.Equal(t, err, ErrInvalidNFTQuantity)
 }
 
 func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.T) {
