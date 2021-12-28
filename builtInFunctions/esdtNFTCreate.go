@@ -7,11 +7,11 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/atomic"
 )
 
 var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
@@ -83,7 +83,7 @@ func NewESDTNFTCreateFunc(
 
 // EpochConfirmed is called whenever a new epoch is confirmed
 func (e *esdtNFTCreate) EpochConfirmed(epoch uint32, _ uint64) {
-	e.flagValueLengthCheck.Toggle(epoch >= e.valueLengthCheckEnableEpoch)
+	e.flagValueLengthCheck.SetValue(epoch >= e.valueLengthCheckEnableEpoch)
 	log.Debug("ESDT NFT Create quantity value length check", "enabled", e.flagValueLengthCheck.IsSet())
 }
 

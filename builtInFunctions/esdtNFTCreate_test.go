@@ -310,7 +310,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 
 	accounts := createAccountsAdapterWithMap()
 	esdtDataStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts)
-	esdtDataStorage.flagSaveToSystemAccount.Set()
+	_ = esdtDataStorage.flagSaveToSystemAccount.SetReturningPrevious()
 	nftCreate, _ := NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},

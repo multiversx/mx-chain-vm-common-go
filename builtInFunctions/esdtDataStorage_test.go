@@ -341,11 +341,11 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 	args.ShardCoordinator = shardCoordinator
 	e, _ := NewESDTDataStorage(args)
 
-	e.flagSaveToSystemAccount.Unset()
+	e.flagSaveToSystemAccount.Reset()
 	err := e.SaveNFTMetaDataToSystemAccount(nil)
 	assert.Nil(t, err)
 
-	e.flagSaveToSystemAccount.Set()
+	_ = e.flagSaveToSystemAccount.SetReturningPrevious()
 	err = e.SaveNFTMetaDataToSystemAccount(nil)
 	assert.Equal(t, err, ErrNilTransactionHandler)
 
