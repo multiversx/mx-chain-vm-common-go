@@ -129,7 +129,7 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 		GasRemaining: vmInput.GasProvided - e.funcGasCost - gasCostForStore,
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTUpdateAttributes), vmInput.Arguments[0], nonce, big.NewInt(0), vmInput.Arguments[2])
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTUpdateAttributes), vmInput.Arguments[0], nonce, big.NewInt(0), vmInput.CallerAddr, vmInput.Arguments[2])
 
 	return vmOutput, nil
 }
