@@ -77,7 +77,7 @@ func (e *esdtNFTupdate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.mutExecution.Unlock()
 }
 
-// ProcessBuiltinFunction resolves ESDT NFT add quantity function call
+// ProcessBuiltinFunction resolves ESDT NFT update attributes function call
 // Requires 3 arguments:
 // arg0 - token identifier
 // arg1 - nonce
@@ -129,7 +129,7 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 		GasRemaining: vmInput.GasProvided - e.funcGasCost - gasCostForStore,
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTUpdateAttributes), vmInput.Arguments[0], nonce, big.NewInt(0), vmInput.CallerAddr)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTUpdateAttributes), vmInput.Arguments[0], nonce, big.NewInt(0), vmInput.Arguments[2])
 
 	return vmOutput, nil
 }
