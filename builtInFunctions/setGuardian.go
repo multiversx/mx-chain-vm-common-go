@@ -15,7 +15,7 @@ import (
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
-var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/freezeAccount")
+var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/setGuardian")
 
 // TODO:
 // 1. Add builtin function
@@ -23,12 +23,12 @@ var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/freezeAccount")
 
 // Key prefixes
 const (
-	GuardiansKey = "guardians"
+	SetGuardianKeyIdentifier = "guardians"
 )
 
 // Functions
 const (
-	setGuardian = "setGuardian"
+	BuiltInFunctionSetGuardian = "BuiltInFunctionSetGuardian"
 )
 
 type Guardian struct {
@@ -40,29 +40,35 @@ type Guardians struct {
 	Data []*Guardian
 }
 
-type ArgsFreezeAccountSC struct {
+type BlockChainEpochHook interface {
+	CurrentEpoch() uint32
+	IsInterfaceNil() bool
+}
+
+type SetGuardianArgs struct {
 	GasCost                  vmcommon.GasCost
 	Marshaller               marshal.Marshalizer
-	BlockChainHook           vmcommon.BlockchainHook
+	BlockChainHook           BlockChainEpochHook
 	PubKeyConverter          core.PubkeyConverter
 	GuardianActivationEpochs uint32
 	SetGuardianEnableEpoch   uint32
 	EpochNotifier            vmcommon.EpochNotifier
 }
 
-type freezeAccount struct {
+type setGuardian struct {
 	gasCost                  vmcommon.GasCost
 	marshaller               marshal.Marshalizer
-	blockchainHook           vmcommon.BlockchainHook
+	blockchainHook           BlockChainEpochHook
 	pubKeyConverter          core.PubkeyConverter
 	guardianActivationEpochs uint32
 	mutExecution             sync.RWMutex
 
 	setGuardianEnableEpoch uint32
 	flagEnabled            atomic.Flag
+	keyPrefix              []byte
 }
 
-func NewFreezeAccountSmartContract(args ArgsFreezeAccountSC) (*freezeAccount, error) {
+func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 	if check.IfNil(args.Marshaller) {
 		return nil, core.ErrNilMarshalizer
 	}
@@ -73,7 +79,7 @@ func NewFreezeAccountSmartContract(args ArgsFreezeAccountSC) (*freezeAccount, er
 		return nil, nil // TODO: Error
 	}
 
-	accountFreezer := &freezeAccount{
+	setGuardianFunc := &setGuardian{
 		gasCost:                  args.GasCost,
 		marshaller:               args.Marshaller,
 		blockchainHook:           args.BlockChainHook,
@@ -81,11 +87,12 @@ func NewFreezeAccountSmartContract(args ArgsFreezeAccountSC) (*freezeAccount, er
 		guardianActivationEpochs: args.GuardianActivationEpochs,
 		setGuardianEnableEpoch:   args.SetGuardianEnableEpoch,
 		mutExecution:             sync.RWMutex{},
+		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + SetGuardianKeyIdentifier), // TODO: use this instead of func
 	}
-	logAccountFreezer.Debug("account freezer enable epoch", accountFreezer.setGuardianEnableEpoch)
-	args.EpochNotifier.RegisterNotifyHandler(accountFreezer)
+	logAccountFreezer.Debug("set guardian enable epoch", setGuardianFunc.setGuardianEnableEpoch)
+	args.EpochNotifier.RegisterNotifyHandler(setGuardianFunc)
 
-	return accountFreezer, nil
+	return setGuardianFunc, nil
 }
 
 // todo; check if guardian is already stored?
@@ -96,37 +103,37 @@ func NewFreezeAccountSmartContract(args ArgsFreezeAccountSC) (*freezeAccount, er
 // 4. User has TWO guardians. FIRST is enabled, SECOND is pending => change pending with current one / does nothing until it is set
 // 5. User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one
 
-func (fa *freezeAccount) ProcessBuiltinFunction(
-	acntSnd, _ vmcommon.UserAccountHandler,
+func (sg *setGuardian) ProcessBuiltinFunction(
+	senderAccount, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
-	fa.mutExecution.RLock()
-	defer fa.mutExecution.RUnlock()
+	sg.mutExecution.RLock()
+	defer sg.mutExecution.RUnlock()
 
 	if vmInput == nil {
 		return nil, errors.New("nil arguments")
 	}
-	if !fa.flagEnabled.IsSet() {
-		return nil, errors.New(fmt.Sprintf("account freezer not enabled yet, enable epoch: %d", fa.setGuardianEnableEpoch))
+	if !sg.flagEnabled.IsSet() {
+		return nil, errors.New(fmt.Sprintf("account freezer not enabled yet, enable epoch: %d", sg.setGuardianEnableEpoch))
 	}
 
 	if !isZero(vmInput.CallValue) {
-		return nil, errors.New(fmt.Sprintf("expected value must be zero, got %v", vmInput.CallValue))
+		return nil, ErrBuiltInFunctionCalledWithValue
 	}
 	if len(vmInput.Arguments) != 1 {
 		return nil, errors.New(fmt.Sprintf("invalid number of arguments, expected 1, got %d ", len(vmInput.Arguments)))
 	}
-	if vmInput.GasProvided < fa.gasCost.BuiltInCost.SetGuardian {
+	if vmInput.GasProvided < sg.gasCost.BuiltInCost.SetGuardian {
 		return nil, ErrNotEnoughGas
 	}
-	if !fa.isAddressValid(vmInput.Arguments[0]) {
+	if !sg.isAddressValid(vmInput.Arguments[0]) {
 		return nil, errors.New("invalid address")
 	}
 	if bytes.Equal(vmInput.CallerAddr, vmInput.Arguments[0]) {
 		return nil, errors.New("cannot set own address as guardian")
 	}
 
-	guardians, err := fa.guardians(vmInput.CallerAddr)
+	guardians, err := sg.guardians(senderAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -134,41 +141,41 @@ func (fa *freezeAccount) ProcessBuiltinFunction(
 	switch len(guardians.Data) {
 	case 0:
 		// Case 1
-		return fa.tryAddGuardian(vmInput.CallerAddr, vmInput.Arguments[0], guardians)
+		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians)
 	case 1:
 		// Case 2
-		if fa.pending(guardians.Data[0]) {
+		if sg.pending(guardians.Data[0]) {
 			return nil, errors.New(fmt.Sprintf("owner already has one guardian pending: %s",
-				fa.pubKeyConverter.Encode(guardians.Data[0].Address)))
+				sg.pubKeyConverter.Encode(guardians.Data[0].Address)))
 		}
 		// Case 3
-		return fa.tryAddGuardian(vmInput.CallerAddr, vmInput.Arguments[0], guardians)
+		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians)
 	case 2:
 		// Case 4
-		if fa.pending(guardians.Data[1]) {
+		if sg.pending(guardians.Data[1]) {
 			return nil, errors.New(fmt.Sprintf("owner already has one guardian pending: %s",
-				fa.pubKeyConverter.Encode(guardians.Data[1].Address)))
+				sg.pubKeyConverter.Encode(guardians.Data[1].Address)))
 		}
 		// Case 5
 		guardians.Data = guardians.Data[1:] // remove oldest guardian
-		return fa.tryAddGuardian(vmInput.CallerAddr, vmInput.Arguments[0], guardians)
+		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians)
 	default:
 		return nil, errors.New("invalid")
 	}
 }
 
-func (fa *freezeAccount) tryAddGuardian(address []byte, guardianAddress []byte, guardians Guardians) (*vmcommon.VMOutput, error) {
-	err := fa.addGuardian(address, guardianAddress, guardians)
+func (sg *setGuardian) tryAddGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians Guardians) (*vmcommon.VMOutput, error) {
+	err := sg.addGuardian(account, guardianAddress, guardians)
 	if err != nil {
 		return nil, err
 	}
 	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}, nil
 }
 
-func (fa *freezeAccount) pending(guardian *Guardian) bool {
-	currEpoch := fa.blockchainHook.CurrentEpoch()
+func (sg *setGuardian) pending(guardian *Guardian) bool {
+	currEpoch := sg.blockchainHook.CurrentEpoch()
 	remaining := absDiff(currEpoch, guardian.ActivationEpoch) // any edge case here for which we should use abs?
-	return remaining < fa.guardianActivationEpochs
+	return remaining < sg.guardianActivationEpochs
 }
 
 func absDiff(a, b uint32) uint32 {
@@ -178,35 +185,23 @@ func absDiff(a, b uint32) uint32 {
 	return a - b
 }
 
-func (fa *freezeAccount) addGuardian(address []byte, guardianAddress []byte, guardians Guardians) error {
+func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians Guardians) error {
 	guardian := &Guardian{
 		Address:         guardianAddress,
-		ActivationEpoch: fa.blockchainHook.CurrentEpoch() + fa.guardianActivationEpochs,
+		ActivationEpoch: sg.blockchainHook.CurrentEpoch() + sg.guardianActivationEpochs,
 	}
 
 	guardians.Data = append(guardians.Data, guardian)
-	marshalledData, err := fa.marshaller.Marshal(guardians)
+	marshalledData, err := sg.marshaller.Marshal(guardians)
 	if err != nil {
 		return err
 	}
 
-	account, err := fa.blockchainHook.GetUserAccount(address)
-	if err != nil {
-		return err
-	}
-
-	key := calcProtectedPrefixedKey(GuardiansKey)
-	return account.AccountDataHandler().SaveKeyValue(key, marshalledData)
+	return account.AccountDataHandler().SaveKeyValue(sg.keyPrefix, marshalledData)
 }
 
-func (fa *freezeAccount) guardians(address []byte) (Guardians, error) {
-	account, err := fa.blockchainHook.GetUserAccount(address)
-	if err != nil {
-		return Guardians{}, err
-	}
-
-	key := calcProtectedPrefixedKey(GuardiansKey)
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(key)
+func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (Guardians, error) {
+	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
 	if err != nil {
 		return Guardians{}, err
 	}
@@ -217,7 +212,7 @@ func (fa *freezeAccount) guardians(address []byte) (Guardians, error) {
 	}
 
 	guardians := Guardians{}
-	err = fa.marshaller.Unmarshal(&guardians, marshalledData)
+	err = sg.marshaller.Unmarshal(&guardians, marshalledData)
 	if err != nil {
 		return Guardians{}, err
 	}
@@ -225,41 +220,37 @@ func (fa *freezeAccount) guardians(address []byte) (Guardians, error) {
 	return guardians, nil
 }
 
-func calcProtectedPrefixedKey(key string) []byte {
-	return append([]byte(core.ElrondProtectedKeyPrefix), []byte(key)...)
-}
-
 func isZero(n *big.Int) bool {
 	return len(n.Bits()) == 0
 }
 
 // TODO: Move this to common  + remove from esdt.go
-func (fa *freezeAccount) isAddressValid(addressBytes []byte) bool {
-	isLengthOk := len(addressBytes) == fa.pubKeyConverter.Len()
+func (sg *setGuardian) isAddressValid(addressBytes []byte) bool {
+	isLengthOk := len(addressBytes) == sg.pubKeyConverter.Len()
 	if !isLengthOk {
 		return false
 	}
 
-	encodedAddress := fa.pubKeyConverter.Encode(addressBytes)
+	encodedAddress := sg.pubKeyConverter.Encode(addressBytes)
 
 	return encodedAddress != ""
 }
 
-func (fa *freezeAccount) EpochConfirmed(epoch uint32, _ uint64) {
-	fa.flagEnabled.SetValue(epoch >= fa.setGuardianEnableEpoch)
-	log.Debug("account freezer", "enabled", fa.flagEnabled.IsSet())
+func (sg *setGuardian) EpochConfirmed(epoch uint32, _ uint64) {
+	sg.flagEnabled.SetValue(epoch >= sg.setGuardianEnableEpoch)
+	log.Debug("account freezer", "enabled", sg.flagEnabled.IsSet())
 }
 
-func (fa *freezeAccount) CanUseContract() bool {
+func (sg *setGuardian) CanUseContract() bool {
 	return false
 }
 
-func (fa *freezeAccount) SetNewGasCost(gasCost vmcommon.GasCost) {
-	fa.mutExecution.Lock()
-	fa.gasCost = gasCost
-	fa.mutExecution.Unlock()
+func (sg *setGuardian) SetNewGasCost(gasCost vmcommon.GasCost) {
+	sg.mutExecution.Lock()
+	sg.gasCost = gasCost
+	sg.mutExecution.Unlock()
 }
 
-func (fa *freezeAccount) IsInterfaceNil() bool {
-	return fa == nil
+func (sg *setGuardian) IsInterfaceNil() bool {
+	return sg == nil
 }

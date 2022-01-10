@@ -15,30 +15,23 @@ import (
 
 func TestFreezeAccount_ExecuteSetGuardianCase1(t *testing.T) {
 	userAccount := mockvm.NewUserAccount([]byte("user address"))
-	blockChainHook := &mockvm.BlockChainHookStub{
-		GetUserAccountCalled: func(address []byte) (vmcommon.UserAccountHandler, error) {
-			return userAccount, nil
-		},
-	}
-
 	args := createAccountFreezerMockArgs()
-	args.BlockChainHook = blockChainHook
-	accountFreezer, _ := NewFreezeAccountSmartContract(args)
+	accountFreezer, _ := NewSetGuardianFunc(args)
 
 	guardianAddress := generateRandomByteArray(32)
-	vmInput := getDefaultVmInputForFunc(setGuardian, [][]byte{guardianAddress})
+	vmInput := getDefaultVmInputForFunc(BuiltInFunctionSetGuardian, [][]byte{guardianAddress})
 
-	_, err := accountFreezer.ProcessBuiltinFunction(nil, nil, vmInput)
+	_, err := accountFreezer.ProcessBuiltinFunction(userAccount, nil, vmInput)
 	require.Nil(t, err)
 
-	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(GuardiansKey)...)
+	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(SetGuardianKeyIdentifier)...)
 	marshalledData, _ := userAccount.AccountDataHandler().RetrieveValue(key)
 	storedGuardian := &Guardians{}
 	_ = args.Marshaller.Unmarshal(storedGuardian, marshalledData)
 
 	expectedStoredGuardian := &Guardian{
 		Address:         guardianAddress,
-		ActivationEpoch: blockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
+		ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
 	}
 	require.Len(t, storedGuardian.Data, 1)
 	require.Equal(t, storedGuardian.Data[0], expectedStoredGuardian)
@@ -46,7 +39,7 @@ func TestFreezeAccount_ExecuteSetGuardianCase1(t *testing.T) {
 
 func TestFreezeAccount_ExecuteSetGuardianCase2(t *testing.T) {
 	userAccount := mockvm.NewUserAccount([]byte("user address"))
-	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(GuardiansKey)...)
+	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(SetGuardianKeyIdentifier)...)
 	guardianAddress := generateRandomByteArray(32)
 
 	args := createAccountFreezerMockArgs()
@@ -62,18 +55,11 @@ func TestFreezeAccount_ExecuteSetGuardianCase2(t *testing.T) {
 	marshalledPendingGuardian, _ := args.Marshaller.Marshal(pendingGuardian)
 	_ = userAccount.SaveKeyValue(key, marshalledPendingGuardian)
 
-	blockChainHook := &mockvm.BlockChainHookStub{
-		GetUserAccountCalled: func(address []byte) (vmcommon.UserAccountHandler, error) {
-			return userAccount, nil
-		},
-	}
+	accountFreezer, _ := NewSetGuardianFunc(args)
 
-	args.BlockChainHook = blockChainHook
-	accountFreezer, _ := NewFreezeAccountSmartContract(args)
+	vmInput := getDefaultVmInputForFunc(BuiltInFunctionSetGuardian, [][]byte{guardianAddress})
 
-	vmInput := getDefaultVmInputForFunc(setGuardian, [][]byte{guardianAddress})
-
-	output, err := accountFreezer.ProcessBuiltinFunction(nil, nil, vmInput)
+	output, err := accountFreezer.ProcessBuiltinFunction(userAccount, nil, vmInput)
 	require.Nil(t, output)
 	require.True(t, strings.Contains(err.Error(), "owner already has one guardian"))
 
@@ -83,7 +69,7 @@ func TestFreezeAccount_ExecuteSetGuardianCase2(t *testing.T) {
 
 func TestFreezeAccount_ExecuteSetGuardianCase3(t *testing.T) {
 	userAccount := mockvm.NewUserAccount([]byte("user address"))
-	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(GuardiansKey)...)
+	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(SetGuardianKeyIdentifier)...)
 	guardianAddress := generateRandomByteArray(32)
 	enabledGuardianAddress := generateRandomByteArray(32)
 
@@ -100,18 +86,11 @@ func TestFreezeAccount_ExecuteSetGuardianCase3(t *testing.T) {
 	marshalledEnabledGuardian, _ := args.Marshaller.Marshal(enabledGuardian)
 	_ = userAccount.SaveKeyValue(key, marshalledEnabledGuardian)
 
-	blockChainHook := &mockvm.BlockChainHookStub{
-		GetUserAccountCalled: func(address []byte) (vmcommon.UserAccountHandler, error) {
-			return userAccount, nil
-		},
-	}
+	accountFreezer, _ := NewSetGuardianFunc(args)
 
-	args.BlockChainHook = blockChainHook
-	accountFreezer, _ := NewFreezeAccountSmartContract(args)
+	vmInput := getDefaultVmInputForFunc(BuiltInFunctionSetGuardian, [][]byte{guardianAddress})
 
-	vmInput := getDefaultVmInputForFunc(setGuardian, [][]byte{guardianAddress})
-
-	_, err := accountFreezer.ProcessBuiltinFunction(nil, nil, vmInput)
+	_, err := accountFreezer.ProcessBuiltinFunction(userAccount, nil, vmInput)
 	require.Nil(t, err)
 
 	marshalledData, _ := userAccount.AccountDataHandler().RetrieveValue(key)
@@ -135,7 +114,7 @@ func TestFreezeAccount_ExecuteSetGuardianCase3(t *testing.T) {
 
 func TestFreezeAccount_ExecuteSetGuardianCase4(t *testing.T) {
 	userAccount := mockvm.NewUserAccount([]byte("user address"))
-	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(GuardiansKey)...)
+	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(SetGuardianKeyIdentifier)...)
 	guardianAddress := generateRandomByteArray(32)
 	enabledGuardianAddress1 := generateRandomByteArray(32)
 	enabledGuardianAddress2 := generateRandomByteArray(32)
@@ -157,18 +136,11 @@ func TestFreezeAccount_ExecuteSetGuardianCase4(t *testing.T) {
 	marshalledStoredGuardians, _ := args.Marshaller.Marshal(storedGuardians)
 	_ = userAccount.SaveKeyValue(key, marshalledStoredGuardians)
 
-	blockChainHook := &mockvm.BlockChainHookStub{
-		GetUserAccountCalled: func(address []byte) (vmcommon.UserAccountHandler, error) {
-			return userAccount, nil
-		},
-	}
+	accountFreezer, _ := NewSetGuardianFunc(args)
 
-	args.BlockChainHook = blockChainHook
-	accountFreezer, _ := NewFreezeAccountSmartContract(args)
+	vmInput := getDefaultVmInputForFunc(BuiltInFunctionSetGuardian, [][]byte{guardianAddress})
 
-	vmInput := getDefaultVmInputForFunc(setGuardian, [][]byte{guardianAddress})
-
-	output, err := accountFreezer.ProcessBuiltinFunction(nil, nil, vmInput)
+	output, err := accountFreezer.ProcessBuiltinFunction(userAccount, nil, vmInput)
 	require.True(t, strings.Contains(err.Error(), "owner already has one guardian"))
 	require.Nil(t, output)
 
@@ -178,7 +150,7 @@ func TestFreezeAccount_ExecuteSetGuardianCase4(t *testing.T) {
 
 func TestFreezeAccount_ExecuteSetGuardianCase5(t *testing.T) {
 	userAccount := mockvm.NewUserAccount([]byte("user address"))
-	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(GuardiansKey)...)
+	key := append([]byte(core.ElrondProtectedKeyPrefix), []byte(SetGuardianKeyIdentifier)...)
 	guardianAddress := generateRandomByteArray(32)
 	enabledGuardianAddress1 := generateRandomByteArray(32)
 	enabledGuardianAddress2 := generateRandomByteArray(32)
@@ -200,18 +172,11 @@ func TestFreezeAccount_ExecuteSetGuardianCase5(t *testing.T) {
 	marshalledStoredGuardians, _ := args.Marshaller.Marshal(storedGuardians)
 	_ = userAccount.SaveKeyValue(key, marshalledStoredGuardians)
 
-	blockChainHook := &mockvm.BlockChainHookStub{
-		GetUserAccountCalled: func(address []byte) (vmcommon.UserAccountHandler, error) {
-			return userAccount, nil
-		},
-	}
+	accountFreezer, _ := NewSetGuardianFunc(args)
 
-	args.BlockChainHook = blockChainHook
-	accountFreezer, _ := NewFreezeAccountSmartContract(args)
+	vmInput := getDefaultVmInputForFunc(BuiltInFunctionSetGuardian, [][]byte{guardianAddress})
 
-	vmInput := getDefaultVmInputForFunc(setGuardian, [][]byte{guardianAddress})
-
-	output, err := accountFreezer.ProcessBuiltinFunction(nil, nil, vmInput)
+	output, err := accountFreezer.ProcessBuiltinFunction(userAccount, nil, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 
@@ -241,11 +206,11 @@ func generateRandomByteArray(size int) []byte {
 	return r
 }
 
-func createAccountFreezerMockArgs() ArgsFreezeAccountSC {
-	return ArgsFreezeAccountSC{
+func createAccountFreezerMockArgs() SetGuardianArgs {
+	return SetGuardianArgs{
 		GasCost:        vmcommon.GasCost{},
 		Marshaller:     &mockvm.MarshalizerMock{},
-		BlockChainHook: &mockvm.BlockChainHookStub{},
+		BlockChainHook: &mockvm.BlockChainEpochHookStub{},
 		PubKeyConverter: &mock.PubkeyConverterStub{
 			LenCalled: func() int {
 				return 32
