@@ -205,3 +205,21 @@ var ErrNilESDTNFTStorageHandler = errors.New("nil esdt nft storage handler")
 
 // ErrNilTransactionHandler signals that a nil transaction handler has been provided
 var ErrNilTransactionHandler = errors.New("nil transaction handler")
+
+// ErrInvalidNumberOfArguments signals that an invalid number of arguments has been provided
+var ErrInvalidNumberOfArguments = errors.New("invalid number of arguments")
+
+// ErrInvalidAddress signals that an invalid address has been provided
+var ErrInvalidAddress = errors.New("invalid address")
+
+// ErrCannotOwnAddressAsGuardian signals that an owner cannot set its own address as guardian
+var ErrCannotOwnAddressAsGuardian = errors.New("cannot set own address as guardian")
+
+// ErrOwnerAlreadyHasOneGuardianPending signals that an owner already has one guardian pending
+var ErrOwnerAlreadyHasOneGuardianPending = errors.New("owner already has one guardian pending")
+
+// ErrSetGuardianNotEnabled signals that set guardian built-in function is not enabled yet
+var ErrSetGuardianNotEnabled = errors.New("set guardian not enabled yet")
+
+// ErrGuardianAlreadyExists signals that a guardian with the same address already exists
+var ErrGuardianAlreadyExists = errors.New("a guardian with the same address already exists")

@@ -46,7 +46,7 @@ type BlockChainEpochHook interface {
 }
 
 type SetGuardianArgs struct {
-	GasCost                  vmcommon.GasCost
+	FuncGasCost              uint64
 	Marshaller               marshal.Marshalizer
 	BlockChainHook           BlockChainEpochHook
 	PubKeyConverter          core.PubkeyConverter
@@ -56,7 +56,7 @@ type SetGuardianArgs struct {
 }
 
 type setGuardian struct {
-	gasCost                  vmcommon.GasCost
+	funcGasCost              uint64
 	marshaller               marshal.Marshalizer
 	blockchainHook           BlockChainEpochHook
 	pubKeyConverter          core.PubkeyConverter
@@ -80,14 +80,14 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 	}
 
 	setGuardianFunc := &setGuardian{
-		gasCost:                  args.GasCost,
+		funcGasCost:              args.FuncGasCost,
 		marshaller:               args.Marshaller,
 		blockchainHook:           args.BlockChainHook,
 		pubKeyConverter:          args.PubKeyConverter,
 		guardianActivationEpochs: args.GuardianActivationEpochs,
 		setGuardianEnableEpoch:   args.SetGuardianEnableEpoch,
 		mutExecution:             sync.RWMutex{},
-		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + SetGuardianKeyIdentifier), // TODO: use this instead of func
+		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + SetGuardianKeyIdentifier),
 	}
 	logAccountFreezer.Debug("set guardian enable epoch", setGuardianFunc.setGuardianEnableEpoch)
 	args.EpochNotifier.RegisterNotifyHandler(setGuardianFunc)
@@ -95,13 +95,11 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 	return setGuardianFunc, nil
 }
 
-// todo; check if guardian is already stored?
-
-// 1. User does NOT have any guardian => set guardian
-// 2. User has ONE guardian pending => does not set, wait until first one is set
-// 3. User has ONE guardian enabled => add it
-// 4. User has TWO guardians. FIRST is enabled, SECOND is pending => change pending with current one / does nothing until it is set
-// 5. User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one
+// Case 1. User does NOT have any guardian => set guardian
+// Case 2. User has ONE guardian pending => does not set, wait until first one is set
+// Case 3. User has ONE guardian enabled => add it
+// Case 4. User has TWO guardians. FIRST is enabled, SECOND is pending => does not set, wait until second one is set
+// Case 5. User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one + set new one as pending
 
 func (sg *setGuardian) ProcessBuiltinFunction(
 	senderAccount, _ vmcommon.UserAccountHandler,
@@ -110,79 +108,123 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	if vmInput == nil {
-		return nil, errors.New("nil arguments")
-	}
 	if !sg.flagEnabled.IsSet() {
-		return nil, errors.New(fmt.Sprintf("account freezer not enabled yet, enable epoch: %d", sg.setGuardianEnableEpoch))
+		return nil, fmt.Errorf("%w, enable epoch is: %d", ErrSetGuardianNotEnabled, sg.setGuardianEnableEpoch)
 	}
-
-	if !isZero(vmInput.CallValue) {
-		return nil, ErrBuiltInFunctionCalledWithValue
-	}
-	if len(vmInput.Arguments) != 1 {
-		return nil, errors.New(fmt.Sprintf("invalid number of arguments, expected 1, got %d ", len(vmInput.Arguments)))
-	}
-	if vmInput.GasProvided < sg.gasCost.BuiltInCost.SetGuardian {
-		return nil, ErrNotEnoughGas
-	}
-	if !sg.isAddressValid(vmInput.Arguments[0]) {
-		return nil, errors.New("invalid address")
-	}
-	if bytes.Equal(vmInput.CallerAddr, vmInput.Arguments[0]) {
-		return nil, errors.New("cannot set own address as guardian")
+	err := sg.checkArguments(vmInput)
+	if err != nil {
+		return nil, err
 	}
 
 	guardians, err := sg.guardians(senderAccount)
 	if err != nil {
 		return nil, err
 	}
+	if sg.contains(guardians, vmInput.Arguments[0]) {
+		return nil, ErrGuardianAlreadyExists
+	}
 
 	switch len(guardians.Data) {
 	case 0:
 		// Case 1
-		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians)
+		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	case 1:
 		// Case 2
 		if sg.pending(guardians.Data[0]) {
-			return nil, errors.New(fmt.Sprintf("owner already has one guardian pending: %s",
-				sg.pubKeyConverter.Encode(guardians.Data[0].Address)))
+			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, sg.pubKeyConverter.Encode(guardians.Data[0].Address))
 		}
 		// Case 3
-		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians)
+		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	case 2:
 		// Case 4
 		if sg.pending(guardians.Data[1]) {
-			return nil, errors.New(fmt.Sprintf("owner already has one guardian pending: %s",
-				sg.pubKeyConverter.Encode(guardians.Data[1].Address)))
+			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, sg.pubKeyConverter.Encode(guardians.Data[1].Address))
 		}
 		// Case 5
 		guardians.Data = guardians.Data[1:] // remove oldest guardian
-		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians)
+		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	default:
 		return nil, errors.New("invalid")
 	}
 }
 
-func (sg *setGuardian) tryAddGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians Guardians) (*vmcommon.VMOutput, error) {
+func (sg *setGuardian) checkArguments(vmInput *vmcommon.ContractCallInput) error {
+	if vmInput == nil {
+		return ErrNilVmInput
+	}
+	if vmInput.CallValue == nil {
+		return ErrNilValue
+	}
+	if !isZero(vmInput.CallValue) {
+		return ErrBuiltInFunctionCalledWithValue
+	}
+	if len(vmInput.Arguments) != 1 {
+		return fmt.Errorf("%w, expected 1, got %d ", ErrInvalidNumberOfArguments, len(vmInput.Arguments))
+	}
+	if !sg.isAddressValid(vmInput.Arguments[0]) {
+		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
+	}
+	if bytes.Equal(vmInput.CallerAddr, vmInput.Arguments[0]) {
+		return ErrCannotOwnAddressAsGuardian
+	}
+	if vmInput.GasProvided < sg.funcGasCost {
+		return ErrNotEnoughGas
+	}
+
+	return nil
+}
+
+func isZero(n *big.Int) bool {
+	return len(n.Bits()) == 0
+}
+
+func (sg *setGuardian) isAddressValid(addressBytes []byte) bool {
+	isLengthOk := len(addressBytes) == sg.pubKeyConverter.Len()
+	if !isLengthOk {
+		return false
+	}
+
+	encodedAddress := sg.pubKeyConverter.Encode(addressBytes)
+
+	return encodedAddress != ""
+}
+
+func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (Guardians, error) {
+	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
+	if err != nil {
+		return Guardians{}, err
+	}
+
+	// Fine, account has no guardian set
+	if len(marshalledData) == 0 {
+		return Guardians{}, nil
+	}
+
+	guardians := Guardians{}
+	err = sg.marshaller.Unmarshal(&guardians, marshalledData)
+	return guardians, err
+}
+
+func (sg *setGuardian) contains(guardians Guardians, guardianAddress []byte) bool {
+	for _, guardian := range guardians.Data {
+		if bytes.Equal(guardian.Address, guardianAddress) {
+			return true
+		}
+	}
+	return false
+}
+
+func (sg *setGuardian) tryAddGuardian(
+	account vmcommon.UserAccountHandler,
+	guardianAddress []byte,
+	guardians Guardians,
+	gasProvided uint64,
+) (*vmcommon.VMOutput, error) {
 	err := sg.addGuardian(account, guardianAddress, guardians)
 	if err != nil {
 		return nil, err
 	}
-	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}, nil
-}
-
-func (sg *setGuardian) pending(guardian *Guardian) bool {
-	currEpoch := sg.blockchainHook.CurrentEpoch()
-	remaining := absDiff(currEpoch, guardian.ActivationEpoch) // any edge case here for which we should use abs?
-	return remaining < sg.guardianActivationEpochs
-}
-
-func absDiff(a, b uint32) uint32 {
-	if a < b {
-		return b - a
-	}
-	return a - b
+	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasProvided - sg.funcGasCost}, nil
 }
 
 func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians Guardians) error {
@@ -200,45 +242,13 @@ func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardian
 	return account.AccountDataHandler().SaveKeyValue(sg.keyPrefix, marshalledData)
 }
 
-func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (Guardians, error) {
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
-	if err != nil {
-		return Guardians{}, err
-	}
-
-	// Fine, address has no guardian set
-	if len(marshalledData) == 0 {
-		return Guardians{}, nil
-	}
-
-	guardians := Guardians{}
-	err = sg.marshaller.Unmarshal(&guardians, marshalledData)
-	if err != nil {
-		return Guardians{}, err
-	}
-
-	return guardians, nil
-}
-
-func isZero(n *big.Int) bool {
-	return len(n.Bits()) == 0
-}
-
-// TODO: Move this to common  + remove from esdt.go
-func (sg *setGuardian) isAddressValid(addressBytes []byte) bool {
-	isLengthOk := len(addressBytes) == sg.pubKeyConverter.Len()
-	if !isLengthOk {
-		return false
-	}
-
-	encodedAddress := sg.pubKeyConverter.Encode(addressBytes)
-
-	return encodedAddress != ""
+func (sg *setGuardian) pending(guardian *Guardian) bool {
+	return guardian.ActivationEpoch > sg.blockchainHook.CurrentEpoch()
 }
 
 func (sg *setGuardian) EpochConfirmed(epoch uint32, _ uint64) {
 	sg.flagEnabled.SetValue(epoch >= sg.setGuardianEnableEpoch)
-	log.Debug("account freezer", "enabled", sg.flagEnabled.IsSet())
+	log.Debug("set guardian", "enabled", sg.flagEnabled.IsSet())
 }
 
 func (sg *setGuardian) CanUseContract() bool {
@@ -247,7 +257,7 @@ func (sg *setGuardian) CanUseContract() bool {
 
 func (sg *setGuardian) SetNewGasCost(gasCost vmcommon.GasCost) {
 	sg.mutExecution.Lock()
-	sg.gasCost = gasCost
+	sg.funcGasCost = gasCost.BuiltInCost.SetGuardian
 	sg.mutExecution.Unlock()
 }
 

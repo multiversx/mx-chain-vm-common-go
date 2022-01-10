@@ -57,7 +57,8 @@ func TestFreezeAccount_ExecuteSetGuardianCase2(t *testing.T) {
 
 	accountFreezer, _ := NewSetGuardianFunc(args)
 
-	vmInput := getDefaultVmInputForFunc(BuiltInFunctionSetGuardian, [][]byte{guardianAddress})
+	guardianAddress2 := generateRandomByteArray(32)
+	vmInput := getDefaultVmInputForFunc(BuiltInFunctionSetGuardian, [][]byte{guardianAddress2})
 
 	output, err := accountFreezer.ProcessBuiltinFunction(userAccount, nil, vmInput)
 	require.Nil(t, output)
@@ -74,12 +75,17 @@ func TestFreezeAccount_ExecuteSetGuardianCase3(t *testing.T) {
 	enabledGuardianAddress := generateRandomByteArray(32)
 
 	args := createAccountFreezerMockArgs()
+	args.BlockChainHook = &mockvm.BlockChainEpochHookStub{
+		CurrentEpochCalled: func() uint32 {
+			return 1000
+		},
+	}
 
 	enabledGuardian := Guardians{
 		Data: []*Guardian{
 			{
 				Address:         enabledGuardianAddress,
-				ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs + 1,
+				ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs,
 			},
 		},
 	}
@@ -100,7 +106,7 @@ func TestFreezeAccount_ExecuteSetGuardianCase3(t *testing.T) {
 		Data: []*Guardian{
 			{
 				Address:         enabledGuardianAddress,
-				ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs + 1,
+				ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs,
 			},
 			{
 				Address:         guardianAddress,
@@ -156,16 +162,21 @@ func TestFreezeAccount_ExecuteSetGuardianCase5(t *testing.T) {
 	enabledGuardianAddress2 := generateRandomByteArray(32)
 
 	args := createAccountFreezerMockArgs()
+	args.BlockChainHook = &mockvm.BlockChainEpochHookStub{
+		CurrentEpochCalled: func() uint32 {
+			return 1000
+		},
+	}
 
 	storedGuardians := Guardians{
 		Data: []*Guardian{
 			{
 				Address:         enabledGuardianAddress1,
-				ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs + 1,
+				ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs,
 			},
 			{
 				Address:         enabledGuardianAddress2,
-				ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs + 1,
+				ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs,
 			},
 		},
 	}
@@ -187,11 +198,11 @@ func TestFreezeAccount_ExecuteSetGuardianCase5(t *testing.T) {
 		Data: []*Guardian{
 			{
 				Address:         enabledGuardianAddress2,
-				ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs + 1,
+				ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs,
 			},
 			{
 				Address:         guardianAddress,
-				ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs + args.SetGuardianEnableEpoch,
+				ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
 			},
 		},
 	}
@@ -208,7 +219,7 @@ func generateRandomByteArray(size int) []byte {
 
 func createAccountFreezerMockArgs() SetGuardianArgs {
 	return SetGuardianArgs{
-		GasCost:        vmcommon.GasCost{},
+		FuncGasCost:    0,
 		Marshaller:     &mockvm.MarshalizerMock{},
 		BlockChainHook: &mockvm.BlockChainEpochHookStub{},
 		PubKeyConverter: &mock.PubkeyConverterStub{
