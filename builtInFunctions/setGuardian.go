@@ -22,7 +22,7 @@ var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/setGuardian")
 
 // Key prefixes
 const (
-	SetGuardianKeyIdentifier = "guardians"
+	GuardianKeyIdentifier = "guardians"
 )
 
 // Functions
@@ -93,7 +93,7 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 		pubKeyConverter:          args.PubKeyConverter,
 		guardianActivationEpochs: args.GuardianActivationEpochs,
 		mutExecution:             sync.RWMutex{},
-		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + SetGuardianKeyIdentifier),
+		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + GuardianKeyIdentifier),
 	}
 	setGuardianFunc.baseEnabled = &baseEnabled{
 		function:        BuiltInFunctionSetGuardian,
@@ -199,23 +199,23 @@ func (sg *setGuardian) isAddressValid(addressBytes []byte) bool {
 	return encodedAddress != ""
 }
 
-func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (Guardians, error) {
+func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardians, error) {
 	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
 	if err != nil {
-		return Guardians{}, err
+		return nil, err
 	}
 
 	// Fine, account has no guardian set
 	if len(marshalledData) == 0 {
-		return Guardians{}, nil
+		return &Guardians{Data: make([]*Guardian, 0)}, nil
 	}
 
-	guardians := Guardians{}
-	err = sg.marshaller.Unmarshal(&guardians, marshalledData)
+	guardians := &Guardians{}
+	err = sg.marshaller.Unmarshal(guardians, marshalledData)
 	return guardians, err
 }
 
-func (sg *setGuardian) contains(guardians Guardians, guardianAddress []byte) bool {
+func (sg *setGuardian) contains(guardians *Guardians, guardianAddress []byte) bool {
 	for _, guardian := range guardians.Data {
 		if bytes.Equal(guardian.Address, guardianAddress) {
 			return true
@@ -227,7 +227,7 @@ func (sg *setGuardian) contains(guardians Guardians, guardianAddress []byte) boo
 func (sg *setGuardian) tryAddGuardian(
 	account vmcommon.UserAccountHandler,
 	guardianAddress []byte,
-	guardians Guardians,
+	guardians *Guardians,
 	gasProvided uint64,
 ) (*vmcommon.VMOutput, error) {
 	err := sg.addGuardian(account, guardianAddress, guardians)
@@ -237,7 +237,7 @@ func (sg *setGuardian) tryAddGuardian(
 	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasProvided - sg.funcGasCost}, nil
 }
 
-func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians Guardians) error {
+func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians *Guardians) error {
 	guardian := &Guardian{
 		Address:         guardianAddress,
 		ActivationEpoch: sg.blockchainHook.CurrentEpoch() + sg.guardianActivationEpochs,
