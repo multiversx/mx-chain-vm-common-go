@@ -28,7 +28,7 @@ func NewESDTLocalMintFunc(
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtLocalMint, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshalizer
+		return nil, ErrNilMarshaller
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler

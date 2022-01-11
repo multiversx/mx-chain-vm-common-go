@@ -42,7 +42,7 @@ func NewESDTTransferFunc(
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtTransfer, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshalizer
+		return nil, ErrNilMarshaller
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
@@ -54,7 +54,7 @@ func NewESDTTransferFunc(
 		return nil, ErrNilRolesHandler
 	}
 	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
+		return nil, ErrNilEpochNotifier
 	}
 
 	e := &esdtTransfer{

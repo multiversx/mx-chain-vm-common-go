@@ -2,7 +2,6 @@ package builtInFunctions
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math/big"
 	"sync"
@@ -40,43 +39,51 @@ type Guardians struct {
 	Data []*Guardian
 }
 
+// BlockChainEpochHook is a light-weight blockchain hook,
+// which can be queried to provide the current epoch
 type BlockChainEpochHook interface {
 	CurrentEpoch() uint32
 	IsInterfaceNil() bool
 }
 
+// SetGuardianArgs is a struct placeholder for all necessary args
+// to create a NewSetGuardianFunc
 type SetGuardianArgs struct {
+	Marshaller      marshal.Marshalizer
+	PubKeyConverter core.PubkeyConverter
+	EpochNotifier   vmcommon.EpochNotifier
+	BlockChainHook  BlockChainEpochHook
+
 	FuncGasCost              uint64
-	Marshaller               marshal.Marshalizer
-	BlockChainHook           BlockChainEpochHook
-	PubKeyConverter          core.PubkeyConverter
 	GuardianActivationEpochs uint32
 	SetGuardianEnableEpoch   uint32
-	EpochNotifier            vmcommon.EpochNotifier
 }
 
 type setGuardian struct {
-	funcGasCost              uint64
-	marshaller               marshal.Marshalizer
-	blockchainHook           BlockChainEpochHook
-	pubKeyConverter          core.PubkeyConverter
-	guardianActivationEpochs uint32
-	mutExecution             sync.RWMutex
+	*baseEnabled
+	marshaller      marshal.Marshalizer
+	blockchainHook  BlockChainEpochHook
+	pubKeyConverter core.PubkeyConverter
 
-	setGuardianEnableEpoch uint32
-	flagEnabled            atomic.Flag
-	keyPrefix              []byte
+	mutExecution             sync.RWMutex
+	guardianActivationEpochs uint32
+	funcGasCost              uint64
+	keyPrefix                []byte
 }
 
+// NewSetGuardianFunc will instantiate a new set guardian built-in function
 func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 	if check.IfNil(args.Marshaller) {
-		return nil, core.ErrNilMarshalizer
+		return nil, ErrNilMarshaller
 	}
 	if check.IfNil(args.BlockChainHook) {
-		return nil, ErrNilBlockHeader // TODO: NEW ERROR
+		return nil, ErrNilBlockChainHook
 	}
 	if check.IfNil(args.PubKeyConverter) {
-		return nil, nil // TODO: Error
+		return nil, ErrNilPubKeyConverter
+	}
+	if check.IfNil(args.EpochNotifier) {
+		return nil, ErrNilEpochNotifier
 	}
 
 	setGuardianFunc := &setGuardian{
@@ -85,22 +92,28 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 		blockchainHook:           args.BlockChainHook,
 		pubKeyConverter:          args.PubKeyConverter,
 		guardianActivationEpochs: args.GuardianActivationEpochs,
-		setGuardianEnableEpoch:   args.SetGuardianEnableEpoch,
 		mutExecution:             sync.RWMutex{},
 		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + SetGuardianKeyIdentifier),
 	}
-	logAccountFreezer.Debug("set guardian enable epoch", setGuardianFunc.setGuardianEnableEpoch)
+	setGuardianFunc.baseEnabled = &baseEnabled{
+		function:        BuiltInFunctionSetGuardian,
+		activationEpoch: args.SetGuardianEnableEpoch,
+		flagActivated:   atomic.Flag{},
+	}
+
+	logAccountFreezer.Debug("set guardian enable epoch", args.SetGuardianEnableEpoch)
 	args.EpochNotifier.RegisterNotifyHandler(setGuardianFunc)
 
 	return setGuardianFunc, nil
 }
 
+// ProcessBuiltinFunction will process the set guardian built-in function call
+// Currently, the following cases are treated:
 // Case 1. User does NOT have any guardian => set guardian
-// Case 2. User has ONE guardian pending => does not set, wait until first one is set
-// Case 3. User has ONE guardian enabled => add it
+// Case 2. User has ONE guardian pending => do not set new guardian, wait until first one is set
+// Case 3. User has ONE guardian enabled => set guardian
 // Case 4. User has TWO guardians. FIRST is enabled, SECOND is pending => does not set, wait until second one is set
 // Case 5. User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one + set new one as pending
-
 func (sg *setGuardian) ProcessBuiltinFunction(
 	senderAccount, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -108,9 +121,6 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	if !sg.flagEnabled.IsSet() {
-		return nil, fmt.Errorf("%w, enable epoch is: %d", ErrSetGuardianNotEnabled, sg.setGuardianEnableEpoch)
-	}
 	err := sg.checkArguments(vmInput)
 	if err != nil {
 		return nil, err
@@ -144,7 +154,7 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 		guardians.Data = guardians.Data[1:] // remove oldest guardian
 		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	default:
-		return nil, errors.New("invalid")
+		return &vmcommon.VMOutput{ReturnCode: vmcommon.ExecutionFailed}, nil
 	}
 }
 
@@ -246,21 +256,9 @@ func (sg *setGuardian) pending(guardian *Guardian) bool {
 	return guardian.ActivationEpoch > sg.blockchainHook.CurrentEpoch()
 }
 
-func (sg *setGuardian) EpochConfirmed(epoch uint32, _ uint64) {
-	sg.flagEnabled.SetValue(epoch >= sg.setGuardianEnableEpoch)
-	log.Debug("set guardian", "enabled", sg.flagEnabled.IsSet())
-}
-
-func (sg *setGuardian) CanUseContract() bool {
-	return false
-}
-
-func (sg *setGuardian) SetNewGasCost(gasCost vmcommon.GasCost) {
+// SetNewGasConfig is called whenever gas cost is changed
+func (sg *setGuardian) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	sg.mutExecution.Lock()
 	sg.funcGasCost = gasCost.BuiltInCost.SetGuardian
 	sg.mutExecution.Unlock()
-}
-
-func (sg *setGuardian) IsInterfaceNil() bool {
-	return sg == nil
 }

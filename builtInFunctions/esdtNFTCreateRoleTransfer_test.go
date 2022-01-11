@@ -17,7 +17,7 @@ func TestEsdtNFTCreateRoleTransfer_Constructor(t *testing.T) {
 
 	e, err := NewESDTNFTCreateRoleTransfer(nil, &mock.AccountsStub{}, mock.NewMultiShardsCoordinatorMock(2))
 	assert.Nil(t, e)
-	assert.Equal(t, err, ErrNilMarshalizer)
+	assert.Equal(t, err, ErrNilMarshaller)
 
 	e, err = NewESDTNFTCreateRoleTransfer(&mock.MarshalizerMock{}, nil, mock.NewMultiShardsCoordinatorMock(2))
 	assert.Nil(t, e)

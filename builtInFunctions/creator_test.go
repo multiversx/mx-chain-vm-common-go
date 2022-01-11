@@ -89,12 +89,12 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	args = createMockArguments()
 	args.EpochNotifier = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilEpochHandler)
+	assert.Equal(t, err, ErrNilEpochNotifier)
 
 	args = createMockArguments()
 	args.Marshalizer = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilMarshalizer)
+	assert.Equal(t, err, ErrNilMarshaller)
 
 	args = createMockArguments()
 	args.Accounts = nil

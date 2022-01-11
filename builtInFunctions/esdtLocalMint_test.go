@@ -24,7 +24,7 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, nil, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}
 			},
-			exError: ErrNilMarshalizer,
+			exError: ErrNilMarshaller,
 		},
 		{
 			name: "NilGlobalSettingsHandler",

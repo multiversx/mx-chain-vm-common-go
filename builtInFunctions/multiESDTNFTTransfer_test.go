@@ -111,7 +111,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
-	assert.Equal(t, ErrNilMarshalizer, err)
+	assert.Equal(t, ErrNilMarshaller, err)
 
 	multiTransfer, err = NewESDTNFTMultiTransferFunc(
 		0,
@@ -175,7 +175,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
-	assert.Equal(t, ErrNilEpochHandler, err)
+	assert.Equal(t, ErrNilEpochNotifier, err)
 
 	multiTransfer, err = NewESDTNFTMultiTransferFunc(
 		0,
