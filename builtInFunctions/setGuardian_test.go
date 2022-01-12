@@ -21,7 +21,7 @@ var userAddress = []byte("user address")
 var marshallerMock = &mockvm.MarshalizerMock{}
 
 func guardiansProtectedKey() []byte {
-	return append([]byte(core.ElrondProtectedKeyPrefix), []byte(GuardianKeyIdentifier)...)
+	return append([]byte(core.ElrondProtectedKeyPrefix), []byte(GuardiansKeyIdentifier)...)
 }
 
 func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandler, guardians *Guardians) {
@@ -123,7 +123,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 	account := mockvm.NewUserAccount(address)
 
 	guardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(GuardianKeyIdentifier, [][]byte{guardianAddress})
+	vmInput := getDefaultVmInput(GuardiansKeyIdentifier, [][]byte{guardianAddress})
 	vmInput.CallerAddr = address
 
 	tests := []struct {

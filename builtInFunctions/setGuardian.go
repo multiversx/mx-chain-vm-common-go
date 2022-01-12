@@ -16,18 +16,11 @@ import (
 
 var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/setGuardian")
 
-// TODO:
-// 1. Add builtin function
-// 2. Move Guardian structs to elrond-go-core
+// TODO: Use these values from elrond-go-core once a release tag is ready
 
-// Key prefixes
 const (
-	GuardianKeyIdentifier = "guardians"
-)
-
-// Functions
-const (
-	BuiltInFunctionSetGuardian = "BuiltInFunctionSetGuardian"
+	GuardiansKeyIdentifier     = "guardians"
+	BuiltInFunctionSetGuardian = "SetGuardian"
 )
 
 type Guardian struct {
@@ -93,7 +86,7 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 		pubKeyConverter:          args.PubKeyConverter,
 		guardianActivationEpochs: args.GuardianActivationEpochs,
 		mutExecution:             sync.RWMutex{},
-		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + GuardianKeyIdentifier),
+		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + GuardiansKeyIdentifier),
 	}
 	setGuardianFunc.baseEnabled = &baseEnabled{
 		function:        BuiltInFunctionSetGuardian,
