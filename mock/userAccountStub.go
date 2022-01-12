@@ -8,6 +8,7 @@ import (
 
 // UserAccountStub -
 type UserAccountStub struct {
+	Address                  []byte
 	AddToBalanceCalled       func(value *big.Int) error
 	AccountDataHandlerCalled func() vmcommon.AccountDataHandler
 }
@@ -76,7 +77,7 @@ func (u *UserAccountStub) GetOwnerAddress() []byte {
 
 // AddressBytes -
 func (u *UserAccountStub) AddressBytes() []byte {
-	return nil
+	return u.Address
 }
 
 //IncreaseNonce -

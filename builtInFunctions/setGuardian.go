@@ -115,13 +115,13 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 // Case 4. User has TWO guardians. FIRST is enabled, SECOND is pending => does not set, wait until second one is set
 // Case 5. User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one + set new one as pending
 func (sg *setGuardian) ProcessBuiltinFunction(
-	senderAccount, _ vmcommon.UserAccountHandler,
+	senderAccount, receiverAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	err := sg.checkArguments(vmInput)
+	err := sg.checkArguments(senderAccount, receiverAccount, vmInput)
 	if err != nil {
 		return nil, err
 	}
@@ -158,9 +158,23 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	}
 }
 
-func (sg *setGuardian) checkArguments(vmInput *vmcommon.ContractCallInput) error {
+func (sg *setGuardian) checkArguments(
+	senderAccount,
+	receiverAccount vmcommon.UserAccountHandler,
+	vmInput *vmcommon.ContractCallInput,
+) error {
+	if check.IfNil(senderAccount) {
+		return fmt.Errorf("%w for sender", ErrNilUserAccount)
+	}
+	if check.IfNil(receiverAccount) {
+		return fmt.Errorf("%w for receiver", ErrNilUserAccount)
+	}
 	if vmInput == nil {
 		return ErrNilVmInput
+	}
+	if !(bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes()) &&
+		bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)) {
+		return ErrOperationNotPermitted
 	}
 	if vmInput.CallValue == nil {
 		return ErrNilValue
