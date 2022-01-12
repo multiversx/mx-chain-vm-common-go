@@ -209,7 +209,6 @@ func (sg *setGuardian) isAddressValid(addressBytes []byte) bool {
 	}
 
 	encodedAddress := sg.pubKeyConverter.Encode(addressBytes)
-
 	return encodedAddress != ""
 }
 

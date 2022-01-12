@@ -388,7 +388,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase1AccountHasNoGuardianSet(t *testi
 
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
 	vmInput := getDefaultVmInput(BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
-	account := mockvm.NewUserAccount([]byte("user address"))
+	account := mockvm.NewUserAccount(userAddress)
 
 	args := createSetGuardianFuncMockArgs()
 	setGuardianFunc, _ := NewSetGuardianFunc(args)

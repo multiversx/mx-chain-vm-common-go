@@ -16,12 +16,16 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	Accounts                            vmcommon.AccountsAdapter
 	ShardCoordinator                    vmcommon.Coordinator
 	EpochNotifier                       vmcommon.EpochNotifier
+	PubKeyConverter                     core.PubkeyConverter
+	BlockChainEpochHook                 BlockChainEpochHook
 	ESDTNFTImprovementV1ActivationEpoch uint32
 	ESDTTransferRoleEnableEpoch         uint32
 	GlobalMintBurnDisableEpoch          uint32
 	ESDTTransferToMetaEnableEpoch       uint32
 	NFTCreateMultiShardEnableEpoch      uint32
 	SaveNFTToSystemAccountEnableEpoch   uint32
+	SetGuardianEnableEpoch              uint32
+	GuardianActivationEpochs            uint32
 }
 
 type builtInFuncCreator struct {
@@ -34,12 +38,16 @@ type builtInFuncCreator struct {
 	shardCoordinator                    vmcommon.Coordinator
 	epochNotifier                       vmcommon.EpochNotifier
 	esdtStorageHandler                  vmcommon.ESDTNFTStorageHandler
+	pubKeyConverter                     core.PubkeyConverter
+	blockChainEpochHook                 BlockChainEpochHook
 	esdtNFTImprovementV1ActivationEpoch uint32
 	esdtTransferRoleEnableEpoch         uint32
 	globalMintBurnDisableEpoch          uint32
 	esdtTransferToMetaEnableEpoch       uint32
 	nftCreateMultiShardEnableEpoch      uint32
 	saveNFTToSystemAccountEnableEpoch   uint32
+	setGuardianEnableEpoch              uint32
+	guardianActivationEpochs            uint32
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -59,6 +67,12 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if check.IfNil(args.EpochNotifier) {
 		return nil, ErrNilEpochNotifier
 	}
+	if check.IfNil(args.BlockChainEpochHook) {
+		return nil, ErrNilBlockChainHook
+	}
+	if check.IfNil(args.PubKeyConverter) {
+		return nil, ErrNilPubKeyConverter
+	}
 
 	b := &builtInFuncCreator{
 		mapDNSAddresses:                     args.MapDNSAddresses,
@@ -67,12 +81,16 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		accounts:                            args.Accounts,
 		shardCoordinator:                    args.ShardCoordinator,
 		epochNotifier:                       args.EpochNotifier,
+		pubKeyConverter:                     args.PubKeyConverter,
+		blockChainEpochHook:                 args.BlockChainEpochHook,
 		esdtNFTImprovementV1ActivationEpoch: args.ESDTNFTImprovementV1ActivationEpoch,
 		esdtTransferRoleEnableEpoch:         args.ESDTTransferRoleEnableEpoch,
 		globalMintBurnDisableEpoch:          args.GlobalMintBurnDisableEpoch,
 		esdtTransferToMetaEnableEpoch:       args.ESDTTransferToMetaEnableEpoch,
 		nftCreateMultiShardEnableEpoch:      args.NFTCreateMultiShardEnableEpoch,
 		saveNFTToSystemAccountEnableEpoch:   args.SaveNFTToSystemAccountEnableEpoch,
+		setGuardianEnableEpoch:              args.SetGuardianEnableEpoch,
+		guardianActivationEpochs:            args.GuardianActivationEpochs,
 	}
 
 	var err error
@@ -341,6 +359,24 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnSetLimitedTransfer, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	argsSetGuardian := SetGuardianArgs{
+		Marshaller:               b.marshalizer,
+		PubKeyConverter:          b.pubKeyConverter,
+		EpochNotifier:            b.epochNotifier,
+		BlockChainHook:           b.blockChainEpochHook,
+		FuncGasCost:              b.gasConfig.BuiltInCost.SetGuardian,
+		GuardianActivationEpochs: b.guardianActivationEpochs,
+		SetGuardianEnableEpoch:   b.setGuardianEnableEpoch,
+	}
+	newFunc, err = NewSetGuardianFunc(argsSetGuardian)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(BuiltInFunctionSetGuardian, newFunc)
 	if err != nil {
 		return nil, err
 	}

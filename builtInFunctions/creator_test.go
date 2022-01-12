@@ -5,6 +5,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	dataMock "github.com/ElrondNetwork/elrond-go-core/data/mock"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,6 +22,8 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 		Accounts:             &mock.AccountsStub{},
 		ShardCoordinator:     mock.NewMultiShardsCoordinatorMock(1),
 		EpochNotifier:        &mock.EpochNotifierStub{},
+		PubKeyConverter:      &dataMock.PubkeyConverterStub{},
+		BlockChainEpochHook:  &mock.BlockChainEpochHookStub{},
 	}
 
 	return args
@@ -69,6 +72,7 @@ func fillGasMapBuiltInCosts(value uint64) map[string]uint64 {
 	gasMap["ESDTNFTAddUri"] = value
 	gasMap["ESDTNFTUpdateAttributes"] = value
 	gasMap["ESDTNFTMultiTransfer"] = value
+	gasMap["SetGuardian"] = value
 
 	return gasMap
 }
@@ -102,12 +106,22 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilAccountsAdapter)
 
 	args = createMockArguments()
+	args.PubKeyConverter = nil
+	_, err = NewBuiltInFunctionsCreator(args)
+	assert.Equal(t, err, ErrNilPubKeyConverter)
+
+	args = createMockArguments()
+	args.BlockChainEpochHook = nil
+	_, err = NewBuiltInFunctionsCreator(args)
+	assert.Equal(t, err, ErrNilBlockChainHook)
+
+	args = createMockArguments()
 	f, err = NewBuiltInFunctionsCreator(args)
 	assert.Nil(t, err)
 	assert.False(t, f.IsInterfaceNil())
 }
 
-func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
+func TestCreateBuiltInContainer_GasScheduleChange(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
@@ -121,13 +135,13 @@ func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
 	assert.Equal(t, f.gasConfig.BuiltInCost.ClaimDeveloperRewards, uint64(5))
 }
 
-func TestCreateBuiltInContainter_Create(t *testing.T) {
+func TestCreateBuiltInContainer_Create(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
 	container, err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, container.Len(), 25)
+	assert.Equal(t, container.Len(), 26)
 
 	err = SetPayableHandler(container, nil)
 	assert.NotNil(t, err)
@@ -141,4 +155,9 @@ func TestCreateBuiltInContainter_Create(t *testing.T) {
 
 	nftStorageHandler := f.NFTStorageHandler()
 	assert.False(t, check.IfNil(nftStorageHandler))
+
+	f.blockChainEpochHook = nil
+	container, err = f.CreateBuiltInFunctionContainer()
+	assert.Nil(t, container)
+	assert.Equal(t, ErrNilBlockChainHook, err)
 }
