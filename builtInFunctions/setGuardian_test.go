@@ -521,23 +521,26 @@ func generateRandomByteArray(size uint32) []byte {
 }
 
 func createSetGuardianFuncMockArgs() SetGuardianArgs {
+	blockChainHook := &mockvm.BlockChainEpochHookStub{
+		CurrentEpochCalled: func() uint32 {
+			return 1000
+		},
+	}
+	pubKeyConverter := &mock.PubkeyConverterStub{
+		LenCalled: func() int {
+			return pubKeyLen
+		},
+		EncodeCalled: func(pkBytes []byte) string {
+			return string(append([]byte("erd1"), pkBytes...))
+		},
+	}
+
 	return SetGuardianArgs{
-		FuncGasCost: 100000,
-		Marshaller:  marshallerMock,
-		BlockChainHook: &mockvm.BlockChainEpochHookStub{
-			CurrentEpochCalled: func() uint32 {
-				return 1000
-			},
-		},
-		PubKeyConverter: &mock.PubkeyConverterStub{
-			LenCalled: func() int {
-				return pubKeyLen
-			},
-			EncodeCalled: func(pkBytes []byte) string {
-				return string(append([]byte("erd1"), pkBytes...))
-			},
-		},
 		GuardianActivationEpochs: 100,
+		FuncGasCost:              100000,
+		Marshaller:               marshallerMock,
+		BlockChainHook:           blockChainHook,
+		PubKeyConverter:          pubKeyConverter,
 		EpochNotifier:            &mockvm.EpochNotifierStub{},
 	}
 }
