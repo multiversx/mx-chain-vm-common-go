@@ -118,6 +118,9 @@ type VMExecutionHandler interface {
 	// GetVersion returns the version of the VM instance
 	GetVersion() string
 
+	// Close simply closes the VM
+	Close()
+
 	// IsInterfaceNil returns true if there is no value under the interface
 	IsInterfaceNil() bool
 }
