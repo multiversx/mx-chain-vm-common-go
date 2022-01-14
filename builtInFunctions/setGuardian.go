@@ -54,6 +54,7 @@ type SetGuardianArgs struct {
 
 type setGuardian struct {
 	*baseEnabled
+	*accountFreezerBase
 	marshaller      marshal.Marshalizer
 	blockchainHook  BlockChainEpochHook
 	pubKeyConverter core.PubkeyConverter
@@ -92,6 +93,11 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 		function:        BuiltInFunctionSetGuardian,
 		activationEpoch: args.SetGuardianEnableEpoch,
 		flagActivated:   atomic.Flag{},
+	}
+	setGuardianFunc.accountFreezerBase = &accountFreezerBase{
+		marshaller:     args.Marshaller,
+		blockchainHook: args.BlockChainHook,
+		keyPrefix:      []byte(core.ElrondProtectedKeyPrefix + GuardiansKeyIdentifier),
 	}
 
 	logAccountFreezer.Debug("set guardian enable epoch", args.SetGuardianEnableEpoch)
@@ -205,22 +211,6 @@ func (sg *setGuardian) isAddressValid(addressBytes []byte) bool {
 	return encodedAddress != ""
 }
 
-func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardians, error) {
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
-	if err != nil {
-		return nil, err
-	}
-
-	// Fine, account has no guardian set
-	if len(marshalledData) == 0 {
-		return &Guardians{Data: make([]*Guardian, 0)}, nil
-	}
-
-	guardians := &Guardians{}
-	err = sg.marshaller.Unmarshal(guardians, marshalledData)
-	return guardians, err
-}
-
 func (sg *setGuardian) contains(guardians *Guardians, guardianAddress []byte) bool {
 	for _, guardian := range guardians.Data {
 		if bytes.Equal(guardian.Address, guardianAddress) {
@@ -256,10 +246,6 @@ func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardian
 	}
 
 	return account.AccountDataHandler().SaveKeyValue(sg.keyPrefix, marshalledData)
-}
-
-func (sg *setGuardian) pending(guardian *Guardian) bool {
-	return guardian.ActivationEpoch > sg.blockchainHook.CurrentEpoch()
 }
 
 // SetNewGasConfig is called whenever gas cost is changed

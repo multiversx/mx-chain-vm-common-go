@@ -145,6 +145,7 @@ type CryptoHook interface {
 // like balance, developer rewards, owner
 type UserAccountHandler interface {
 	GetCodeMetadata() []byte
+	SetCodeMetadata(codeMetadata []byte)
 	GetCodeHash() []byte
 	GetRootHash() []byte
 	AccountDataHandler() AccountDataHandler
