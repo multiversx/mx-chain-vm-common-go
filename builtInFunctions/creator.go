@@ -364,11 +364,13 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	}
 
 	argsSetGuardian := SetGuardianArgs{
-		Marshaller:               b.marshalizer,
+		BaseAccountFreezerArgs: BaseAccountFreezerArgs{
+			BlockChainHook: b.blockChainEpochHook,
+			Marshaller:     b.marshalizer,
+			EpochNotifier:  b.epochNotifier,
+			FuncGasCost:    b.gasConfig.BuiltInCost.SetGuardian,
+		},
 		PubKeyConverter:          b.pubKeyConverter,
-		EpochNotifier:            b.epochNotifier,
-		BlockChainHook:           b.blockChainEpochHook,
-		FuncGasCost:              b.gasConfig.BuiltInCost.SetGuardian,
 		GuardianActivationEpochs: b.guardianActivationEpochs,
 		SetGuardianEnableEpoch:   b.setGuardianEnableEpoch,
 	}

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/data/mock"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
@@ -18,16 +17,9 @@ import (
 const pubKeyLen = 32
 
 var userAddress = []byte("user address")
-var marshallerMock = &mockvm.MarshalizerMock{}
-
-func guardiansProtectedKey() []byte {
-	return append([]byte(core.ElrondProtectedKeyPrefix), []byte(GuardiansKeyIdentifier)...)
-}
 
 func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandler, guardians *Guardians) {
-	key := guardiansProtectedKey()
-
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(key)
+	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
 	require.Nil(t, err)
 
 	storedGuardian := &Guardians{}
@@ -37,13 +29,11 @@ func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandle
 }
 
 func createUserAccountWithGuardians(t *testing.T, guardians *Guardians) vmcommon.UserAccountHandler {
-	key := guardiansProtectedKey()
-
 	marshalledGuardians, err := marshallerMock.Marshal(guardians)
 	require.Nil(t, err)
 
 	account := mockvm.NewUserAccount(userAddress)
-	err = account.SaveKeyValue(key, marshalledGuardians)
+	err = account.SaveKeyValue(guardianKeyPrefix, marshalledGuardians)
 	require.Nil(t, err)
 
 	return account
@@ -328,8 +318,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCannotMarshalGuardianExpectError(t *t
 	require.Nil(t, output)
 	require.Equal(t, errMarshaller, err)
 
-	key := guardiansProtectedKey()
-	storedData, _ := account.AccountDataHandler().RetrieveValue(key)
+	storedData, _ := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
 	require.Nil(t, storedData)
 }
 
@@ -536,12 +525,14 @@ func createSetGuardianFuncMockArgs() SetGuardianArgs {
 	}
 
 	return SetGuardianArgs{
+		BaseAccountFreezerArgs: BaseAccountFreezerArgs{
+			BlockChainHook: blockChainHook,
+			Marshaller:     marshallerMock,
+			EpochNotifier:  &mockvm.EpochNotifierStub{},
+			FuncGasCost:    100000,
+		},
 		GuardianActivationEpochs: 100,
-		FuncGasCost:              100000,
-		Marshaller:               marshallerMock,
-		BlockChainHook:           blockChainHook,
 		PubKeyConverter:          pubKeyConverter,
-		EpochNotifier:            &mockvm.EpochNotifierStub{},
 	}
 }
 

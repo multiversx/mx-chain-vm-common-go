@@ -2,7 +2,6 @@ package builtInFunctions
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
@@ -17,40 +16,48 @@ const (
 var logFreezeAccount = logger.GetOrCreate("systemSmartContracts/freezeAccount")
 
 type FreezeAccountArgs struct {
-	FuncGasCost              uint64
+	BaseAccountFreezerArgs
+
 	FreezeAccountEnableEpoch uint32
 	Freeze                   bool
-	EpochNotifier            vmcommon.EpochNotifier
 }
 
 type freezeAccount struct {
-	*accountFreezerBase
+	*baseAccountFreezer
 	*baseEnabled
-	freeze       bool
-	funcGasCost  uint64
-	mutExecution sync.RWMutex
+	freeze bool
 }
 
 func NewFreezeAccountFunc(args FreezeAccountArgs) (*freezeAccount, error) {
-	function := BuiltInFunctionFreezeAccount
-	if !args.Freeze {
-		function = BuiltInFunctionUnfreezeAccount
-	}
+	function := getFunc(args.Freeze)
 
+	base, err := newBaseAccountFreezer(args.BaseAccountFreezerArgs)
+	if err != nil {
+		return nil, err
+	}
 	freezeAccountFunc := &freezeAccount{
-		freeze:       args.Freeze,
-		mutExecution: sync.RWMutex{},
+		freeze: args.Freeze,
 	}
 	freezeAccountFunc.baseEnabled = &baseEnabled{
 		function:        function,
 		activationEpoch: args.FreezeAccountEnableEpoch,
 		flagActivated:   atomic.Flag{},
 	}
+	freezeAccountFunc.baseAccountFreezer = base
 
 	logFreezeAccount.Debug(fmt.Sprintf("%s enable epoch:", function), args.FreezeAccountEnableEpoch)
 	args.EpochNotifier.RegisterNotifyHandler(freezeAccountFunc)
 
 	return freezeAccountFunc, nil
+}
+
+func getFunc(freeze bool) string {
+	function := BuiltInFunctionFreezeAccount
+	if freeze {
+		function = BuiltInFunctionUnfreezeAccount
+	}
+
+	return function
 }
 
 func (fa *freezeAccount) ProcessBuiltinFunction(
@@ -59,6 +66,11 @@ func (fa *freezeAccount) ProcessBuiltinFunction(
 ) (*vmcommon.VMOutput, error) {
 	fa.mutExecution.Lock()
 	defer fa.mutExecution.Unlock()
+
+	err := fa.checkBaseArgs(senderAccount, receiverAccount, vmInput, 0)
+	if err != nil {
+		return nil, err
+	}
 
 	guardians, err := fa.guardians(senderAccount)
 	if err != nil {
@@ -74,7 +86,7 @@ func (fa *freezeAccount) ProcessBuiltinFunction(
 	if fa.freeze {
 		codeMetaData.Frozen = true
 	} else {
-		codeMetaData.Frozen = false
+		codeMetaData.Frozen = false // Todo: check if this tx came from first guardian
 	}
 
 	senderAccount.SetCodeMetadata(codeMetaData.ToBytes())
