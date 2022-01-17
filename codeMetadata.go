@@ -9,7 +9,7 @@ const (
 	// MetadataReadable is the bit for readable flag
 	MetadataReadable = 4
 	// MetadataFrozen is the bit for frozen account flag
-	MetadataFrozen = 5
+	MetadataFrozen = 8
 )
 
 // Const group for the second byte of the metadata
