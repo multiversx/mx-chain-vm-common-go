@@ -39,7 +39,7 @@ func createUserAccountWithGuardians(t *testing.T, guardians *Guardians) vmcommon
 	return account
 }
 
-func requireSetGuardianVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64) {
+func requireVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64) {
 	expectedOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: gasProvided - gasCost,
@@ -384,7 +384,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase1AccountHasNoGuardianSet(t *testi
 
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
-	requireSetGuardianVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
+	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 
 	newGuardian := &Guardian{
 		Address:         newGuardianAddress,
@@ -434,7 +434,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase3AccountHasOneEnabledGuardian(t *
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
-	requireSetGuardianVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
+	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 
 	newGuardian := &Guardian{
 		Address:         newGuardianAddress,
@@ -493,7 +493,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase5OwnerHasTwoEnabledGuardians(t *t
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
-	requireSetGuardianVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
+	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 
 	newGuardian := &Guardian{
 		Address:         newGuardianAddress,

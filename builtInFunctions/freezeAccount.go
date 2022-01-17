@@ -52,9 +52,9 @@ func NewFreezeAccountFunc(args FreezeAccountArgs) (*freezeAccount, error) {
 }
 
 func getFunc(freeze bool) string {
-	function := BuiltInFunctionFreezeAccount
+	function := BuiltInFunctionUnfreezeAccount
 	if freeze {
-		function = BuiltInFunctionUnfreezeAccount
+		function = BuiltInFunctionFreezeAccount
 	}
 
 	return function
