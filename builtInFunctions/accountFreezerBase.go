@@ -30,3 +30,7 @@ func (afb *accountFreezerBase) guardians(account vmcommon.UserAccountHandler) (*
 func (afb *accountFreezerBase) pending(guardian *Guardian) bool {
 	return guardian.ActivationEpoch > afb.blockchainHook.CurrentEpoch()
 }
+
+func (afb *accountFreezerBase) enabled(guardian *Guardian) bool {
+	return !afb.pending(guardian)
+}

@@ -24,6 +24,7 @@ type FreezeAccountArgs struct {
 }
 
 type freezeAccount struct {
+	*accountFreezerBase
 	*baseEnabled
 	freeze       bool
 	funcGasCost  uint64
@@ -59,7 +60,36 @@ func (fa *freezeAccount) ProcessBuiltinFunction(
 	fa.mutExecution.Lock()
 	defer fa.mutExecution.Unlock()
 
-	return nil, nil
+	guardians, err := fa.guardians(senderAccount)
+	if err != nil {
+		return nil, err
+	}
+	if !fa.atLeastOneGuardianEnabled(guardians) {
+		return nil, ErrNoGuardianEnabled
+	}
+
+	accountCodeMetaData := senderAccount.GetCodeMetadata()
+	codeMetaData := vmcommon.CodeMetadataFromBytes(accountCodeMetaData)
+
+	if fa.freeze {
+		codeMetaData.Frozen = true
+	} else {
+		codeMetaData.Frozen = false
+	}
+
+	senderAccount.SetCodeMetadata(codeMetaData.ToBytes())
+	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - fa.funcGasCost}, nil
+}
+
+func (fa *freezeAccount) atLeastOneGuardianEnabled(
+	guardians *Guardians,
+) bool {
+	for _, guardian := range guardians.Data {
+		if fa.enabled(guardian) {
+			return true
+		}
+	}
+	return false
 }
 
 func (fa *freezeAccount) SetNewGasConfig(gasCost *vmcommon.GasCost) {

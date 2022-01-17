@@ -218,9 +218,6 @@ var ErrCannotOwnAddressAsGuardian = errors.New("cannot set own address as guardi
 // ErrOwnerAlreadyHasOneGuardianPending signals that an owner already has one guardian pending
 var ErrOwnerAlreadyHasOneGuardianPending = errors.New("owner already has one guardian pending")
 
-// ErrSetGuardianNotEnabled signals that set guardian built-in function is not enabled yet
-var ErrSetGuardianNotEnabled = errors.New("set guardian not enabled yet")
-
 // ErrGuardianAlreadyExists signals that a guardian with the same address already exists
 var ErrGuardianAlreadyExists = errors.New("a guardian with the same address already exists")
 
@@ -229,3 +226,6 @@ var ErrNilBlockChainHook = errors.New("nil blockchain hook")
 
 // ErrNilPubKeyConverter signals that a nil pub key converter has been provided
 var ErrNilPubKeyConverter = errors.New("nil pub key converter")
+
+// ErrNoGuardianEnabled signals that account has no guardian enabled
+var ErrNoGuardianEnabled = errors.New("account has no guardian enabled")
