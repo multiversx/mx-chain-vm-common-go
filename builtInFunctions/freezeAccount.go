@@ -13,21 +13,27 @@ const (
 	BuiltInFunctionUnfreezeAccount = "unfreezeAccount"
 )
 
+const noOfArgsFreezeAccount = 0
+
 var logFreezeAccount = logger.GetOrCreate("systemSmartContracts/freezeAccount")
 
+// FreezeAccountArgs is a struct placeholder for all
+// necessary args to create a NewFreezeAccountFunc
 type FreezeAccountArgs struct {
 	BaseAccountFreezerArgs
 
-	FreezeAccountEnableEpoch uint32
 	Freeze                   bool
+	FreezeAccountEnableEpoch uint32
 }
 
 type freezeAccount struct {
-	*baseAccountFreezer
 	*baseEnabled
+	*baseAccountFreezer
+
 	freeze bool
 }
 
+// NewFreezeAccountFunc will instantiate a new freeze account built-in function
 func NewFreezeAccountFunc(args FreezeAccountArgs) (*freezeAccount, error) {
 	function := getFunc(args.Freeze)
 
@@ -60,6 +66,8 @@ func getFunc(freeze bool) string {
 	return function
 }
 
+// ProcessBuiltinFunction will set/unset the frozen bit in
+// user's code metadata, if it has at least one enabled guardian
 func (fa *freezeAccount) ProcessBuiltinFunction(
 	senderAccount, receiverAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -67,7 +75,7 @@ func (fa *freezeAccount) ProcessBuiltinFunction(
 	fa.mutExecution.Lock()
 	defer fa.mutExecution.Unlock()
 
-	err := fa.checkBaseArgs(senderAccount, receiverAccount, vmInput, 0)
+	err := fa.checkArgs(senderAccount, receiverAccount, vmInput, noOfArgsFreezeAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +88,13 @@ func (fa *freezeAccount) ProcessBuiltinFunction(
 		return nil, ErrNoGuardianEnabled
 	}
 
-	accountCodeMetaData := senderAccount.GetCodeMetadata()
-	codeMetaData := vmcommon.CodeMetadataFromBytes(accountCodeMetaData)
+	codeMetaDataBytes := senderAccount.GetCodeMetadata()
+	codeMetaData := vmcommon.CodeMetadataFromBytes(codeMetaDataBytes)
 
 	if fa.freeze {
-		codeMetaData.Frozen = true
+		codeMetaData.Frozen = true // Todo: check if freeze acc tx came from first set guardian
 	} else {
-		codeMetaData.Frozen = false // Todo: check if this tx came from first guardian
+		codeMetaData.Frozen = false
 	}
 
 	senderAccount.SetCodeMetadata(codeMetaData.ToBytes())
@@ -104,6 +112,7 @@ func (fa *freezeAccount) atLeastOneGuardianEnabled(
 	return false
 }
 
+// SetNewGasConfig is called whenever gas cost is changed
 func (fa *freezeAccount) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	fa.mutExecution.Lock()
 	fa.funcGasCost = gasCost.BuiltInCost.FreezeAccount

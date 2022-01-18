@@ -57,34 +57,10 @@ func TestNewSetGuardianFunc(t *testing.T) {
 		{
 			args: func() SetGuardianArgs {
 				args := createSetGuardianFuncMockArgs()
-				args.Marshaller = nil
-				return args
-			},
-			expectedErr: ErrNilMarshaller,
-		},
-		{
-			args: func() SetGuardianArgs {
-				args := createSetGuardianFuncMockArgs()
-				args.BlockChainHook = nil
-				return args
-			},
-			expectedErr: ErrNilBlockChainHook,
-		},
-		{
-			args: func() SetGuardianArgs {
-				args := createSetGuardianFuncMockArgs()
 				args.PubKeyConverter = nil
 				return args
 			},
 			expectedErr: ErrNilPubKeyConverter,
-		},
-		{
-			args: func() SetGuardianArgs {
-				args := createSetGuardianFuncMockArgs()
-				args.EpochNotifier = nil
-				return args
-			},
-			expectedErr: ErrNilEpochNotifier,
 		},
 		{
 			args: func() SetGuardianArgs {
@@ -124,66 +100,6 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 	}{
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   nil,
-			receiverAccount: account,
-			expectedErr:     ErrNilUserAccount,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   account,
-			receiverAccount: nil,
-			expectedErr:     ErrNilUserAccount,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return nil
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrNilVmInput,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   mockvm.NewUserAccount([]byte("userAddress2")),
-			receiverAccount: account,
-			expectedErr:     ErrOperationNotPermitted,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   account,
-			receiverAccount: mockvm.NewUserAccount([]byte("userAddress2")),
-			expectedErr:     ErrOperationNotPermitted,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.CallerAddr = []byte("userAddress2")
-				return &input
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrOperationNotPermitted,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.CallValue = nil
-				return &input
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrNilValue,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.CallValue = big.NewInt(1)
 				return &input
@@ -191,16 +107,6 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			senderAccount:   account,
 			receiverAccount: account,
 			expectedErr:     ErrBuiltInFunctionCalledWithValue,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.Arguments = [][]byte{guardianAddress, guardianAddress}
-				return &input
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrInvalidNumberOfArguments,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -221,16 +127,6 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			senderAccount:   account,
 			receiverAccount: account,
 			expectedErr:     ErrCannotOwnAddressAsGuardian,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.GasProvided = 0
-				return &input
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrNotEnoughGas,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -510,11 +406,6 @@ func generateRandomByteArray(size uint32) []byte {
 }
 
 func createSetGuardianFuncMockArgs() SetGuardianArgs {
-	blockChainHook := &mockvm.BlockChainEpochHookStub{
-		CurrentEpochCalled: func() uint32 {
-			return 1000
-		},
-	}
 	pubKeyConverter := &mock.PubkeyConverterStub{
 		LenCalled: func() int {
 			return pubKeyLen
@@ -525,14 +416,9 @@ func createSetGuardianFuncMockArgs() SetGuardianArgs {
 	}
 
 	return SetGuardianArgs{
-		BaseAccountFreezerArgs: BaseAccountFreezerArgs{
-			BlockChainHook: blockChainHook,
-			Marshaller:     marshallerMock,
-			EpochNotifier:  &mockvm.EpochNotifierStub{},
-			FuncGasCost:    100000,
-		},
-		GuardianActivationEpochs: 100,
+		BaseAccountFreezerArgs:   createBaseAccountFreezerArgs(),
 		PubKeyConverter:          pubKeyConverter,
+		GuardianActivationEpochs: 100,
 	}
 }
 

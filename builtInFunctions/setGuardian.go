@@ -3,7 +3,6 @@ package builtInFunctions
 import (
 	"bytes"
 	"fmt"
-	"math/big"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
@@ -21,6 +20,8 @@ const (
 	BuiltInFunctionSetGuardian = "SetGuardian"
 )
 
+const noOfArgsSetGuardian = 1
+
 type Guardian struct {
 	Address         []byte
 	ActivationEpoch uint32
@@ -37,8 +38,8 @@ type BlockChainEpochHook interface {
 	IsInterfaceNil() bool
 }
 
-// SetGuardianArgs is a struct placeholder for all necessary args
-// to create a NewSetGuardianFunc
+// SetGuardianArgs is a struct placeholder for all
+// necessary args to create a NewSetGuardianFunc
 type SetGuardianArgs struct {
 	BaseAccountFreezerArgs
 
@@ -96,7 +97,7 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	err := sg.checkBaseArgs(senderAccount, receiverAccount, vmInput, 1)
+	err := sg.checkArgs(senderAccount, receiverAccount, vmInput, noOfArgsSetGuardian)
 	if err != nil {
 		return nil, err
 	}
@@ -148,10 +149,6 @@ func (sg *setGuardian) checkSetGuardianArgs(
 	}
 
 	return nil
-}
-
-func isZero(n *big.Int) bool {
-	return len(n.Bits()) == 0
 }
 
 func (sg *setGuardian) isAddressValid(addressBytes []byte) bool {

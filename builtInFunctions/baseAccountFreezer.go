@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
@@ -13,6 +14,8 @@ import (
 
 var guardianKeyPrefix = []byte(core.ElrondProtectedKeyPrefix + GuardiansKeyIdentifier)
 
+// BaseAccountFreezerArgs is a struct placeholder for
+// all necessary args to create a newBaseAccountFreezer
 type BaseAccountFreezerArgs struct {
 	BlockChainHook BlockChainEpochHook
 	Marshaller     marshal.Marshalizer
@@ -47,11 +50,11 @@ func newBaseAccountFreezer(args BaseAccountFreezerArgs) (*baseAccountFreezer, er
 	}, nil
 }
 
-func (baf *baseAccountFreezer) checkBaseArgs(
+func (baf *baseAccountFreezer) checkArgs(
 	senderAccount,
 	receiverAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
-	expectedArgsNo uint32,
+	expectedNoOfArgs uint32,
 ) error {
 	if check.IfNil(senderAccount) {
 		return fmt.Errorf("%w for sender", ErrNilUserAccount)
@@ -72,14 +75,18 @@ func (baf *baseAccountFreezer) checkBaseArgs(
 	if !isZero(vmInput.CallValue) {
 		return ErrBuiltInFunctionCalledWithValue
 	}
-	if len(vmInput.Arguments) != int(expectedArgsNo) {
-		return fmt.Errorf("%w, expected %d, got %d ", ErrInvalidNumberOfArguments, expectedArgsNo, len(vmInput.Arguments))
+	if len(vmInput.Arguments) != int(expectedNoOfArgs) {
+		return fmt.Errorf("%w, expected %d, got %d ", ErrInvalidNumberOfArguments, expectedNoOfArgs, len(vmInput.Arguments))
 	}
 	if vmInput.GasProvided < baf.funcGasCost {
 		return ErrNotEnoughGas
 	}
 
 	return nil
+}
+
+func isZero(n *big.Int) bool {
+	return len(n.Bits()) == 0
 }
 
 func (baf *baseAccountFreezer) guardians(account vmcommon.UserAccountHandler) (*Guardians, error) {
