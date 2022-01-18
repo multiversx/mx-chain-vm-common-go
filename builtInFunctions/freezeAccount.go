@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	BuiltInFunctionFreezeAccount   = "freezeAccount"
-	BuiltInFunctionUnfreezeAccount = "unfreezeAccount"
+	BuiltInFunctionFreezeAccount   = "FreezeAccount"
+	BuiltInFunctionUnfreezeAccount = "UnfreezeAccount"
 )
 
 const noOfArgsFreezeAccount = 0
@@ -88,7 +88,21 @@ func (fa *freezeAccount) ProcessBuiltinFunction(
 		return nil, ErrNoGuardianEnabled
 	}
 
-	codeMetaDataBytes := senderAccount.GetCodeMetadata()
+	fa.setFrozenState(senderAccount)
+	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - fa.funcGasCost}, nil
+}
+
+func (fa *freezeAccount) atLeastOneGuardianEnabled(guardians *Guardians) bool {
+	for _, guardian := range guardians.Data {
+		if fa.enabled(guardian) {
+			return true
+		}
+	}
+	return false
+}
+
+func (fa *freezeAccount) setFrozenState(account vmcommon.UserAccountHandler) {
+	codeMetaDataBytes := account.GetCodeMetadata()
 	codeMetaData := vmcommon.CodeMetadataFromBytes(codeMetaDataBytes)
 
 	if fa.freeze {
@@ -97,19 +111,7 @@ func (fa *freezeAccount) ProcessBuiltinFunction(
 		codeMetaData.Frozen = false
 	}
 
-	senderAccount.SetCodeMetadata(codeMetaData.ToBytes())
-	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - fa.funcGasCost}, nil
-}
-
-func (fa *freezeAccount) atLeastOneGuardianEnabled(
-	guardians *Guardians,
-) bool {
-	for _, guardian := range guardians.Data {
-		if fa.enabled(guardian) {
-			return true
-		}
-	}
-	return false
+	account.SetCodeMetadata(codeMetaData.ToBytes())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
