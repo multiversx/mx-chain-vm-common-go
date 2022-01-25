@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"encoding/hex"
 	"errors"
 	"math/big"
 	"math/rand"
@@ -16,8 +17,9 @@ import (
 )
 
 const pubKeyLen = 32
+const currentEpoch = 44444
 
-var userAddress = []byte("user address")
+var userAddress = generateRandomByteArray(pubKeyLen)
 var marshallerMock = &mockvm.MarshalizerMock{}
 
 func guardiansProtectedKey() []byte {
@@ -71,22 +73,6 @@ func TestNewSetGuardianFunc(t *testing.T) {
 				return args
 			},
 			expectedErr: ErrNilMarshaller,
-		},
-		{
-			args: func() SetGuardianArgs {
-				args := createSetGuardianFuncMockArgs()
-				args.BlockChainHook = nil
-				return args
-			},
-			expectedErr: ErrNilBlockChainHook,
-		},
-		{
-			args: func() SetGuardianArgs {
-				args := createSetGuardianFuncMockArgs()
-				args.PubKeyConverter = nil
-				return args
-			},
-			expectedErr: ErrNilPubKeyConverter,
 		},
 		{
 			args: func() SetGuardianArgs {
@@ -301,13 +287,55 @@ func TestSetGuardian_ProcessBuiltinFunctionAccountHasThreeGuardiansExpectError(t
 	requireAccountHasGuardians(t, account, guardians)
 }
 
+func TestSetGuardian_ProcessBuiltinFunctionCannotUnMarshalGuardiansExpectError(t *testing.T) {
+	t.Parallel()
+
+	guardiansUnmarshalledBytes := []byte("guardiansUnmarshalledBytes")
+	wasAccountAltered := atomic.Flag{}
+	accountHandler := &mockvm.DataTrieTrackerStub{
+		RetrieveValueCalled: func(key []byte) ([]byte, error) {
+			return guardiansUnmarshalledBytes, nil
+		},
+		SaveKeyValueCalled: func(key []byte, value []byte) error {
+			wasAccountAltered.SetValue(true)
+			return nil
+		},
+	}
+	account := &mockvm.UserAccountStub{
+		Address: userAddress,
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return accountHandler
+		},
+	}
+
+	errMarshaller := errors.New("error marshaller")
+	marshaller := &mock.MarshalizerStub{
+		UnmarshalCalled: func(obj interface{}, buff []byte) error {
+			require.Equal(t, guardiansUnmarshalledBytes, buff)
+			return errMarshaller
+		},
+	}
+
+	args := createSetGuardianFuncMockArgs()
+	args.Marshaller = marshaller
+
+	setGuardianFunc, _ := NewSetGuardianFunc(args)
+	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
+
+	vmInput := getDefaultVmInput(BuiltInFunctionSetGuardian, [][]byte{generateRandomByteArray(pubKeyLen)})
+	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
+	require.Nil(t, output)
+	require.Equal(t, errMarshaller, err)
+	require.False(t, wasAccountAltered.IsSet())
+}
+
 func TestSetGuardian_ProcessBuiltinFunctionCannotMarshalGuardianExpectError(t *testing.T) {
 	t.Parallel()
 
 	args := createSetGuardianFuncMockArgs()
 	guardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
 	}
 	guardians := &Guardians{Data: []*Guardian{guardian}}
 
@@ -324,6 +352,8 @@ func TestSetGuardian_ProcessBuiltinFunctionCannotMarshalGuardianExpectError(t *t
 	vmInput := getDefaultVmInput(BuiltInFunctionSetGuardian, [][]byte{guardian.Address})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
+	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
+
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, output)
 	require.Equal(t, errMarshaller, err)
@@ -392,6 +422,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase1AccountHasNoGuardianSet(t *testi
 
 	args := createSetGuardianFuncMockArgs()
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
+	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
 
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
@@ -399,7 +430,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase1AccountHasNoGuardianSet(t *testi
 
 	newGuardian := &Guardian{
 		Address:         newGuardianAddress,
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
 	}
 	expectedStoredGuardians := &Guardians{Data: []*Guardian{newGuardian}}
 	requireAccountHasGuardians(t, account, expectedStoredGuardians)
@@ -411,7 +442,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase2AccountHasOnePendingGuardian(t *
 	args := createSetGuardianFuncMockArgs()
 	pendingGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
 	}
 	guardians := &Guardians{Data: []*Guardian{pendingGuardian}}
 
@@ -424,7 +455,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase2AccountHasOnePendingGuardian(t *
 	require.Nil(t, output)
 	require.Error(t, err)
 	require.True(t, strings.Contains(err.Error(), ErrOwnerAlreadyHasOneGuardianPending.Error()))
-	require.True(t, strings.Contains(err.Error(), args.PubKeyConverter.Encode(pendingGuardian.Address)))
+	require.True(t, strings.Contains(err.Error(), hex.EncodeToString(pendingGuardian.Address)))
 	requireAccountHasGuardians(t, account, guardians)
 }
 
@@ -434,7 +465,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase3AccountHasOneEnabledGuardian(t *
 	args := createSetGuardianFuncMockArgs()
 	enabledGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch - args.GuardianActivationEpochs,
 	}
 	guardians := &Guardians{Data: []*Guardian{enabledGuardian}}
 
@@ -443,13 +474,15 @@ func TestSetGuardian_ProcessBuiltinFunctionCase3AccountHasOneEnabledGuardian(t *
 	vmInput := getDefaultVmInput(BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
+	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
+
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
 	requireSetGuardianVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 
 	newGuardian := &Guardian{
 		Address:         newGuardianAddress,
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
 	}
 	expectedStoredGuardians := &Guardians{Data: []*Guardian{enabledGuardian, newGuardian}}
 	requireAccountHasGuardians(t, account, expectedStoredGuardians)
@@ -461,11 +494,11 @@ func TestSetGuardian_ProcessBuiltinFunctionCase4AccountHasOneEnabledGuardianAndO
 	args := createSetGuardianFuncMockArgs()
 	enabledGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch - args.GuardianActivationEpochs,
 	}
 	pendingGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
 	}
 	guardians := &Guardians{Data: []*Guardian{enabledGuardian, pendingGuardian}}
 
@@ -478,7 +511,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase4AccountHasOneEnabledGuardianAndO
 	require.Nil(t, output)
 	require.Error(t, err)
 	require.True(t, strings.Contains(err.Error(), ErrOwnerAlreadyHasOneGuardianPending.Error()))
-	require.True(t, strings.Contains(err.Error(), args.PubKeyConverter.Encode(pendingGuardian.Address)))
+	require.True(t, strings.Contains(err.Error(), hex.EncodeToString(pendingGuardian.Address)))
 	requireAccountHasGuardians(t, account, guardians)
 }
 
@@ -489,11 +522,11 @@ func TestSetGuardian_ProcessBuiltinFunctionCase5OwnerHasTwoEnabledGuardians(t *t
 
 	enabledGuardian1 := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch - args.GuardianActivationEpochs,
 	}
 	enabledGuardian2 := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() - args.GuardianActivationEpochs - 1,
+		ActivationEpoch: currentEpoch - args.GuardianActivationEpochs - 1,
 	}
 	guardians := &Guardians{Data: []*Guardian{enabledGuardian1, enabledGuardian2}}
 
@@ -502,13 +535,15 @@ func TestSetGuardian_ProcessBuiltinFunctionCase5OwnerHasTwoEnabledGuardians(t *t
 	vmInput := getDefaultVmInput(BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
+	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
+
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
 	requireSetGuardianVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 
 	newGuardian := &Guardian{
 		Address:         newGuardianAddress,
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() + args.GuardianActivationEpochs,
+		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
 	}
 	expectedStoredGuardians := &Guardians{Data: []*Guardian{enabledGuardian2, newGuardian}}
 	requireAccountHasGuardians(t, account, expectedStoredGuardians)
@@ -521,17 +556,9 @@ func generateRandomByteArray(size uint32) []byte {
 }
 
 func createSetGuardianFuncMockArgs() SetGuardianArgs {
-	blockChainHook := &mockvm.BlockChainEpochHookStub{
+	epochNotifier := &mockvm.EpochNotifierStub{
 		CurrentEpochCalled: func() uint32 {
-			return 1000
-		},
-	}
-	pubKeyConverter := &mock.PubkeyConverterStub{
-		LenCalled: func() int {
-			return pubKeyLen
-		},
-		EncodeCalled: func(pkBytes []byte) string {
-			return string(append([]byte("erd1"), pkBytes...))
+			return currentEpoch
 		},
 	}
 
@@ -539,9 +566,7 @@ func createSetGuardianFuncMockArgs() SetGuardianArgs {
 		GuardianActivationEpochs: 100,
 		FuncGasCost:              100000,
 		Marshaller:               marshallerMock,
-		BlockChainHook:           blockChainHook,
-		PubKeyConverter:          pubKeyConverter,
-		EpochNotifier:            &mockvm.EpochNotifierStub{},
+		EpochNotifier:            epochNotifier,
 	}
 }
 

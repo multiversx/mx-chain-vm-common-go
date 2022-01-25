@@ -5,7 +5,6 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	dataMock "github.com/ElrondNetwork/elrond-go-core/data/mock"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,8 +21,6 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 		Accounts:             &mock.AccountsStub{},
 		ShardCoordinator:     mock.NewMultiShardsCoordinatorMock(1),
 		EpochNotifier:        &mock.EpochNotifierStub{},
-		PubKeyConverter:      &dataMock.PubkeyConverterStub{},
-		BlockChainEpochHook:  &mock.BlockChainEpochHookStub{},
 	}
 
 	return args
@@ -106,16 +103,6 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilAccountsAdapter)
 
 	args = createMockArguments()
-	args.PubKeyConverter = nil
-	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilPubKeyConverter)
-
-	args = createMockArguments()
-	args.BlockChainEpochHook = nil
-	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilBlockChainHook)
-
-	args = createMockArguments()
 	f, err = NewBuiltInFunctionsCreator(args)
 	assert.Nil(t, err)
 	assert.False(t, f.IsInterfaceNil())
@@ -155,9 +142,4 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 
 	nftStorageHandler := f.NFTStorageHandler()
 	assert.False(t, check.IfNil(nftStorageHandler))
-
-	f.blockChainEpochHook = nil
-	container, err = f.CreateBuiltInFunctionContainer()
-	assert.Nil(t, container)
-	assert.Equal(t, ErrNilBlockChainHook, err)
 }
