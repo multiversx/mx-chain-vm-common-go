@@ -3,6 +3,7 @@ package vmcommon
 import (
 	"math/big"
 
+	"github.com/ElrondNetwork/elrond-go-core/core/closing"
 	"github.com/ElrondNetwork/elrond-go-core/data"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 )
@@ -106,6 +107,8 @@ type BlockchainHook interface {
 
 // VMExecutionHandler interface for any Elrond VM endpoint
 type VMExecutionHandler interface {
+	closing.Closer
+
 	// RunSmartContractCreate computes how a smart contract creation should be performed
 	RunSmartContractCreate(input *ContractCreateInput) (*VMOutput, error)
 
