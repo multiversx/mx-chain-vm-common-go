@@ -6,7 +6,6 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
@@ -31,15 +30,8 @@ type Guardians struct {
 	Data []*Guardian
 }
 
-// BlockChainEpochHook is a light-weight blockchain hook,
-// which can be queried to provide the current epoch
-type BlockChainEpochHook interface {
-	CurrentEpoch() uint32
-	IsInterfaceNil() bool
-}
-
-// SetGuardianArgs is a struct placeholder for all
-// necessary args to create a NewSetGuardianFunc
+// SetGuardianArgs is a struct placeholder for all necessary args
+// to create a NewSetGuardianFunc
 type SetGuardianArgs struct {
 	BaseAccountFreezerArgs
 
@@ -52,22 +44,17 @@ type setGuardian struct {
 	*baseEnabled
 	*baseAccountFreezer
 
-	pubKeyConverter          core.PubkeyConverter
+	currentEpoch             uint32
 	guardianActivationEpochs uint32
 }
 
 // NewSetGuardianFunc will instantiate a new set guardian built-in function
 func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
-	if check.IfNil(args.PubKeyConverter) {
-		return nil, ErrNilPubKeyConverter
-	}
-
 	base, err := newBaseAccountFreezer(args.BaseAccountFreezerArgs)
 	if err != nil {
 		return nil, err
 	}
 	setGuardianFunc := &setGuardian{
-		pubKeyConverter:          args.PubKeyConverter,
 		guardianActivationEpochs: args.GuardianActivationEpochs,
 	}
 	setGuardianFunc.baseEnabled = &baseEnabled{
@@ -91,13 +78,13 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 // Case 4. User has TWO guardians. FIRST is enabled, SECOND is pending => does not set, wait until second one is set
 // Case 5. User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one + set new one as pending
 func (sg *setGuardian) ProcessBuiltinFunction(
-	senderAccount, receiverAccount vmcommon.UserAccountHandler,
+	acntSnd, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	err := sg.checkArgs(senderAccount, receiverAccount, vmInput, noOfArgsSetGuardian)
+	err := sg.checkArgs(acntSnd, acntDst, vmInput, noOfArgsSetGuardian)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +93,7 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	guardians, err := sg.guardians(senderAccount)
+	guardians, err := sg.guardians(acntSnd)
 	if err != nil {
 		return nil, err
 	}
@@ -117,22 +104,22 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	switch len(guardians.Data) {
 	case 0:
 		// Case 1
-		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians, vmInput.GasProvided)
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	case 1:
 		// Case 2
 		if sg.pending(guardians.Data[0]) {
-			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, sg.pubKeyConverter.Encode(guardians.Data[0].Address))
+			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, hex.EncodeToString(guardians.Data[0].Address))
 		}
 		// Case 3
-		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians, vmInput.GasProvided)
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	case 2:
 		// Case 4
 		if sg.pending(guardians.Data[1]) {
-			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, sg.pubKeyConverter.Encode(guardians.Data[1].Address))
+			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, hex.EncodeToString(guardians.Data[1].Address))
 		}
 		// Case 5
 		guardians.Data = guardians.Data[1:] // remove oldest guardian
-		return sg.tryAddGuardian(senderAccount, vmInput.Arguments[0], guardians, vmInput.GasProvided)
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	default:
 		return &vmcommon.VMOutput{ReturnCode: vmcommon.ExecutionFailed}, nil
 	}
@@ -141,7 +128,7 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 func (sg *setGuardian) checkSetGuardianArgs(
 	vmInput *vmcommon.ContractCallInput,
 ) error {
-	if !sg.isAddressValid(vmInput.Arguments[0]) {
+	if len(vmInput.Arguments[0]) != len(senderAccount.AddressBytes()) {
 		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
 	}
 	if bytes.Equal(vmInput.CallerAddr, vmInput.Arguments[0]) {
@@ -151,14 +138,20 @@ func (sg *setGuardian) checkSetGuardianArgs(
 	return nil
 }
 
-func (sg *setGuardian) isAddressValid(addressBytes []byte) bool {
-	isLengthOk := len(addressBytes) == sg.pubKeyConverter.Len()
-	if !isLengthOk {
-		return false
+func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardians, error) {
+	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
+	if err != nil {
+		return nil, err
 	}
 
-	encodedAddress := sg.pubKeyConverter.Encode(addressBytes)
-	return encodedAddress != ""
+	// Fine, account has no guardian set
+	if len(marshalledData) == 0 {
+		return &Guardians{Data: make([]*Guardian, 0)}, nil
+	}
+
+	guardians := &Guardians{}
+	err = sg.marshaller.Unmarshal(guardians, marshalledData)
+	return guardians, err
 }
 
 func (sg *setGuardian) contains(guardians *Guardians, guardianAddress []byte) bool {
@@ -186,7 +179,7 @@ func (sg *setGuardian) tryAddGuardian(
 func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians *Guardians) error {
 	guardian := &Guardian{
 		Address:         guardianAddress,
-		ActivationEpoch: sg.blockchainHook.CurrentEpoch() + sg.guardianActivationEpochs,
+		ActivationEpoch: sg.currentEpoch + sg.guardianActivationEpochs,
 	}
 
 	guardians.Data = append(guardians.Data, guardian)
@@ -203,4 +196,12 @@ func (sg *setGuardian) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	sg.mutExecution.Lock()
 	sg.funcGasCost = gasCost.BuiltInCost.SetGuardian
 	sg.mutExecution.Unlock()
+}
+
+func (sg *setGuardian) EpochConfirmed(epoch uint32, _ uint64) {
+	sg.mutExecution.Lock()
+	defer sg.mutExecution.Unlock()
+
+	sg.currentEpoch = epoch
+	sg.baseEnabled.EpochConfirmed(epoch, 0)
 }

@@ -16,8 +16,6 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	Accounts                            vmcommon.AccountsAdapter
 	ShardCoordinator                    vmcommon.Coordinator
 	EpochNotifier                       vmcommon.EpochNotifier
-	PubKeyConverter                     core.PubkeyConverter
-	BlockChainEpochHook                 BlockChainEpochHook
 	ESDTNFTImprovementV1ActivationEpoch uint32
 	ESDTTransferRoleEnableEpoch         uint32
 	GlobalMintBurnDisableEpoch          uint32
@@ -39,8 +37,6 @@ type builtInFuncCreator struct {
 	shardCoordinator                    vmcommon.Coordinator
 	epochNotifier                       vmcommon.EpochNotifier
 	esdtStorageHandler                  vmcommon.ESDTNFTStorageHandler
-	pubKeyConverter                     core.PubkeyConverter
-	blockChainEpochHook                 BlockChainEpochHook
 	esdtNFTImprovementV1ActivationEpoch uint32
 	esdtTransferRoleEnableEpoch         uint32
 	globalMintBurnDisableEpoch          uint32
@@ -69,12 +65,6 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if check.IfNil(args.EpochNotifier) {
 		return nil, ErrNilEpochNotifier
 	}
-	if check.IfNil(args.BlockChainEpochHook) {
-		return nil, ErrNilBlockChainHook
-	}
-	if check.IfNil(args.PubKeyConverter) {
-		return nil, ErrNilPubKeyConverter
-	}
 
 	b := &builtInFuncCreator{
 		mapDNSAddresses:                     args.MapDNSAddresses,
@@ -83,8 +73,6 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		accounts:                            args.Accounts,
 		shardCoordinator:                    args.ShardCoordinator,
 		epochNotifier:                       args.EpochNotifier,
-		pubKeyConverter:                     args.PubKeyConverter,
-		blockChainEpochHook:                 args.BlockChainEpochHook,
 		esdtNFTImprovementV1ActivationEpoch: args.ESDTNFTImprovementV1ActivationEpoch,
 		esdtTransferRoleEnableEpoch:         args.ESDTTransferRoleEnableEpoch,
 		globalMintBurnDisableEpoch:          args.GlobalMintBurnDisableEpoch,
@@ -368,7 +356,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 	argsSetGuardian := SetGuardianArgs{
 		BaseAccountFreezerArgs:   b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.SetGuardian),
-		PubKeyConverter:          b.pubKeyConverter,
 		GuardianActivationEpochs: b.guardianActivationEpochs,
 		SetGuardianEnableEpoch:   b.setGuardianEnableEpoch,
 	}
@@ -406,7 +393,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 func (b *builtInFuncCreator) createBaseAccountFreezerArgs(funcGasCost uint64) BaseAccountFreezerArgs {
 	return BaseAccountFreezerArgs{
-		BlockChainHook: b.blockChainEpochHook,
 		Marshaller:     b.marshalizer,
 		EpochNotifier:  b.epochNotifier,
 		FuncGasCost:    funcGasCost,
