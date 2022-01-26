@@ -120,3 +120,8 @@ func (fa *freezeAccount) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	fa.funcGasCost = gasCost.BuiltInCost.FreezeAccount
 	fa.mutExecution.Unlock()
 }
+
+func (fa *freezeAccount) EpochConfirmed(epoch uint32, _ uint64) {
+	fa.baseEnabled.EpochConfirmed(epoch, 0)
+	fa.baseAccountFreezer.EpochConfirmed(epoch, 0)
+}

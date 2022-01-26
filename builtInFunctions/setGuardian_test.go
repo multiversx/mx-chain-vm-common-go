@@ -18,7 +18,7 @@ import (
 const pubKeyLen = 32
 const currentEpoch = 44444
 
-var userAddress = []byte("user address")
+var userAddress = generateRandomByteArray(pubKeyLen)
 
 func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandler, guardians *Guardians) {
 	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)

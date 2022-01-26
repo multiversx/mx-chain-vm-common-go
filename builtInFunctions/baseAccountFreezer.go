@@ -17,36 +17,31 @@ var guardianKeyPrefix = []byte(core.ElrondProtectedKeyPrefix + GuardiansKeyIdent
 // BaseAccountFreezerArgs is a struct placeholder for
 // all necessary args to create a newBaseAccountFreezer
 type BaseAccountFreezerArgs struct {
-	BlockChainHook BlockChainEpochHook
-	Marshaller     marshal.Marshalizer
-	EpochNotifier  vmcommon.EpochNotifier
-	FuncGasCost    uint64
+	Marshaller    marshal.Marshalizer
+	EpochNotifier vmcommon.EpochNotifier
+	FuncGasCost   uint64
 }
 
 type baseAccountFreezer struct {
-	marshaller     marshal.Marshalizer
-	blockchainHook BlockChainEpochHook
+	marshaller marshal.Marshalizer
 
 	mutExecution sync.RWMutex
 	funcGasCost  uint64
+	currentEpoch uint32
 }
 
 func newBaseAccountFreezer(args BaseAccountFreezerArgs) (*baseAccountFreezer, error) {
 	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshaller
 	}
-	if check.IfNil(args.BlockChainHook) {
-		return nil, ErrNilBlockChainHook
-	}
 	if check.IfNil(args.EpochNotifier) {
 		return nil, ErrNilEpochNotifier
 	}
 
 	return &baseAccountFreezer{
-		funcGasCost:    args.FuncGasCost,
-		marshaller:     args.Marshaller,
-		blockchainHook: args.BlockChainHook,
-		mutExecution:   sync.RWMutex{},
+		funcGasCost:  args.FuncGasCost,
+		marshaller:   args.Marshaller,
+		mutExecution: sync.RWMutex{},
 	}, nil
 }
 
@@ -106,9 +101,15 @@ func (baf *baseAccountFreezer) guardians(account vmcommon.UserAccountHandler) (*
 }
 
 func (baf *baseAccountFreezer) pending(guardian *Guardian) bool {
-	return guardian.ActivationEpoch > baf.blockchainHook.CurrentEpoch()
+	return guardian.ActivationEpoch > baf.currentEpoch
 }
 
 func (baf *baseAccountFreezer) enabled(guardian *Guardian) bool {
 	return !baf.pending(guardian)
+}
+
+func (baf *baseAccountFreezer) EpochConfirmed(epoch uint32, _ uint64) {
+	baf.mutExecution.Lock()
+	baf.currentEpoch = epoch
+	baf.mutExecution.Unlock()
 }

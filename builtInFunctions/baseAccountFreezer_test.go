@@ -30,14 +30,6 @@ func TestNewBaseAccountFreezer(t *testing.T) {
 		{
 			args: func() BaseAccountFreezerArgs {
 				args := createBaseAccountFreezerArgs()
-				args.BlockChainHook = nil
-				return args
-			},
-			expectedErr: ErrNilBlockChainHook,
-		},
-		{
-			args: func() BaseAccountFreezerArgs {
-				args := createBaseAccountFreezerArgs()
 				args.EpochNotifier = nil
 				return args
 			},
@@ -206,16 +198,9 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 }
 
 func createBaseAccountFreezerArgs() BaseAccountFreezerArgs {
-	blockChainHook := &mockvm.BlockChainEpochHookStub{
-		CurrentEpochCalled: func() uint32 {
-			return 1000
-		},
-	}
-
 	return BaseAccountFreezerArgs{
-		BlockChainHook: blockChainHook,
-		Marshaller:     marshallerMock,
-		EpochNotifier:  &mockvm.EpochNotifierStub{},
-		FuncGasCost:    100000,
+		Marshaller:    marshallerMock,
+		EpochNotifier: &mockvm.EpochNotifierStub{},
+		FuncGasCost:   100000,
 	}
 }

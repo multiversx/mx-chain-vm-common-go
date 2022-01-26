@@ -132,7 +132,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreezeAccountNoEnabledGuardianExpec
 
 	pendingGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() + 1,
+		ActivationEpoch: currentEpoch + 1,
 	}
 	guardians := &Guardians{Data: []*Guardian{pendingGuardian}}
 
@@ -154,7 +154,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionUnfreeze(t *testing.T) {
 	args := createFreezeAccountArgs(false)
 	enabledGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() - 1,
+		ActivationEpoch: currentEpoch - 1,
 	}
 	guardians := &Guardians{Data: []*Guardian{enabledGuardian}}
 
@@ -165,6 +165,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionUnfreeze(t *testing.T) {
 
 	vmInput := getDefaultVmInput(BuiltInFunctionFreezeAccount, [][]byte{})
 	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+	freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 
 	output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
@@ -178,7 +179,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreeze(t *testing.T) {
 	args := createFreezeAccountArgs(true)
 	enabledGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: args.BlockChainHook.CurrentEpoch() - 1,
+		ActivationEpoch: currentEpoch - 1,
 	}
 	guardians := &Guardians{Data: []*Guardian{enabledGuardian}}
 
@@ -187,6 +188,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreeze(t *testing.T) {
 
 	vmInput := getDefaultVmInput(BuiltInFunctionFreezeAccount, [][]byte{})
 	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+	freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 
 	output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)

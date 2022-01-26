@@ -2,9 +2,9 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
@@ -35,7 +35,6 @@ type Guardians struct {
 type SetGuardianArgs struct {
 	BaseAccountFreezerArgs
 
-	PubKeyConverter          core.PubkeyConverter
 	GuardianActivationEpochs uint32
 	SetGuardianEnableEpoch   uint32
 }
@@ -44,7 +43,6 @@ type setGuardian struct {
 	*baseEnabled
 	*baseAccountFreezer
 
-	currentEpoch             uint32
 	guardianActivationEpochs uint32
 }
 
@@ -88,7 +86,7 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	err = sg.checkSetGuardianArgs(vmInput)
+	err = sg.checkSetGuardianArgs(acntSnd, vmInput)
 	if err != nil {
 		return nil, err
 	}
@@ -126,12 +124,16 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 }
 
 func (sg *setGuardian) checkSetGuardianArgs(
+	sender vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) error {
-	if len(vmInput.Arguments[0]) != len(senderAccount.AddressBytes()) {
+	senderAddr := sender.AddressBytes()
+	guardianAddr := vmInput.Arguments[0]
+
+	if len(senderAddr) != len(guardianAddr) {
 		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
 	}
-	if bytes.Equal(vmInput.CallerAddr, vmInput.Arguments[0]) {
+	if bytes.Equal(senderAddr, guardianAddr) {
 		return ErrCannotOwnAddressAsGuardian
 	}
 
@@ -139,7 +141,7 @@ func (sg *setGuardian) checkSetGuardianArgs(
 }
 
 func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardians, error) {
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
+	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +201,6 @@ func (sg *setGuardian) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 }
 
 func (sg *setGuardian) EpochConfirmed(epoch uint32, _ uint64) {
-	sg.mutExecution.Lock()
-	defer sg.mutExecution.Unlock()
-
-	sg.currentEpoch = epoch
 	sg.baseEnabled.EpochConfirmed(epoch, 0)
+	sg.baseAccountFreezer.EpochConfirmed(epoch, 0)
 }
