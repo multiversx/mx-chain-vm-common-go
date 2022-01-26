@@ -62,6 +62,14 @@ func TestNewSetGuardianFunc(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		{
+			args: func() SetGuardianArgs {
+				args := createSetGuardianFuncMockArgs()
+				args.EpochNotifier = nil
+				return args
+			},
+			expectedErr: ErrNilEpochNotifier,
+		},
 	}
 
 	for _, test := range tests {
