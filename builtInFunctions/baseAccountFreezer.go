@@ -60,8 +60,10 @@ func (baf *baseAccountFreezer) checkArgs(
 	if vmInput == nil {
 		return ErrNilVmInput
 	}
-	if !(bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes()) &&
-		bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)) {
+
+	senderIsCaller := bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)
+	senderIsReceiver := bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes())
+	if !(senderIsReceiver && senderIsCaller) {
 		return ErrOperationNotPermitted
 	}
 	if vmInput.CallValue == nil {
