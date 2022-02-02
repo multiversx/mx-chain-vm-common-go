@@ -158,7 +158,10 @@ func (sg *setGuardian) checkArguments(
 	if len(vmInput.Arguments) != 1 {
 		return fmt.Errorf("%w, expected 1, got %d ", ErrInvalidNumberOfArguments, len(vmInput.Arguments))
 	}
-	if len(vmInput.Arguments[0]) != len(senderAccount.AddressBytes()) {
+
+	isGuardianAddrLenOk := len(vmInput.Arguments[0]) == len(senderAccount.AddressBytes())
+	isGuardianAddrSC := core.IsSmartContractAddress(senderAccount.AddressBytes())
+	if !isGuardianAddrLenOk || isGuardianAddrSC {
 		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
 	}
 	if bytes.Equal(vmInput.CallerAddr, vmInput.Arguments[0]) {
