@@ -69,12 +69,6 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 }
 
 // ProcessBuiltinFunction will process the set guardian built-in function call
-// Currently, the following cases are treated:
-// Case 1. User does NOT have any guardian => set guardian
-// Case 2. User has ONE guardian pending => do not set new guardian, wait until first one is set
-// Case 3. User has ONE guardian enabled => set guardian
-// Case 4. User has TWO guardians. FIRST is enabled, SECOND is pending => does not set, wait until second one is set
-// Case 5. User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one + set new one as pending
 func (sg *setGuardian) ProcessBuiltinFunction(
 	acntSnd, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -97,18 +91,23 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 
 	switch len(guardians.Data) {
 	case 0:
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 1
+		// User does NOT have any guardian => set guardian
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	case 1:
-		if sg.pending(guardians.Data[0]) { // Case 2
+		// User has ONE guardian pending => do not set new guardian, wait until FIRST one is set
+		if sg.pending(guardians.Data[0]) {
 			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, hex.EncodeToString(guardians.Data[0].Address))
 		}
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 3
+		// User has ONE guardian enabled => set guardian
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	case 2:
-		if sg.pending(guardians.Data[1]) { // Case 4
+		// User has TWO guardians. FIRST is enabled, SECOND is pending => do not set new guardian, wait until SECOND one is set
+		if sg.pending(guardians.Data[1]) {
 			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, hex.EncodeToString(guardians.Data[1].Address))
 		}
-		guardians.Data = guardians.Data[1:]                                                     // remove oldest guardian
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 5
+		// User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one + set new one as pending
+		guardians.Data = guardians.Data[1:] // remove oldest guardian
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	default:
 		return &vmcommon.VMOutput{ReturnCode: vmcommon.ExecutionFailed}, nil
 	}
@@ -129,9 +128,9 @@ func (sg *setGuardian) checkArguments(
 		return ErrNilVmInput
 	}
 
-	senderIsCaller := bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)
-	senderIsReceiver := bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes())
-	if !(senderIsReceiver && senderIsCaller) {
+	senderIsNotCaller := !bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)
+	senderIsNotReceiver := !bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes())
+	if senderIsNotCaller || senderIsNotReceiver {
 		return ErrOperationNotPermitted
 	}
 	if vmInput.CallValue == nil {
