@@ -362,7 +362,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(BuiltInFunctionSetGuardian, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionSetGuardian, newFunc)
 	if err != nil {
 		return nil, err
 	}

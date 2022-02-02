@@ -10,28 +10,13 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	"github.com/ElrondNetwork/elrond-go-core/marshal"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
 var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/setGuardian")
-
-// TODO: Use these values from elrond-go-core once a release tag is ready
-
-const (
-	GuardiansKeyIdentifier     = "guardians"
-	BuiltInFunctionSetGuardian = "SetGuardian"
-)
-
-type Guardian struct {
-	Address         []byte
-	ActivationEpoch uint32
-}
-
-type Guardians struct {
-	Data []*Guardian
-}
 
 // SetGuardianArgs is a struct placeholder for all necessary args
 // to create a NewSetGuardianFunc
@@ -69,10 +54,10 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 		marshaller:               args.Marshaller,
 		guardianActivationEpochs: args.GuardianActivationEpochs,
 		mutExecution:             sync.RWMutex{},
-		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + GuardiansKeyIdentifier),
+		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + core.GuardiansKeyIdentifier),
 	}
 	setGuardianFunc.baseEnabled = &baseEnabled{
-		function:        BuiltInFunctionSetGuardian,
+		function:        core.BuiltInFunctionSetGuardian,
 		activationEpoch: args.SetGuardianEnableEpoch,
 		flagActivated:   atomic.Flag{},
 	}
@@ -178,7 +163,8 @@ func isZero(n *big.Int) bool {
 	return len(n.Bits()) == 0
 }
 
-func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardians, error) {
+func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*guardiansData.Guardians, error) {
+
 	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
 	if err != nil {
 		return nil, err
@@ -186,10 +172,10 @@ func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardian
 
 	// Account has no guardian set
 	if len(marshalledData) == 0 {
-		return &Guardians{Data: make([]*Guardian, 0)}, nil
+		return &guardiansData.Guardians{Data: make([]*guardiansData.Guardian, 0)}, nil
 	}
 
-	guardians := &Guardians{}
+	guardians := &guardiansData.Guardians{}
 	err = sg.marshaller.Unmarshal(guardians, marshalledData)
 	if err != nil {
 		return nil, err
@@ -198,7 +184,7 @@ func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardian
 	return guardians, err
 }
 
-func (sg *setGuardian) contains(guardians *Guardians, guardianAddress []byte) bool {
+func (sg *setGuardian) contains(guardians *guardiansData.Guardians, guardianAddress []byte) bool {
 	for _, guardian := range guardians.Data {
 		if bytes.Equal(guardian.Address, guardianAddress) {
 			return true
@@ -210,7 +196,7 @@ func (sg *setGuardian) contains(guardians *Guardians, guardianAddress []byte) bo
 func (sg *setGuardian) tryAddGuardian(
 	account vmcommon.UserAccountHandler,
 	guardianAddress []byte,
-	guardians *Guardians,
+	guardians *guardiansData.Guardians,
 	gasProvided uint64,
 ) (*vmcommon.VMOutput, error) {
 	err := sg.addGuardian(account, guardianAddress, guardians)
@@ -220,8 +206,8 @@ func (sg *setGuardian) tryAddGuardian(
 	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasProvided - sg.funcGasCost}, nil
 }
 
-func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians *Guardians) error {
-	guardian := &Guardian{
+func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians *guardiansData.Guardians) error {
+	guardian := &guardiansData.Guardian{
 		Address:         guardianAddress,
 		ActivationEpoch: sg.currentEpoch + sg.guardianActivationEpochs,
 	}
@@ -235,7 +221,7 @@ func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardian
 	return account.AccountDataHandler().SaveKeyValue(sg.keyPrefix, marshalledData)
 }
 
-func (sg *setGuardian) pending(guardian *Guardian) bool {
+func (sg *setGuardian) pending(guardian *guardiansData.Guardian) bool {
 	return guardian.ActivationEpoch > sg.currentEpoch
 }
 
