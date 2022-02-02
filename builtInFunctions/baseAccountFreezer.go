@@ -45,7 +45,7 @@ func newBaseAccountFreezer(args BaseAccountFreezerArgs) (*baseAccountFreezer, er
 	}, nil
 }
 
-func (baf *baseAccountFreezer) checkArgs(
+func (baf *baseAccountFreezer) checkBaseAccountFreezerArgs(
 	senderAccount,
 	receiverAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -86,19 +86,44 @@ func isZero(n *big.Int) bool {
 	return len(n.Bits()) == 0
 }
 
+func (baf *baseAccountFreezer) enabledGuardian(account vmcommon.UserAccountHandler) (*Guardian, error) {
+	guardians, err := baf.guardians(account)
+	if err != nil {
+		return nil, err
+	}
+
+	enabledGuardian := &Guardian{}
+	latestActivationEpoch := uint32(0)
+	for _, guardian := range guardians.Data {
+		if baf.enabled(guardian) && guardian.ActivationEpoch > latestActivationEpoch {
+			enabledGuardian = guardian
+			latestActivationEpoch = guardian.ActivationEpoch
+		}
+	}
+
+	if latestActivationEpoch == 0 {
+		return nil, ErrNoGuardianEnabled
+	}
+	return enabledGuardian, nil // TODO: Check this guardian against relayer address
+}
+
 func (baf *baseAccountFreezer) guardians(account vmcommon.UserAccountHandler) (*Guardians, error) {
 	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
 	if err != nil {
 		return nil, err
 	}
 
-	// Fine, account has no guardian set
+	// Account has no guardian set
 	if len(marshalledData) == 0 {
 		return &Guardians{Data: make([]*Guardian, 0)}, nil
 	}
 
 	guardians := &Guardians{}
 	err = baf.marshaller.Unmarshal(guardians, marshalledData)
+	if err != nil {
+		return nil, err
+	}
+
 	return guardians, err
 }
 

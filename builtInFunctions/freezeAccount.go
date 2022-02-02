@@ -21,8 +21,6 @@ var logFreezeAccount = logger.GetOrCreate("systemSmartContracts/freezeAccount")
 // necessary args to create a NewFreezeAccountFunc
 type FreezeAccountArgs struct {
 	BaseAccountFreezerArgs
-
-	Freeze                   bool
 	FreezeAccountEnableEpoch uint32
 }
 
@@ -35,83 +33,78 @@ type freezeAccount struct {
 
 // NewFreezeAccountFunc will instantiate a new freeze account built-in function
 func NewFreezeAccountFunc(args FreezeAccountArgs) (*freezeAccount, error) {
-	function := getFunc(args.Freeze)
+	return newFreezeAccount(args, true, BuiltInFunctionFreezeAccount)
+}
 
+// NewUnfreezeAccountFunc will instantiate a new unfreeze account built-in function
+func NewUnfreezeAccountFunc(args FreezeAccountArgs) (*freezeAccount, error) {
+	return newFreezeAccount(args, false, BuiltInFunctionUnfreezeAccount)
+}
+
+func newFreezeAccount(args FreezeAccountArgs, freeze bool, builtInFunc string) (*freezeAccount, error) {
 	base, err := newBaseAccountFreezer(args.BaseAccountFreezerArgs)
 	if err != nil {
 		return nil, err
 	}
 	freezeAccountFunc := &freezeAccount{
-		freeze: args.Freeze,
+		freeze: freeze,
 	}
 	freezeAccountFunc.baseEnabled = &baseEnabled{
-		function:        function,
+		function:        builtInFunc,
 		activationEpoch: args.FreezeAccountEnableEpoch,
 		flagActivated:   atomic.Flag{},
 	}
 	freezeAccountFunc.baseAccountFreezer = base
 
-	logFreezeAccount.Debug(fmt.Sprintf("%s enable epoch:", function), args.FreezeAccountEnableEpoch)
+	logFreezeAccount.Debug(fmt.Sprintf("%s enable epoch:", builtInFunc), args.FreezeAccountEnableEpoch)
 	args.EpochNotifier.RegisterNotifyHandler(freezeAccountFunc)
 
 	return freezeAccountFunc, nil
 }
 
-func getFunc(freeze bool) string {
-	function := BuiltInFunctionUnfreezeAccount
-	if freeze {
-		function = BuiltInFunctionFreezeAccount
-	}
-
-	return function
-}
-
 // ProcessBuiltinFunction will set/unset the frozen bit in
 // user's code metadata, if it has at least one enabled guardian
 func (fa *freezeAccount) ProcessBuiltinFunction(
-	senderAccount, receiverAccount vmcommon.UserAccountHandler,
+	acntSnd, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	fa.mutExecution.Lock()
 	defer fa.mutExecution.Unlock()
 
-	err := fa.checkArgs(senderAccount, receiverAccount, vmInput, noOfArgsFreezeAccount)
+	err := fa.checkBaseAccountFreezerArgs(acntSnd, acntDst, vmInput, noOfArgsFreezeAccount)
 	if err != nil {
 		return nil, err
 	}
 
-	guardians, err := fa.guardians(senderAccount)
+	_, err = fa.enabledGuardian(acntSnd)
 	if err != nil {
 		return nil, err
 	}
-	if !fa.atLeastOneGuardianEnabled(guardians) {
-		return nil, ErrNoGuardianEnabled
+
+	if fa.freeze {
+		fa.freezeAccount(acntSnd)
+	} else {
+		fa.unfreezeAccount(acntSnd)
 	}
 
-	fa.setFrozenState(senderAccount)
 	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - fa.funcGasCost}, nil
 }
 
-func (fa *freezeAccount) atLeastOneGuardianEnabled(guardians *Guardians) bool {
-	for _, guardian := range guardians.Data {
-		if fa.enabled(guardian) {
-			return true
-		}
-	}
-	return false
+func (fa *freezeAccount) freezeAccount(account vmcommon.UserAccountHandler) {
+	codeMetaData := getCodeMetaData(account)
+	codeMetaData.Frozen = true
+	account.SetCodeMetadata(codeMetaData.ToBytes())
 }
 
-func (fa *freezeAccount) setFrozenState(account vmcommon.UserAccountHandler) {
-	codeMetaDataBytes := account.GetCodeMetadata()
-	codeMetaData := vmcommon.CodeMetadataFromBytes(codeMetaDataBytes)
-
-	if fa.freeze {
-		codeMetaData.Frozen = true // Todo: check if freeze acc tx came from first set guardian
-	} else {
-		codeMetaData.Frozen = false
-	}
-
+func (fa *freezeAccount) unfreezeAccount(account vmcommon.UserAccountHandler) {
+	codeMetaData := getCodeMetaData(account)
+	codeMetaData.Frozen = false
 	account.SetCodeMetadata(codeMetaData.ToBytes())
+}
+
+func getCodeMetaData(account vmcommon.UserAccountHandler) vmcommon.CodeMetadata {
+	codeMetaDataBytes := account.GetCodeMetadata()
+	return vmcommon.CodeMetadataFromBytes(codeMetaDataBytes)
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -121,6 +114,7 @@ func (fa *freezeAccount) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	fa.mutExecution.Unlock()
 }
 
+// EpochConfirmed is called whenever a new epoch is confirmed
 func (fa *freezeAccount) EpochConfirmed(epoch uint32, _ uint64) {
 	fa.baseEnabled.EpochConfirmed(epoch, 0)
 	fa.baseAccountFreezer.EpochConfirmed(epoch, 0)

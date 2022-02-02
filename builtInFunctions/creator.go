@@ -368,7 +368,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	argsFreezeAccount := b.createFreezeAccountArgs(true)
+	argsFreezeAccount := b.createFreezeAccountArgs()
 	newFunc, err = NewFreezeAccountFunc(argsFreezeAccount)
 	if err != nil {
 		return nil, err
@@ -378,8 +378,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	argsUnfreezeAccount := b.createFreezeAccountArgs(false)
-	newFunc, err = NewFreezeAccountFunc(argsUnfreezeAccount)
+	newFunc, err = NewUnfreezeAccountFunc(argsFreezeAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -393,17 +392,16 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 func (b *builtInFuncCreator) createBaseAccountFreezerArgs(funcGasCost uint64) BaseAccountFreezerArgs {
 	return BaseAccountFreezerArgs{
-		Marshaller:     b.marshalizer,
-		EpochNotifier:  b.epochNotifier,
-		FuncGasCost:    funcGasCost,
+		Marshaller:    b.marshalizer,
+		EpochNotifier: b.epochNotifier,
+		FuncGasCost:   funcGasCost,
 	}
 }
 
-func (b *builtInFuncCreator) createFreezeAccountArgs(freeze bool) FreezeAccountArgs {
+func (b *builtInFuncCreator) createFreezeAccountArgs() FreezeAccountArgs {
 	return FreezeAccountArgs{
 		BaseAccountFreezerArgs:   b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.FreezeAccount),
 		FreezeAccountEnableEpoch: b.freezeAccountEnableEpoch,
-		Freeze:                   freeze,
 	}
 }
 

@@ -187,7 +187,7 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 	baseAccFreezer, _ := newBaseAccountFreezer(args)
 
 	for _, test := range tests {
-		err := baseAccFreezer.checkArgs(test.senderAccount, test.receiverAccount, test.vmInput(), test.noOfArgs)
+		err := baseAccFreezer.checkBaseAccountFreezerArgs(test.senderAccount, test.receiverAccount, test.vmInput(), test.noOfArgs)
 		if test.expectedErr != nil {
 			require.Error(t, err)
 			require.True(t, strings.Contains(err.Error(), test.expectedErr.Error()))
@@ -195,6 +195,52 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 			require.Nil(t, err)
 		}
 	}
+}
+
+func TestBaseAccountFreezer_enabledGuardian(t *testing.T) {
+	t.Parallel()
+
+	args := createBaseAccountFreezerArgs()
+	baf, _ := newBaseAccountFreezer(args)
+	baf.EpochConfirmed(currentEpoch, 0)
+
+	t.Run("two enabled guardians, expect the most recent one is returned", func(t *testing.T) {
+		t.Parallel()
+
+		enabledGuardian1 := &Guardian{
+			Address:         generateRandomByteArray(pubKeyLen),
+			ActivationEpoch: currentEpoch - 1,
+		}
+		enabledGuardian2 := &Guardian{
+			Address:         generateRandomByteArray(pubKeyLen),
+			ActivationEpoch: currentEpoch - 2,
+		}
+		guardians := &Guardians{Data: []*Guardian{enabledGuardian1, enabledGuardian2}}
+		account := createUserAccountWithGuardians(t, guardians)
+
+		enabledGuardian, err := baf.enabledGuardian(account)
+		require.Nil(t, err)
+		require.Equal(t, enabledGuardian1, enabledGuardian)
+	})
+	t.Run("two guardians, none enabled, expect no guardian returned", func(t *testing.T) {
+		t.Parallel()
+
+		enabledGuardian1 := &Guardian{
+			Address:         generateRandomByteArray(pubKeyLen),
+			ActivationEpoch: currentEpoch + 1,
+		}
+		enabledGuardian2 := &Guardian{
+			Address:         generateRandomByteArray(pubKeyLen),
+			ActivationEpoch: currentEpoch + 2,
+		}
+		guardians := &Guardians{Data: []*Guardian{enabledGuardian1, enabledGuardian2}}
+		account := createUserAccountWithGuardians(t, guardians)
+
+		enabledGuardian, err := baf.enabledGuardian(account)
+		require.Equal(t, ErrNoGuardianEnabled, err)
+		require.Nil(t, enabledGuardian)
+	})
+
 }
 
 func createBaseAccountFreezerArgs() BaseAccountFreezerArgs {

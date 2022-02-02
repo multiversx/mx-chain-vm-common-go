@@ -22,45 +22,46 @@ func TestNewFreezeAccountFunc(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		args                func() FreezeAccountArgs
-		expectedBuiltInFunc string
-		expectedErr         error
+		args        func() FreezeAccountArgs
+		expectedErr error
 	}{
 		{
 			args: func() FreezeAccountArgs {
-				args := createFreezeAccountArgs(false)
+				args := createFreezeAccountArgs()
 				args.Marshaller = nil
 				return args
 			},
-			expectedBuiltInFunc: "",
-			expectedErr:         ErrNilMarshaller,
+			expectedErr: ErrNilMarshaller,
 		},
 		{
 			args: func() FreezeAccountArgs {
-				return createFreezeAccountArgs(true)
+				return createFreezeAccountArgs()
 			},
-			expectedBuiltInFunc: BuiltInFunctionFreezeAccount,
-			expectedErr:         nil,
+			expectedErr: nil,
 		},
 		{
 			args: func() FreezeAccountArgs {
-				return createFreezeAccountArgs(false)
+				return createFreezeAccountArgs()
 			},
-			expectedBuiltInFunc: BuiltInFunctionUnfreezeAccount,
-			expectedErr:         nil,
+			expectedErr: nil,
 		},
 	}
 
 	for _, test := range tests {
-		freezeAccountFunc, err := NewFreezeAccountFunc(test.args())
+		freezeAccountFunc, errFreeze := NewFreezeAccountFunc(test.args())
+		unFreezeAccountFunc, errUnfreeze := NewUnfreezeAccountFunc(test.args())
 		if test.expectedErr != nil {
 			require.Nil(t, freezeAccountFunc)
-			require.Error(t, err)
-			require.Equal(t, test.expectedErr, err)
+			require.Nil(t, unFreezeAccountFunc)
+			require.Equal(t, test.expectedErr, errFreeze)
+			require.Equal(t, test.expectedErr, errUnfreeze)
 		} else {
-			require.Nil(t, err)
+			require.Nil(t, errFreeze)
+			require.Nil(t, errUnfreeze)
 			require.NotNil(t, freezeAccountFunc)
-			require.Equal(t, test.expectedBuiltInFunc, freezeAccountFunc.function)
+			require.NotNil(t, unFreezeAccountFunc)
+			require.Equal(t, BuiltInFunctionFreezeAccount, freezeAccountFunc.function)
+			require.Equal(t, BuiltInFunctionUnfreezeAccount, unFreezeAccountFunc.function)
 		}
 	}
 }
@@ -68,8 +69,8 @@ func TestNewFreezeAccountFunc(t *testing.T) {
 func TestFreezeAccount_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	args := createFreezeAccountArgs(false)
-	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+	args := createFreezeAccountArgs()
+	freezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
 	require.Equal(t, args.FuncGasCost, freezeAccountFunc.funcGasCost)
 
 	newFreezeAccountCost := args.FuncGasCost + 1
@@ -82,8 +83,8 @@ func TestFreezeAccount_SetNewGasConfig(t *testing.T) {
 func TestFreezeAccount_ProcessBuiltinFunctionInvalidArgExpectError(t *testing.T) {
 	t.Parallel()
 
-	args := createFreezeAccountArgs(false)
-	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+	args := createFreezeAccountArgs()
+	freezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
 
 	vmInput := getDefaultVmInput(BuiltInFunctionUnfreezeAccount, [][]byte{})
 	vmInput.CallValue = big.NewInt(1)
@@ -115,7 +116,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionCannotGetGuardianExpectError(t *tes
 		},
 	}
 
-	args := createFreezeAccountArgs(true)
+	args := createFreezeAccountArgs()
 	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
 	vmInput := getDefaultVmInput(BuiltInFunctionUnfreezeAccount, [][]byte{})
 
@@ -128,7 +129,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionCannotGetGuardianExpectError(t *tes
 func TestFreezeAccount_ProcessBuiltinFunctionFreezeAccountNoEnabledGuardianExpectError(t *testing.T) {
 	t.Parallel()
 
-	args := createFreezeAccountArgs(true)
+	args := createFreezeAccountArgs()
 
 	pendingGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
@@ -151,7 +152,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreezeAccountNoEnabledGuardianExpec
 func TestFreezeAccount_ProcessBuiltinFunctionUnfreeze(t *testing.T) {
 	t.Parallel()
 
-	args := createFreezeAccountArgs(false)
+	args := createFreezeAccountArgs()
 	enabledGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
 		ActivationEpoch: currentEpoch - 1,
@@ -164,7 +165,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionUnfreeze(t *testing.T) {
 	requireAccountFrozen(t, account, true)
 
 	vmInput := getDefaultVmInput(BuiltInFunctionFreezeAccount, [][]byte{})
-	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+	freezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
 	freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 
 	output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
@@ -176,7 +177,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionUnfreeze(t *testing.T) {
 func TestFreezeAccount_ProcessBuiltinFunctionFreeze(t *testing.T) {
 	t.Parallel()
 
-	args := createFreezeAccountArgs(true)
+	args := createFreezeAccountArgs()
 	enabledGuardian := &Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
 		ActivationEpoch: currentEpoch - 1,
@@ -196,10 +197,9 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreeze(t *testing.T) {
 	requireAccountFrozen(t, account, true)
 }
 
-func createFreezeAccountArgs(freeze bool) FreezeAccountArgs {
+func createFreezeAccountArgs() FreezeAccountArgs {
 	return FreezeAccountArgs{
 		BaseAccountFreezerArgs:   createBaseAccountFreezerArgs(),
-		Freeze:                   freeze,
 		FreezeAccountEnableEpoch: 1000,
 	}
 }

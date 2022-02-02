@@ -82,7 +82,7 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	err := sg.checkArgs(acntSnd, acntDst, vmInput, noOfArgsSetGuardian)
+	err := sg.checkBaseAccountFreezerArgs(acntSnd, acntDst, vmInput, noOfArgsSetGuardian)
 	if err != nil {
 		return nil, err
 	}
@@ -133,26 +133,6 @@ func (sg *setGuardian) checkSetGuardianArgs(
 	}
 
 	return nil
-}
-
-func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardians, error) {
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
-	if err != nil {
-		return nil, err
-	}
-
-	// Account has no guardian set
-	if len(marshalledData) == 0 {
-		return &Guardians{Data: make([]*Guardian, 0)}, nil
-	}
-
-	guardians := &Guardians{}
-	err = sg.marshaller.Unmarshal(guardians, marshalledData)
-	if err != nil {
-		return nil, err
-	}
-
-	return guardians, err
 }
 
 func (sg *setGuardian) contains(guardians *Guardians, guardianAddress []byte) bool {
