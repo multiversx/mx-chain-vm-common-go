@@ -22,6 +22,8 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	ESDTTransferToMetaEnableEpoch       uint32
 	NFTCreateMultiShardEnableEpoch      uint32
 	SaveNFTToSystemAccountEnableEpoch   uint32
+	SetGuardianEnableEpoch              uint32
+	GuardianActivationEpochs            uint32
 }
 
 type builtInFuncCreator struct {
@@ -40,12 +42,14 @@ type builtInFuncCreator struct {
 	esdtTransferToMetaEnableEpoch       uint32
 	nftCreateMultiShardEnableEpoch      uint32
 	saveNFTToSystemAccountEnableEpoch   uint32
+	setGuardianEnableEpoch              uint32
+	guardianActivationEpochs            uint32
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
 func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*builtInFuncCreator, error) {
 	if check.IfNil(args.Marshalizer) {
-		return nil, ErrNilMarshalizer
+		return nil, ErrNilMarshaller
 	}
 	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -57,7 +61,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		return nil, ErrNilShardCoordinator
 	}
 	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochHandler
+		return nil, ErrNilEpochNotifier
 	}
 
 	b := &builtInFuncCreator{
@@ -73,6 +77,8 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		esdtTransferToMetaEnableEpoch:       args.ESDTTransferToMetaEnableEpoch,
 		nftCreateMultiShardEnableEpoch:      args.NFTCreateMultiShardEnableEpoch,
 		saveNFTToSystemAccountEnableEpoch:   args.SaveNFTToSystemAccountEnableEpoch,
+		setGuardianEnableEpoch:              args.SetGuardianEnableEpoch,
+		guardianActivationEpochs:            args.GuardianActivationEpochs,
 	}
 
 	var err error
@@ -341,6 +347,22 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnSetLimitedTransfer, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	argsSetGuardian := SetGuardianArgs{
+		Marshaller:               b.marshalizer,
+		EpochNotifier:            b.epochNotifier,
+		FuncGasCost:              b.gasConfig.BuiltInCost.SetGuardian,
+		GuardianActivationEpochs: b.guardianActivationEpochs,
+		SetGuardianEnableEpoch:   b.setGuardianEnableEpoch,
+	}
+	newFunc, err = NewSetGuardianFunc(argsSetGuardian)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionSetGuardian, newFunc)
 	if err != nil {
 		return nil, err
 	}

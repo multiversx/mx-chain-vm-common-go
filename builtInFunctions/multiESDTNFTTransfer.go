@@ -48,7 +48,7 @@ func NewESDTNFTMultiTransferFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 ) (*esdtNFTMultiTransfer, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshalizer
+		return nil, ErrNilMarshaller
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
@@ -60,7 +60,7 @@ func NewESDTNFTMultiTransferFunc(
 		return nil, ErrNilShardCoordinator
 	}
 	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
+		return nil, ErrNilEpochNotifier
 	}
 	if check.IfNil(roleHandler) {
 		return nil, ErrNilRolesHandler

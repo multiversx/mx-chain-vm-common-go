@@ -17,8 +17,8 @@ var ErrNilValue = errors.New("nil value")
 // ErrNilBlockHeader signals that an operation has been attempted to or with a nil block header
 var ErrNilBlockHeader = errors.New("nil block header")
 
-// ErrNilMarshalizer signals that an operation has been attempted to or with a nil Marshalizer implementation
-var ErrNilMarshalizer = errors.New("nil Marshalizer")
+// ErrNilMarshaller signals that an operation has been attempted to or with a nil marshaller implementation
+var ErrNilMarshaller = errors.New("nil marshaller")
 
 // ErrInvalidRcvAddr signals that an invalid receiver address was provided
 var ErrInvalidRcvAddr = errors.New("invalid receiver address")
@@ -71,8 +71,8 @@ var ErrNilPreProcessor = errors.New("preprocessor is nil")
 // ErrInvalidPeerAccount signals that a peer account is invalid
 var ErrInvalidPeerAccount = errors.New("invalid peer account")
 
-// ErrNilEpochHandler signals that a nil epoch handler was provided
-var ErrNilEpochHandler = errors.New("nil epoch handler")
+// ErrNilEpochNotifier signals that a nil epoch notifier was provided
+var ErrNilEpochNotifier = errors.New("nil epoch notifier")
 
 // ErrNilTxValidator signals that a nil tx validator has been provided
 var ErrNilTxValidator = errors.New("nil transaction validator")
@@ -205,3 +205,27 @@ var ErrNilESDTNFTStorageHandler = errors.New("nil esdt nft storage handler")
 
 // ErrNilTransactionHandler signals that a nil transaction handler has been provided
 var ErrNilTransactionHandler = errors.New("nil transaction handler")
+
+// ErrInvalidNumberOfArguments signals that an invalid number of arguments has been provided
+var ErrInvalidNumberOfArguments = errors.New("invalid number of arguments")
+
+// ErrInvalidAddress signals that an invalid address has been provided
+var ErrInvalidAddress = errors.New("invalid address")
+
+// ErrCannotSetOwnAddressAsGuardian signals that an owner cannot set its own address as guardian
+var ErrCannotSetOwnAddressAsGuardian = errors.New("cannot set own address as guardian")
+
+// ErrOwnerAlreadyHasOneGuardianPending signals that an owner already has one guardian pending
+var ErrOwnerAlreadyHasOneGuardianPending = errors.New("owner already has one guardian pending")
+
+// ErrSetGuardianNotEnabled signals that set guardian built-in function is not enabled
+var ErrSetGuardianNotEnabled = errors.New("set guardian not enabled")
+
+// ErrGuardianAlreadyExists signals that a guardian with the same address already exists
+var ErrGuardianAlreadyExists = errors.New("a guardian with the same address already exists")
+
+// ErrNilBlockChainHook signals that a nil blockchain hook has been provided
+var ErrNilBlockChainHook = errors.New("nil blockchain hook")
+
+// ErrNilPubKeyConverter signals that a nil pub key converter has been provided
+var ErrNilPubKeyConverter = errors.New("nil pub key converter")

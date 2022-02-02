@@ -45,7 +45,7 @@ func NewESDTNFTAddQuantityFunc(
 		return nil, ErrNilRolesHandler
 	}
 	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
+		return nil, ErrNilEpochNotifier
 	}
 
 	e := &esdtNFTAddQuantity{

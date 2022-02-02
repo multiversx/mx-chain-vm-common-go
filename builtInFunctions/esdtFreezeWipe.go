@@ -24,7 +24,7 @@ func NewESDTFreezeWipeFunc(
 	wipe bool,
 ) (*esdtFreezeWipe, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshalizer
+		return nil, ErrNilMarshaller
 	}
 
 	e := &esdtFreezeWipe{

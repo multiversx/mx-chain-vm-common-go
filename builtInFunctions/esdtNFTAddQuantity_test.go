@@ -34,7 +34,7 @@ func TestNewESDTNFTAddQuantityFunc(t *testing.T) {
 	// nil epoch handler
 	eqf, err = NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, nil)
 	require.True(t, check.IfNil(eqf))
-	require.Equal(t, ErrNilEpochHandler, err)
+	require.Equal(t, ErrNilEpochNotifier, err)
 
 	// should work
 	eqf, err = NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})

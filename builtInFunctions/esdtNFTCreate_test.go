@@ -47,7 +47,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilMarshalizer, err)
+	assert.Equal(t, ErrNilMarshaller, err)
 
 	nftCreate, err = NewESDTNFTCreateFunc(
 		0,
@@ -103,7 +103,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 	)
 	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilEpochHandler, err)
+	assert.Equal(t, ErrNilEpochNotifier, err)
 }
 
 func TestNewESDTNFTCreateFunc(t *testing.T) {

@@ -69,6 +69,7 @@ func fillGasMapBuiltInCosts(value uint64) map[string]uint64 {
 	gasMap["ESDTNFTAddUri"] = value
 	gasMap["ESDTNFTUpdateAttributes"] = value
 	gasMap["ESDTNFTMultiTransfer"] = value
+	gasMap["SetGuardian"] = value
 
 	return gasMap
 }
@@ -89,12 +90,12 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	args = createMockArguments()
 	args.EpochNotifier = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilEpochHandler)
+	assert.Equal(t, err, ErrNilEpochNotifier)
 
 	args = createMockArguments()
 	args.Marshalizer = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilMarshalizer)
+	assert.Equal(t, err, ErrNilMarshaller)
 
 	args = createMockArguments()
 	args.Accounts = nil
@@ -107,7 +108,7 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.False(t, f.IsInterfaceNil())
 }
 
-func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
+func TestCreateBuiltInContainer_GasScheduleChange(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
@@ -121,13 +122,13 @@ func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
 	assert.Equal(t, f.gasConfig.BuiltInCost.ClaimDeveloperRewards, uint64(5))
 }
 
-func TestCreateBuiltInContainter_Create(t *testing.T) {
+func TestCreateBuiltInContainer_Create(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
 	container, err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, container.Len(), 25)
+	assert.Equal(t, container.Len(), 26)
 
 	err = SetPayableHandler(container, nil)
 	assert.NotNil(t, err)

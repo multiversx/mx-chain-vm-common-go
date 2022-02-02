@@ -19,7 +19,7 @@ func TestNewESDTRolesFunc_NilMarshalizerShouldErr(t *testing.T) {
 
 	esdtRolesF, err := NewESDTRolesFunc(nil, false)
 
-	require.Equal(t, ErrNilMarshalizer, err)
+	require.Equal(t, ErrNilMarshaller, err)
 	require.Nil(t, esdtRolesF)
 }
 

@@ -24,7 +24,7 @@ func NewESDTRolesFunc(
 	set bool,
 ) (*esdtRoles, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshalizer
+		return nil, ErrNilMarshaller
 	}
 
 	e := &esdtRoles{
