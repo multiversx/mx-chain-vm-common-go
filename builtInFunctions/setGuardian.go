@@ -112,23 +112,18 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 
 	switch len(guardians.Data) {
 	case 0:
-		// Case 1
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 1
 	case 1:
-		// Case 2
-		if sg.pending(guardians.Data[0]) {
+		if sg.pending(guardians.Data[0]) { // Case 2
 			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, hex.EncodeToString(guardians.Data[0].Address))
 		}
-		// Case 3
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 3
 	case 2:
-		// Case 4
-		if sg.pending(guardians.Data[1]) {
+		if sg.pending(guardians.Data[1]) { // Case 4
 			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, hex.EncodeToString(guardians.Data[1].Address))
 		}
-		// Case 5
-		guardians.Data = guardians.Data[1:] // remove oldest guardian
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
+		guardians.Data = guardians.Data[1:]                                                     // remove oldest guardian
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 5
 	default:
 		return &vmcommon.VMOutput{ReturnCode: vmcommon.ExecutionFailed}, nil
 	}
@@ -148,8 +143,10 @@ func (sg *setGuardian) checkArguments(
 	if vmInput == nil {
 		return ErrNilVmInput
 	}
-	if !(bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes()) &&
-		bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)) {
+
+	senderIsCaller := bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)
+	senderIsReceiver := bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes())
+	if !(senderIsReceiver && senderIsCaller) {
 		return ErrOperationNotPermitted
 	}
 	if vmInput.CallValue == nil {
@@ -165,7 +162,7 @@ func (sg *setGuardian) checkArguments(
 		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
 	}
 	if bytes.Equal(vmInput.CallerAddr, vmInput.Arguments[0]) {
-		return ErrCannotOwnAddressAsGuardian
+		return ErrCannotSetOwnAddressAsGuardian
 	}
 	if vmInput.GasProvided < sg.funcGasCost {
 		return ErrNotEnoughGas
@@ -184,7 +181,7 @@ func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*Guardian
 		return nil, err
 	}
 
-	// Fine, account has no guardian set
+	// Account has no guardian set
 	if len(marshalledData) == 0 {
 		return &Guardians{Data: make([]*Guardian, 0)}, nil
 	}

@@ -216,7 +216,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			},
 			senderAccount:   account,
 			receiverAccount: account,
-			expectedErr:     ErrCannotOwnAddressAsGuardian,
+			expectedErr:     ErrCannotSetOwnAddressAsGuardian,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {

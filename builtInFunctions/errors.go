@@ -212,14 +212,14 @@ var ErrInvalidNumberOfArguments = errors.New("invalid number of arguments")
 // ErrInvalidAddress signals that an invalid address has been provided
 var ErrInvalidAddress = errors.New("invalid address")
 
-// ErrCannotOwnAddressAsGuardian signals that an owner cannot set its own address as guardian
-var ErrCannotOwnAddressAsGuardian = errors.New("cannot set own address as guardian")
+// ErrCannotSetOwnAddressAsGuardian signals that an owner cannot set its own address as guardian
+var ErrCannotSetOwnAddressAsGuardian = errors.New("cannot set own address as guardian")
 
 // ErrOwnerAlreadyHasOneGuardianPending signals that an owner already has one guardian pending
 var ErrOwnerAlreadyHasOneGuardianPending = errors.New("owner already has one guardian pending")
 
-// ErrSetGuardianNotEnabled signals that set guardian built-in function is not enabled yet
-var ErrSetGuardianNotEnabled = errors.New("set guardian not enabled yet")
+// ErrSetGuardianNotEnabled signals that set guardian built-in function is not enabled
+var ErrSetGuardianNotEnabled = errors.New("set guardian not enabled")
 
 // ErrGuardianAlreadyExists signals that a guardian with the same address already exists
 var ErrGuardianAlreadyExists = errors.New("a guardian with the same address already exists")
