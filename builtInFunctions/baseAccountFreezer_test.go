@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
 	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	mockvm "github.com/ElrondNetwork/elrond-vm-common/mock"
@@ -64,7 +63,7 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 	account := mockvm.NewUserAccount(address)
 
 	guardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.GuardiansKeyIdentifier, [][]byte{guardianAddress})
+	vmInput := getDefaultVmInput([][]byte{guardianAddress})
 	vmInput.CallerAddr = address
 
 	tests := []struct {
@@ -206,6 +205,18 @@ func TestBaseAccountFreezer_enabledGuardian(t *testing.T) {
 	baf, _ := newBaseAccountFreezer(args)
 	baf.EpochConfirmed(currentEpoch, 0)
 
+	t.Run("nil account handler, expect error", func(t *testing.T) {
+		t.Parallel()
+
+		account := &mockvm.UserAccountStub{
+			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+				return nil
+			},
+		}
+		enabledGuardian, err := baf.enabledGuardian(account)
+		require.Nil(t, enabledGuardian)
+		require.Equal(t, ErrNilAccountHandler, err)
+	})
 	t.Run("two enabled guardians, expect the most recent one is returned", func(t *testing.T) {
 		t.Parallel()
 

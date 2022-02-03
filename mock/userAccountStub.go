@@ -12,6 +12,7 @@ type UserAccountStub struct {
 	AddToBalanceCalled       func(value *big.Int) error
 	AccountDataHandlerCalled func() vmcommon.AccountDataHandler
 	SetCodeMetaDataCalled    func(codeMetaData []byte)
+	GetCodeMetaDataCalled    func() []byte
 }
 
 // HasNewCode -
@@ -104,6 +105,9 @@ func (u *UserAccountStub) SetCodeMetadata(codeMetaData []byte) {
 
 // GetCodeMetadata -
 func (u *UserAccountStub) GetCodeMetadata() []byte {
+	if u.GetCodeMetaDataCalled != nil {
+		return u.GetCodeMetaDataCalled()
+	}
 	return nil
 }
 

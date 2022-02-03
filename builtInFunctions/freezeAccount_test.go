@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
@@ -61,8 +62,8 @@ func TestNewFreezeAccountFunc(t *testing.T) {
 			require.Nil(t, errUnfreeze)
 			require.NotNil(t, freezeAccountFunc)
 			require.NotNil(t, unFreezeAccountFunc)
-			require.Equal(t, BuiltInFunctionFreezeAccount, freezeAccountFunc.function)
-			require.Equal(t, BuiltInFunctionUnfreezeAccount, unFreezeAccountFunc.function)
+			require.Equal(t, core.BuiltInFunctionFreezeAccount, freezeAccountFunc.function)
+			require.Equal(t, core.BuiltInFunctionUnfreezeAccount, unFreezeAccountFunc.function)
 		}
 	}
 }
@@ -81,13 +82,70 @@ func TestFreezeAccount_SetNewGasConfig(t *testing.T) {
 	require.Equal(t, newFreezeAccountCost, freezeAccountFunc.funcGasCost)
 }
 
+func TestFreezeUnfreezeAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveFrozenBitSetExpectError(t *testing.T) {
+	t.Parallel()
+
+	args := createFreezeAccountArgs()
+
+	enabledGuardian := &guardiansData.Guardian{
+		Address:         generateRandomByteArray(pubKeyLen),
+		ActivationEpoch: currentEpoch - 1,
+	}
+	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian}}
+
+	dataTrie := &mock.DataTrieTrackerStub{
+		RetrieveValueCalled: func(key []byte) ([]byte, error) {
+			return args.Marshaller.Marshal(guardians)
+		},
+	}
+
+	var accountFrozen bool
+	wasAccountAltered := &atomic.Flag{}
+	account := &mock.UserAccountStub{
+		Address: userAddress,
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return dataTrie
+		},
+		SetCodeMetaDataCalled: func([]byte) {
+			wasAccountAltered.SetValue(true)
+		},
+		GetCodeMetaDataCalled: func() []byte {
+			codeMetaData := vmcommon.CodeMetadata{Frozen: accountFrozen}
+			return codeMetaData.ToBytes()
+		},
+	}
+
+	vmInput := getDefaultVmInput([][]byte{})
+	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+	freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
+
+	unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
+	unfreezeAccountFunc.EpochConfirmed(currentEpoch, 0)
+
+	t.Run("try to freeze frozen account, expected error", func(t *testing.T) {
+		accountFrozen = true
+		output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
+		require.Nil(t, output)
+		require.Equal(t, ErrSetFreezeAccount, err)
+		require.False(t, wasAccountAltered.IsSet())
+	})
+
+	t.Run("try to unfreeze unfrozen account, expect error", func(t *testing.T) {
+		accountFrozen = false
+		output, err := unfreezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
+		require.Nil(t, output)
+		require.Equal(t, ErrSetUnfreezeAccount, err)
+		require.False(t, wasAccountAltered.IsSet())
+	})
+}
+
 func TestFreezeAccount_ProcessBuiltinFunctionInvalidArgExpectError(t *testing.T) {
 	t.Parallel()
 
 	args := createFreezeAccountArgs()
 	freezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
 
-	vmInput := getDefaultVmInput(BuiltInFunctionUnfreezeAccount, [][]byte{})
+	vmInput := getDefaultVmInput([][]byte{})
 	vmInput.CallValue = big.NewInt(1)
 	account := mock.NewUserAccount(userAddress)
 
@@ -119,7 +177,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionCannotGetGuardianExpectError(t *tes
 
 	args := createFreezeAccountArgs()
 	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
-	vmInput := getDefaultVmInput(BuiltInFunctionUnfreezeAccount, [][]byte{})
+	vmInput := getDefaultVmInput([][]byte{})
 
 	output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, output)
@@ -141,7 +199,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreezeAccountNoEnabledGuardianExpec
 	account := createUserAccountWithGuardians(t, guardians)
 	requireAccountFrozen(t, account, false)
 
-	vmInput := getDefaultVmInput(BuiltInFunctionFreezeAccount, [][]byte{})
+	vmInput := getDefaultVmInput([][]byte{})
 	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
 
 	output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
@@ -165,7 +223,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionUnfreeze(t *testing.T) {
 	account.SetCodeMetadata(code.ToBytes())
 	requireAccountFrozen(t, account, true)
 
-	vmInput := getDefaultVmInput(BuiltInFunctionFreezeAccount, [][]byte{})
+	vmInput := getDefaultVmInput([][]byte{})
 	freezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
 	freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 
@@ -188,7 +246,7 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreeze(t *testing.T) {
 	account := createUserAccountWithGuardians(t, guardians)
 	requireAccountFrozen(t, account, false)
 
-	vmInput := getDefaultVmInput(BuiltInFunctionFreezeAccount, [][]byte{})
+	vmInput := getDefaultVmInput([][]byte{})
 	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
 	freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 

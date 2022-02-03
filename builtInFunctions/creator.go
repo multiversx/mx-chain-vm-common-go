@@ -373,7 +373,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(BuiltInFunctionFreezeAccount, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionFreezeAccount, newFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +382,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
-	err = b.builtInFunctions.Add(BuiltInFunctionUnfreezeAccount, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionUnfreezeAccount, newFunc)
 	if err != nil {
 		return nil, err
 	}

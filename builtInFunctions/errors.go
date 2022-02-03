@@ -221,11 +221,14 @@ var ErrOwnerAlreadyHasOneGuardianPending = errors.New("owner already has one gua
 // ErrGuardianAlreadyExists signals that a guardian with the same address already exists
 var ErrGuardianAlreadyExists = errors.New("a guardian with the same address already exists")
 
-// ErrNilBlockChainHook signals that a nil blockchain hook has been provided
-var ErrNilBlockChainHook = errors.New("nil blockchain hook")
-
-// ErrNilPubKeyConverter signals that a nil pub key converter has been provided
-var ErrNilPubKeyConverter = errors.New("nil pub key converter")
-
 // ErrNoGuardianEnabled signals that account has no guardian enabled
 var ErrNoGuardianEnabled = errors.New("account has no guardian enabled")
+
+// ErrSetFreezeAccount signals that an account is already frozen when trying to freeze it
+var ErrSetFreezeAccount = errors.New("cannot freeze account, it is already frozen")
+
+// ErrSetUnfreezeAccount signals that an account is already unfrozen when trying to unfreeze it
+var ErrSetUnfreezeAccount = errors.New("cannot unfreeze account, it is not frozen")
+
+// ErrNilAccountHandler signals that a nil account handler has been provided
+var ErrNilAccountHandler = errors.New("nil account handler provided")

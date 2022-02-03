@@ -109,7 +109,12 @@ func (baf *baseAccountFreezer) enabledGuardian(account vmcommon.UserAccountHandl
 }
 
 func (baf *baseAccountFreezer) guardians(account vmcommon.UserAccountHandler) (*guardiansData.Guardians, error) {
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
+	accountHandler := account.AccountDataHandler()
+	if check.IfNil(accountHandler) {
+		return nil, ErrNilAccountHandler
+	}
+
+	marshalledData, err := accountHandler.RetrieveValue(guardianKeyPrefix)
 	if err != nil {
 		return nil, err
 	}
