@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"errors"
 	"math/big"
 	"strings"
 	"testing"
@@ -205,6 +206,24 @@ func TestBaseAccountFreezer_enabledGuardian(t *testing.T) {
 	baf, _ := newBaseAccountFreezer(args)
 	baf.EpochConfirmed(currentEpoch, 0)
 
+	t.Run("cannot get user account guardians, expect error", func(t *testing.T) {
+		errRetrieveVal := errors.New("error retrieving value for key")
+		accountHandler := &mockvm.DataTrieTrackerStub{
+			RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				return nil, errRetrieveVal
+			},
+		}
+		account := &mockvm.UserAccountStub{
+			Address: userAddress,
+			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+				return accountHandler
+			},
+		}
+
+		enabledGuardian, err := baf.enabledGuardian(account)
+		require.Nil(t, enabledGuardian)
+		require.Equal(t, errRetrieveVal, err)
+	})
 	t.Run("nil account handler, expect error", func(t *testing.T) {
 		t.Parallel()
 
