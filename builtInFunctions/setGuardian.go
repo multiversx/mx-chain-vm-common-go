@@ -6,29 +6,14 @@ import (
 	"fmt"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
+	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
 var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/setGuardian")
 
-// TODO: Use these values from elrond-go-core once a release tag is ready
-
-const (
-	GuardiansKeyIdentifier     = "guardians"
-	BuiltInFunctionSetGuardian = "SetGuardian"
-)
-
 const noOfArgsSetGuardian = 1
-
-type Guardian struct {
-	Address         []byte
-	ActivationEpoch uint32
-}
-
-type Guardians struct {
-	Data []*Guardian
-}
 
 // SetGuardianArgs is a struct placeholder for all necessary args
 // to create a NewSetGuardianFunc
@@ -56,7 +41,7 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 		guardianActivationEpochs: args.GuardianActivationEpochs,
 	}
 	setGuardianFunc.baseEnabled = &baseEnabled{
-		function:        BuiltInFunctionSetGuardian,
+		function:        core.BuiltInFunctionSetGuardian,
 		activationEpoch: args.SetGuardianEnableEpoch,
 		flagActivated:   atomic.Flag{},
 	}
@@ -69,12 +54,6 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 }
 
 // ProcessBuiltinFunction will process the set guardian built-in function call
-// Currently, the following cases are treated:
-// Case 1. User does NOT have any guardian => set guardian
-// Case 2. User has ONE guardian pending => do not set new guardian, wait until first one is set
-// Case 3. User has ONE guardian enabled => set guardian
-// Case 4. User has TWO guardians. FIRST is enabled, SECOND is pending => does not set, wait until second one is set
-// Case 5. User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one + set new one as pending
 func (sg *setGuardian) ProcessBuiltinFunction(
 	acntSnd, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -101,18 +80,23 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 
 	switch len(guardians.Data) {
 	case 0:
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 1
+		// User does NOT have any guardian => set guardian
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	case 1:
-		if sg.pending(guardians.Data[0]) { // Case 2
+		// User has ONE guardian pending => do not set new guardian, wait until FIRST one is set
+		if sg.pending(guardians.Data[0]) {
 			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, hex.EncodeToString(guardians.Data[0].Address))
 		}
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 3
+		// User has ONE guardian enabled => set guardian
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	case 2:
-		if sg.pending(guardians.Data[1]) { // Case 4
+		// User has TWO guardians. FIRST is enabled, SECOND is pending => do not set new guardian, wait until SECOND one is set
+		if sg.pending(guardians.Data[1]) {
 			return nil, fmt.Errorf("%w: %s", ErrOwnerAlreadyHasOneGuardianPending, hex.EncodeToString(guardians.Data[1].Address))
 		}
-		guardians.Data = guardians.Data[1:]                                                     // remove oldest guardian
-		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided) // Case 5
+		// User has TWO guardians. FIRST is enabled, SECOND is enabled => replace oldest one + set new one as pending
+		guardians.Data = guardians.Data[1:] // remove oldest guardian
+		return sg.tryAddGuardian(acntSnd, vmInput.Arguments[0], guardians, vmInput.GasProvided)
 	default:
 		return &vmcommon.VMOutput{ReturnCode: vmcommon.ExecutionFailed}, nil
 	}
@@ -147,7 +131,7 @@ func (sg *setGuardian) contains(guardians *Guardians, guardianAddress []byte) bo
 func (sg *setGuardian) tryAddGuardian(
 	account vmcommon.UserAccountHandler,
 	guardianAddress []byte,
-	guardians *Guardians,
+	guardians *guardiansData.Guardians,
 	gasProvided uint64,
 ) (*vmcommon.VMOutput, error) {
 	err := sg.addGuardian(account, guardianAddress, guardians)
@@ -157,8 +141,8 @@ func (sg *setGuardian) tryAddGuardian(
 	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasProvided - sg.funcGasCost}, nil
 }
 
-func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians *Guardians) error {
-	guardian := &Guardian{
+func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardianAddress []byte, guardians *guardiansData.Guardians) error {
+	guardian := &guardiansData.Guardian{
 		Address:         guardianAddress,
 		ActivationEpoch: sg.currentEpoch + sg.guardianActivationEpochs,
 	}
