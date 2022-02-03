@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
@@ -109,9 +110,12 @@ func (sg *setGuardian) checkSetGuardianArgs(
 	senderAddr := sender.AddressBytes()
 	guardianAddr := vmInput.Arguments[0]
 
-	if len(senderAddr) != len(guardianAddr) {
+	isGuardianAddrLenOk := len(vmInput.Arguments[0]) == len(senderAddr)
+	isGuardianAddrSC := core.IsSmartContractAddress(guardianAddr)
+	if !isGuardianAddrLenOk || isGuardianAddrSC {
 		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
 	}
+
 	if bytes.Equal(senderAddr, guardianAddr) {
 		return ErrCannotSetOwnAddressAsGuardian
 	}
@@ -119,7 +123,7 @@ func (sg *setGuardian) checkSetGuardianArgs(
 	return nil
 }
 
-func (sg *setGuardian) contains(guardians *Guardians, guardianAddress []byte) bool {
+func (sg *setGuardian) contains(guardians *guardiansData.Guardians, guardianAddress []byte) bool {
 	for _, guardian := range guardians.Data {
 		if bytes.Equal(guardian.Address, guardianAddress) {
 			return true

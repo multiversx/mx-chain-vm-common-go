@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
+	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
@@ -131,11 +132,11 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreezeAccountNoEnabledGuardianExpec
 
 	args := createFreezeAccountArgs()
 
-	pendingGuardian := &Guardian{
+	pendingGuardian := &guardiansData.Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
 		ActivationEpoch: currentEpoch + 1,
 	}
-	guardians := &Guardians{Data: []*Guardian{pendingGuardian}}
+	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{pendingGuardian}}
 
 	account := createUserAccountWithGuardians(t, guardians)
 	requireAccountFrozen(t, account, false)
@@ -153,11 +154,11 @@ func TestFreezeAccount_ProcessBuiltinFunctionUnfreeze(t *testing.T) {
 	t.Parallel()
 
 	args := createFreezeAccountArgs()
-	enabledGuardian := &Guardian{
+	enabledGuardian := &guardiansData.Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
 		ActivationEpoch: currentEpoch - 1,
 	}
-	guardians := &Guardians{Data: []*Guardian{enabledGuardian}}
+	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian}}
 
 	account := createUserAccountWithGuardians(t, guardians)
 	code := vmcommon.CodeMetadata{Frozen: true}
@@ -178,11 +179,11 @@ func TestFreezeAccount_ProcessBuiltinFunctionFreeze(t *testing.T) {
 	t.Parallel()
 
 	args := createFreezeAccountArgs()
-	enabledGuardian := &Guardian{
+	enabledGuardian := &guardiansData.Guardian{
 		Address:         generateRandomByteArray(pubKeyLen),
 		ActivationEpoch: currentEpoch - 1,
 	}
-	guardians := &Guardians{Data: []*Guardian{enabledGuardian}}
+	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian}}
 
 	account := createUserAccountWithGuardians(t, guardians)
 	requireAccountFrozen(t, account, false)

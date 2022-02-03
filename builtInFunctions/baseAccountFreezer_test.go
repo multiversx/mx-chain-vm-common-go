@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	mockvm "github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
@@ -62,7 +64,7 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 	account := mockvm.NewUserAccount(address)
 
 	guardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(GuardiansKeyIdentifier, [][]byte{guardianAddress})
+	vmInput := getDefaultVmInput(core.GuardiansKeyIdentifier, [][]byte{guardianAddress})
 	vmInput.CallerAddr = address
 
 	tests := []struct {
@@ -207,15 +209,15 @@ func TestBaseAccountFreezer_enabledGuardian(t *testing.T) {
 	t.Run("two enabled guardians, expect the most recent one is returned", func(t *testing.T) {
 		t.Parallel()
 
-		enabledGuardian1 := &Guardian{
+		enabledGuardian1 := &guardiansData.Guardian{
 			Address:         generateRandomByteArray(pubKeyLen),
 			ActivationEpoch: currentEpoch - 1,
 		}
-		enabledGuardian2 := &Guardian{
+		enabledGuardian2 := &guardiansData.Guardian{
 			Address:         generateRandomByteArray(pubKeyLen),
 			ActivationEpoch: currentEpoch - 2,
 		}
-		guardians := &Guardians{Data: []*Guardian{enabledGuardian1, enabledGuardian2}}
+		guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian1, enabledGuardian2}}
 		account := createUserAccountWithGuardians(t, guardians)
 
 		enabledGuardian, err := baf.enabledGuardian(account)
@@ -225,15 +227,15 @@ func TestBaseAccountFreezer_enabledGuardian(t *testing.T) {
 	t.Run("two guardians, none enabled, expect no guardian returned", func(t *testing.T) {
 		t.Parallel()
 
-		enabledGuardian1 := &Guardian{
+		enabledGuardian1 := &guardiansData.Guardian{
 			Address:         generateRandomByteArray(pubKeyLen),
 			ActivationEpoch: currentEpoch + 1,
 		}
-		enabledGuardian2 := &Guardian{
+		enabledGuardian2 := &guardiansData.Guardian{
 			Address:         generateRandomByteArray(pubKeyLen),
 			ActivationEpoch: currentEpoch + 2,
 		}
-		guardians := &Guardians{Data: []*Guardian{enabledGuardian1, enabledGuardian2}}
+		guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian1, enabledGuardian2}}
 		account := createUserAccountWithGuardians(t, guardians)
 
 		enabledGuardian, err := baf.enabledGuardian(account)

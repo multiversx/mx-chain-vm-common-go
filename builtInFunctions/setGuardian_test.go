@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	"github.com/ElrondNetwork/elrond-go-core/data/mock"
@@ -21,7 +22,7 @@ const currentEpoch = 44444
 
 var userAddress = generateRandomByteArray(pubKeyLen)
 
-func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandler, guardians *Guardians) {
+func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandler, guardians *guardiansData.Guardians) {
 	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
 	require.Nil(t, err)
 
@@ -31,7 +32,7 @@ func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandle
 	require.Equal(t, guardians, storedGuardian)
 }
 
-func createUserAccountWithGuardians(t *testing.T, guardians *Guardians) vmcommon.UserAccountHandler {
+func createUserAccountWithGuardians(t *testing.T, guardians *guardiansData.Guardians) vmcommon.UserAccountHandler {
 	marshalledGuardians, err := marshallerMock.Marshal(guardians)
 	require.Nil(t, err)
 
@@ -130,6 +131,16 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			senderAccount:   account,
 			receiverAccount: account,
 			expectedErr:     ErrCannotSetOwnAddressAsGuardian,
+		},
+		{
+			vmInput: func() *vmcommon.ContractCallInput {
+				input := *vmInput
+				input.Arguments = [][]byte{make([]byte, pubKeyLen)} // Empty SC Address
+				return &input
+			},
+			senderAccount:   account,
+			receiverAccount: account,
+			expectedErr:     ErrInvalidAddress,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
