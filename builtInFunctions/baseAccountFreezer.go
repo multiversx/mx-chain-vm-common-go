@@ -13,7 +13,7 @@ import (
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
-var guardianKeyPrefix = []byte(core.ElrondProtectedKeyPrefix + core.GuardiansKeyIdentifier)
+var guardianKey = []byte(core.ElrondProtectedKeyPrefix + core.GuardiansKeyIdentifier)
 
 // BaseAccountFreezerArgs is a struct placeholder for
 // all necessary args to create a newBaseAccountFreezer
@@ -114,7 +114,7 @@ func (baf *baseAccountFreezer) guardians(account vmcommon.UserAccountHandler) (*
 		return nil, ErrNilAccountHandler
 	}
 
-	marshalledData, err := accountHandler.RetrieveValue(guardianKeyPrefix)
+	marshalledData, err := accountHandler.RetrieveValue(guardianKey)
 	if err != nil {
 		return nil, err
 	}

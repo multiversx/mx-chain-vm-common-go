@@ -157,7 +157,7 @@ func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardian
 		return err
 	}
 
-	return account.AccountDataHandler().SaveKeyValue(guardianKeyPrefix, marshalledData)
+	return account.AccountDataHandler().SaveKeyValue(guardianKey, marshalledData)
 }
 
 // SetNewGasConfig is called whenever gas cost is changed

@@ -22,7 +22,7 @@ const currentEpoch = 44444
 var userAddress = generateRandomByteArray(pubKeyLen)
 
 func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandler, guardians *guardiansData.Guardians) {
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
+	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKey)
 	require.Nil(t, err)
 
 	storedGuardian := &guardiansData.Guardians{}
@@ -36,7 +36,7 @@ func createUserAccountWithGuardians(t *testing.T, guardians *guardiansData.Guard
 	require.Nil(t, err)
 
 	account := mockvm.NewUserAccount(userAddress)
-	err = account.SaveKeyValue(guardianKeyPrefix, marshalledGuardians)
+	err = account.SaveKeyValue(guardianKey, marshalledGuardians)
 	require.Nil(t, err)
 
 	return account
@@ -271,7 +271,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCannotMarshalGuardianExpectError(t *t
 	require.Nil(t, output)
 	require.Equal(t, errMarshaller, err)
 
-	storedData, _ := account.AccountDataHandler().RetrieveValue(guardianKeyPrefix)
+	storedData, _ := account.AccountDataHandler().RetrieveValue(guardianKey)
 	require.Nil(t, storedData)
 }
 
