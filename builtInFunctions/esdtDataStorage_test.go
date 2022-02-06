@@ -272,6 +272,41 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 	assert.Equal(t, esdtData, esdtDataGet)
 }
 
+func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	nonce := uint64(10)
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+		TokenMetaData: &esdt.MetaData{
+			Name:  []byte("test"),
+			Nonce: nonce,
+		},
+	}
+
+	tokenIdentifier := "testTkn"
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
+	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+
+	esdtData.Value = big.NewInt(0)
+	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, false, false)
+	assert.Nil(t, err)
+
+	val, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	assert.Nil(t, val)
+	assert.Nil(t, err)
+
+	esdtMetaData, err := e.getESDTMetaDataFromSystemAccount(tokenKey)
+	assert.Nil(t, err)
+	assert.Equal(t, esdtData.TokenMetaData, esdtMetaData)
+}
+
 func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	t.Parallel()
 
