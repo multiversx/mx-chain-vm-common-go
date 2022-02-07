@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	"github.com/ElrondNetwork/elrond-go-core/data/mock"
@@ -21,16 +20,9 @@ const pubKeyLen = 32
 const currentEpoch = 44444
 
 var userAddress = generateRandomByteArray(pubKeyLen)
-var marshallerMock = &mockvm.MarshalizerMock{}
-
-func guardiansProtectedKey() []byte {
-	return append([]byte(core.ElrondProtectedKeyPrefix), []byte(core.GuardiansKeyIdentifier)...)
-}
 
 func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandler, guardians *guardiansData.Guardians) {
-	key := guardiansProtectedKey()
-
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(key)
+	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKey)
 	require.Nil(t, err)
 
 	storedGuardian := &guardiansData.Guardians{}
@@ -40,19 +32,17 @@ func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandle
 }
 
 func createUserAccountWithGuardians(t *testing.T, guardians *guardiansData.Guardians) vmcommon.UserAccountHandler {
-	key := guardiansProtectedKey()
-
 	marshalledGuardians, err := marshallerMock.Marshal(guardians)
 	require.Nil(t, err)
 
 	account := mockvm.NewUserAccount(userAddress)
-	err = account.SaveKeyValue(key, marshalledGuardians)
+	err = account.SaveKeyValue(guardianKey, marshalledGuardians)
 	require.Nil(t, err)
 
 	return account
 }
 
-func requireSetGuardianVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64) {
+func requireVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64) {
 	expectedOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: gasProvided - gasCost,
@@ -69,11 +59,9 @@ func TestNewSetGuardianFunc(t *testing.T) {
 	}{
 		{
 			args: func() SetGuardianArgs {
-				args := createSetGuardianFuncMockArgs()
-				args.Marshaller = nil
-				return args
+				return createSetGuardianFuncMockArgs()
 			},
-			expectedErr: ErrNilMarshaller,
+			expectedErr: nil,
 		},
 		{
 			args: func() SetGuardianArgs {
@@ -82,12 +70,6 @@ func TestNewSetGuardianFunc(t *testing.T) {
 				return args
 			},
 			expectedErr: ErrNilEpochNotifier,
-		},
-		{
-			args: func() SetGuardianArgs {
-				return createSetGuardianFuncMockArgs()
-			},
-			expectedErr: nil,
 		},
 	}
 
@@ -110,7 +92,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 	account := mockvm.NewUserAccount(address)
 
 	guardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.GuardiansKeyIdentifier, [][]byte{guardianAddress})
+	vmInput := getDefaultVmInput([][]byte{guardianAddress})
 	vmInput.CallerAddr = address
 
 	tests := []struct {
@@ -121,66 +103,6 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 	}{
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   nil,
-			receiverAccount: account,
-			expectedErr:     ErrNilUserAccount,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   account,
-			receiverAccount: nil,
-			expectedErr:     ErrNilUserAccount,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return nil
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrNilVmInput,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   mockvm.NewUserAccount([]byte("userAddress2")),
-			receiverAccount: account,
-			expectedErr:     ErrOperationNotPermitted,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   account,
-			receiverAccount: mockvm.NewUserAccount([]byte("userAddress2")),
-			expectedErr:     ErrOperationNotPermitted,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.CallerAddr = []byte("userAddress2")
-				return &input
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrOperationNotPermitted,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.CallValue = nil
-				return &input
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrNilValue,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.CallValue = big.NewInt(1)
 				return &input
@@ -188,16 +110,6 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			senderAccount:   account,
 			receiverAccount: account,
 			expectedErr:     ErrBuiltInFunctionCalledWithValue,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.Arguments = [][]byte{guardianAddress, guardianAddress}
-				return &input
-			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrInvalidNumberOfArguments,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -222,12 +134,12 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
-				input.GasProvided = 0
+				input.Arguments = [][]byte{make([]byte, pubKeyLen)} // Empty SC Address
 				return &input
 			},
 			senderAccount:   account,
 			receiverAccount: account,
-			expectedErr:     ErrNotEnoughGas,
+			expectedErr:     ErrInvalidAddress,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -279,7 +191,7 @@ func TestSetGuardian_ProcessBuiltinFunctionAccountHasThreeGuardiansExpectError(t
 
 	account := createUserAccountWithGuardians(t, guardians)
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
+	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
@@ -323,7 +235,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCannotUnMarshalGuardiansExpectError(t
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
 
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{generateRandomByteArray(pubKeyLen)})
+	vmInput := getDefaultVmInput([][]byte{generateRandomByteArray(pubKeyLen)})
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, output)
 	require.Equal(t, errMarshaller, err)
@@ -350,7 +262,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCannotMarshalGuardianExpectError(t *t
 	args.Marshaller = marshaller
 
 	account := mockvm.NewUserAccount(userAddress)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{guardian.Address})
+	vmInput := getDefaultVmInput([][]byte{guardian.Address})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
@@ -359,8 +271,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCannotMarshalGuardianExpectError(t *t
 	require.Nil(t, output)
 	require.Equal(t, errMarshaller, err)
 
-	key := guardiansProtectedKey()
-	storedData, _ := account.AccountDataHandler().RetrieveValue(key)
+	storedData, _ := account.AccountDataHandler().RetrieveValue(guardianKey)
 	require.Nil(t, storedData)
 }
 
@@ -386,7 +297,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCannotRetrieveOwnerGuardiansExpectErr
 	}
 
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
+	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
 
 	args := createSetGuardianFuncMockArgs()
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
@@ -404,7 +315,7 @@ func TestSetGuardian_ProcessBuiltinFunctionSetSameGuardianAddressExpectError(t *
 	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{guardian}}
 
 	account := createUserAccountWithGuardians(t, guardians)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{guardian.Address})
+	vmInput := getDefaultVmInput([][]byte{guardian.Address})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
@@ -418,7 +329,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase1AccountHasNoGuardianSet(t *testi
 	t.Parallel()
 
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
+	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
 	account := mockvm.NewUserAccount(userAddress)
 
 	args := createSetGuardianFuncMockArgs()
@@ -427,7 +338,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase1AccountHasNoGuardianSet(t *testi
 
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
-	requireSetGuardianVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
+	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 
 	newGuardian := &guardiansData.Guardian{
 		Address:         newGuardianAddress,
@@ -449,7 +360,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase2AccountHasOnePendingGuardian(t *
 
 	account := createUserAccountWithGuardians(t, guardians)
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
+	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
@@ -472,14 +383,14 @@ func TestSetGuardian_ProcessBuiltinFunctionCase3AccountHasOneEnabledGuardian(t *
 
 	account := createUserAccountWithGuardians(t, guardians)
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
+	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
 
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
-	requireSetGuardianVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
+	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 
 	newGuardian := &guardiansData.Guardian{
 		Address:         newGuardianAddress,
@@ -505,7 +416,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCase4AccountHasOneEnabledGuardianAndO
 
 	account := createUserAccountWithGuardians(t, guardians)
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
+	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
@@ -533,14 +444,14 @@ func TestSetGuardian_ProcessBuiltinFunctionCase5OwnerHasTwoEnabledGuardians(t *t
 
 	account := createUserAccountWithGuardians(t, guardians)
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput(core.BuiltInFunctionSetGuardian, [][]byte{newGuardianAddress})
+	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
 
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
-	requireSetGuardianVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
+	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 
 	newGuardian := &guardiansData.Guardian{
 		Address:         newGuardianAddress,
@@ -557,21 +468,13 @@ func generateRandomByteArray(size uint32) []byte {
 }
 
 func createSetGuardianFuncMockArgs() SetGuardianArgs {
-	epochNotifier := &mockvm.EpochNotifierStub{
-		CurrentEpochCalled: func() uint32 {
-			return currentEpoch
-		},
-	}
-
 	return SetGuardianArgs{
+		BaseAccountFreezerArgs:   createBaseAccountFreezerArgs(),
 		GuardianActivationEpochs: 100,
-		FuncGasCost:              100000,
-		Marshaller:               marshallerMock,
-		EpochNotifier:            epochNotifier,
 	}
 }
 
-func getDefaultVmInput(funcName string, args [][]byte) *vmcommon.ContractCallInput {
+func getDefaultVmInput(args [][]byte) *vmcommon.ContractCallInput {
 	return &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallerAddr:  userAddress,
@@ -579,6 +482,5 @@ func getDefaultVmInput(funcName string, args [][]byte) *vmcommon.ContractCallInp
 			CallValue:   big.NewInt(0),
 			GasProvided: 500000,
 		},
-		Function: funcName,
 	}
 }

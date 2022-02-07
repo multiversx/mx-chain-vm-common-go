@@ -29,6 +29,7 @@ type BuiltInCost struct {
 	ESDTNFTAddURI            uint64
 	ESDTNFTUpdateAttributes  uint64
 	SetGuardian              uint64
+	FreezeAccount            uint64
 }
 
 // GasCost holds all the needed gas costs for system smart contracts

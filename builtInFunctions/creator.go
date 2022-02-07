@@ -24,6 +24,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	SaveNFTToSystemAccountEnableEpoch   uint32
 	SetGuardianEnableEpoch              uint32
 	GuardianActivationEpochs            uint32
+	FreezeAccountEnableEpoch            uint32
 }
 
 type builtInFuncCreator struct {
@@ -44,6 +45,7 @@ type builtInFuncCreator struct {
 	saveNFTToSystemAccountEnableEpoch   uint32
 	setGuardianEnableEpoch              uint32
 	guardianActivationEpochs            uint32
+	freezeAccountEnableEpoch            uint32
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -79,6 +81,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		saveNFTToSystemAccountEnableEpoch:   args.SaveNFTToSystemAccountEnableEpoch,
 		setGuardianEnableEpoch:              args.SetGuardianEnableEpoch,
 		guardianActivationEpochs:            args.GuardianActivationEpochs,
+		freezeAccountEnableEpoch:            args.FreezeAccountEnableEpoch,
 	}
 
 	var err error
@@ -352,9 +355,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	}
 
 	argsSetGuardian := SetGuardianArgs{
-		Marshaller:               b.marshalizer,
-		EpochNotifier:            b.epochNotifier,
-		FuncGasCost:              b.gasConfig.BuiltInCost.SetGuardian,
+		BaseAccountFreezerArgs:   b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.SetGuardian),
 		GuardianActivationEpochs: b.guardianActivationEpochs,
 		SetGuardianEnableEpoch:   b.setGuardianEnableEpoch,
 	}
@@ -367,7 +368,41 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
+	argsFreezeAccount := b.createFreezeAccountArgs()
+	newFunc, err = NewFreezeAccountFunc(argsFreezeAccount)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionFreezeAccount, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	newFunc, err = NewUnfreezeAccountFunc(argsFreezeAccount)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionUnfreezeAccount, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
 	return b.builtInFunctions, nil
+}
+
+func (b *builtInFuncCreator) createBaseAccountFreezerArgs(funcGasCost uint64) BaseAccountFreezerArgs {
+	return BaseAccountFreezerArgs{
+		Marshaller:    b.marshalizer,
+		EpochNotifier: b.epochNotifier,
+		FuncGasCost:   funcGasCost,
+	}
+}
+
+func (b *builtInFuncCreator) createFreezeAccountArgs() FreezeAccountArgs {
+	return FreezeAccountArgs{
+		BaseAccountFreezerArgs:   b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.FreezeAccount),
+		FreezeAccountEnableEpoch: b.freezeAccountEnableEpoch,
+	}
 }
 
 func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, error) {

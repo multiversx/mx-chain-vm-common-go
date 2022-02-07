@@ -4,63 +4,49 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
-	"github.com/ElrondNetwork/elrond-go-core/marshal"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
 var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/setGuardian")
 
+const noOfArgsSetGuardian = 1
+
 // SetGuardianArgs is a struct placeholder for all necessary args
 // to create a NewSetGuardianFunc
 type SetGuardianArgs struct {
-	Marshaller    marshal.Marshalizer
-	EpochNotifier vmcommon.EpochNotifier
+	BaseAccountFreezerArgs
 
-	FuncGasCost              uint64
 	GuardianActivationEpochs uint32
 	SetGuardianEnableEpoch   uint32
 }
 
 type setGuardian struct {
 	*baseEnabled
-	marshaller marshal.Marshalizer
+	*baseAccountFreezer
 
-	mutExecution             sync.RWMutex
-	currentEpoch             uint32
 	guardianActivationEpochs uint32
-	funcGasCost              uint64
-	keyPrefix                []byte
 }
 
 // NewSetGuardianFunc will instantiate a new set guardian built-in function
 func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
-	if check.IfNil(args.Marshaller) {
-		return nil, ErrNilMarshaller
+	base, err := newBaseAccountFreezer(args.BaseAccountFreezerArgs)
+	if err != nil {
+		return nil, err
 	}
-	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochNotifier
-	}
-
 	setGuardianFunc := &setGuardian{
-		funcGasCost:              args.FuncGasCost,
-		marshaller:               args.Marshaller,
 		guardianActivationEpochs: args.GuardianActivationEpochs,
-		mutExecution:             sync.RWMutex{},
-		keyPrefix:                []byte(core.ElrondProtectedKeyPrefix + core.GuardiansKeyIdentifier),
 	}
 	setGuardianFunc.baseEnabled = &baseEnabled{
 		function:        core.BuiltInFunctionSetGuardian,
 		activationEpoch: args.SetGuardianEnableEpoch,
 		flagActivated:   atomic.Flag{},
 	}
+	setGuardianFunc.baseAccountFreezer = base
 
 	logAccountFreezer.Debug("set guardian enable epoch", args.SetGuardianEnableEpoch)
 	args.EpochNotifier.RegisterNotifyHandler(setGuardianFunc)
@@ -76,7 +62,11 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	err := sg.checkArguments(acntSnd, acntDst, vmInput)
+	err := sg.checkBaseAccountFreezerArgs(acntSnd, acntDst, vmInput, noOfArgsSetGuardian)
+	if err != nil {
+		return nil, err
+	}
+	err = sg.checkSetGuardianArgs(acntSnd, vmInput)
 	if err != nil {
 		return nil, err
 	}
@@ -113,74 +103,24 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	}
 }
 
-func (sg *setGuardian) checkArguments(
-	senderAccount,
-	receiverAccount vmcommon.UserAccountHandler,
+func (sg *setGuardian) checkSetGuardianArgs(
+	sender vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) error {
-	if check.IfNil(senderAccount) {
-		return fmt.Errorf("%w for sender", ErrNilUserAccount)
-	}
-	if check.IfNil(receiverAccount) {
-		return fmt.Errorf("%w for receiver", ErrNilUserAccount)
-	}
-	if vmInput == nil {
-		return ErrNilVmInput
-	}
+	senderAddr := sender.AddressBytes()
+	guardianAddr := vmInput.Arguments[0]
 
-	senderIsNotCaller := !bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)
-	senderIsNotReceiver := !bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes())
-	if senderIsNotCaller || senderIsNotReceiver {
-		return ErrOperationNotPermitted
-	}
-	if vmInput.CallValue == nil {
-		return ErrNilValue
-	}
-	if !isZero(vmInput.CallValue) {
-		return ErrBuiltInFunctionCalledWithValue
-	}
-	if len(vmInput.Arguments) != 1 {
-		return fmt.Errorf("%w, expected 1, got %d ", ErrInvalidNumberOfArguments, len(vmInput.Arguments))
-	}
-
-	isGuardianAddrLenOk := len(vmInput.Arguments[0]) == len(senderAccount.AddressBytes())
-	isGuardianAddrSC := core.IsSmartContractAddress(senderAccount.AddressBytes())
+	isGuardianAddrLenOk := len(vmInput.Arguments[0]) == len(senderAddr)
+	isGuardianAddrSC := core.IsSmartContractAddress(guardianAddr)
 	if !isGuardianAddrLenOk || isGuardianAddrSC {
 		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
 	}
-	if bytes.Equal(vmInput.CallerAddr, vmInput.Arguments[0]) {
+
+	if bytes.Equal(senderAddr, guardianAddr) {
 		return ErrCannotSetOwnAddressAsGuardian
-	}
-	if vmInput.GasProvided < sg.funcGasCost {
-		return ErrNotEnoughGas
 	}
 
 	return nil
-}
-
-func isZero(n *big.Int) bool {
-	return len(n.Bits()) == 0
-}
-
-func (sg *setGuardian) guardians(account vmcommon.UserAccountHandler) (*guardiansData.Guardians, error) {
-
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(sg.keyPrefix)
-	if err != nil {
-		return nil, err
-	}
-
-	// Account has no guardian set
-	if len(marshalledData) == 0 {
-		return &guardiansData.Guardians{Data: make([]*guardiansData.Guardian, 0)}, nil
-	}
-
-	guardians := &guardiansData.Guardians{}
-	err = sg.marshaller.Unmarshal(guardians, marshalledData)
-	if err != nil {
-		return nil, err
-	}
-
-	return guardians, err
 }
 
 func (sg *setGuardian) contains(guardians *guardiansData.Guardians, guardianAddress []byte) bool {
@@ -217,11 +157,7 @@ func (sg *setGuardian) addGuardian(account vmcommon.UserAccountHandler, guardian
 		return err
 	}
 
-	return account.AccountDataHandler().SaveKeyValue(sg.keyPrefix, marshalledData)
-}
-
-func (sg *setGuardian) pending(guardian *guardiansData.Guardian) bool {
-	return guardian.ActivationEpoch > sg.currentEpoch
+	return account.AccountDataHandler().SaveKeyValue(guardianKey, marshalledData)
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -232,9 +168,6 @@ func (sg *setGuardian) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 }
 
 func (sg *setGuardian) EpochConfirmed(epoch uint32, _ uint64) {
-	sg.mutExecution.Lock()
-	defer sg.mutExecution.Unlock()
-
-	sg.currentEpoch = epoch
 	sg.baseEnabled.EpochConfirmed(epoch, 0)
+	sg.baseAccountFreezer.EpochConfirmed(epoch, 0)
 }
