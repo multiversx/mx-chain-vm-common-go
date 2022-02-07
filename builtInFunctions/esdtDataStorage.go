@@ -181,6 +181,14 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, err
 	}
 
+	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
+	if e.flagSaveToSystemAccount.IsSet() {
+		err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdate)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if esdtData.Value.Cmp(zero) <= 0 {
 		return nil, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
@@ -192,12 +200,6 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		}
 
 		return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
-	}
-
-	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
-	err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdate)
-	if err != nil {
-		return nil, err
 	}
 
 	esdtDataOnAccount := &esdt.ESDigitalToken{

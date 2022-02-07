@@ -288,8 +288,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, err
 	}
 
-	tokenNonce := esdtData.TokenMetaData.Nonce
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], tokenNonce, quantityToTransfer, vmInput.CallerAddr, dstAddress)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, quantityToTransfer, vmInput.CallerAddr, dstAddress)
 
 	return vmOutput, nil
 }
