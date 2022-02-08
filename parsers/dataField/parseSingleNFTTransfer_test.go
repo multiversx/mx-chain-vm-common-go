@@ -4,8 +4,6 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
-
 	"github.com/ElrondNetwork/elrond-go-core/core/pubkeyConverter"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/stretchr/testify/require"
@@ -22,11 +20,7 @@ var receiverSC, _ = pubKeyConv.Decode("erd1qqqqqqqqqqqqqpgqp699jngundfqw07d8jzke
 func TestESDTNFTTransfer(t *testing.T) {
 	t.Parallel()
 
-	args := &ArgsOperationDataFieldParser{
-		Marshalizer:      &mock.MarshalizerMock{},
-		ShardCoordinator: &mock.ShardCoordinatorStub{},
-	}
-
+	args := createMockArgumentsOperationParser()
 	parser, _ := NewOperationDataFieldParser(args)
 
 	t.Run("NFTTransferNotOkNonHexArguments", func(t *testing.T) {
@@ -35,11 +29,11 @@ func TestESDTNFTTransfer(t *testing.T) {
 		dataField := []byte("ESDTNFTTransfer@@11316@01")
 		res := parser.Parse(dataField, sender, receiver)
 		require.Equal(t, &ResponseParseData{
-			Operation: "transfer",
+			Operation: operationTransfer,
 		}, res)
 	})
 
-	t.Run("NFTTransferNotEnoughArguments", func(t *testing.T) {
+	t.Run("TransferNotEnoughArguments", func(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte("ESDTNFTTransfer@@1131@01")
@@ -54,12 +48,11 @@ func TestESDTNFTTransfer(t *testing.T) {
 
 		dataField := []byte("ESDTNFTTransfer@444541442d373966386431@1136@01@08011202000122bc0308b622120c556e646561642023343430361a2000000000000000000500a536e203953414ff92e0a2fdb9b9c0d987fac394242920e8072a2e516d5a39447237447051516b79336e51484a6a4e646b6a393570574c547542384273596a6f4e4c71326262587764324c68747470733a2f2f697066732e696f2f697066732f516d5a39447237447051516b79336e51484a6a4e646b6a393570574c547542384273596a6f4e4c713262625877642f313939302e706e67324d68747470733a2f2f697066732e696f2f697066732f516d5a39447237447051516b79336e51484a6a4e646b6a393570574c547542384273596a6f4e4c713262625877642f313939302e6a736f6e325368747470733a2f2f697066732e696f2f697066732f516d5a39447237447051516b79336e51484a6a4e646b6a393570574c547542384273596a6f4e4c713262625877642f636f6c6c656374696f6e2e6a736f6e3a62746167733a556e646561642c54726561737572652048756e742c456c726f6e643b6d657461646174613a516d5a39447237447051516b79336e51484a6a4e646b6a393570574c547542384273596a6f4e4c713262625877642f313939302e6a736f6e")
 		res := parser.Parse(dataField, sender, receiver)
-		rcv, _ := hex.DecodeString("b40420572834a9b8ad4a62d503b03fd9b601c168be71b9da2b01773a25a4f040")
 		require.Equal(t, &ResponseParseData{
 			Operation:        "ESDTNFTTransfer",
 			ESDTValues:       []string{"1"},
 			Tokens:           []string{"DEAD-79f8d1-1136"},
-			Receivers:        [][]byte{rcv},
+			Receivers:        [][]byte{receiver},
 			ReceiversShardID: []uint32{0},
 		}, res)
 	})

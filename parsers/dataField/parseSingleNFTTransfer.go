@@ -2,17 +2,12 @@ package datafield
 
 import (
 	"bytes"
-
 	"github.com/ElrondNetwork/elrond-go-core/core"
 )
 
-func (odp *operationDataFieldParser) parseESDTNFTTransfer(args [][]byte, sender, receiver []byte) *ResponseParseData {
-	responseParse := &ResponseParseData{
-		Operation: core.BuiltInFunctionESDTNFTTransfer,
-	}
-
-	parsedESDTTransfers, err := odp.esdtTransferParser.ParseESDTTransfers(sender, receiver, core.BuiltInFunctionESDTNFTTransfer, args)
-	if err != nil {
+func (odp *operationDataFieldParser) parseSingleESDTNFTTransfer(args [][]byte, function string, sender, receiver []byte) *ResponseParseData {
+	responseParse, parsedESDTTransfers, ok := odp.extractESDTData(args, function, sender, receiver)
+	if !ok {
 		return responseParse
 	}
 

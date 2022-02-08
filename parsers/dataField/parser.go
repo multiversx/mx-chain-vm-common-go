@@ -16,6 +16,8 @@ const (
 	minArgumentsQuantityOperationESDT = 2
 	minArgumentsQuantityOperationNFT  = 3
 	numArgsRelayedV2                  = 4
+	receiverAddressIndexRelayedV2     = 0
+	dataFieldIndexRelayedV2           = 2
 )
 
 type operationDataFieldParser struct {
@@ -63,11 +65,11 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 
 	switch function {
 	case core.BuiltInFunctionESDTTransfer:
-		return odp.parseESDTTransfer(args, sender, receiver)
+		return odp.parseSingleESDTTransfer(args, function, sender, receiver)
 	case core.BuiltInFunctionESDTNFTTransfer:
-		return odp.parseESDTNFTTransfer(args, sender, receiver)
+		return odp.parseSingleESDTNFTTransfer(args, function, sender, receiver)
 	case core.BuiltInFunctionMultiESDTNFTTransfer:
-		return odp.parseMultiESDTNFTTransfer(args, sender, receiver)
+		return odp.parseMultiESDTNFTTransfer(args, function, sender, receiver)
 	case core.BuiltInFunctionESDTLocalBurn, core.BuiltInFunctionESDTLocalMint:
 		return parseQuantityOperationESDT(args, function)
 	case core.BuiltInFunctionESDTWipe, core.BuiltInFunctionESDTFreeze, core.BuiltInFunctionESDTUnFreeze:
@@ -144,8 +146,8 @@ func extractInnerTx(function string, args [][]byte, receiver []byte) (*transacti
 
 	// sender of the inner tx is the receiver of the relayed tx
 	tx.SndAddr = receiver
-	tx.RcvAddr = args[0]
-	tx.Data = args[2]
+	tx.RcvAddr = args[receiverAddressIndexRelayedV2]
+	tx.Data = args[dataFieldIndexRelayedV2]
 
 	return tx, true
 }
@@ -160,12 +162,11 @@ func parseBlockingOperationESDT(args [][]byte, funcName string) *ResponseParseDa
 	}
 
 	token, nonce := extractTokenIdentifierAndNonce(args[0])
-	tokenStr := string(token)
 	if nonce != 0 {
-		tokenStr = computeTokenIdentifier(tokenStr, nonce)
+		token = computeTokenIdentifier(token, nonce)
 	}
 
-	responseData.Tokens = append(responseData.Tokens, tokenStr)
+	responseData.Tokens = append(responseData.Tokens, token)
 	return responseData
 }
 

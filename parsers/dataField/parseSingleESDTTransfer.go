@@ -2,15 +2,12 @@ package datafield
 
 import (
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
-func (odp *operationDataFieldParser) parseESDTTransfer(args [][]byte, sender, receiver []byte) *ResponseParseData {
-	responseParse := &ResponseParseData{
-		Operation: core.BuiltInFunctionESDTTransfer,
-	}
-
-	parsedESDTTransfers, err := odp.esdtTransferParser.ParseESDTTransfers(sender, receiver, core.BuiltInFunctionESDTTransfer, args)
-	if err != nil {
+func (odp *operationDataFieldParser) parseSingleESDTTransfer(args [][]byte, function string, sender, receiver []byte) *ResponseParseData {
+	responseParse, parsedESDTTransfers, ok := odp.extractESDTData(args, function, sender, receiver)
+	if !ok {
 		return responseParse
 	}
 
@@ -25,4 +22,17 @@ func (odp *operationDataFieldParser) parseESDTTransfer(args [][]byte, sender, re
 	responseParse.ESDTValues = append(responseParse.ESDTValues, parsedESDTTransfers.ESDTTransfers[0].ESDTValue.String())
 
 	return responseParse
+}
+
+func (odp *operationDataFieldParser) extractESDTData(args [][]byte, function string, sender, receiver []byte) (*ResponseParseData, *vmcommon.ParsedESDTTransfers, bool) {
+	responseParse := &ResponseParseData{
+		Operation: function,
+	}
+
+	parsedESDTTransfers, err := odp.esdtTransferParser.ParseESDTTransfers(sender, receiver, function, args)
+	if err != nil {
+		return responseParse, nil, false
+	}
+
+	return responseParse, parsedESDTTransfers, true
 }

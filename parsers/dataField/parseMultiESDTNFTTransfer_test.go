@@ -4,18 +4,13 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMultiESDTNFTTransferParse(t *testing.T) {
 	t.Parallel()
 
-	args := &ArgsOperationDataFieldParser{
-		Marshalizer:      &mock.MarshalizerMock{},
-		ShardCoordinator: &mock.ShardCoordinatorStub{},
-	}
-
+	args := createMockArgumentsOperationParser()
 	parser, _ := NewOperationDataFieldParser(args)
 
 	t.Run("MultiNFTTransferWithSCCall", func(t *testing.T) {

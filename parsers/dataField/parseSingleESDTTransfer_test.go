@@ -3,18 +3,13 @@ package datafield
 import (
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestParseESDTTransfer(t *testing.T) {
 	t.Parallel()
 
-	args := &ArgsOperationDataFieldParser{
-		Marshalizer:      &mock.MarshalizerMock{},
-		ShardCoordinator: &mock.ShardCoordinatorStub{},
-	}
-
+	args := createMockArgumentsOperationParser()
 	parser, _ := NewOperationDataFieldParser(args)
 
 	t.Run("TransferNonHexArguments", func(t *testing.T) {
@@ -27,7 +22,7 @@ func TestParseESDTTransfer(t *testing.T) {
 		}, res)
 	})
 
-	t.Run("TransferNotEnoughtArguments", func(t *testing.T) {
+	t.Run("TransferNotEnoughArguments", func(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte("ESDTTransfer@1234")

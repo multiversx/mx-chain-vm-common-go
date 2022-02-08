@@ -133,7 +133,7 @@ func TestParseQuantityOperationsNFT(t *testing.T) {
 		}, res)
 	})
 
-	t.Run("ESDTNFTAddQuantityNotEnoughtArguments", func(t *testing.T) {
+	t.Run("ESDTNFTAddQuantityNotEnoughArguments", func(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte("ESDTNFTAddQuantity@54494b4954414b41@02")
@@ -183,7 +183,7 @@ func TestParseBlockingOperationESDT(t *testing.T) {
 		}, res)
 	})
 
-	t.Run("ESDTWipe", func(t *testing.T) {
+	t.Run("ESDTFreezeNoArguments", func(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte("ESDTFreeze")
@@ -208,11 +208,7 @@ func TestParseBlockingOperationESDT(t *testing.T) {
 func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 	t.Parallel()
 
-	args := &ArgsOperationDataFieldParser{
-		Marshalizer:      &mock.MarshalizerMock{},
-		ShardCoordinator: &mock.ShardCoordinatorStub{},
-	}
-
+	args := createMockArgumentsOperationParser()
 	parser, _ := NewOperationDataFieldParser(args)
 
 	t.Run("RelayedTxOk", func(t *testing.T) {
@@ -234,7 +230,7 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 		}, res)
 	})
 
-	t.Run("RelayedTxV2Ok", func(t *testing.T) {
+	t.Run("RelayedTxV2ShouldWork", func(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte(core.RelayedTransactionV2 +
@@ -248,12 +244,11 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 			"01a2")
 
 		res := parser.Parse(dataField, sender, receiver)
-		rcv, _ := hex.DecodeString("000000000000000005000e8a594d1c9b52073fcd3c856c87986045c85f568b98")
 		require.Equal(t, &ResponseParseData{
 			IsRelayed:        true,
 			Operation:        "transfer",
 			Function:         "callMe",
-			Receivers:        [][]byte{rcv},
+			Receivers:        [][]byte{receiverSC},
 			ReceiversShardID: []uint32{0},
 		}, res)
 	})
