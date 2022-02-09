@@ -879,7 +879,7 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 
 	globalSettings := &mock.GlobalSettingsHandlerStub{}
 	transferFunc, esdtStorageHandler := createNFTTransferAndStorageHandler(0, 1, globalSettings)
-	esdtStorageHandler.flagSaveToSystemAccount.SetValue(true)
+	esdtStorageHandler.flagCheckFrozenCollection.SetValue(true)
 
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 

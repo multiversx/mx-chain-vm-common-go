@@ -516,7 +516,7 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 	args.ShardCoordinator = shardCoordinator
 	e, _ := NewESDTDataStorage(args)
 
-	e.flagSaveToSystemAccount.SetValue(false)
+	e.flagCheckFrozenCollection.SetValue(false)
 
 	acnt, _ := e.accounts.LoadAccount([]byte("address1"))
 	userAcc := acnt.(vmcommon.UserAccountHandler)
@@ -526,7 +526,7 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 	err := e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Nil(t, err)
 
-	e.flagSaveToSystemAccount.SetValue(true)
+	e.flagCheckFrozenCollection.SetValue(true)
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 0, false)
 	assert.Nil(t, err)
 
