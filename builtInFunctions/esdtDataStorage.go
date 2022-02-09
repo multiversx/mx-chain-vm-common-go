@@ -17,14 +17,17 @@ import (
 const existsOnShard = byte(1)
 
 type esdtDataStorage struct {
-	accounts                vmcommon.AccountsAdapter
-	globalSettingsHandler   vmcommon.ESDTGlobalSettingsHandler
-	marshalizer             vmcommon.Marshalizer
-	keyPrefix               []byte
-	flagSaveToSystemAccount atomic.Flag
-	saveToSystemEnableEpoch uint32
-	shardCoordinator        vmcommon.Coordinator
-	txDataParser            vmcommon.CallArgsParser
+	accounts              vmcommon.AccountsAdapter
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	marshalizer           vmcommon.Marshalizer
+	keyPrefix             []byte
+	shardCoordinator      vmcommon.Coordinator
+	txDataParser          vmcommon.CallArgsParser
+
+	flagSaveToSystemAccount          atomic.Flag
+	saveToSystemEnableEpoch          uint32
+	flagCheckFrozenCollection        atomic.Flag
+	checkFrozenCollectionEnableEpoch uint32
 }
 
 // ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
@@ -56,14 +59,17 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 	}
 
 	e := &esdtDataStorage{
-		accounts:                args.Accounts,
-		globalSettingsHandler:   args.GlobalSettingsHandler,
-		marshalizer:             args.Marshalizer,
-		keyPrefix:               []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		flagSaveToSystemAccount: atomic.Flag{},
-		saveToSystemEnableEpoch: args.SaveToSystemEnableEpoch,
-		shardCoordinator:        args.ShardCoordinator,
-		txDataParser:            parsers.NewCallArgsParser(),
+		accounts:              args.Accounts,
+		globalSettingsHandler: args.GlobalSettingsHandler,
+		marshalizer:           args.Marshalizer,
+		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		shardCoordinator:      args.ShardCoordinator,
+		txDataParser:          parsers.NewCallArgsParser(),
+
+		flagSaveToSystemAccount:          atomic.Flag{},
+		saveToSystemEnableEpoch:          args.SaveToSystemEnableEpoch,
+		flagCheckFrozenCollection:        atomic.Flag{},
+		checkFrozenCollectionEnableEpoch: args.SaveToSystemEnableEpoch,
 	}
 
 	args.EpochNotifier.RegisterNotifyHandler(e)
@@ -160,6 +166,42 @@ func (e *esdtDataStorage) getESDTMetaDataFromSystemAccount(
 	return esdtData.TokenMetaData, nil
 }
 
+// CheckCollectionIsFrozenForAccount returns
+func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
+	accnt vmcommon.UserAccountHandler,
+	esdtTokenKey []byte,
+	nonce uint64,
+	isReturnWithError bool,
+) error {
+	if !e.flagCheckFrozenCollection.IsSet() {
+		return nil
+	}
+	if nonce == 0 || isReturnWithError {
+		return nil
+	}
+
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(0),
+		Type:  uint32(core.Fungible),
+	}
+	marshaledData, err := accnt.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if err != nil || len(marshaledData) == 0 {
+		return nil
+	}
+
+	err = e.marshalizer.Unmarshal(esdtData, marshaledData)
+	if err != nil {
+		return err
+	}
+
+	esdtUserMetaData := ESDTUserMetadataFromBytes(esdtData.Properties)
+	if esdtUserMetaData.Frozen {
+		return ErrESDTIsFrozenForAccount
+	}
+
+	return nil
+}
+
 // SaveESDTNFTToken saves the nft token to the account and system account
 func (e *esdtDataStorage) SaveESDTNFTToken(
 	senderAddress []byte,
@@ -177,6 +219,11 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, e.globalSettingsHandler, isReturnWithError)
+	if err != nil {
+		return nil, err
+	}
+
+	err = e.checkCollectionIsFrozenForAccount(acnt, esdtTokenKey, nonce, isReturnWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -437,6 +484,9 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromMultiTransfer(
 func (e *esdtDataStorage) EpochConfirmed(epoch uint32, _ uint64) {
 	e.flagSaveToSystemAccount.SetValue(epoch >= e.saveToSystemEnableEpoch)
 	log.Debug("ESDT NFT save to system account", "enabled", e.flagSaveToSystemAccount.IsSet())
+
+	e.flagCheckFrozenCollection.SetValue(epoch >= e.checkFrozenCollectionEnableEpoch)
+	log.Debug("ESDT NFT check frozen collection", "enabled", e.flagCheckFrozenCollection.IsSet())
 }
 
 // IsInterfaceNil returns true if underlying object in nil

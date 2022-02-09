@@ -507,3 +507,49 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *test
 	assert.Nil(t, esdtGetData)
 	assert.Nil(t, err)
 }
+
+func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	shardCoordinator := &mock.ShardCoordinatorStub{}
+	args.ShardCoordinator = shardCoordinator
+	e, _ := NewESDTDataStorage(args)
+
+	e.flagCheckFrozenCollection.SetValue(false)
+
+	acnt, _ := e.accounts.LoadAccount([]byte("address1"))
+	userAcc := acnt.(vmcommon.UserAccountHandler)
+
+	tickerID := []byte("TOKEN-ABCDEF")
+	esdtTokenKey := append(e.keyPrefix, tickerID...)
+	err := e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
+	assert.Nil(t, err)
+
+	e.flagCheckFrozenCollection.SetValue(true)
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 0, false)
+	assert.Nil(t, err)
+
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, true)
+	assert.Nil(t, err)
+
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
+	assert.Nil(t, err)
+
+	tokenData, _ := getESDTDataFromKey(userAcc, esdtTokenKey, e.marshalizer)
+
+	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
+	esdtUserMetadata.Frozen = false
+	tokenData.Properties = esdtUserMetadata.ToBytes()
+	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshalizer)
+
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
+	assert.Nil(t, err)
+
+	esdtUserMetadata.Frozen = true
+	tokenData.Properties = esdtUserMetadata.ToBytes()
+	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshalizer)
+
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
+	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
+}
