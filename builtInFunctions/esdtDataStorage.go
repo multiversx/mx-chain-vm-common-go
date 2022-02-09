@@ -160,6 +160,42 @@ func (e *esdtDataStorage) getESDTMetaDataFromSystemAccount(
 	return esdtData.TokenMetaData, nil
 }
 
+// CheckCollectionIsFrozenForAccount returns
+func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
+	accnt vmcommon.UserAccountHandler,
+	esdtTokenKey []byte,
+	nonce uint64,
+	isReturnWithError bool,
+) error {
+	if !e.flagSaveToSystemAccount.IsSet() {
+		return nil
+	}
+	if nonce == 0 || isReturnWithError {
+		return nil
+	}
+
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(0),
+		Type:  uint32(core.Fungible),
+	}
+	marshaledData, err := accnt.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if err != nil || len(marshaledData) == 0 {
+		return nil
+	}
+
+	err = e.marshalizer.Unmarshal(esdtData, marshaledData)
+	if err != nil {
+		return err
+	}
+
+	esdtUserMetaData := ESDTUserMetadataFromBytes(esdtData.Properties)
+	if esdtUserMetaData.Frozen {
+		return ErrESDTIsFrozenForAccount
+	}
+
+	return nil
+}
+
 // SaveESDTNFTToken saves the nft token to the account and system account
 func (e *esdtDataStorage) SaveESDTNFTToken(
 	senderAddress []byte,
@@ -177,6 +213,11 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	err = checkFrozeAndPause(acnt.AddressBytes(), esdtNFTTokenKey, esdtData, e.globalSettingsHandler, isReturnWithError)
+	if err != nil {
+		return nil, err
+	}
+
+	err = e.checkCollectionIsFrozenForAccount(acnt, esdtTokenKey, nonce, isReturnWithError)
 	if err != nil {
 		return nil, err
 	}
