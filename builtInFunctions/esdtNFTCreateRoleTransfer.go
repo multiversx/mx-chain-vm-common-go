@@ -68,14 +68,14 @@ func (e *esdtNFTCreateRoleTransfer) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 	if bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
-		outAcc, errExec := e.executeTransferNFTCreateChangeAtCurrentOwner(acntDst, vmInput)
+		outAcc, errExec := e.executeTransferNFTCreateChangeAtCurrentOwner(vmOutput, acntDst, vmInput)
 		if errExec != nil {
 			return nil, errExec
 		}
 		vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
 		vmOutput.OutputAccounts[string(outAcc.Address)] = outAcc
 	} else {
-		err = e.executeTransferNFTCreateChangeAtNextOwner(acntDst, vmInput)
+		err = e.executeTransferNFTCreateChangeAtNextOwner(vmOutput, acntDst, vmInput)
 		if err != nil {
 			return nil, err
 		}
@@ -85,6 +85,7 @@ func (e *esdtNFTCreateRoleTransfer) ProcessBuiltinFunction(
 }
 
 func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtCurrentOwner(
+	vmOutput *vmcommon.VMOutput,
 	acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.OutputAccount, error) {
@@ -112,6 +113,9 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtCurrentOwner
 		return nil, err
 	}
 
+	logData := append([][]byte{acntDst.AddressBytes()}, boolToSlice(false))
+	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), tokenID, 0, big.NewInt(0), logData...)
+
 	destAddress := vmInput.Arguments[1]
 	if e.shardCoordinator.ComputeId(destAddress) == e.shardCoordinator.SelfId() {
 		newDestinationAcc, errLoad := e.accounts.LoadAccount(destAddress)
@@ -137,6 +141,9 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtCurrentOwner
 		if err != nil {
 			return nil, err
 		}
+
+		logData = append([][]byte{destAddress}, boolToSlice(true))
+		addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), tokenID, 0, big.NewInt(0), logData...)
 	}
 
 	outAcc := &vmcommon.OutputAccount{
@@ -207,6 +214,7 @@ func saveRolesToAccount(
 }
 
 func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtNextOwner(
+	vmOutput *vmcommon.VMOutput,
 	acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) error {
@@ -227,6 +235,9 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtNextOwner(
 	if err != nil {
 		return err
 	}
+
+	logData := append([][]byte{acntDst.AddressBytes()}, boolToSlice(true))
+	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), tokenID, 0, big.NewInt(0), logData...)
 
 	return nil
 }
