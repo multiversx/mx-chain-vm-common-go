@@ -89,7 +89,7 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 
-	logData := append([][]byte{vmInput.CallerAddr}, vmInput.Arguments[1:]...)
+	logData := append([][]byte{acntDst.AddressBytes()}, vmInput.Arguments[1:]...)
 	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), vmInput.Arguments[0], 0, big.NewInt(0), logData...)
 
 	return vmOutput, nil
