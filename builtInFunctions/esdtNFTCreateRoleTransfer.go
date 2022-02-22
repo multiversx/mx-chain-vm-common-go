@@ -113,7 +113,7 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtCurrentOwner
 		return nil, err
 	}
 
-	logData := append([][]byte{acntDst.AddressBytes()}, boolToSlice(false))
+	logData := [][]byte{acntDst.AddressBytes(), boolToSlice(false)}
 	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), tokenID, 0, big.NewInt(0), logData...)
 
 	destAddress := vmInput.Arguments[1]
@@ -142,7 +142,7 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtCurrentOwner
 			return nil, err
 		}
 
-		logData = append([][]byte{destAddress}, boolToSlice(true))
+		logData = [][]byte{destAddress, boolToSlice(true)}
 		addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), tokenID, 0, big.NewInt(0), logData...)
 	}
 
@@ -236,7 +236,7 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtNextOwner(
 		return err
 	}
 
-	logData := append([][]byte{acntDst.AddressBytes()}, boolToSlice(true))
+	logData := [][]byte{acntDst.AddressBytes(), boolToSlice(true)}
 	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), tokenID, 0, big.NewInt(0), logData...)
 
 	return nil
