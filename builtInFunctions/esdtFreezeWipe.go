@@ -2,10 +2,11 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"math/big"
+
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-vm-common"
-	"math/big"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type esdtFreezeWipe struct {
