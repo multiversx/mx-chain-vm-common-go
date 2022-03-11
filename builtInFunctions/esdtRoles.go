@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"math"
+	"math/big"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
@@ -87,6 +88,10 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 	}
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
+
+	logData := append([][]byte{acntDst.AddressBytes()}, vmInput.Arguments[1:]...)
+	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), vmInput.Arguments[0], 0, big.NewInt(0), logData...)
+
 	return vmOutput, nil
 }
 
