@@ -129,8 +129,7 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 		GasRemaining: vmInput.GasProvided - e.funcGasCost - gasCostForStore,
 	}
 
-	extraTopics := append([][]byte{}, vmInput.CallerAddr)
-	extraTopics = append(extraTopics, vmInput.Arguments[2:]...)
+	extraTopics := append([][]byte{vmInput.CallerAddr}, vmInput.Arguments[2:]...)
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTAddURI), vmInput.Arguments[0], nonce, big.NewInt(0), extraTopics...)
 
 	return vmOutput, nil

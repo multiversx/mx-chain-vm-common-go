@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
@@ -56,4 +57,8 @@ func extractTokenIdentifierAndNonceESDTWipe(args []byte) ([]byte, uint64) {
 	nonce := big.NewInt(0).SetBytes(argsSplit[1][esdtRandomSequenceLength:])
 
 	return identifier, nonce.Uint64()
+}
+
+func boolToSlice(b bool) []byte {
+	return []byte(strconv.FormatBool(b))
 }

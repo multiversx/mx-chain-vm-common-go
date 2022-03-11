@@ -6,7 +6,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-vm-common"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type esdtFreezeWipe struct {
@@ -77,10 +77,8 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 	}
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
-	if e.wipe {
-		identifier, nonce := extractTokenIdentifierAndNonceESDTWipe(vmInput.Arguments[0])
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTWipe), identifier, nonce, big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
-	}
+	identifier, nonce := extractTokenIdentifierAndNonceESDTWipe(vmInput.Arguments[0])
+	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
 
 	return vmOutput, nil
 }
