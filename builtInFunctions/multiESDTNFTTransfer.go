@@ -201,6 +201,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				esdtTransferData.Type = uint32(core.NonFungible)
 			}
 
+			value = big.NewInt(0).Set(esdtTransferData.Value)
 			err = e.addNFTToDestination(
 				vmInput.CallerAddr,
 				vmInput.RecipientAddr,
@@ -212,7 +213,6 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			if err != nil {
 				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
-			value = esdtTransferData.Value
 		} else {
 			transferredValue := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2])
 			err = addToESDTBalance(acntDst, esdtTokenKey, transferredValue, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
