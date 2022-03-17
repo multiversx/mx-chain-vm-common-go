@@ -201,7 +201,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				esdtTransferData.Type = uint32(core.NonFungible)
 			}
 
-			value = big.NewInt(0).Set(esdtTransferData.Value)
+			value.Set(esdtTransferData.Value)
 			err = e.addNFTToDestination(
 				vmInput.CallerAddr,
 				vmInput.RecipientAddr,
