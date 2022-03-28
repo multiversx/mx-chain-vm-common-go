@@ -104,15 +104,6 @@ func (as *AccountsStub) RootHash() ([]byte, error) {
 	return nil, errNotImplemented
 }
 
-// RecreateTrie -
-func (as *AccountsStub) RecreateTrie(rootHash []byte) error {
-	if as.RecreateTrieCalled != nil {
-		return as.RecreateTrieCalled(rootHash)
-	}
-
-	return errNotImplemented
-}
-
 // SnapshotState -
 func (as *AccountsStub) SnapshotState(rootHash []byte, _ context.Context) {
 	if as.SnapshotStateCalled != nil {
@@ -135,7 +126,6 @@ func (as *AccountsStub) IsPruningEnabled() bool {
 
 	return false
 }
-
 
 // IsInterfaceNil returns true if there is no value under the interface
 func (as *AccountsStub) IsInterfaceNil() bool {
