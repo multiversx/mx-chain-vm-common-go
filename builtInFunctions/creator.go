@@ -16,11 +16,11 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	Accounts                            vmcommon.AccountsAdapter
 	ShardCoordinator                    vmcommon.Coordinator
 	EpochNotifier                       vmcommon.EpochNotifier
+	GuardedAccountHandler               core.GuardedAccountHandler
 	ESDTNFTImprovementV1ActivationEpoch uint32
 	ESDTTransferRoleEnableEpoch         uint32
 	GlobalMintBurnDisableEpoch          uint32
 	ESDTTransferToMetaEnableEpoch       uint32
-	NFTCreateMultiShardEnableEpoch      uint32
 	SaveNFTToSystemAccountEnableEpoch   uint32
 	SetGuardianEnableEpoch              uint32
 	GuardianActivationEpochs            uint32
@@ -37,11 +37,11 @@ type builtInFuncCreator struct {
 	shardCoordinator                    vmcommon.Coordinator
 	epochNotifier                       vmcommon.EpochNotifier
 	esdtStorageHandler                  vmcommon.ESDTNFTStorageHandler
+	guardedAccountHandler               core.GuardedAccountHandler
 	esdtNFTImprovementV1ActivationEpoch uint32
 	esdtTransferRoleEnableEpoch         uint32
 	globalMintBurnDisableEpoch          uint32
 	esdtTransferToMetaEnableEpoch       uint32
-	nftCreateMultiShardEnableEpoch      uint32
 	saveNFTToSystemAccountEnableEpoch   uint32
 	setGuardianEnableEpoch              uint32
 	guardianActivationEpochs            uint32
@@ -65,6 +65,9 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if check.IfNil(args.EpochNotifier) {
 		return nil, ErrNilEpochNotifier
 	}
+	if check.IfNil(args.GuardedAccountHandler) {
+		return nil, ErrNilGuardedAccountHandler
+	}
 
 	b := &builtInFuncCreator{
 		mapDNSAddresses:                     args.MapDNSAddresses,
@@ -73,11 +76,11 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		accounts:                            args.Accounts,
 		shardCoordinator:                    args.ShardCoordinator,
 		epochNotifier:                       args.EpochNotifier,
+		guardedAccountHandler:               args.GuardedAccountHandler,
 		esdtNFTImprovementV1ActivationEpoch: args.ESDTNFTImprovementV1ActivationEpoch,
 		esdtTransferRoleEnableEpoch:         args.ESDTTransferRoleEnableEpoch,
 		globalMintBurnDisableEpoch:          args.GlobalMintBurnDisableEpoch,
 		esdtTransferToMetaEnableEpoch:       args.ESDTTransferToMetaEnableEpoch,
-		nftCreateMultiShardEnableEpoch:      args.NFTCreateMultiShardEnableEpoch,
 		saveNFTToSystemAccountEnableEpoch:   args.SaveNFTToSystemAccountEnableEpoch,
 		setGuardianEnableEpoch:              args.SetGuardianEnableEpoch,
 		guardianActivationEpochs:            args.GuardianActivationEpochs,
