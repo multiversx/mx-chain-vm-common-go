@@ -185,8 +185,8 @@ type Marshalizer interface {
 
 // ESDTGlobalSettingsHandler provides global settings functions for an ESDT token
 type ESDTGlobalSettingsHandler interface {
-	IsPaused(token []byte) bool
-	IsLimitedTransfer(tokenKey []byte) bool
+	IsPaused(esdtTokenKey []byte) bool
+	IsLimitedTransfer(esdtTokenKey []byte) bool
 	IsInterfaceNil() bool
 }
 

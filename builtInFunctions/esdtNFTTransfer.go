@@ -280,12 +280,12 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		}
 	}
 
-	keyToCheck := esdtTokenKey
+	tokenID := esdtTokenKey
 	if e.flagCheckCorrectTokenID.IsSet() {
-		keyToCheck = tickerID
+		tokenID = tickerID
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(keyToCheck, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

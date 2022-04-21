@@ -127,7 +127,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		keyToCheck = tokenID
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(keyToCheck, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, vmInput.ReturnCallAfterError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(keyToCheck, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -379,6 +379,7 @@ func getESDTDataFromKey(
 // by an account with transfer account
 func checkIfTransferCanHappenWithLimitedTransfer(
 	tokenID []byte,
+	esdtTokenKey []byte,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	roleHandler vmcommon.ESDTRoleHandler,
 	acntSnd, acntDst vmcommon.UserAccountHandler,
@@ -390,7 +391,7 @@ func checkIfTransferCanHappenWithLimitedTransfer(
 	if check.IfNil(acntSnd) {
 		return nil
 	}
-	if !globalSettingsHandler.IsLimitedTransfer(tokenID) {
+	if !globalSettingsHandler.IsLimitedTransfer(esdtTokenKey) {
 		return nil
 	}
 

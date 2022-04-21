@@ -93,13 +93,13 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-func (e *esdtGlobalSettings) toggleSetting(token []byte) error {
+func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
 	systemSCAccount, err := e.getSystemAccount()
 	if err != nil {
 		return err
 	}
 
-	esdtMetaData, err := e.getGlobalMetadata(token)
+	esdtMetaData, err := e.getGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (e *esdtGlobalSettings) toggleSetting(token []byte) error {
 		break
 	}
 
-	err = systemSCAccount.AccountDataHandler().SaveKeyValue(token, esdtMetaData.ToBytes())
+	err = systemSCAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
 	if err != nil {
 		return err
 	}
@@ -135,9 +135,9 @@ func (e *esdtGlobalSettings) getSystemAccount() (vmcommon.UserAccountHandler, er
 	return userAcc, nil
 }
 
-// IsPaused returns true if the token is paused
-func (e *esdtGlobalSettings) IsPaused(tokenKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(tokenKey)
+// IsPaused returns true if the esdtTokenKey (prefixed) is paused
+func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
+	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -145,9 +145,9 @@ func (e *esdtGlobalSettings) IsPaused(tokenKey []byte) bool {
 	return esdtMetadata.Paused
 }
 
-// IsLimitedTransfer returns true if the token is with limited transfer
-func (e *esdtGlobalSettings) IsLimitedTransfer(tokenKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(tokenKey)
+// IsLimitedTransfer returns true if the esdtTokenKey (prefixed) is with limited transfer
+func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
+	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -155,13 +155,13 @@ func (e *esdtGlobalSettings) IsLimitedTransfer(tokenKey []byte) bool {
 	return esdtMetadata.LimitedTransfer
 }
 
-func (e *esdtGlobalSettings) getGlobalMetadata(tokenKey []byte) (*ESDTGlobalMetadata, error) {
+func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {
 	systemSCAccount, err := e.getSystemAccount()
 	if err != nil {
 		return nil, err
 	}
 
-	val, _ := systemSCAccount.AccountDataHandler().RetrieveValue(tokenKey)
+	val, _ := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	return &esdtMetaData, nil
 }

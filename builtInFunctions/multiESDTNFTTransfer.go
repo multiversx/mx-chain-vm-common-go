@@ -372,12 +372,12 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 
 	esdtData.Value.Set(transferData.ESDTValue)
 
-	keyToCheck := esdtTokenKey
+	tokenID := esdtTokenKey
 	if e.flagCheckCorrectTokenID.IsSet() {
-		keyToCheck = transferData.ESDTTokenName
+		tokenID = transferData.ESDTTokenName
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(keyToCheck, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, isReturnCallWithError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, isReturnCallWithError)
 	if err != nil {
 		return nil, err
 	}
