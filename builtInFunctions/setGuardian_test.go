@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	mockvm "github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
@@ -19,16 +18,6 @@ const pubKeyLen = 32
 const currentEpoch = 44444
 
 var userAddress = generateRandomByteArray(pubKeyLen)
-
-func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandler, guardians *guardiansData.Guardians) {
-	marshalledData, err := account.AccountDataHandler().RetrieveValue(guardianKey)
-	require.Nil(t, err)
-
-	storedGuardian := &guardiansData.Guardians{}
-	err = marshallerMock.Unmarshal(storedGuardian, marshalledData)
-	require.Nil(t, err)
-	require.Equal(t, guardians, storedGuardian)
-}
 
 func requireVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64) {
 	expectedOutput := &vmcommon.VMOutput{
