@@ -12,12 +12,14 @@ import (
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
+
+
 var guardianKey = []byte(core.ElrondProtectedKeyPrefix + core.GuardiansKeyIdentifier)
 
 // BaseAccountFreezerArgs is a struct placeholder for
 // all necessary args to create a newBaseAccountFreezer
 type BaseAccountFreezerArgs struct {
-	GuardedAccountHandler core.GuardedAccountHandler
+	GuardedAccountHandler vmcommon.GuardedAccountHandler
 	Marshaller            marshal.Marshalizer
 	EpochNotifier         vmcommon.EpochNotifier
 	FuncGasCost           uint64
@@ -25,7 +27,7 @@ type BaseAccountFreezerArgs struct {
 
 type baseAccountFreezer struct {
 	marshaller            marshal.Marshalizer
-	guardedAccountHandler core.GuardedAccountHandler
+	guardedAccountHandler vmcommon.GuardedAccountHandler
 
 	mutExecution sync.RWMutex
 	funcGasCost  uint64

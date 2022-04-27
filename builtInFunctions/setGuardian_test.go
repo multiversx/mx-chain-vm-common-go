@@ -1,8 +1,8 @@
 package builtInFunctions
 
 import (
-	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"strings"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
-	"github.com/ElrondNetwork/elrond-go-core/data/mock"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	mockvm "github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
@@ -29,17 +28,6 @@ func requireAccountHasGuardians(t *testing.T, account vmcommon.UserAccountHandle
 	err = marshallerMock.Unmarshal(storedGuardian, marshalledData)
 	require.Nil(t, err)
 	require.Equal(t, guardians, storedGuardian)
-}
-
-func createUserAccountWithGuardians(t *testing.T, guardians *guardiansData.Guardians) vmcommon.UserAccountHandler {
-	marshalledGuardians, err := marshallerMock.Marshal(guardians)
-	require.Nil(t, err)
-
-	account := mockvm.NewUserAccount(userAddress)
-	err = account.SaveKeyValue(guardianKey, marshalledGuardians)
-	require.Nil(t, err)
-
-	return account
 }
 
 func requireVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64) {
@@ -180,291 +168,71 @@ func TestSetGuardian_SetNewGasConfig(t *testing.T) {
 	require.Equal(t, newSetGuardianCost, setGuardianFunc.funcGasCost)
 }
 
-func TestSetGuardian_ProcessBuiltinFunctionAccountHasThreeGuardiansExpectError(t *testing.T) {
+func TestSetGuardian_ProcessBuiltinFunctionAccountAccountHandlerSetError(t *testing.T) {
 	t.Parallel()
 
 	args := createSetGuardianFuncMockArgs()
-	guardian1 := &guardiansData.Guardian{Address: generateRandomByteArray(pubKeyLen)}
-	guardian2 := &guardiansData.Guardian{Address: generateRandomByteArray(pubKeyLen)}
-	guardian3 := &guardiansData.Guardian{Address: generateRandomByteArray(pubKeyLen)}
-	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{guardian1, guardian2, guardian3}}
-
-	account := createUserAccountWithGuardians(t, guardians)
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
 	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
+	expectedErr := errors.New("expected error")
+
+	address := generateRandomByteArray(pubKeyLen)
+	account := mockvm.NewUserAccount(address)
+	vmInput.CallerAddr = address
+
+	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
+		SetGuardianCalled: func(uah vmcommon.UserAccountHandler, guardianAddress []byte) error {
+			return expectedErr
+		},
+	}
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, err)
-	require.Equal(t, &vmcommon.VMOutput{ReturnCode: vmcommon.ExecutionFailed}, output)
-	requireAccountHasGuardians(t, account, guardians)
+	require.Equal(t, expectedErr, err)
+	require.Nil(t, output)
 }
 
-func TestSetGuardian_ProcessBuiltinFunctionCannotUnMarshalGuardiansExpectError(t *testing.T) {
+func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 	t.Parallel()
 
-	guardiansUnmarshalledBytes := []byte("guardiansUnmarshalledBytes")
-	wasAccountAltered := atomic.Flag{}
-	accountHandler := &mockvm.DataTrieTrackerStub{
-		RetrieveValueCalled: func(key []byte) ([]byte, error) {
-			return guardiansUnmarshalledBytes, nil
-		},
-		SaveKeyValueCalled: func(key []byte, value []byte) error {
-			wasAccountAltered.SetValue(true)
-			return nil
-		},
-	}
+	setGuardianCalled := atomic.Flag{}
 	account := &mockvm.UserAccountStub{
 		Address: userAddress,
-		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
-			return accountHandler
-		},
-	}
-
-	errMarshaller := errors.New("error marshaller")
-	marshaller := &mock.MarshalizerStub{
-		UnmarshalCalled: func(obj interface{}, buff []byte) error {
-			require.Equal(t, guardiansUnmarshalledBytes, buff)
-			return errMarshaller
-		},
 	}
 
 	args := createSetGuardianFuncMockArgs()
-	args.Marshaller = marshaller
+	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
+		SetGuardianCalled: func(uah vmcommon.UserAccountHandler, guardianAddress []byte) error {
+			setGuardianCalled.SetValue(true)
+			return nil
+		},
+	}
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
 
 	vmInput := getDefaultVmInput([][]byte{generateRandomByteArray(pubKeyLen)})
-	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, output)
-	require.Equal(t, errMarshaller, err)
-	require.False(t, wasAccountAltered.IsSet())
-}
-
-func TestSetGuardian_ProcessBuiltinFunctionCannotMarshalGuardianExpectError(t *testing.T) {
-	t.Parallel()
-
-	args := createSetGuardianFuncMockArgs()
-	guardian := &guardiansData.Guardian{
-		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
-	}
-	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{guardian}}
-
-	errMarshaller := errors.New("error marshaller")
-	marshaller := &mock.MarshalizerStub{
-		MarshalCalled: func(obj interface{}) ([]byte, error) {
-			require.Equal(t, guardians, obj)
-			return nil, errMarshaller
-		},
-	}
-	args.Marshaller = marshaller
-
-	account := mockvm.NewUserAccount(userAddress)
-	vmInput := getDefaultVmInput([][]byte{guardian.Address})
-
-	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
-
-	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, output)
-	require.Equal(t, errMarshaller, err)
-
-	storedData, _ := account.AccountDataHandler().RetrieveValue(guardianKey)
-	require.Nil(t, storedData)
-}
-
-func TestSetGuardian_ProcessBuiltinFunctionCannotRetrieveOwnerGuardiansExpectError(t *testing.T) {
-	t.Parallel()
-
-	errRetrieveVal := errors.New("error retrieving value for key")
-	wasAccountAltered := atomic.Flag{}
-	accountHandler := &mockvm.DataTrieTrackerStub{
-		RetrieveValueCalled: func(key []byte) ([]byte, error) {
-			return nil, errRetrieveVal
-		},
-		SaveKeyValueCalled: func(key []byte, value []byte) error {
-			wasAccountAltered.SetValue(true)
-			return nil
-		},
-	}
-	account := &mockvm.UserAccountStub{
-		Address: userAddress,
-		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
-			return accountHandler
-		},
-	}
-
-	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
-
-	args := createSetGuardianFuncMockArgs()
-	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, output)
-	require.Equal(t, errRetrieveVal, err)
-	require.False(t, wasAccountAltered.IsSet())
-}
-
-func TestSetGuardian_ProcessBuiltinFunctionSetSameGuardianAddressExpectError(t *testing.T) {
-	t.Parallel()
-
-	args := createSetGuardianFuncMockArgs()
-	guardian := &guardiansData.Guardian{Address: generateRandomByteArray(pubKeyLen)}
-	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{guardian}}
-
-	account := createUserAccountWithGuardians(t, guardians)
-	vmInput := getDefaultVmInput([][]byte{guardian.Address})
-
-	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, output)
-	require.Error(t, err)
-	require.True(t, strings.Contains(err.Error(), ErrGuardianAlreadyExists.Error()))
-	requireAccountHasGuardians(t, account, guardians)
-}
-
-func TestSetGuardian_ProcessBuiltinFunctionCase1AccountHasNoGuardianSet(t *testing.T) {
-	t.Parallel()
-
-	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
-	account := mockvm.NewUserAccount(userAddress)
-
-	args := createSetGuardianFuncMockArgs()
-	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
-
+	fmt.Println(userAddress)
+	fmt.Println(vmInput.CallerAddr)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
 	require.Nil(t, err)
-	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
-
-	newGuardian := &guardiansData.Guardian{
-		Address:         newGuardianAddress,
-		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
-	}
-	expectedStoredGuardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{newGuardian}}
-	requireAccountHasGuardians(t, account, expectedStoredGuardians)
-}
-
-func TestSetGuardian_ProcessBuiltinFunctionCase2AccountHasOnePendingGuardian(t *testing.T) {
-	t.Parallel()
-
-	args := createSetGuardianFuncMockArgs()
-	pendingGuardian := &guardiansData.Guardian{
-		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
-	}
-	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{pendingGuardian}}
-
-	account := createUserAccountWithGuardians(t, guardians)
-	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
-
-	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, output)
-	require.Error(t, err)
-	require.True(t, strings.Contains(err.Error(), ErrOwnerAlreadyHasOneGuardianPending.Error()))
-	require.True(t, strings.Contains(err.Error(), hex.EncodeToString(pendingGuardian.Address)))
-	requireAccountHasGuardians(t, account, guardians)
-}
-
-func TestSetGuardian_ProcessBuiltinFunctionCase3AccountHasOneEnabledGuardian(t *testing.T) {
-	t.Parallel()
-
-	args := createSetGuardianFuncMockArgs()
-	enabledGuardian := &guardiansData.Guardian{
-		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: currentEpoch - args.GuardianActivationEpochs,
-	}
-	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian}}
-
-	account := createUserAccountWithGuardians(t, guardians)
-	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
-
-	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
-
-	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, err)
-	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
-
-	newGuardian := &guardiansData.Guardian{
-		Address:         newGuardianAddress,
-		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
-	}
-	expectedStoredGuardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian, newGuardian}}
-	requireAccountHasGuardians(t, account, expectedStoredGuardians)
-}
-
-func TestSetGuardian_ProcessBuiltinFunctionCase4AccountHasOneEnabledGuardianAndOnePendingGuardian(t *testing.T) {
-	t.Parallel()
-
-	args := createSetGuardianFuncMockArgs()
-	enabledGuardian := &guardiansData.Guardian{
-		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: currentEpoch - args.GuardianActivationEpochs,
-	}
-	pendingGuardian := &guardiansData.Guardian{
-		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
-	}
-	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian, pendingGuardian}}
-
-	account := createUserAccountWithGuardians(t, guardians)
-	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
-
-	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, output)
-	require.Error(t, err)
-	require.True(t, strings.Contains(err.Error(), ErrOwnerAlreadyHasOneGuardianPending.Error()))
-	require.True(t, strings.Contains(err.Error(), hex.EncodeToString(pendingGuardian.Address)))
-	requireAccountHasGuardians(t, account, guardians)
-}
-
-func TestSetGuardian_ProcessBuiltinFunctionCase5OwnerHasTwoEnabledGuardians(t *testing.T) {
-	t.Parallel()
-
-	args := createSetGuardianFuncMockArgs()
-
-	enabledGuardian1 := &guardiansData.Guardian{
-		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: currentEpoch - args.GuardianActivationEpochs,
-	}
-	enabledGuardian2 := &guardiansData.Guardian{
-		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: currentEpoch - args.GuardianActivationEpochs - 1,
-	}
-	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian1, enabledGuardian2}}
-
-	account := createUserAccountWithGuardians(t, guardians)
-	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
-
-	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
-
-	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
-	require.Nil(t, err)
-	requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
-
-	newGuardian := &guardiansData.Guardian{
-		Address:         newGuardianAddress,
-		ActivationEpoch: currentEpoch + args.GuardianActivationEpochs,
-	}
-	expectedStoredGuardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian2, newGuardian}}
-	requireAccountHasGuardians(t, account, expectedStoredGuardians)
+	require.Equal(t, vmcommon.Ok, output.ReturnCode)
+	require.True(t, setGuardianCalled.IsSet())
 }
 
 func generateRandomByteArray(size uint32) []byte {
 	ret := make([]byte, size)
 	_, _ = rand.Read(ret)
 	return ret
+}
+
+func Test_test(t *testing.T) {
+	a := generateRandomByteArray(32)
+	b := generateRandomByteArray(32)
+
+	require.NotEqual(t, a, b)
+	fmt.Println(a)
+	fmt.Println(b)
 }
 
 func createSetGuardianFuncMockArgs() SetGuardianArgs {

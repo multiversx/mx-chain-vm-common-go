@@ -6,7 +6,6 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	"github.com/ElrondNetwork/elrond-go-core/data"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
@@ -27,8 +26,6 @@ type SetGuardianArgs struct {
 type setGuardian struct {
 	*baseEnabled
 	*baseAccountFreezer
-
-	guardianActivationEpochs uint32
 }
 
 // NewSetGuardianFunc will instantiate a new set guardian built-in function
@@ -37,9 +34,7 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 	if err != nil {
 		return nil, err
 	}
-	setGuardianFunc := &setGuardian{
-		guardianActivationEpochs: args.GuardianActivationEpochs,
-	}
+	setGuardianFunc := &setGuardian{}
 	setGuardianFunc.baseEnabled = &baseEnabled{
 		function:        core.BuiltInFunctionSetGuardian,
 		activationEpoch: args.SetGuardianEnableEpoch,
@@ -70,13 +65,8 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	acc, typeAssertOK := acntSnd.(data.UserAccountHandler)
-	if !typeAssertOK {
-		return nil, ErrWrongTypeInContainer
-	}
-
 	newGuardian := vmInput.Arguments[0]
-	err = sg.guardedAccountHandler.SetGuardian(acc, newGuardian)
+	err = sg.guardedAccountHandler.SetGuardian(acntSnd, newGuardian)
 	if err!= nil{
 		return nil, err
 	}

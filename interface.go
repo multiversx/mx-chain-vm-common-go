@@ -298,3 +298,10 @@ type CallArgsParser interface {
 	ParseData(data string) (string, [][]byte, error)
 	IsInterfaceNil() bool
 }
+
+// GuardedAccountHandler allows setting and getting the configured account guardian
+type GuardedAccountHandler interface {
+	GetActiveGuardian(handler UserAccountHandler) ([]byte, error)
+	SetGuardian(uah UserAccountHandler, guardianAddress []byte) error
+	IsInterfaceNil() bool
+}

@@ -14,13 +14,14 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 	fillGasMapInternal(gasMap, 1)
 
 	args := ArgsCreateBuiltInFunctionContainer{
-		GasMap:               gasMap,
-		MapDNSAddresses:      make(map[string]struct{}),
-		EnableUserNameChange: false,
-		Marshalizer:          &mock.MarshalizerMock{},
-		Accounts:             &mock.AccountsStub{},
-		ShardCoordinator:     mock.NewMultiShardsCoordinatorMock(1),
-		EpochNotifier:        &mock.EpochNotifierStub{},
+		GasMap:                gasMap,
+		MapDNSAddresses:       make(map[string]struct{}),
+		EnableUserNameChange:  false,
+		Marshalizer:           &mock.MarshalizerMock{},
+		Accounts:              &mock.AccountsStub{},
+		ShardCoordinator:      mock.NewMultiShardsCoordinatorMock(1),
+		EpochNotifier:         &mock.EpochNotifierStub{},
+		GuardedAccountHandler: &mock.GuardedAccountHandlerStub{},
 	}
 
 	return args

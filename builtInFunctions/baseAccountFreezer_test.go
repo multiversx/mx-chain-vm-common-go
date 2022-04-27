@@ -1,12 +1,10 @@
 package builtInFunctions
 
 import (
-	"errors"
 	"math/big"
 	"strings"
 	"testing"
 
-	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	mockvm "github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
@@ -199,86 +197,11 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 	}
 }
 
-func TestBaseAccountFreezer_enabledGuardian(t *testing.T) {
-	t.Parallel()
-
-	args := createBaseAccountFreezerArgs()
-	baf, _ := newBaseAccountFreezer(args)
-	baf.EpochConfirmed(currentEpoch, 0)
-
-	t.Run("cannot get user account guardians, expect error", func(t *testing.T) {
-		errRetrieveVal := errors.New("error retrieving value for key")
-		accountHandler := &mockvm.DataTrieTrackerStub{
-			RetrieveValueCalled: func(key []byte) ([]byte, error) {
-				return nil, errRetrieveVal
-			},
-		}
-		account := &mockvm.UserAccountStub{
-			Address: userAddress,
-			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
-				return accountHandler
-			},
-		}
-
-		enabledGuardian, err := baf.enabledGuardian(account)
-		require.Nil(t, enabledGuardian)
-		require.Equal(t, errRetrieveVal, err)
-	})
-	t.Run("nil account handler, expect error", func(t *testing.T) {
-		t.Parallel()
-
-		account := &mockvm.UserAccountStub{
-			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
-				return nil
-			},
-		}
-		enabledGuardian, err := baf.enabledGuardian(account)
-		require.Nil(t, enabledGuardian)
-		require.Equal(t, ErrNilAccountHandler, err)
-	})
-	t.Run("two enabled guardians, expect the most recent one is returned", func(t *testing.T) {
-		t.Parallel()
-
-		enabledGuardian1 := &guardiansData.Guardian{
-			Address:         generateRandomByteArray(pubKeyLen),
-			ActivationEpoch: currentEpoch - 1,
-		}
-		enabledGuardian2 := &guardiansData.Guardian{
-			Address:         generateRandomByteArray(pubKeyLen),
-			ActivationEpoch: currentEpoch - 2,
-		}
-		guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian1, enabledGuardian2}}
-		account := createUserAccountWithGuardians(t, guardians)
-
-		enabledGuardian, err := baf.enabledGuardian(account)
-		require.Nil(t, err)
-		require.Equal(t, enabledGuardian1, enabledGuardian)
-	})
-	t.Run("two guardians, none enabled, expect no guardian returned", func(t *testing.T) {
-		t.Parallel()
-
-		enabledGuardian1 := &guardiansData.Guardian{
-			Address:         generateRandomByteArray(pubKeyLen),
-			ActivationEpoch: currentEpoch + 1,
-		}
-		enabledGuardian2 := &guardiansData.Guardian{
-			Address:         generateRandomByteArray(pubKeyLen),
-			ActivationEpoch: currentEpoch + 2,
-		}
-		guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian1, enabledGuardian2}}
-		account := createUserAccountWithGuardians(t, guardians)
-
-		enabledGuardian, err := baf.enabledGuardian(account)
-		require.Equal(t, ErrNoGuardianEnabled, err)
-		require.Nil(t, enabledGuardian)
-	})
-
-}
-
 func createBaseAccountFreezerArgs() BaseAccountFreezerArgs {
 	return BaseAccountFreezerArgs{
-		Marshaller:    marshallerMock,
-		EpochNotifier: &mockvm.EpochNotifierStub{},
-		FuncGasCost:   100000,
+		Marshaller:            marshallerMock,
+		EpochNotifier:         &mockvm.EpochNotifierStub{},
+		FuncGasCost:           100000,
+		GuardedAccountHandler: &mockvm.GuardedAccountHandlerStub{},
 	}
 }

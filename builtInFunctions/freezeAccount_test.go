@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -128,12 +129,11 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 	t.Parallel()
 
 	args := createFreezeAccountArgs()
-
 	vmInput := getDefaultVmInput([][]byte{})
-	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
-	freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 
 	t.Run("invalid args, expect error", func(t *testing.T) {
+		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+		freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 		output, err := freezeAccountFunc.ProcessBuiltinFunction(nil, nil, vmInput)
 		require.Nil(t, output)
 		require.Error(t, err)
@@ -141,29 +141,38 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 	})
 
 	t.Run("account has no enabled guardian, expect error", func(t *testing.T) {
-		pendingGuardian := &guardiansData.Guardian{
-			Address:         generateRandomByteArray(pubKeyLen),
-			ActivationEpoch: currentEpoch + 1,
+		expectedErr := errors.New("expected err")
+		args.GuardedAccountHandler = &mock.GuardedAccountHandlerStub{
+			GetActiveGuardianCalled: func(handler vmcommon.UserAccountHandler) ([]byte, error) {
+				return nil, expectedErr
+			},
 		}
-		guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{pendingGuardian}}
 
-		account := createUserAccountWithGuardians(t, guardians)
+		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+		freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
+		address := generateRandomByteArray(pubKeyLen)
+		account := mock.NewUserAccount(address)
 		requireAccountFrozen(t, account, false)
 
+		vmInput.CallerAddr = account.Address
 		output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, output)
-		require.Equal(t, ErrNoGuardianEnabled, err)
+		require.Equal(t, expectedErr, err)
 		requireAccountFrozen(t, account, false)
 	})
 
 	t.Run("freeze account should work", func(t *testing.T) {
-		enabledGuardian := &guardiansData.Guardian{
-			Address:         generateRandomByteArray(pubKeyLen),
-			ActivationEpoch: currentEpoch - 1,
+		args.GuardedAccountHandler = &mock.GuardedAccountHandlerStub{
+			GetActiveGuardianCalled: func(handler vmcommon.UserAccountHandler) ([]byte, error) {
+				return []byte("active guardian"), nil
+			},
 		}
-		guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian}}
 
-		account := createUserAccountWithGuardians(t, guardians)
+		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+		freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
+		address := generateRandomByteArray(pubKeyLen)
+		account := mock.NewUserAccount(address)
+		vmInput.CallerAddr = account.Address
 		requireAccountFrozen(t, account, false)
 
 		output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)

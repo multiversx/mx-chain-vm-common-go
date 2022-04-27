@@ -16,7 +16,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	Accounts                            vmcommon.AccountsAdapter
 	ShardCoordinator                    vmcommon.Coordinator
 	EpochNotifier                       vmcommon.EpochNotifier
-	GuardedAccountHandler               core.GuardedAccountHandler
+	GuardedAccountHandler               vmcommon.GuardedAccountHandler
 	ESDTNFTImprovementV1ActivationEpoch uint32
 	ESDTTransferRoleEnableEpoch         uint32
 	GlobalMintBurnDisableEpoch          uint32
@@ -37,7 +37,7 @@ type builtInFuncCreator struct {
 	shardCoordinator                    vmcommon.Coordinator
 	epochNotifier                       vmcommon.EpochNotifier
 	esdtStorageHandler                  vmcommon.ESDTNFTStorageHandler
-	guardedAccountHandler               core.GuardedAccountHandler
+	guardedAccountHandler               vmcommon.GuardedAccountHandler
 	esdtNFTImprovementV1ActivationEpoch uint32
 	esdtTransferRoleEnableEpoch         uint32
 	globalMintBurnDisableEpoch          uint32
@@ -395,9 +395,10 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 func (b *builtInFuncCreator) createBaseAccountFreezerArgs(funcGasCost uint64) BaseAccountFreezerArgs {
 	return BaseAccountFreezerArgs{
-		Marshaller:    b.marshalizer,
-		EpochNotifier: b.epochNotifier,
-		FuncGasCost:   funcGasCost,
+		Marshaller:            b.marshalizer,
+		EpochNotifier:         b.epochNotifier,
+		FuncGasCost:           funcGasCost,
+		GuardedAccountHandler: b.guardedAccountHandler,
 	}
 }
 
