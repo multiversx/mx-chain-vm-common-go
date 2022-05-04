@@ -18,8 +18,9 @@ func (odp *operationDataFieldParser) parseSingleESDTTransfer(args [][]byte, func
 	if len(parsedESDTTransfers.ESDTTransfers) == 0 {
 		return responseParse
 	}
-	responseParse.Tokens = append(responseParse.Tokens, string(parsedESDTTransfers.ESDTTransfers[0].ESDTTokenName))
-	responseParse.ESDTValues = append(responseParse.ESDTValues, parsedESDTTransfers.ESDTTransfers[0].ESDTValue.String())
+	firstTransfer := parsedESDTTransfers.ESDTTransfers[0]
+	responseParse.Tokens = append(responseParse.Tokens, string(firstTransfer.ESDTTokenName))
+	responseParse.ESDTValues = append(responseParse.ESDTValues, firstTransfer.ESDTValue.String())
 
 	return responseParse
 }

@@ -18,6 +18,11 @@ const (
 	numArgsRelayedV2                  = 4
 	receiverAddressIndexRelayedV2     = 0
 	dataFieldIndexRelayedV2           = 2
+
+	argsTokenPosition                   = 0
+	argsNoncePosition                   = 1
+	argsValuePositionNonAndSemiFungible = 2
+	argsValuePositionFungible           = 1
 )
 
 type operationDataFieldParser struct {
@@ -78,9 +83,7 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 		return parseQuantityOperationNFT(args, function)
 	case core.RelayedTransaction, core.RelayedTransactionV2:
 		if ignoreRelayed {
-			return &ResponseParseData{
-				IsRelayed: true,
-			}
+			return NewResponseParseDataAsRelayed()
 		}
 		return odp.parseRelayed(function, args, receiver)
 	}
@@ -161,7 +164,7 @@ func parseBlockingOperationESDT(args [][]byte, funcName string) *ResponseParseDa
 		return responseData
 	}
 
-	token, nonce := extractTokenIdentifierAndNonce(args[0])
+	token, nonce := extractTokenAndNonce(args[argsTokenPosition])
 	if nonce != 0 {
 		token = computeTokenIdentifier(token, nonce)
 	}
@@ -179,8 +182,8 @@ func parseQuantityOperationESDT(args [][]byte, funcName string) *ResponseParseDa
 		return responseData
 	}
 
-	responseData.Tokens = append(responseData.Tokens, string(args[0]))
-	responseData.ESDTValues = append(responseData.ESDTValues, big.NewInt(0).SetBytes(args[1]).String())
+	responseData.Tokens = append(responseData.Tokens, string(args[argsTokenPosition]))
+	responseData.ESDTValues = append(responseData.ESDTValues, big.NewInt(0).SetBytes(args[argsValuePositionFungible]).String())
 
 	return responseData
 }
@@ -194,11 +197,11 @@ func parseQuantityOperationNFT(args [][]byte, funcName string) *ResponseParseDat
 		return responseData
 	}
 
-	nonce := big.NewInt(0).SetBytes(args[1]).Uint64()
-	token := computeTokenIdentifier(string(args[0]), nonce)
-	responseData.Tokens = append(responseData.Tokens, token)
+	nonce := big.NewInt(0).SetBytes(args[argsNoncePosition]).Uint64()
+	tokenIdentifier := computeTokenIdentifier(string(args[argsTokenPosition]), nonce)
+	responseData.Tokens = append(responseData.Tokens, tokenIdentifier)
 
-	value := big.NewInt(0).SetBytes(args[2]).String()
+	value := big.NewInt(0).SetBytes(args[argsValuePositionNonAndSemiFungible]).String()
 	responseData.ESDTValues = append(responseData.ESDTValues, value)
 
 	return responseData

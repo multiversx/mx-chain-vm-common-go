@@ -22,7 +22,7 @@ func computeTokenIdentifier(token string, nonce uint64) string {
 	return fmt.Sprintf("%s-%s", token, hexEncodedNonce)
 }
 
-func extractTokenIdentifierAndNonce(arg []byte) (string, uint64) {
+func extractTokenAndNonce(arg []byte) (string, uint64) {
 	argsSplit := bytes.Split(arg, []byte(esdtIdentifierSeparator))
 	if len(argsSplit) < 2 {
 		return string(arg), 0

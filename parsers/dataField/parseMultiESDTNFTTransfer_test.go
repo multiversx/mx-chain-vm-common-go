@@ -51,7 +51,7 @@ func TestMultiESDTNFTTransferParse(t *testing.T) {
 		dataField := []byte("MultiESDTNFTTransfer@000000000000000005001e2a1428dd1e3a5146b3960d9e0f4a50369904ee5483@02@4d4949552d61626364@00@01@4d4949552d616263646566@02@05@1")
 		res := parser.Parse(dataField, sender, sender)
 		require.Equal(t, &ResponseParseData{
-			Operation: "transfer",
+			Operation: operationTransfer,
 		}, res)
 	})
 	t.Run("MultiNFTTransferInvalidNumberOfArguments", func(t *testing.T) {
