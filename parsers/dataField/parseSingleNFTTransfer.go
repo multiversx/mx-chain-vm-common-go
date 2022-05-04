@@ -2,6 +2,7 @@ package datafield
 
 import (
 	"bytes"
+
 	"github.com/ElrondNetwork/elrond-go-core/core"
 )
 
@@ -11,12 +12,12 @@ func (odp *operationDataFieldParser) parseSingleESDTNFTTransfer(args [][]byte, f
 		return responseParse
 	}
 
-	if len(parsedESDTTransfers.ESDTTransfers) == 0 || !isASCIIString(string(parsedESDTTransfers.ESDTTransfers[0].ESDTTokenName)) {
-		return responseParse
-	}
-
 	if core.IsSmartContractAddress(parsedESDTTransfers.RcvAddr) && isASCIIString(parsedESDTTransfers.CallFunction) {
 		responseParse.Function = parsedESDTTransfers.CallFunction
+	}
+
+	if len(parsedESDTTransfers.ESDTTransfers) == 0 || !isASCIIString(string(parsedESDTTransfers.ESDTTransfers[0].ESDTTokenName)) {
+		return responseParse
 	}
 
 	rcvAddr := receiver
