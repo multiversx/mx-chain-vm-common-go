@@ -95,6 +95,12 @@ type BlockchainHook interface {
 	// GetESDTToken loads the ESDT digital token for the given key
 	GetESDTToken(address []byte, tokenID []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 
+	// IsPaused returns true if the tokenID is paused globally
+	IsPaused(tokenID []byte) bool
+
+	// IsLimitedTransfer return true if the tokenID has limited transfers
+	IsLimitedTransfer(tokenID []byte) bool
+
 	// GetSnapshot gets the number of entries in the journal as a snapshot id
 	GetSnapshot() int
 
