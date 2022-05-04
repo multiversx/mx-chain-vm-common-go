@@ -28,11 +28,11 @@ const (
 	argsValuePositionFungible           = 1
 )
 
-var errNilPubkeyConverter = errors.New("nil pubkey converter")
+var errInvalidAddressLength = errors.New("invalid address length")
 
 type operationDataFieldParser struct {
+	addressLength      int
 	argsParser         vmcommon.CallArgsParser
-	pubKeyConverter    core.PubkeyConverter
 	shardCoordinator   vmcommon.Coordinator
 	esdtTransferParser vmcommon.ESDTTransferParser
 }
@@ -45,8 +45,8 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 	if check.IfNil(args.Marshalizer) {
 		return nil, core.ErrNilMarshalizer
 	}
-	if check.IfNil(args.PubKeyConverter) {
-		return nil, errNilPubkeyConverter
+	if args.AddressLength == 0 {
+		return nil, errInvalidAddressLength
 	}
 
 	argsParser := parsers.NewCallArgsParser()
@@ -59,7 +59,7 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 		argsParser:         argsParser,
 		shardCoordinator:   args.ShardCoordinator,
 		esdtTransferParser: esdtTransferParser,
-		pubKeyConverter:    args.PubKeyConverter,
+		addressLength:      args.AddressLength,
 	}, nil
 }
 
@@ -73,7 +73,7 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 		Operation: operationTransfer,
 	}
 
-	isSCDeploy := len(dataField) > 0 && isEmptyAddr(odp.pubKeyConverter, receiver)
+	isSCDeploy := len(dataField) > 0 && isEmptyAddr(odp.addressLength, receiver)
 	if isSCDeploy {
 		responseParse.Operation = operationDeploy
 		return responseParse

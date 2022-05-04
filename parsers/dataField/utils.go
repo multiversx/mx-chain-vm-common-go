@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"unicode"
-
-	"github.com/ElrondNetwork/elrond-go-core/core"
 )
 
 const (
@@ -41,10 +39,10 @@ func extractTokenAndNonce(arg []byte) (string, uint64) {
 	return string(identifier), nonce.Uint64()
 }
 
-func isEmptyAddr(pubKeyConverter core.PubkeyConverter, receiver []byte) bool {
-	emptyAddr := make([]byte, pubKeyConverter.Len())
+func isEmptyAddr(addrLength int, address []byte) bool {
+	emptyAddr := make([]byte, addrLength)
 
-	return bytes.Equal(receiver, emptyAddr)
+	return bytes.Equal(address, emptyAddr)
 }
 
 func isASCIIString(input string) bool {
