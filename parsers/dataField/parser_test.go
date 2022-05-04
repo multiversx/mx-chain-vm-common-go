@@ -247,7 +247,7 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 		res := parser.Parse(dataField, sender, receiver)
 		require.Equal(t, &ResponseParseData{
 			IsRelayed:        true,
-			Operation:        "transfer",
+			Operation:       operationTransfer,
 			Function:         "callMe",
 			Receivers:        [][]byte{receiverSC},
 			ReceiversShardID: []uint32{0},
