@@ -72,4 +72,19 @@ func TestESDTNFTTransfer(t *testing.T) {
 			ReceiversShardID: []uint32{0},
 		}, res)
 	})
+
+	t.Run("NFTTransferInvalidTx", func(t *testing.T) {
+		t.Parallel()
+
+		rcv, _ := hex.DecodeString("000000000000000005000e8a594d1c9b52073fcd3c856c87986045c85f568b98")
+		dataField := []byte("ESDTNFTTransfer@53434f56452d3561363336652d3031@0de0b6b3a7640000@0de0b6b3a7640000@01@055de6a779bbac0000@14c36e6f35b4ea4c6818580000@53434f56452d3561363336652d3031")
+		res := parser.Parse(dataField, sender, receiverSC)
+		require.Equal(t, &ResponseParseData{
+			Operation:        "ESDTNFTTransfer",
+			ESDTValues:       []string{"1000000000000000000"},
+			Tokens:           []string{"SCOVE-5a636e-01-0de0b6b3a7640000"},
+			Receivers:        [][]byte{rcv},
+			ReceiversShardID: []uint32{0},
+		}, res)
+	})
 }

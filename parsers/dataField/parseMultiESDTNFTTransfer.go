@@ -7,12 +7,18 @@ func (odp *operationDataFieldParser) parseMultiESDTNFTTransfer(args [][]byte, fu
 	if !ok {
 		return responseParse
 	}
-	if core.IsSmartContractAddress(parsedESDTTransfers.RcvAddr) {
+	if core.IsSmartContractAddress(parsedESDTTransfers.RcvAddr) && isASCIIString(parsedESDTTransfers.CallFunction) {
 		responseParse.Function = parsedESDTTransfers.CallFunction
 	}
 
 	receiverShardID := odp.shardCoordinator.ComputeId(parsedESDTTransfers.RcvAddr)
 	for _, esdtTransferData := range parsedESDTTransfers.ESDTTransfers {
+		if !isASCIIString(string(esdtTransferData.ESDTTokenName)) {
+			return &ResponseParseData{
+				Operation: function,
+			}
+		}
+
 		token := string(esdtTransferData.ESDTTokenName)
 		if esdtTransferData.ESDTTokenNonce != 0 {
 			token = computeTokenIdentifier(token, esdtTransferData.ESDTTokenNonce)

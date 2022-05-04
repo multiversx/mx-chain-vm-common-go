@@ -2,6 +2,7 @@ package datafield
 
 import (
 	"encoding/json"
+	"errors"
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
@@ -12,7 +13,9 @@ import (
 )
 
 const (
-	operationTransfer                 = `transfer`
+	operationTransfer = `transfer`
+	operationDeploy   = `scDeploy`
+
 	minArgumentsQuantityOperationESDT = 2
 	minArgumentsQuantityOperationNFT  = 3
 	numArgsRelayedV2                  = 4
@@ -25,8 +28,11 @@ const (
 	argsValuePositionFungible           = 1
 )
 
+var errNilPubkeyConverter = errors.New("nil pubkey converter")
+
 type operationDataFieldParser struct {
 	argsParser         vmcommon.CallArgsParser
+	pubKeyConverter    core.PubkeyConverter
 	shardCoordinator   vmcommon.Coordinator
 	esdtTransferParser vmcommon.ESDTTransferParser
 }
@@ -39,6 +45,9 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 	if check.IfNil(args.Marshalizer) {
 		return nil, core.ErrNilMarshalizer
 	}
+	if check.IfNil(args.PubKeyConverter) {
+		return nil, errNilPubkeyConverter
+	}
 
 	argsParser := parsers.NewCallArgsParser()
 	esdtTransferParser, err := parsers.NewESDTTransferParser(args.Marshalizer)
@@ -50,6 +59,7 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 		argsParser:         argsParser,
 		shardCoordinator:   args.ShardCoordinator,
 		esdtTransferParser: esdtTransferParser,
+		pubKeyConverter:    args.PubKeyConverter,
 	}, nil
 }
 
@@ -61,6 +71,12 @@ func (odp *operationDataFieldParser) Parse(dataField []byte, sender, receiver []
 func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []byte, ignoreRelayed bool) *ResponseParseData {
 	responseParse := &ResponseParseData{
 		Operation: operationTransfer,
+	}
+
+	isSCDeploy := len(dataField) > 0 && isEmptyAddr(odp.pubKeyConverter, receiver)
+	if isSCDeploy {
+		responseParse.Operation = operationDeploy
+		return responseParse
 	}
 
 	function, args, err := odp.argsParser.ParseData(string(dataField))
@@ -88,7 +104,7 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 		return odp.parseRelayed(function, args, receiver)
 	}
 
-	if function != "" && core.IsSmartContractAddress(receiver) {
+	if function != "" && core.IsSmartContractAddress(receiver) && isASCIIString(function) {
 		responseParse.Function = function
 	}
 
@@ -165,6 +181,10 @@ func parseBlockingOperationESDT(args [][]byte, funcName string) *ResponseParseDa
 	}
 
 	token, nonce := extractTokenAndNonce(args[argsTokenPosition])
+	if !isASCIIString(token) {
+		return responseData
+	}
+
 	if nonce != 0 {
 		token = computeTokenIdentifier(token, nonce)
 	}
@@ -182,7 +202,12 @@ func parseQuantityOperationESDT(args [][]byte, funcName string) *ResponseParseDa
 		return responseData
 	}
 
-	responseData.Tokens = append(responseData.Tokens, string(args[argsTokenPosition]))
+	token := string(args[argsTokenPosition])
+	if !isASCIIString(token) {
+		return responseData
+	}
+
+	responseData.Tokens = append(responseData.Tokens, token)
 	responseData.ESDTValues = append(responseData.ESDTValues, big.NewInt(0).SetBytes(args[argsValuePositionFungible]).String())
 
 	return responseData
@@ -197,8 +222,13 @@ func parseQuantityOperationNFT(args [][]byte, funcName string) *ResponseParseDat
 		return responseData
 	}
 
+	token := string(args[argsTokenPosition])
+	if !isASCIIString(token) {
+		return responseData
+	}
+
 	nonce := big.NewInt(0).SetBytes(args[argsNoncePosition]).Uint64()
-	tokenIdentifier := computeTokenIdentifier(string(args[argsTokenPosition]), nonce)
+	tokenIdentifier := computeTokenIdentifier(token, nonce)
 	responseData.Tokens = append(responseData.Tokens, tokenIdentifier)
 
 	value := big.NewInt(0).SetBytes(args[argsValuePositionNonAndSemiFungible]).String()

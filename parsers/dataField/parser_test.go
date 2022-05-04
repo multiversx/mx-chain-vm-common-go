@@ -13,6 +13,7 @@ func createMockArgumentsOperationParser() *ArgsOperationDataFieldParser {
 	return &ArgsOperationDataFieldParser{
 		Marshalizer:      &mock.MarshalizerMock{},
 		ShardCoordinator: &mock.ShardCoordinatorStub{},
+		PubKeyConverter:  &mock.PubkeyConverterMock{},
 	}
 }
 
@@ -314,6 +315,23 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 			Receivers:        [][]byte{rcv},
 			ReceiversShardID: []uint32{0},
 			Function:         "claimRewardsProxy",
+		}, res)
+	})
+}
+
+func TestParseSCDeploy(t *testing.T) {
+	arguments := createMockArgumentsOperationParser()
+	parser, _ := NewOperationDataFieldParser(arguments)
+
+	t.Run("ScDeploy", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte("0101020304050607")
+		rcvAddr := make([]byte, 0)
+
+		res := parser.Parse(dataField, sender, rcvAddr)
+		require.Equal(t, &ResponseParseData{
+			Operation: operationDeploy,
 		}, res)
 	})
 }

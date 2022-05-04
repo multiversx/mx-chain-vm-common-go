@@ -2,8 +2,9 @@ package datafield
 
 import (
 	"encoding/hex"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestExtractTokenAndNonce(t *testing.T) {
@@ -22,4 +23,13 @@ func TestComputeTokenIdentifier(t *testing.T) {
 
 	identifier := computeTokenIdentifier("MYTOKEN-abcd", 10)
 	require.Equal(t, "MYTOKEN-abcd-0a", identifier)
+}
+
+func TestIsASCIIString(t *testing.T) {
+	t.Parallel()
+
+	require.True(t, isASCIIString("hello"))
+	require.True(t, isASCIIString("TOKEN-abcd"))
+	require.False(t, isASCIIString(string([]byte{12, 255})))
+	require.False(t, isASCIIString(string([]byte{12, 188})))
 }
