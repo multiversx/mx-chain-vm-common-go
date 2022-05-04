@@ -272,6 +272,41 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 	assert.Equal(t, esdtData, esdtDataGet)
 }
 
+func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	nonce := uint64(10)
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+		TokenMetaData: &esdt.MetaData{
+			Name:  []byte("test"),
+			Nonce: nonce,
+		},
+	}
+
+	tokenIdentifier := "testTkn"
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
+	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+
+	esdtData.Value = big.NewInt(0)
+	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, false, false)
+	assert.Nil(t, err)
+
+	val, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	assert.Nil(t, val)
+	assert.Nil(t, err)
+
+	esdtMetaData, err := e.getESDTMetaDataFromSystemAccount(tokenKey)
+	assert.Nil(t, err)
+	assert.Equal(t, esdtData.TokenMetaData, esdtMetaData)
+}
+
 func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	t.Parallel()
 
@@ -471,4 +506,50 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *test
 	esdtGetData, _, err = e.getESDTDigitalTokenDataFromSystemAccount(otherTokenKey)
 	assert.Nil(t, esdtGetData)
 	assert.Nil(t, err)
+}
+
+func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	shardCoordinator := &mock.ShardCoordinatorStub{}
+	args.ShardCoordinator = shardCoordinator
+	e, _ := NewESDTDataStorage(args)
+
+	e.flagCheckFrozenCollection.SetValue(false)
+
+	acnt, _ := e.accounts.LoadAccount([]byte("address1"))
+	userAcc := acnt.(vmcommon.UserAccountHandler)
+
+	tickerID := []byte("TOKEN-ABCDEF")
+	esdtTokenKey := append(e.keyPrefix, tickerID...)
+	err := e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
+	assert.Nil(t, err)
+
+	e.flagCheckFrozenCollection.SetValue(true)
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 0, false)
+	assert.Nil(t, err)
+
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, true)
+	assert.Nil(t, err)
+
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
+	assert.Nil(t, err)
+
+	tokenData, _ := getESDTDataFromKey(userAcc, esdtTokenKey, e.marshalizer)
+
+	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
+	esdtUserMetadata.Frozen = false
+	tokenData.Properties = esdtUserMetadata.ToBytes()
+	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshalizer)
+
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
+	assert.Nil(t, err)
+
+	esdtUserMetadata.Frozen = true
+	tokenData.Properties = esdtUserMetadata.ToBytes()
+	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshalizer)
+
+	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
+	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
 }

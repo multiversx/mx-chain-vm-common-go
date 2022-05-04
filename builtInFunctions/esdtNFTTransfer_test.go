@@ -29,6 +29,7 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -36,7 +37,7 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 	return nftTransfer
 }
 
-func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler) *esdtNFTTransfer {
+func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler) (*esdtNFTTransfer, *esdtDataStorage) {
 	marshalizer := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard
@@ -62,6 +63,7 @@ func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, glob
 		},
 	}
 
+	esdtStorageHandler := createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts)
 	nftTransfer, _ := NewESDTNFTTransferFunc(
 		1,
 		marshalizer,
@@ -79,10 +81,16 @@ func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, glob
 		},
 		1000,
 		0,
-		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
+		0,
+		esdtStorageHandler,
 		&mock.EpochNotifierStub{},
 	)
 
+	return nftTransfer, esdtStorageHandler
+}
+
+func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler) *esdtNFTTransfer {
+	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler)
 	return nftTransfer
 }
 
@@ -174,6 +182,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -189,6 +198,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
@@ -206,6 +216,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -221,6 +232,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
@@ -238,6 +250,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		1000,
 		0,
+		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
 	)
@@ -254,6 +267,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
+		0,
 		createNewESDTDataStorageHandler(),
 		nil,
 	)
@@ -269,6 +283,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		0,
 		nil,
 		&mock.EpochNotifierStub{},
@@ -289,6 +304,7 @@ func TestNewESDTNFTTransferFunc(t *testing.T) {
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		0,
 		createNewESDTDataStorageHandler(),
 		&mock.EpochNotifierStub{},
@@ -866,4 +882,60 @@ func extractScResultsFromVmOutput(t testing.TB, vmOutput *vmcommon.VMOutput) (st
 	}
 
 	return split[0], args
+}
+
+func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
+	t.Parallel()
+
+	globalSettings := &mock.GlobalSettingsHandlerStub{}
+	transferFunc, esdtStorageHandler := createNFTTransferAndStorageHandler(0, 1, globalSettings)
+	esdtStorageHandler.flagCheckFrozenCollection.SetValue(true)
+
+	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
+
+	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
+	destinationAddress := bytes.Repeat([]byte{1}, 32)
+	destinationAddress[31] = 0
+	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	tokenName := []byte("token")
+	tokenNonce := uint64(1)
+
+	initialTokens := big.NewInt(3)
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	esdtFrozen := ESDTUserMetadata{Frozen: true}
+
+	_ = transferFunc.accounts.SaveAccount(sender)
+	_, _ = transferFunc.accounts.Commit()
+	//reload sender account
+	sender, err = transferFunc.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
+	quantityBytes := big.NewInt(1).Bytes()
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{tokenName, nonceBytes, quantityBytes, destinationAddress},
+			GasProvided: 1,
+		},
+		RecipientAddr: senderAddress,
+	}
+
+	destination, _ := transferFunc.accounts.LoadAccount(destinationAddress)
+	tokenId := append(keyPrefix, tokenName...)
+	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(0), Properties: esdtFrozen.ToBytes()}
+	marshaledData, _ := transferFunc.marshalizer.Marshal(esdtToken)
+	_ = destination.(vmcommon.UserAccountHandler).AccountDataHandler().SaveKeyValue(tokenId, marshaledData)
+	_ = transferFunc.accounts.SaveAccount(destination)
+	_, _ = transferFunc.accounts.Commit()
+
+	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	assert.Equal(t, ErrESDTIsFrozenForAccount, err)
+
+	vmInput.ReturnCallAfterError = true
+	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	assert.Nil(t, err)
 }

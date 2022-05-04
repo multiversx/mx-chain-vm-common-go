@@ -29,6 +29,7 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 
@@ -88,6 +89,7 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 			},
 		},
 		1000,
+		0,
 		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
 	)
 
@@ -108,6 +110,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -124,6 +127,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -140,6 +144,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -156,6 +161,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -172,6 +178,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -188,6 +195,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		nil,
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -204,6 +212,7 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		nil,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -224,6 +233,7 @@ func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.False(t, check.IfNil(multiTransfer))
