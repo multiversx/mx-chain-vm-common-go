@@ -13,6 +13,20 @@ const (
 	esdtRandomSequenceLength = 6
 )
 
+// EncodeBytesSlice will encode the provided bytes slice with a provided function
+func EncodeBytesSlice(encodeFunc func(b []byte) string, rcvs [][]byte) []string {
+	if encodeFunc == nil {
+		return []string{}
+	}
+
+	encodedSlice := make([]string, 0, len(rcvs))
+	for _, rcv := range rcvs {
+		encodedSlice = append(encodedSlice, encodeFunc(rcv))
+	}
+
+	return encodedSlice
+}
+
 func computeTokenIdentifier(token string, nonce uint64) string {
 	if token == "" || nonce == 0 {
 		return ""
