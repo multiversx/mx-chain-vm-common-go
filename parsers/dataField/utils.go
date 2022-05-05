@@ -16,7 +16,7 @@ const (
 // EncodeBytesSlice will encode the provided bytes slice with a provided function
 func EncodeBytesSlice(encodeFunc func(b []byte) string, rcvs [][]byte) []string {
 	if encodeFunc == nil {
-		return []string{}
+		return nil
 	}
 
 	encodedSlice := make([]string, 0, len(rcvs))
