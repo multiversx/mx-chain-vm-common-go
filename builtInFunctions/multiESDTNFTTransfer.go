@@ -361,6 +361,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	if esdtData.Value.Cmp(transferData.ESDTValue) < 0 {
+		log.Debug("insufficient funds in esdt", "snd", acntSnd.AddressBytes(), "token", transferData.ESDTTokenName, "balance", esdtData.Value, "transfer", transferData.ESDTValue)
 		return nil, computeInsufficientQuantityESDTError(transferData.ESDTTokenName, transferData.ESDTTokenNonce)
 	}
 	esdtData.Value.Sub(esdtData.Value, transferData.ESDTValue)
