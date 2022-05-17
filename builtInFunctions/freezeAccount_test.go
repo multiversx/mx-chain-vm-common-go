@@ -7,7 +7,6 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	guardiansData "github.com/ElrondNetwork/elrond-go-core/data/guardians"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/require"
@@ -73,15 +72,9 @@ func TestFreezeUnfreezeAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveFroz
 
 	args := createFreezeAccountArgs()
 
-	enabledGuardian := &guardiansData.Guardian{
-		Address:         generateRandomByteArray(pubKeyLen),
-		ActivationEpoch: currentEpoch - 1,
-	}
-	guardians := &guardiansData.Guardians{Data: []*guardiansData.Guardian{enabledGuardian}}
-
 	dataTrie := &mock.DataTrieTrackerStub{
 		RetrieveValueCalled: func(key []byte) ([]byte, error) {
-			return args.Marshaller.Marshal(guardians)
+			return []byte("marshalled guardians data"), nil
 		},
 	}
 
