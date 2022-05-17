@@ -37,6 +37,14 @@ func TestNewBaseAccountFreezer(t *testing.T) {
 		},
 		{
 			args: func() BaseAccountFreezerArgs {
+				args := createBaseAccountFreezerArgs()
+				args.GuardedAccountHandler = nil
+				return args
+			},
+			expectedErr: ErrNilGuardedAccountHandler,
+		},
+		{
+			args: func() BaseAccountFreezerArgs {
 				return createBaseAccountFreezerArgs()
 			},
 			expectedErr: nil,

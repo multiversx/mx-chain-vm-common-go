@@ -106,6 +106,11 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilAccountsAdapter)
 
 	args = createMockArguments()
+	args.GuardedAccountHandler = nil
+	f, err = NewBuiltInFunctionsCreator(args)
+	assert.Equal(t, err, ErrNilGuardedAccountHandler)
+
+	args = createMockArguments()
 	f, err = NewBuiltInFunctionsCreator(args)
 	assert.Nil(t, err)
 	assert.False(t, f.IsInterfaceNil())
