@@ -215,15 +215,6 @@ func generateRandomByteArray(size uint32) []byte {
 	return ret
 }
 
-func Test_test(t *testing.T) {
-	a := generateRandomByteArray(32)
-	b := generateRandomByteArray(32)
-
-	require.NotEqual(t, a, b)
-	fmt.Println(a)
-	fmt.Println(b)
-}
-
 func createSetGuardianFuncMockArgs() SetGuardianArgs {
 	return SetGuardianArgs{
 		BaseAccountFreezerArgs:   createBaseAccountFreezerArgs(),
