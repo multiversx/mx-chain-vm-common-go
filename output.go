@@ -67,6 +67,12 @@ type OutputAccount struct {
 
 	// GasUsed will be populated if the contract was called in the same shard
 	GasUsed uint64
+
+	// BytesAddedToStorage for this output account
+	BytesAddedToStorage uint64
+
+	// BytesDeletedFromStorage for this output account
+	BytesDeletedFromStorage uint64
 }
 
 // OutputTransfer contains the fields needed to create transfers to another shard
