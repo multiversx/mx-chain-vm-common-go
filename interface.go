@@ -302,6 +302,6 @@ type CallArgsParser interface {
 // GuardedAccountHandler allows setting and getting the configured account guardian
 type GuardedAccountHandler interface {
 	GetActiveGuardian(handler UserAccountHandler) ([]byte, error)
-	SetGuardian(uah UserAccountHandler, guardianAddress []byte) error
+	SetGuardian(uah UserAccountHandler, guardianAddress []byte, txGuardianAddress []byte) error
 	IsInterfaceNil() bool
 }

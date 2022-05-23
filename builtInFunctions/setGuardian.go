@@ -66,8 +66,8 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	}
 
 	newGuardian := vmInput.Arguments[0]
-	err = sg.guardedAccountHandler.SetGuardian(acntSnd, newGuardian)
-	if err!= nil{
+	err = sg.guardedAccountHandler.SetGuardian(acntSnd, newGuardian, vmInput.TxGuardian)
+	if err != nil {
 		return nil, err
 	}
 
@@ -100,4 +100,3 @@ func (sg *setGuardian) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	sg.funcGasCost = gasCost.BuiltInCost.SetGuardian
 	sg.mutExecution.Unlock()
 }
-
