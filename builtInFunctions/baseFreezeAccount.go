@@ -53,12 +53,9 @@ func (bfa *baseFreezeAccount) checkFreezeAccountArgs(
 		return err
 	}
 
-	_, err = bfa.enabledGuardian(acntSnd)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// cannot freeze if account has no active guardian
+	_, err = bfa.guardedAccountHandler.GetActiveGuardian(acntSnd)
+	return err
 }
 
 func getCodeMetaData(account vmcommon.UserAccountHandler) vmcommon.CodeMetadata {
@@ -71,10 +68,4 @@ func (bfa *baseFreezeAccount) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	bfa.mutExecution.Lock()
 	bfa.funcGasCost = gasCost.BuiltInCost.FreezeAccount
 	bfa.mutExecution.Unlock()
-}
-
-// EpochConfirmed is called whenever a new epoch is confirmed
-func (bfa *baseFreezeAccount) EpochConfirmed(epoch uint32, _ uint64) {
-	bfa.baseEnabled.EpochConfirmed(epoch, 0)
-	bfa.baseAccountFreezer.EpochConfirmed(epoch, 0)
 }

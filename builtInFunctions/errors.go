@@ -232,3 +232,6 @@ var ErrSetUnfreezeAccount = errors.New("cannot unfreeze account, it is not froze
 
 // ErrNilAccountHandler signals that a nil account handler has been provided
 var ErrNilAccountHandler = errors.New("nil account handler provided")
+
+// ErrNilGuardedAccountHandler signals that a nil guarded account handler was provided
+var ErrNilGuardedAccountHandler = errors.New("nil guarded account handler")
