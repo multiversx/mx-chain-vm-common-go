@@ -1,0 +1,305 @@
+package builtInFunctions
+
+import (
+	"bytes"
+	"math/big"
+
+	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+)
+
+const numArgsPerAdd = 3
+
+type esdtDeleteMetaData struct {
+	*baseEnabled
+	allowedAddress []byte
+	delete         bool
+	accounts       vmcommon.AccountsAdapter
+	keyPrefix      []byte
+	marshalizer    vmcommon.Marshalizer
+	funcGasCost    uint64
+}
+
+// NewESDTDeleteMetadataFunc returns the esdt NFT multi transfer built-in function component
+func NewESDTDeleteMetadataFunc(
+	funcGasCost uint64,
+	marshalizer vmcommon.Marshalizer,
+	accounts vmcommon.AccountsAdapter,
+	activationEpoch uint32,
+	epochNotifier vmcommon.EpochNotifier,
+	allowedAddress []byte,
+	delete bool,
+) (*esdtDeleteMetaData, error) {
+	if check.IfNil(marshalizer) {
+		return nil, ErrNilMarshalizer
+	}
+	if check.IfNil(accounts) {
+		return nil, ErrNilAccountsAdapter
+	}
+	if check.IfNil(epochNotifier) {
+		return nil, ErrNilEpochHandler
+	}
+
+	e := &esdtDeleteMetaData{
+		keyPrefix:      []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:    marshalizer,
+		funcGasCost:    funcGasCost,
+		accounts:       accounts,
+		allowedAddress: allowedAddress,
+		delete:         delete,
+	}
+
+	e.baseEnabled = &baseEnabled{
+		function:        core.BuiltInFunctionMultiESDTNFTTransfer,
+		activationEpoch: activationEpoch,
+		flagActivated:   atomic.Flag{},
+	}
+
+	epochNotifier.RegisterNotifyHandler(e)
+
+	return e, nil
+}
+
+// SetNewGasConfig is called whenever gas cost is changed
+func (e *esdtDeleteMetaData) SetNewGasConfig(_ *vmcommon.GasCost) {
+}
+
+// ProcessBuiltinFunction resolves ESDT transfer function call
+func (e *esdtDeleteMetaData) ProcessBuiltinFunction(
+	_, _ vmcommon.UserAccountHandler,
+	vmInput *vmcommon.ContractCallInput,
+) (*vmcommon.VMOutput, error) {
+	if vmInput == nil {
+		return nil, ErrNilVmInput
+	}
+	if vmInput.CallValue.Cmp(zero) != 0 {
+		return nil, ErrBuiltInFunctionCalledWithValue
+	}
+	if !bytes.Equal(vmInput.CallerAddr, e.allowedAddress) {
+		return nil, ErrAddressIsNotAllowed
+	}
+	if !bytes.Equal(vmInput.CallerAddr, vmInput.RecipientAddr) {
+		return nil, ErrInvalidRcvAddr
+	}
+
+	if e.delete {
+		err := e.deleteMetadata(vmInput.Arguments)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := e.addMetadata(vmInput.Arguments)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
+
+	return vmOutput, nil
+}
+
+// input is list(tokenID-numIntervals-list(start,end))
+func (e *esdtDeleteMetaData) deleteMetadata(args [][]byte) error {
+	lenArgs := uint64(len(args))
+	if lenArgs < 4 {
+		return ErrInvalidNumOfArgs
+	}
+
+	systemAcc, err := e.getSystemAccount()
+	if err != nil {
+		return err
+	}
+
+	for i := uint64(0); i < uint64(len(args)); {
+		tokenID := args[i]
+		numIntervals := big.NewInt(0).SetBytes(args[i+1]).Uint64()
+		i += 2
+
+		if !vmcommon.ValidateToken(tokenID) {
+			return ErrInvalidTokenID
+		}
+
+		if i >= lenArgs {
+			return ErrInvalidNumOfArgs
+		}
+
+		for j := i; j < i+numIntervals*2; j += 2 {
+			if j > lenArgs-2 {
+				return ErrInvalidNumOfArgs
+			}
+
+			startIndex := big.NewInt(0).SetBytes(args[j]).Uint64()
+			endIndex := big.NewInt(0).SetBytes(args[j+1]).Uint64()
+
+			err = e.deleteMetadataForInterval(systemAcc, tokenID, startIndex, endIndex)
+			if err != nil {
+				return err
+			}
+		}
+
+		i += numIntervals * 2
+	}
+
+	err = e.accounts.SaveAccount(systemAcc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *esdtDeleteMetaData) deleteMetadataForInterval(
+	systemAcc vmcommon.UserAccountHandler,
+	tokenID []byte,
+	startIndex, endIndex uint64,
+) error {
+	if endIndex < startIndex {
+		return ErrInvalidArguments
+	}
+
+	esdtTokenKey := append(e.keyPrefix, tokenID...)
+	for nonce := startIndex; nonce <= endIndex; nonce++ {
+		esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
+
+		tokenFromSystemSC, err := e.getESDTDigitalTokenDataFromSystemAccount(systemAcc, esdtNFTTokenKey)
+		if err != nil {
+			return err
+		}
+
+		if tokenFromSystemSC == nil {
+			continue
+		}
+
+		if len(tokenFromSystemSC.Properties) == 0 {
+			err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		tokenFromSystemSC.TokenMetaData = nil
+		err = e.marshalAndSaveData(systemAcc, tokenFromSystemSC, esdtNFTTokenKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// input is list(tokenID-nonce-metadata)
+func (e *esdtDeleteMetaData) addMetadata(args [][]byte) error {
+	if len(args)%numArgsPerAdd != 0 {
+		return ErrInvalidNumOfArgs
+	}
+
+	systemAcc, err := e.getSystemAccount()
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(args); i += numArgsPerAdd {
+		tokenID := args[i]
+		nonce := big.NewInt(0).SetBytes(args[i+1]).Uint64()
+		if nonce == 0 {
+			return ErrInvalidNonce
+		}
+
+		esdtTokenKey := append(e.keyPrefix, tokenID...)
+		esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
+		metaData := &esdt.MetaData{}
+		err = e.marshalizer.Unmarshal(metaData, args[i+2])
+		if err != nil {
+			return err
+		}
+
+		var tokenFromSystemSC *esdt.ESDigitalToken
+		tokenFromSystemSC, err = e.getESDTDigitalTokenDataFromSystemAccount(systemAcc, esdtNFTTokenKey)
+		if err != nil {
+			return err
+		}
+
+		if tokenFromSystemSC != nil && tokenFromSystemSC.TokenMetaData != nil {
+			return ErrTokenHasValidMetadata
+		}
+
+		if tokenFromSystemSC == nil {
+			tokenFromSystemSC = &esdt.ESDigitalToken{
+				Value: big.NewInt(0),
+				Type:  uint32(core.NonFungible),
+			}
+		}
+		tokenFromSystemSC.TokenMetaData = metaData
+		err = e.marshalAndSaveData(systemAcc, tokenFromSystemSC, esdtNFTTokenKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = e.accounts.SaveAccount(systemAcc)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *esdtDeleteMetaData) getESDTDigitalTokenDataFromSystemAccount(
+	systemAcc vmcommon.UserAccountHandler,
+	esdtNFTTokenKey []byte,
+) (*esdt.ESDigitalToken, error) {
+	marshaledData, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	if err != nil || len(marshaledData) == 0 {
+		return nil, nil
+	}
+
+	esdtData := &esdt.ESDigitalToken{}
+	err = e.marshalizer.Unmarshal(esdtData, marshaledData)
+	if err != nil {
+		return nil, err
+	}
+
+	return esdtData, nil
+}
+
+func (e *esdtDeleteMetaData) getSystemAccount() (vmcommon.UserAccountHandler, error) {
+	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	userAcc, ok := systemSCAccount.(vmcommon.UserAccountHandler)
+	if !ok {
+		return nil, ErrWrongTypeAssertion
+	}
+
+	return userAcc, nil
+}
+
+func (e *esdtDeleteMetaData) marshalAndSaveData(
+	systemAcc vmcommon.UserAccountHandler,
+	esdtData *esdt.ESDigitalToken,
+	esdtNFTTokenKey []byte,
+) error {
+	marshaledData, err := e.marshalizer.Marshal(esdtData)
+	if err != nil {
+		return err
+	}
+
+	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// IsInterfaceNil returns true if underlying object is nil
+func (e *esdtDeleteMetaData) IsInterfaceNil() bool {
+	return e == nil
+}
