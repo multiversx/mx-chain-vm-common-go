@@ -6,6 +6,12 @@ const additionalRandomCharsLength = 6
 const identifierMinLength = tickerMinLength + additionalRandomCharsLength + 1
 const identifierMaxLength = tickerMaxLength + additionalRandomCharsLength + 1
 
+// ESDTDeleteMetadata represents the defined built in function name for esdt delete metadata
+const ESDTDeleteMetadata = "ESDTDeleteMetadata"
+
+// ESDTAddMetadata represents the defined built in function name for esdt add metadata
+const ESDTAddMetadata = "ESDTAddMetadata"
+
 // ValidateToken - validates the token ID
 func ValidateToken(tokenID []byte) bool {
 	tokenIDLen := len(tokenID)
