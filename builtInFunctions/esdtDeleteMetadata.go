@@ -174,16 +174,7 @@ func (e *esdtDeleteMetaData) deleteMetadataForInterval(
 			continue
 		}
 
-		if len(tokenFromSystemSC.Properties) == 0 {
-			err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-
-		tokenFromSystemSC.TokenMetaData = nil
-		err = e.marshalAndSaveData(systemAcc, tokenFromSystemSC, esdtNFTTokenKey)
+		err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 		if err != nil {
 			return err
 		}
