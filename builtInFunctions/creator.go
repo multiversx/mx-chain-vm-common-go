@@ -24,6 +24,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	SaveNFTToSystemAccountEnableEpoch   uint32
 	CheckCorrectTokenIDEnableEpoch      uint32
 	DeleteMetadataEnableEpoch           uint32
+	SendESDTMetadataAlwaysEnableEpoch   uint32
 	ConfigAddress                       []byte
 }
 
@@ -46,6 +47,7 @@ type builtInFuncCreator struct {
 	saveNFTToSystemAccountEnableEpoch   uint32
 	checkCorrectTokenIDEnableEpoch      uint32
 	deleteMetadataEnableEpoch           uint32
+	sendESDTMetadataAlwaysEnableEpoch   uint32
 	configAddress                       []byte
 }
 
@@ -82,6 +84,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		saveNFTToSystemAccountEnableEpoch:   args.SaveNFTToSystemAccountEnableEpoch,
 		checkCorrectTokenIDEnableEpoch:      args.CheckCorrectTokenIDEnableEpoch,
 		deleteMetadataEnableEpoch:           args.DeleteMetadataEnableEpoch,
+		sendESDTMetadataAlwaysEnableEpoch:   args.SendESDTMetadataAlwaysEnableEpoch,
 		configAddress:                       args.ConfigAddress,
 	}
 
@@ -265,6 +268,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		SaveToSystemEnableEpoch: b.saveNFTToSystemAccountEnableEpoch,
 		EpochNotifier:           b.epochNotifier,
 		ShardCoordinator:        b.shardCoordinator,
+		SendAlwaysEnableEpoch:   b.sendESDTMetadataAlwaysEnableEpoch,
 	}
 	b.esdtStorageHandler, err = NewESDTDataStorage(args)
 	if err != nil {

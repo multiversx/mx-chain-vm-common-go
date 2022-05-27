@@ -357,7 +357,12 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.Nil(t, err)
 
 	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
-	assert.True(t, val)
+	assert.False(t, val)
+	assert.Nil(t, err)
+
+	e.flagSendAlwaysEnableEpoch.Reset()
+	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
+	assert.False(t, val)
 	assert.Nil(t, err)
 
 	shardCoordinator.NumberOfShardsCalled = func() uint32 {

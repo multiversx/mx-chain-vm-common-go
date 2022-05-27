@@ -28,6 +28,8 @@ type esdtDataStorage struct {
 	saveToSystemEnableEpoch          uint32
 	flagCheckFrozenCollection        atomic.Flag
 	checkFrozenCollectionEnableEpoch uint32
+	flagSendAlwaysEnableEpoch        atomic.Flag
+	sendAlwaysEnableEpoch            uint32
 }
 
 // ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
@@ -36,6 +38,7 @@ type ArgsNewESDTDataStorage struct {
 	GlobalSettingsHandler   vmcommon.ESDTGlobalSettingsHandler
 	Marshalizer             vmcommon.Marshalizer
 	SaveToSystemEnableEpoch uint32
+	SendAlwaysEnableEpoch   uint32
 	EpochNotifier           vmcommon.EpochNotifier
 	ShardCoordinator        vmcommon.Coordinator
 }
@@ -70,6 +73,8 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 		saveToSystemEnableEpoch:          args.SaveToSystemEnableEpoch,
 		flagCheckFrozenCollection:        atomic.Flag{},
 		checkFrozenCollectionEnableEpoch: args.SaveToSystemEnableEpoch,
+		flagSendAlwaysEnableEpoch:        atomic.Flag{},
+		sendAlwaysEnableEpoch:            args.SendAlwaysEnableEpoch,
 	}
 
 	args.EpochNotifier.RegisterNotifyHandler(e)
@@ -347,6 +352,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 	if !e.flagSaveToSystemAccount.IsSet() {
 		return false, nil
 	}
+
 	if nonce == 0 {
 		return true, nil
 	}
@@ -356,6 +362,9 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 	}
 	if dstShardID == core.MetachainShardId {
 		return true, nil
+	}
+	if e.flagSendAlwaysEnableEpoch.IsSet() {
+		return false, nil
 	}
 
 	esdtTokenKey := append(e.keyPrefix, tickerID...)
@@ -487,6 +496,9 @@ func (e *esdtDataStorage) EpochConfirmed(epoch uint32, _ uint64) {
 
 	e.flagCheckFrozenCollection.SetValue(epoch >= e.checkFrozenCollectionEnableEpoch)
 	log.Debug("ESDT NFT check frozen collection", "enabled", e.flagCheckFrozenCollection.IsSet())
+
+	e.flagSendAlwaysEnableEpoch.SetValue(epoch >= e.sendAlwaysEnableEpoch)
+	log.Debug("ESDT send metadata always", "enabled", e.flagSendAlwaysEnableEpoch.IsSet())
 }
 
 // IsInterfaceNil returns true if underlying object in nil
