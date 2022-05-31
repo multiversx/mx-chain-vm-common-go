@@ -180,6 +180,9 @@ func (e *esdtDeleteMetaData) deleteMetadataForInterval(
 	if endIndex < startIndex {
 		return ErrInvalidArguments
 	}
+	if startIndex == 0 {
+		return ErrInvalidNonce
+	}
 
 	esdtTokenKey := append(e.keyPrefix, tokenID...)
 	for nonce := startIndex; nonce <= endIndex; nonce++ {
@@ -210,6 +213,10 @@ func (e *esdtDeleteMetaData) addMetadata(args [][]byte) error {
 		nonce := big.NewInt(0).SetBytes(args[i+1]).Uint64()
 		if nonce == 0 {
 			return ErrInvalidNonce
+		}
+
+		if !vmcommon.ValidateToken(tokenID) {
+			return ErrInvalidTokenID
 		}
 
 		esdtTokenKey := append(e.keyPrefix, tokenID...)
