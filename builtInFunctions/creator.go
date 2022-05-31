@@ -365,7 +365,16 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTDeleteMetadataFunc(b.gasConfig.BuiltInCost.ESDTNFTBurn, b.marshalizer, b.accounts, b.deleteMetadataEnableEpoch, b.epochNotifier, b.configAddress, true)
+	argsNewDeleteFunc := ArgsNewESDTDeleteMetadata{
+		FuncGasCost:     b.gasConfig.BuiltInCost.ESDTNFTBurn,
+		Marshalizer:     b.marshalizer,
+		Accounts:        b.accounts,
+		ActivationEpoch: b.deleteMetadataEnableEpoch,
+		EpochNotifier:   b.epochNotifier,
+		AllowedAddress:  b.configAddress,
+		Delete:          true,
+	}
+	newFunc, err = NewESDTDeleteMetadataFunc(argsNewDeleteFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -374,7 +383,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTDeleteMetadataFunc(b.gasConfig.BuiltInCost.ESDTNFTBurn, b.marshalizer, b.accounts, b.deleteMetadataEnableEpoch, b.epochNotifier, b.configAddress, false)
+	argsNewDeleteFunc.Delete = false
+	newFunc, err = NewESDTDeleteMetadataFunc(argsNewDeleteFunc)
 	if err != nil {
 		return nil, err
 	}

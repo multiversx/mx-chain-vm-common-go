@@ -3,6 +3,8 @@ package builtInFunctions
 import (
 	"bytes"
 	"fmt"
+	"math/big"
+
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
@@ -10,7 +12,6 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/parsers"
-	"math/big"
 )
 
 const existsOnShard = byte(1)
@@ -253,7 +254,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 		return nil
 	}
 
-	_ = esdtData.Value.Add(esdtData.Value, transferValue)
+	esdtData.Value.Add(esdtData.Value, transferValue)
 	if esdtData.Value.Cmp(zero) <= 0 {
 		err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 		if err != nil {

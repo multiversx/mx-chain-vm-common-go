@@ -23,42 +23,47 @@ type esdtDeleteMetaData struct {
 	funcGasCost    uint64
 }
 
+// ArgsNewESDTDeleteMetadata defiens the argument list for new esdt delete metadata built in function
+type ArgsNewESDTDeleteMetadata struct {
+	FuncGasCost     uint64
+	Marshalizer     vmcommon.Marshalizer
+	Accounts        vmcommon.AccountsAdapter
+	ActivationEpoch uint32
+	EpochNotifier   vmcommon.EpochNotifier
+	AllowedAddress  []byte
+	Delete          bool
+}
+
 // NewESDTDeleteMetadataFunc returns the esdt NFT multi transfer built-in function component
 func NewESDTDeleteMetadataFunc(
-	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
-	accounts vmcommon.AccountsAdapter,
-	activationEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
-	allowedAddress []byte,
-	delete bool,
+	args ArgsNewESDTDeleteMetadata,
 ) (*esdtDeleteMetaData, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(args.Marshalizer) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(accounts) {
+	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
-	if check.IfNil(epochNotifier) {
+	if check.IfNil(args.EpochNotifier) {
 		return nil, ErrNilEpochHandler
 	}
 
 	e := &esdtDeleteMetaData{
 		keyPrefix:      []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:    marshalizer,
-		funcGasCost:    funcGasCost,
-		accounts:       accounts,
-		allowedAddress: allowedAddress,
-		delete:         delete,
+		marshalizer:    args.Marshalizer,
+		funcGasCost:    args.FuncGasCost,
+		accounts:       args.Accounts,
+		allowedAddress: args.AllowedAddress,
+		delete:         args.Delete,
 	}
 
 	e.baseEnabled = &baseEnabled{
 		function:        core.BuiltInFunctionMultiESDTNFTTransfer,
-		activationEpoch: activationEpoch,
+		activationEpoch: args.ActivationEpoch,
 		flagActivated:   atomic.Flag{},
 	}
 
-	epochNotifier.RegisterNotifyHandler(e)
+	args.EpochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
 }
@@ -67,7 +72,7 @@ func NewESDTDeleteMetadataFunc(
 func (e *esdtDeleteMetaData) SetNewGasConfig(_ *vmcommon.GasCost) {
 }
 
-// ProcessBuiltinFunction resolves ESDT transfer function call
+// ProcessBuiltinFunction resolves ESDT delete and add metadata function call
 func (e *esdtDeleteMetaData) ProcessBuiltinFunction(
 	_, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -114,7 +119,7 @@ func (e *esdtDeleteMetaData) deleteMetadata(args [][]byte) error {
 		return err
 	}
 
-	for i := uint64(0); i < uint64(len(args)); {
+	for i := uint64(0); i+1 < uint64(len(args)); {
 		tokenID := args[i]
 		numIntervals := big.NewInt(0).SetBytes(args[i+1]).Uint64()
 		i += 2
@@ -127,18 +132,9 @@ func (e *esdtDeleteMetaData) deleteMetadata(args [][]byte) error {
 			return ErrInvalidNumOfArgs
 		}
 
-		for j := i; j < i+numIntervals*2; j += 2 {
-			if j > lenArgs-2 {
-				return ErrInvalidNumOfArgs
-			}
-
-			startIndex := big.NewInt(0).SetBytes(args[j]).Uint64()
-			endIndex := big.NewInt(0).SetBytes(args[j+1]).Uint64()
-
-			err = e.deleteMetadataForInterval(systemAcc, tokenID, startIndex, endIndex)
-			if err != nil {
-				return err
-			}
+		err = e.deleteMetadataForListIntervals(systemAcc, tokenID, args, i, numIntervals)
+		if err != nil {
+			return err
 		}
 
 		i += numIntervals * 2
@@ -147,6 +143,30 @@ func (e *esdtDeleteMetaData) deleteMetadata(args [][]byte) error {
 	err = e.accounts.SaveAccount(systemAcc)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (e *esdtDeleteMetaData) deleteMetadataForListIntervals(
+	systemAcc vmcommon.UserAccountHandler,
+	tokenID []byte,
+	args [][]byte,
+	index, numIntervals uint64,
+) error {
+	lenArgs := uint64(len(args))
+	for j := index; j < index+numIntervals*2; j += 2 {
+		if j > lenArgs-2 {
+			return ErrInvalidNumOfArgs
+		}
+
+		startIndex := big.NewInt(0).SetBytes(args[j]).Uint64()
+		endIndex := big.NewInt(0).SetBytes(args[j+1]).Uint64()
+
+		err := e.deleteMetadataForInterval(systemAcc, tokenID, startIndex, endIndex)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -165,16 +185,7 @@ func (e *esdtDeleteMetaData) deleteMetadataForInterval(
 	for nonce := startIndex; nonce <= endIndex; nonce++ {
 		esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
-		tokenFromSystemSC, err := e.getESDTDigitalTokenDataFromSystemAccount(systemAcc, esdtNFTTokenKey)
-		if err != nil {
-			return err
-		}
-
-		if tokenFromSystemSC == nil {
-			continue
-		}
-
-		err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
+		err := systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 		if err != nil {
 			return err
 		}
@@ -185,7 +196,7 @@ func (e *esdtDeleteMetaData) deleteMetadataForInterval(
 
 // input is list(tokenID-nonce-metadata)
 func (e *esdtDeleteMetaData) addMetadata(args [][]byte) error {
-	if len(args)%numArgsPerAdd != 0 {
+	if len(args)%numArgsPerAdd != 0 || len(args) < numArgsPerAdd {
 		return ErrInvalidNumOfArgs
 	}
 
