@@ -170,7 +170,7 @@ func TestSetGuardian_ProcessBuiltinFunctionAccountAccountHandlerSetError(t *test
 	vmInput.CallerAddr = address
 
 	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
-		SetGuardianCalled: func(uah vmcommon.UserAccountHandler, guardianAddress []byte) error {
+		SetGuardianCalled: func(uah vmcommon.UserAccountHandler, guardianAddress []byte, _ []byte) error {
 			return expectedErr
 		},
 	}
@@ -191,7 +191,7 @@ func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 
 	args := createSetGuardianFuncMockArgs()
 	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
-		SetGuardianCalled: func(uah vmcommon.UserAccountHandler, guardianAddress []byte) error {
+		SetGuardianCalled: func(_ vmcommon.UserAccountHandler, _ []byte,  _ []byte) error {
 			setGuardianCalled.SetValue(true)
 			return nil
 		},

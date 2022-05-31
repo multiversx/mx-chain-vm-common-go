@@ -65,6 +65,9 @@ type VMInput struct {
 
 	// ReturnCallAfterError
 	ReturnCallAfterError bool
+
+	// GuardianSigned specifies whether the transaction was signed by the guardian
+	TxGuardian []byte
 }
 
 // ESDTTransfer defines the structure for and ESDT / NFT transfer
