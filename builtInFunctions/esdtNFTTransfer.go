@@ -253,10 +253,6 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if err != nil {
 		return nil, err
 	}
-	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, big.NewInt(0).Neg(quantityToTransfer))
-	if err != nil {
-		return nil, err
-	}
 
 	esdtData.Value.Set(quantityToTransfer)
 
@@ -279,6 +275,11 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		}
 
 		err = e.accounts.SaveAccount(userAccount)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, big.NewInt(0).Neg(quantityToTransfer))
 		if err != nil {
 			return nil, err
 		}
@@ -420,9 +421,13 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	if err != nil {
 		return err
 	}
-	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
-	if err != nil {
-		return err
+
+	isSameShard := e.shardCoordinator.SameShard(sndAddress, dstAddress)
+	if !isSameShard {
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
