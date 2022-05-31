@@ -249,6 +249,10 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 		return err
 	}
 
+	if esdtData == nil {
+		return ErrNilESDTData
+	}
+
 	// old style metaData - nothing to do
 	if len(esdtData.Reserved) == 0 {
 		return nil
@@ -465,7 +469,9 @@ func (e *esdtDataStorage) SaveNFTMetaDataToSystemAccount(
 	if !e.flagSaveToSystemAccount.IsSet() {
 		return nil
 	}
-
+	if e.flagSendAlwaysEnableEpoch.IsSet() {
+		return nil
+	}
 	if check.IfNil(tx) {
 		return ErrNilTransactionHandler
 	}

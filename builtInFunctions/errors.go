@@ -148,3 +148,6 @@ var ErrTokenHasValidMetadata = errors.New("token has valid metadata")
 
 // ErrInvalidTokenID signals that invalid tokenID was provided
 var ErrInvalidTokenID = errors.New("invalid tokenID")
+
+// ErrNilESDTData signals that ESDT data does not exist
+var ErrNilESDTData = errors.New("nil esdt data")
