@@ -325,12 +325,15 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.True(t, val)
 	assert.Nil(t, err)
 
+	e.flagSendAlwaysEnableEpoch.Reset()
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return core.MetachainShardId
 	}
 	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.True(t, val)
 	assert.Nil(t, err)
+
+	e.flagSendAlwaysEnableEpoch.SetValue(true)
 
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return 1

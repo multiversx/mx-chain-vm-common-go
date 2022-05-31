@@ -427,14 +427,14 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 	if dstShardID == e.shardCoordinator.SelfId() {
 		return true, nil
 	}
-	if dstShardID == core.MetachainShardId {
-		return true, nil
-	}
 
 	if e.flagSendAlwaysEnableEpoch.IsSet() {
 		return false, nil
 	}
 
+	if dstShardID == core.MetachainShardId {
+		return true, nil
+	}
 	esdtTokenKey := append(e.keyPrefix, tickerID...)
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
