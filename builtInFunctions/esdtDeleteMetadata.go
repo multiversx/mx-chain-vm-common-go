@@ -23,7 +23,7 @@ type esdtDeleteMetaData struct {
 	funcGasCost    uint64
 }
 
-// ArgsNewESDTDeleteMetadata defiens the argument list for new esdt delete metadata built in function
+// ArgsNewESDTDeleteMetadata defines the argument list for new esdt delete metadata built in function
 type ArgsNewESDTDeleteMetadata struct {
 	FuncGasCost     uint64
 	Marshalizer     vmcommon.Marshalizer
@@ -34,7 +34,7 @@ type ArgsNewESDTDeleteMetadata struct {
 	Delete          bool
 }
 
-// NewESDTDeleteMetadataFunc returns the esdt NFT multi transfer built-in function component
+// NewESDTDeleteMetadataFunc returns the esdt metadata deletion built-in function component
 func NewESDTDeleteMetadataFunc(
 	args ArgsNewESDTDeleteMetadata,
 ) (*esdtDeleteMetaData, error) {
@@ -225,6 +225,9 @@ func (e *esdtDeleteMetaData) addMetadata(args [][]byte) error {
 		err = e.marshalizer.Unmarshal(metaData, args[i+2])
 		if err != nil {
 			return err
+		}
+		if metaData.Nonce != nonce {
+			return ErrInvalidMetadata
 		}
 
 		var tokenFromSystemSC *esdt.ESDigitalToken

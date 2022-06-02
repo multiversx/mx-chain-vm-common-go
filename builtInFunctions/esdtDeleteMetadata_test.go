@@ -128,7 +128,7 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 	assert.Nil(t, vmOutput)
 	assert.NotNil(t, err)
 
-	esdtMetadata := &esdt.MetaData{Name: []byte("something")}
+	esdtMetadata := &esdt.MetaData{Name: []byte("something"), Nonce: 1}
 	marshalledData, _ := e.marshalizer.Marshal(esdtMetadata)
 	vmInput.Arguments[2] = make([]byte, len(marshalledData))
 	copy(vmInput.Arguments[2], marshalledData)
@@ -157,6 +157,12 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 		return testErr
 	}
 
+	vmInput.Arguments[1] = []byte{2}
+	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
+	assert.Nil(t, vmOutput)
+	assert.Equal(t, err, ErrInvalidMetadata)
+
+	vmInput.Arguments[1] = []byte{1}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
 	assert.Equal(t, err, testErr)
@@ -175,7 +181,7 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionAdd(t *testing.T) {
 	vmInput.Arguments = [][]byte{{1}, {0}, {1}}
 	vmInput.Arguments[0] = []byte("TOKEN-ababab")
 	vmInput.Arguments[1] = []byte{1}
-	esdtMetadata := &esdt.MetaData{Name: []byte("something")}
+	esdtMetadata := &esdt.MetaData{Name: []byte("something"), Nonce: 1}
 	marshalledData, _ := e.marshalizer.Marshal(esdtMetadata)
 	vmInput.Arguments[2] = make([]byte, len(marshalledData))
 	copy(vmInput.Arguments[2], marshalledData)

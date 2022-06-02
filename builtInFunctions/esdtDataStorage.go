@@ -259,7 +259,11 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 	}
 
 	esdtData.Value.Add(esdtData.Value, transferValue)
-	if esdtData.Value.Cmp(zero) <= 0 {
+	if esdtData.Value.Cmp(zero) < 0 {
+		return ErrInvalidLiquidityForESDT
+	}
+
+	if esdtData.Value.Cmp(zero) == 0 {
 		err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 		if err != nil {
 			return err

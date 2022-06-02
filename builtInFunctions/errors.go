@@ -151,3 +151,9 @@ var ErrInvalidTokenID = errors.New("invalid tokenID")
 
 // ErrNilESDTData signals that ESDT data does not exist
 var ErrNilESDTData = errors.New("nil esdt data")
+
+// ErrInvalidMetadata signals that invalid metadata was provided
+var ErrInvalidMetadata = errors.New("invalid metadata")
+
+// ErrInvalidLiquidityForESDT signals that liquidity is invalid for ESDT
+var ErrInvalidLiquidityForESDT = errors.New("invalid liquidity for ESDT")
