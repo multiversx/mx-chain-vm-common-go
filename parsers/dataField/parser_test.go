@@ -317,6 +317,16 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 			Function:         "claimRewardsProxy",
 		}, res)
 	})
+
+	t.Run("ESDTTransferRole", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte("ESDTNFTCreateRoleTransfer@01010101@020202")
+		res := parser.Parse(dataField, sender, receiver)
+		require.Equal(t, &ResponseParseData{
+			Operation: "ESDTNFTCreateRoleTransfer",
+		}, res)
+	})
 }
 
 func TestParseSCDeploy(t *testing.T) {

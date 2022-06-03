@@ -6,12 +6,63 @@ import (
 	"fmt"
 	"math/big"
 	"unicode"
+
+	"github.com/ElrondNetwork/elrond-go-core/core"
 )
 
 const (
 	esdtIdentifierSeparator  = "-"
 	esdtRandomSequenceLength = 6
 )
+
+func getAllBuiltInFunctions() []string {
+	return []string{
+		core.BuiltInFunctionClaimDeveloperRewards,
+		core.BuiltInFunctionChangeOwnerAddress,
+		core.BuiltInFunctionSetUserName,
+		core.BuiltInFunctionSaveKeyValue,
+		core.BuiltInFunctionESDTTransfer,
+		core.BuiltInFunctionESDTBurn,
+		core.BuiltInFunctionESDTFreeze,
+		core.BuiltInFunctionESDTUnFreeze,
+		core.BuiltInFunctionESDTWipe,
+		core.BuiltInFunctionESDTPause,
+		core.BuiltInFunctionESDTUnPause,
+		core.BuiltInFunctionSetESDTRole,
+		core.BuiltInFunctionUnSetESDTRole,
+		core.BuiltInFunctionESDTSetLimitedTransfer,
+		core.BuiltInFunctionESDTUnSetLimitedTransfer,
+		core.BuiltInFunctionESDTLocalMint,
+		core.BuiltInFunctionESDTLocalBurn,
+		core.BuiltInFunctionESDTNFTTransfer,
+		core.BuiltInFunctionESDTNFTCreate,
+		core.BuiltInFunctionESDTNFTAddQuantity,
+		core.BuiltInFunctionESDTNFTCreateRoleTransfer,
+		core.BuiltInFunctionESDTNFTBurn,
+		core.BuiltInFunctionESDTNFTAddURI,
+		core.BuiltInFunctionESDTNFTUpdateAttributes,
+		core.BuiltInFunctionMultiESDTNFTTransfer,
+		core.ESDTRoleLocalMint,
+		core.ESDTRoleLocalBurn,
+		core.ESDTRoleNFTCreate,
+		core.ESDTRoleNFTCreateMultiShard,
+		core.ESDTRoleNFTAddQuantity,
+		core.ESDTRoleNFTBurn,
+		core.ESDTRoleNFTAddURI,
+		core.ESDTRoleNFTUpdateAttributes,
+		core.ESDTRoleTransfer,
+	}
+}
+
+func isBuiltInFunction(builtInFunctionsList []string, function string) bool {
+	for _, builtInFunction := range builtInFunctionsList {
+		if builtInFunction == function {
+			return true
+		}
+	}
+
+	return false
+}
 
 // EncodeBytesSlice will encode the provided bytes slice with a provided function
 func EncodeBytesSlice(encodeFunc func(b []byte) string, rcvs [][]byte) []string {

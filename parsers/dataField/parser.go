@@ -31,6 +31,8 @@ const (
 var errInvalidAddressLength = errors.New("invalid address length")
 
 type operationDataFieldParser struct {
+	builtInFunctionsList []string
+
 	addressLength      int
 	argsParser         vmcommon.CallArgsParser
 	shardCoordinator   vmcommon.Coordinator
@@ -56,10 +58,11 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 	}
 
 	return &operationDataFieldParser{
-		argsParser:         argsParser,
-		shardCoordinator:   args.ShardCoordinator,
-		esdtTransferParser: esdtTransferParser,
-		addressLength:      args.AddressLength,
+		argsParser:           argsParser,
+		shardCoordinator:     args.ShardCoordinator,
+		esdtTransferParser:   esdtTransferParser,
+		addressLength:        args.AddressLength,
+		builtInFunctionsList: getAllBuiltInFunctions(),
 	}, nil
 }
 
@@ -102,6 +105,11 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 			return NewResponseParseDataAsRelayed()
 		}
 		return odp.parseRelayed(function, args, receiver)
+	}
+
+	isBuiltInFunc := isBuiltInFunction(odp.builtInFunctionsList, function)
+	if isBuiltInFunc {
+		responseParse.Operation = function
 	}
 
 	if function != "" && core.IsSmartContractAddress(receiver) && isASCIIString(function) {
