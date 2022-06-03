@@ -35,6 +35,7 @@ type builtInFuncCreator struct {
 	shardCoordinator                    vmcommon.Coordinator
 	epochNotifier                       vmcommon.EpochNotifier
 	esdtStorageHandler                  vmcommon.ESDTNFTStorageHandler
+	esdtGlobalSettingsHandler           vmcommon.ESDTGlobalSettingsHandler
 	esdtNFTImprovementV1ActivationEpoch uint32
 	esdtTransferRoleEnableEpoch         uint32
 	globalMintBurnDisableEpoch          uint32
@@ -111,6 +112,11 @@ func (b *builtInFuncCreator) NFTStorageHandler() vmcommon.SimpleESDTNFTStorageHa
 	return b.esdtStorageHandler
 }
 
+// ESDTGlobalSettingsHandler will return the esdt global settings handler from the built in functions factory
+func (b *builtInFuncCreator) ESDTGlobalSettingsHandler() vmcommon.ESDTGlobalSettingsHandler {
+	return b.esdtGlobalSettingsHandler
+}
+
 // CreateBuiltInFunctionContainer will create the list of built-in functions
 func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInFunctionContainer, error) {
 
@@ -154,6 +160,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	if err != nil {
 		return nil, err
 	}
+	b.esdtGlobalSettingsHandler = globalSettingsFunc
 
 	setRoleFunc, err := NewESDTRolesFunc(b.marshalizer, true)
 	if err != nil {
