@@ -18,6 +18,9 @@ const BuiltInFunctionESDTSetBurnRoleForAll = "ESDTSetBurnRoleForAll"
 // BuiltInFunctionESDTUnSetBurnRoleForAll represents the defined built in function name for esdt unset burn role for all
 const BuiltInFunctionESDTUnSetBurnRoleForAll = "ESDTUnSetBurnRoleForAll"
 
+// ESDTRoleBurnForAll represents the role for burn for all
+const ESDTRoleBurnForAll = "ESDTRoleBurnForAll"
+
 // ValidateToken - validates the token ID
 func ValidateToken(tokenID []byte) bool {
 	tokenIDLen := len(tokenID)
