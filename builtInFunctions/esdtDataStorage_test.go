@@ -325,12 +325,15 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.True(t, val)
 	assert.Nil(t, err)
 
+	e.flagSendAlwaysEnableEpoch.Reset()
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return core.MetachainShardId
 	}
 	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.True(t, val)
 	assert.Nil(t, err)
+
+	e.flagSendAlwaysEnableEpoch.SetValue(true)
 
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return 1
@@ -357,7 +360,12 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.Nil(t, err)
 
 	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
-	assert.True(t, val)
+	assert.False(t, val)
+	assert.Nil(t, err)
+
+	e.flagSendAlwaysEnableEpoch.Reset()
+	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
+	assert.False(t, val)
 	assert.Nil(t, err)
 
 	shardCoordinator.NumberOfShardsCalled = func() uint32 {
@@ -381,6 +389,11 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 	assert.Nil(t, err)
 
 	_ = e.flagSaveToSystemAccount.SetReturningPrevious()
+
+	err = e.SaveNFTMetaDataToSystemAccount(nil)
+	assert.Nil(t, err)
+
+	e.flagSendAlwaysEnableEpoch.Reset()
 	err = e.SaveNFTMetaDataToSystemAccount(nil)
 	assert.Equal(t, err, ErrNilTransactionHandler)
 
@@ -453,6 +466,7 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *test
 	shardCoordinator := &mock.ShardCoordinatorStub{}
 	args.ShardCoordinator = shardCoordinator
 	e, _ := NewESDTDataStorage(args)
+	e.flagSendAlwaysEnableEpoch.Reset()
 
 	scr := &smartContractResult.SmartContractResult{
 		SndAddr: []byte("address1"),
@@ -552,4 +566,42 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
+}
+
+func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	tokenKey := append(e.keyPrefix, []byte("TOKEN-ababab")...)
+	nonce := uint64(10)
+	err := e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))
+	assert.Equal(t, err, ErrNilESDTData)
+
+	systemAcc, _ := e.getSystemAccount()
+	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
+	marshalledData, _ := e.marshalizer.Marshal(esdtData)
+
+	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
+
+	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))
+	assert.Nil(t, err)
+
+	esdtData = &esdt.ESDigitalToken{Value: big.NewInt(10), Reserved: []byte{1}}
+	marshalledData, _ = e.marshalizer.Marshal(esdtData)
+
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
+	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))
+	assert.Nil(t, err)
+
+	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey)
+	assert.Equal(t, esdtData.Value, big.NewInt(20))
+
+	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(-20))
+	assert.Nil(t, err)
+
+	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey)
+	assert.Nil(t, esdtData)
 }
