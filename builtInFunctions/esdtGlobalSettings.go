@@ -52,6 +52,8 @@ func isCorrectFunction(function string) bool {
 	switch function {
 	case core.BuiltInFunctionESDTPause, core.BuiltInFunctionESDTUnPause, core.BuiltInFunctionESDTSetLimitedTransfer, core.BuiltInFunctionESDTUnSetLimitedTransfer:
 		return true
+	case vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll:
+		return true
 	default:
 		return false
 	}
@@ -111,6 +113,9 @@ func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
 	case core.BuiltInFunctionESDTPause, core.BuiltInFunctionESDTUnPause:
 		esdtMetaData.Paused = e.set
 		break
+	case vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll:
+		esdtMetaData.BurnRoleForAll = e.set
+		break
 	}
 
 	err = systemSCAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
@@ -153,6 +158,16 @@ func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
 	}
 
 	return esdtMetadata.LimitedTransfer
+}
+
+// IsBurnForAll returns true if the esdtTokenKey (prefixed) is with burn for all
+func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
+	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
+	if err != nil {
+		return false
+	}
+
+	return esdtMetadata.BurnRoleForAll
 }
 
 func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {

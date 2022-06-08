@@ -12,6 +12,12 @@ const ESDTDeleteMetadata = "ESDTDeleteMetadata"
 // ESDTAddMetadata represents the defined built in function name for esdt add metadata
 const ESDTAddMetadata = "ESDTAddMetadata"
 
+// BuiltInFunctionESDTSetBurnRoleForAll represents the defined built in function name for esdt set burn role for all
+const BuiltInFunctionESDTSetBurnRoleForAll = "ESDTSetBurnRoleForAll"
+
+// BuiltInFunctionESDTUnSetBurnRoleForAll represents the defined built in function name for esdt unset burn role for all
+const BuiltInFunctionESDTUnSetBurnRoleForAll = "ESDTUnSetBurnRoleForAll"
+
 // ValidateToken - validates the token ID
 func ValidateToken(tokenID []byte) bool {
 	tokenIDLen := len(tokenID)

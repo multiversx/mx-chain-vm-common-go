@@ -16,33 +16,33 @@ func TestNewESDTLocalBurnFunc(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		argsFunc func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler)
+		argsFunc func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler)
 		exError  error
 	}{
 		{
 			name: "NilMarshalizer",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, nil, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}
 			},
 			exError: ErrNilMarshalizer,
 		},
 		{
 			name: "NilGlobalSettingsHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, &mock.MarshalizerMock{}, nil, &mock.ESDTRoleHandlerStub{}
 			},
 			exError: ErrNilGlobalSettingsHandler,
 		},
 		{
 			name: "NilRolesHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil
 			},
 			exError: ErrNilRolesHandler,
 		},
 		{
 			name: "Ok",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
 				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}
 			},
 			exError: nil,
