@@ -237,14 +237,15 @@ func parseQuantityOperationNFT(args [][]byte, funcName string) *ResponseParseDat
 
 	nonce := big.NewInt(0).SetBytes(args[argsNoncePosition]).Uint64()
 	tokenIdentifier := computeTokenIdentifier(token, nonce)
-	responseData.Tokens = append(responseData.Tokens, tokenIdentifier)
 
 	value := big.NewInt(0).SetBytes(args[argsValuePositionNonAndSemiFungible]).String()
 	if funcName == core.BuiltInFunctionESDTNFTCreate {
 		value = big.NewInt(0).SetBytes(args[argsValuePositionNonAndSemiFungible-1]).String()
+		tokenIdentifier = token
 	}
 
 	responseData.ESDTValues = append(responseData.ESDTValues, value)
+	responseData.Tokens = append(responseData.Tokens, tokenIdentifier)
 
 	return responseData
 }

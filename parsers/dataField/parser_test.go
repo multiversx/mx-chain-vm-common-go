@@ -106,7 +106,7 @@ func TestParseQuantityOperationsNFT(t *testing.T) {
 		require.Equal(t, &ResponseParseData{
 			Operation:  "ESDTNFTCreate",
 			ESDTValues: []string{"1"},
-			Tokens:     []string{"MIHAI-1f0ff8-01"},
+			Tokens:     []string{"MIHAI-1f0ff8"},
 		}, res)
 	})
 
