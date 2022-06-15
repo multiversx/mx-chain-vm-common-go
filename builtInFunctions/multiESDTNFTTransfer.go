@@ -387,6 +387,11 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, transferData.ESDTTokenNonce, big.NewInt(0).Neg(transferData.ESDTValue))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return esdtData, nil
@@ -551,11 +556,19 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 		return err
 	}
 
+	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
-
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnCallWithError)
 	if err != nil {
 		return err
+	}
+
+	isSameShard := e.shardCoordinator.SameShard(sndAddress, dstAddress)
+	if !isSameShard {
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
