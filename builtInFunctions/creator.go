@@ -23,7 +23,6 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	NFTCreateMultiShardEnableEpoch      uint32
 	SaveNFTToSystemAccountEnableEpoch   uint32
 	CheckCorrectTokenIDEnableEpoch      uint32
-	DeleteMetadataEnableEpoch           uint32
 	SendESDTMetadataAlwaysEnableEpoch   uint32
 	ConfigAddress                       []byte
 }
@@ -46,7 +45,6 @@ type builtInFuncCreator struct {
 	nftCreateMultiShardEnableEpoch      uint32
 	saveNFTToSystemAccountEnableEpoch   uint32
 	checkCorrectTokenIDEnableEpoch      uint32
-	deleteMetadataEnableEpoch           uint32
 	sendESDTMetadataAlwaysEnableEpoch   uint32
 	configAddress                       []byte
 }
@@ -83,7 +81,6 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		nftCreateMultiShardEnableEpoch:      args.NFTCreateMultiShardEnableEpoch,
 		saveNFTToSystemAccountEnableEpoch:   args.SaveNFTToSystemAccountEnableEpoch,
 		checkCorrectTokenIDEnableEpoch:      args.CheckCorrectTokenIDEnableEpoch,
-		deleteMetadataEnableEpoch:           args.DeleteMetadataEnableEpoch,
 		sendESDTMetadataAlwaysEnableEpoch:   args.SendESDTMetadataAlwaysEnableEpoch,
 		configAddress:                       args.ConfigAddress,
 	}
@@ -369,7 +366,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		FuncGasCost:     b.gasConfig.BuiltInCost.ESDTNFTBurn,
 		Marshalizer:     b.marshalizer,
 		Accounts:        b.accounts,
-		ActivationEpoch: b.deleteMetadataEnableEpoch,
+		ActivationEpoch: b.sendESDTMetadataAlwaysEnableEpoch,
 		EpochNotifier:   b.epochNotifier,
 		AllowedAddress:  b.configAddress,
 		Delete:          true,
@@ -393,7 +390,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.deleteMetadataEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +399,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.deleteMetadataEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
