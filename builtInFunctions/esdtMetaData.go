@@ -7,6 +7,8 @@ const (
 	MetadataPaused = 1
 	// MetadataLimitedTransfer is the location of limited transfer flag in the esdt global meta data
 	MetadataLimitedTransfer = 2
+	// BurnRoleForAll is the location of burn role for all flag in the esdt global meta data
+	BurnRoleForAll = 4
 )
 
 const (
@@ -18,6 +20,7 @@ const (
 type ESDTGlobalMetadata struct {
 	Paused          bool
 	LimitedTransfer bool
+	BurnRoleForAll  bool
 }
 
 // ESDTGlobalMetadataFromBytes creates a metadata object from bytes
@@ -29,6 +32,7 @@ func ESDTGlobalMetadataFromBytes(bytes []byte) ESDTGlobalMetadata {
 	return ESDTGlobalMetadata{
 		Paused:          (bytes[0] & MetadataPaused) != 0,
 		LimitedTransfer: (bytes[0] & MetadataLimitedTransfer) != 0,
+		BurnRoleForAll:  (bytes[0] & BurnRoleForAll) != 0,
 	}
 }
 
@@ -41,6 +45,9 @@ func (metadata *ESDTGlobalMetadata) ToBytes() []byte {
 	}
 	if metadata.LimitedTransfer {
 		bytes[0] |= MetadataLimitedTransfer
+	}
+	if metadata.BurnRoleForAll {
+		bytes[0] |= BurnRoleForAll
 	}
 
 	return bytes

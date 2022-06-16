@@ -14,7 +14,7 @@ type esdtLocalBurn struct {
 	baseAlwaysActive
 	keyPrefix             []byte
 	marshalizer           vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
@@ -24,7 +24,7 @@ type esdtLocalBurn struct {
 func NewESDTLocalBurnFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtLocalBurn, error) {
 	if check.IfNil(marshalizer) {
@@ -74,7 +74,7 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 	}
 
 	tokenID := vmInput.Arguments[0]
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalBurn))
+	err = e.isAllowedToBurn(acntSnd, tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +91,16 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTLocalBurn), vmInput.Arguments[0], 0, value, vmInput.CallerAddr)
 
 	return vmOutput, nil
+}
+
+func (e *esdtLocalBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, tokenID []byte) error {
+	esdtTokenKey := append(e.keyPrefix, tokenID...)
+	isBurnForAll := e.globalSettingsHandler.IsBurnForAll(esdtTokenKey)
+	if isBurnForAll {
+		return nil
+	}
+
+	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalBurn))
 }
 
 // IsInterfaceNil returns true if underlying object in nil
