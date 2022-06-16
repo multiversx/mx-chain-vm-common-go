@@ -269,12 +269,6 @@ type EpochSubscriberHandler interface {
 	IsInterfaceNil() bool
 }
 
-// EpochNotifier can notify upon an epoch change and provide the current epoch
-type EpochNotifier interface {
-	RegisterNotifyHandler(handler EpochSubscriberHandler)
-	IsInterfaceNil() bool
-}
-
 // ESDTTransferParser can parse single and multi ESDT / NFT transfers
 type ESDTTransferParser interface {
 	ParseESDTTransfers(sndAddr []byte, rcvAddr []byte, function string, args [][]byte) (*ParsedESDTTransfers, error)
@@ -302,5 +296,18 @@ type SimpleESDTNFTStorageHandler interface {
 // CallArgsParser will handle parsing transaction data to function and arguments
 type CallArgsParser interface {
 	ParseData(data string) (string, [][]byte, error)
+	IsInterfaceNil() bool
+}
+
+// EnableEpochsHandler is used to verify which flags are set in the current epoch based on EnableEpochs config
+type EnableEpochsHandler interface {
+	IsESDTMultiTransferFlagEnabled() bool
+	IsGlobalMintBurnFlagEnabled() bool
+	IsESDTTransferRoleFlagEnabled() bool
+	IsBuiltInFunctionOnMetaFlagEnabled() bool
+	IsOptimizeNFTStoreFlagEnabled() bool
+	IsCheckCorrectTokenIDForTransferRoleFlagEnabled() bool
+	IsESDTMetadataContinuousCleanupFlagEnabled() bool
+
 	IsInterfaceNil() bool
 }

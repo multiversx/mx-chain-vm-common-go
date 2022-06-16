@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
@@ -25,13 +24,12 @@ type esdtDeleteMetaData struct {
 
 // ArgsNewESDTDeleteMetadata defines the argument list for new esdt delete metadata built in function
 type ArgsNewESDTDeleteMetadata struct {
-	FuncGasCost     uint64
-	Marshalizer     vmcommon.Marshalizer
-	Accounts        vmcommon.AccountsAdapter
-	ActivationEpoch uint32
-	EpochNotifier   vmcommon.EpochNotifier
-	AllowedAddress  []byte
-	Delete          bool
+	FuncGasCost         uint64
+	Marshalizer         vmcommon.Marshalizer
+	Accounts            vmcommon.AccountsAdapter
+	EnableEpochsHandler vmcommon.EnableEpochsHandler
+	AllowedAddress      []byte
+	Delete              bool
 }
 
 // NewESDTDeleteMetadataFunc returns the esdt metadata deletion built-in function component
@@ -44,8 +42,8 @@ func NewESDTDeleteMetadataFunc(
 	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
-	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(args.EnableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtDeleteMetaData{
@@ -58,12 +56,10 @@ func NewESDTDeleteMetadataFunc(
 	}
 
 	e.baseEnabled = &baseEnabled{
-		function:        core.BuiltInFunctionMultiESDTNFTTransfer,
-		activationEpoch: args.ActivationEpoch,
-		flagActivated:   atomic.Flag{},
+		function:            core.BuiltInFunctionMultiESDTNFTTransfer,
+		activationFlagName:  esdtMetadataContinuousCleanupFlag,
+		enableEpochsHandler: args.EnableEpochsHandler,
 	}
-
-	args.EpochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
 }

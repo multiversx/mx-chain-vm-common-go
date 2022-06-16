@@ -16,38 +16,51 @@ import (
 func TestNewESDTNFTAddUriFunc(t *testing.T) {
 	t.Parallel()
 
-	// nil marshalizer
-	e, err := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, nil, nil, nil, 0, &mock.EpochNotifierStub{})
-	require.True(t, check.IfNil(e))
-	require.Equal(t, ErrNilESDTNFTStorageHandler, err)
+	t.Run("nil marshalizer should error", func(t *testing.T) {
+		t.Parallel()
 
-	// nil pause handler
-	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), nil, nil, 0, &mock.EpochNotifierStub{})
-	require.True(t, check.IfNil(e))
-	require.Equal(t, ErrNilGlobalSettingsHandler, err)
+		e, err := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, nil, nil, nil, nil)
+		require.True(t, check.IfNil(e))
+		require.Equal(t, ErrNilESDTNFTStorageHandler, err)
+	})
+	t.Run("nil pause handler should error", func(t *testing.T) {
+		t.Parallel()
 
-	// nil roles handler
-	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, nil, 0, &mock.EpochNotifierStub{})
-	require.True(t, check.IfNil(e))
-	require.Equal(t, ErrNilRolesHandler, err)
+		e, err := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), nil, nil, nil)
+		require.True(t, check.IfNil(e))
+		require.Equal(t, ErrNilGlobalSettingsHandler, err)
+	})
+	t.Run("nil roles handler should error", func(t *testing.T) {
+		t.Parallel()
 
-	// nil epoch notifier
-	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, nil)
-	require.True(t, check.IfNil(e))
-	require.Equal(t, ErrNilEpochHandler, err)
+		e, err := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, nil, nil)
+		require.True(t, check.IfNil(e))
+		require.Equal(t, ErrNilRolesHandler, err)
+	})
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+		t.Parallel()
 
-	// should work
-	e, err = NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 1, &mock.EpochNotifierStub{})
-	require.False(t, check.IfNil(e))
-	require.NoError(t, err)
-	require.False(t, e.IsActive())
+		e, err := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, nil)
+		require.True(t, check.IfNil(e))
+		require.Equal(t, ErrNilEnableEpochsHandler, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		e, err := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		require.False(t, check.IfNil(e))
+		require.NoError(t, err)
+		require.False(t, e.IsActive())
+	})
 }
 
 func TestESDTNFTAddUri_SetNewGasConfig_NilGasCost(t *testing.T) {
 	t.Parallel()
 
 	defaultGasCost := uint64(10)
-	e, _ := NewESDTNFTAddUriFunc(defaultGasCost, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(defaultGasCost, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	})
 
 	e.SetNewGasConfig(nil)
 	require.Equal(t, defaultGasCost, e.funcGasCost)
@@ -58,7 +71,9 @@ func TestESDTNFTAddUri_SetNewGasConfig_ShouldWork(t *testing.T) {
 
 	defaultGasCost := uint64(10)
 	newGasCost := uint64(37)
-	e, _ := NewESDTNFTAddUriFunc(defaultGasCost, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(defaultGasCost, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	})
 
 	e.SetNewGasConfig(
 		&vmcommon.GasCost{
@@ -74,7 +89,9 @@ func TestESDTNFTAddUri_SetNewGasConfig_ShouldWork(t *testing.T) {
 func TestESDTNFTAddUri_ProcessBuiltinFunctionErrorOnCheckInput(t *testing.T) {
 	t.Parallel()
 
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	})
 
 	// nil vm input
 	output, err := e.ProcessBuiltinFunction(mock.NewAccountWrapMock([]byte("addr")), nil, nil)
@@ -175,7 +192,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionErrorOnCheckInput(t *testing.T) {
 func TestESDTNFTAddUri_ProcessBuiltinFunctionInvalidNumberOfArguments(t *testing.T) {
 	t.Parallel()
 
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -202,7 +221,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *testi
 			return localErr
 		},
 	}
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, rolesHandler, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, rolesHandler, &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -224,7 +245,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *testi
 func TestESDTNFTAddUri_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.T) {
 	t.Parallel()
 
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -248,7 +271,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
@@ -281,8 +306,10 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused
 			return true
 		},
 	}
-
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	}
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, enableEpochsHandler), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -324,7 +351,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 
 	esdtDataStorage := createNewESDTDataStorageHandler()
 	marshalizer := &mock.MarshalizerMock{}
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsESDTMultiTransferFlagEnabledField: true,
+	})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{

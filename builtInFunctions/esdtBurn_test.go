@@ -5,17 +5,44 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewESDTBurnFunc(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil marshalizer should error", func(t *testing.T) {
+		t.Parallel()
+
+		burnFunc, err := NewESDTBurnFunc(10, nil, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		assert.Equal(t, ErrNilMarshalizer, err)
+		assert.True(t, check.IfNil(burnFunc))
+	})
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		burnFunc, err := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil)
+		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+		assert.True(t, check.IfNil(burnFunc))
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		burnFunc, err := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(burnFunc))
+	})
+}
+
 func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, globalSettingsHandler, 1000, &mock.EpochNotifierStub{})
+	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, globalSettingsHandler, &mock.EnableEpochsHandlerStub{})
 	_, err := burnFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -61,7 +88,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 
 	marshalizer := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, marshalizer, globalSettingsHandler, 1000, &mock.EpochNotifierStub{})
+	burnFunc, _ := NewESDTBurnFunc(10, marshalizer, globalSettingsHandler, &mock.EnableEpochsHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{

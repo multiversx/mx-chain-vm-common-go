@@ -1,11 +1,15 @@
 package builtInFunctions
 
 import (
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	logger "github.com/ElrondNetwork/elrond-go-logger"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
-var log = logger.GetOrCreate("vmCommon/builtInFunctions")
+const (
+	defaultFlag                       = "defaultFlag"
+	esdtTransferRoleFlag              = "esdtTransferRoleFlag"
+	esdtMultiTransferFlag             = "esdtMultiTransferFlag"
+	esdtMetadataContinuousCleanupFlag = "esdtMetadataContinuousCleanupFlag"
+)
 
 type baseAlwaysActive struct {
 }
@@ -21,20 +25,25 @@ func (b baseAlwaysActive) IsInterfaceNil() bool {
 }
 
 type baseEnabled struct {
-	function        string
-	activationEpoch uint32
-	flagActivated   atomic.Flag
+	function            string
+	activationFlagName  string
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 // IsActive returns true if function is activated
 func (b *baseEnabled) IsActive() bool {
-	return b.flagActivated.IsSet()
-}
+	switch b.activationFlagName {
+	case defaultFlag:
+		return true
+	case esdtTransferRoleFlag:
+		return b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled()
+	case esdtMultiTransferFlag:
+		return b.enableEpochsHandler.IsESDTMultiTransferFlagEnabled()
+	case esdtMetadataContinuousCleanupFlag:
+		return b.enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabled()
+	}
 
-// EpochConfirmed is called whenever a new epoch is confirmed
-func (b *baseEnabled) EpochConfirmed(epoch uint32, _ uint64) {
-	b.flagActivated.SetValue(epoch >= b.activationEpoch)
-	log.Debug("built in function", "name: ", b.function, "enabled", b.flagActivated.IsSet())
+	return false
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
@@ -43,20 +52,13 @@ func (b *baseEnabled) IsInterfaceNil() bool {
 }
 
 type baseDisabled struct {
-	function          string
-	deActivationEpoch uint32
-	flagActivated     atomic.Flag
+	function            string
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 // IsActive returns true if function is activated
 func (b *baseDisabled) IsActive() bool {
-	return b.flagActivated.IsSet()
-}
-
-// EpochConfirmed is called whenever a new epoch is confirmed
-func (b *baseDisabled) EpochConfirmed(epoch uint32, _ uint64) {
-	b.flagActivated.SetValue(epoch < b.deActivationEpoch)
-	log.Debug("built in function", "name: ", b.function, "enabled", b.flagActivated.IsSet())
+	return b.enableEpochsHandler.IsGlobalMintBurnFlagEnabled()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

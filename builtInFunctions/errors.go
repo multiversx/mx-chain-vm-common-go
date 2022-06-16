@@ -32,9 +32,6 @@ var ErrWrongTypeAssertion = errors.New("wrong type assertion")
 // ErrNilSCDestAccount signals that destination account is nil
 var ErrNilSCDestAccount = errors.New("nil destination SC account")
 
-// ErrNilEpochHandler signals that a nil epoch handler was provided
-var ErrNilEpochHandler = errors.New("nil epoch handler")
-
 // ErrNotEnoughGas signals that not enough gas has been provided
 var ErrNotEnoughGas = errors.New("not enough gas was sent in the transaction")
 
@@ -157,3 +154,6 @@ var ErrInvalidMetadata = errors.New("invalid metadata")
 
 // ErrInvalidLiquidityForESDT signals that liquidity is invalid for ESDT
 var ErrInvalidLiquidityForESDT = errors.New("invalid liquidity for ESDT")
+
+// ErrNilEnableEpochsHandler signals that a nil enable epochs handler was provided
+var ErrNilEnableEpochsHandler = errors.New("nil enable epochs handler")

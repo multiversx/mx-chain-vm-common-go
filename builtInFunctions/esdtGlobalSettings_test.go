@@ -5,10 +5,37 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestNewESDTGlobalSettingsFunc(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil accounts should error", func(t *testing.T) {
+		t.Parallel()
+
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(nil, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+		assert.Equal(t, ErrNilAccountsAdapter, err)
+		assert.True(t, check.IfNil(globalSettingsFunc))
+	})
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, true, core.BuiltInFunctionESDTPause, defaultFlag, nil)
+		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+		assert.True(t, check.IfNil(globalSettingsFunc))
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(globalSettingsFunc))
+	})
+}
 
 func TestESDTGlobalSettingsPause_ProcessBuiltInFunction(t *testing.T) {
 	t.Parallel()
@@ -18,7 +45,7 @@ func TestESDTGlobalSettingsPause_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
+	}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -66,7 +93,7 @@ func TestESDTGlobalSettingsPause_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, false, core.BuiltInFunctionESDTUnPause, 0, &mock.EpochNotifierStub{})
+	}, false, core.BuiltInFunctionESDTUnPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -83,7 +110,9 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, true, core.BuiltInFunctionESDTSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
+	}, true, core.BuiltInFunctionESDTSetLimitedTransfer, esdtTransferRoleFlag, &mock.EnableEpochsHandlerStub{
+		IsESDTTransferRoleFlagEnabledField: true,
+	})
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -131,7 +160,7 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
+	}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
 
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -142,7 +171,9 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
+	}, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, esdtTransferRoleFlag, &mock.EnableEpochsHandlerStub{
+		IsESDTTransferRoleFlagEnabledField: true,
+	})
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)

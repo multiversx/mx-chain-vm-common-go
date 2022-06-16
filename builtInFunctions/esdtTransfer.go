@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-go-core/data/vm"
@@ -26,11 +25,8 @@ type esdtTransfer struct {
 	shardCoordinator      vmcommon.Coordinator
 	mutExecution          sync.RWMutex
 
-	rolesHandler                   vmcommon.ESDTRoleHandler
-	transferToMetaEnableEpoch      uint32
-	flagTransferToMeta             atomic.Flag
-	checkCorrectTokenIDEnableEpoch uint32
-	flagCheckCorrectTokenID        atomic.Flag
+	rolesHandler        vmcommon.ESDTRoleHandler
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 // NewESDTTransferFunc returns the esdt transfer built-in function component
@@ -40,9 +36,7 @@ func NewESDTTransferFunc(
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	shardCoordinator vmcommon.Coordinator,
 	rolesHandler vmcommon.ESDTRoleHandler,
-	transferToMetaEnableEpoch uint32,
-	checkCorrectTokenIDEnableEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtTransfer, error) {
 	if check.IfNil(marshalizer) {
 		return nil, ErrNilMarshalizer
@@ -56,33 +50,22 @@ func NewESDTTransferFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtTransfer{
-		funcGasCost:                    funcGasCost,
-		marshalizer:                    marshalizer,
-		keyPrefix:                      []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		globalSettingsHandler:          globalSettingsHandler,
-		payableHandler:                 &disabledPayableHandler{},
-		shardCoordinator:               shardCoordinator,
-		rolesHandler:                   rolesHandler,
-		checkCorrectTokenIDEnableEpoch: checkCorrectTokenIDEnableEpoch,
-		transferToMetaEnableEpoch:      transferToMetaEnableEpoch,
+		funcGasCost:           funcGasCost,
+		marshalizer:           marshalizer,
+		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		globalSettingsHandler: globalSettingsHandler,
+		payableHandler:        &disabledPayableHandler{},
+		shardCoordinator:      shardCoordinator,
+		rolesHandler:          rolesHandler,
+		enableEpochsHandler:   enableEpochsHandler,
 	}
 
-	epochNotifier.RegisterNotifyHandler(e)
-
 	return e, nil
-}
-
-// EpochConfirmed is called whenever a new epoch is confirmed
-func (e *esdtTransfer) EpochConfirmed(epoch uint32, _ uint64) {
-	e.flagTransferToMeta.SetValue(epoch >= e.transferToMetaEnableEpoch)
-	log.Debug("ESDT transfer to metachain flag", "enabled", e.flagTransferToMeta.IsSet())
-	e.flagCheckCorrectTokenID.SetValue(epoch >= e.checkCorrectTokenIDEnableEpoch)
-	log.Debug("ESDT transfer check correct tokenID for transfer role", "enabled", e.flagCheckCorrectTokenID.IsSet())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -108,7 +91,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !e.flagTransferToMeta.IsSet()
+	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !e.enableEpochsHandler.IsBuiltInFunctionOnMetaFlagEnabled()
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
@@ -123,7 +106,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	tokenID := vmInput.Arguments[0]
 
 	keyToCheck := esdtTokenKey
-	if e.flagCheckCorrectTokenID.IsSet() {
+	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabled() {
 		keyToCheck = tokenID
 	}
 

@@ -4,16 +4,16 @@ import (
 	"bytes"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type esdtGlobalSettings struct {
 	*baseEnabled
-	keyPrefix []byte
-	set       bool
-	accounts  vmcommon.AccountsAdapter
+	keyPrefix           []byte
+	set                 bool
+	accounts            vmcommon.AccountsAdapter
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 // NewESDTGlobalSettingsFunc returns the esdt pause/un-pause built-in function component
@@ -21,11 +21,14 @@ func NewESDTGlobalSettingsFunc(
 	accounts vmcommon.AccountsAdapter,
 	set bool,
 	function string,
-	activationEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	activationFlagName string,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtGlobalSettings, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
+	}
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 	if !isCorrectFunction(function) {
 		return nil, ErrInvalidArguments
@@ -38,12 +41,10 @@ func NewESDTGlobalSettingsFunc(
 	}
 
 	e.baseEnabled = &baseEnabled{
-		function:        function,
-		activationEpoch: activationEpoch,
-		flagActivated:   atomic.Flag{},
+		function:            function,
+		activationFlagName:  activationFlagName,
+		enableEpochsHandler: enableEpochsHandler,
 	}
-
-	epochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
 }

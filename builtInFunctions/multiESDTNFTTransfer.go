@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
@@ -16,21 +15,18 @@ import (
 
 type esdtNFTMultiTransfer struct {
 	*baseEnabled
-	keyPrefix                      []byte
-	marshalizer                    vmcommon.Marshalizer
-	globalSettingsHandler          vmcommon.ESDTGlobalSettingsHandler
-	payableHandler                 vmcommon.PayableHandler
-	funcGasCost                    uint64
-	accounts                       vmcommon.AccountsAdapter
-	shardCoordinator               vmcommon.Coordinator
-	gasConfig                      vmcommon.BaseOperationCost
-	mutExecution                   sync.RWMutex
-	esdtStorageHandler             vmcommon.ESDTNFTStorageHandler
-	rolesHandler                   vmcommon.ESDTRoleHandler
-	transferToMetaEnableEpoch      uint32
-	flagTransferToMeta             atomic.Flag
-	checkCorrectTokenIDEnableEpoch uint32
-	flagCheckCorrectTokenID        atomic.Flag
+	keyPrefix             []byte
+	marshalizer           vmcommon.Marshalizer
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	payableHandler        vmcommon.PayableHandler
+	funcGasCost           uint64
+	accounts              vmcommon.AccountsAdapter
+	shardCoordinator      vmcommon.Coordinator
+	gasConfig             vmcommon.BaseOperationCost
+	mutExecution          sync.RWMutex
+	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
+	rolesHandler          vmcommon.ESDTRoleHandler
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 }
 
 const argumentsPerTransfer = uint64(3)
@@ -43,11 +39,8 @@ func NewESDTNFTMultiTransferFunc(
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
-	activationEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	roleHandler vmcommon.ESDTRoleHandler,
-	transferToMetaEnableEpoch uint32,
-	checkCorrectTokenIDEnableEpoch uint32,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 ) (*esdtNFTMultiTransfer, error) {
 	if check.IfNil(marshalizer) {
@@ -62,8 +55,8 @@ func NewESDTNFTMultiTransferFunc(
 	if check.IfNil(shardCoordinator) {
 		return nil, ErrNilShardCoordinator
 	}
-	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 	if check.IfNil(roleHandler) {
 		return nil, ErrNilRolesHandler
@@ -73,39 +66,27 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e := &esdtNFTMultiTransfer{
-		keyPrefix:                      []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:                    marshalizer,
-		globalSettingsHandler:          globalSettingsHandler,
-		funcGasCost:                    funcGasCost,
-		accounts:                       accounts,
-		shardCoordinator:               shardCoordinator,
-		gasConfig:                      gasConfig,
-		mutExecution:                   sync.RWMutex{},
-		payableHandler:                 &disabledPayableHandler{},
-		rolesHandler:                   roleHandler,
-		transferToMetaEnableEpoch:      transferToMetaEnableEpoch,
-		checkCorrectTokenIDEnableEpoch: checkCorrectTokenIDEnableEpoch,
-		esdtStorageHandler:             esdtStorageHandler,
+		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:           marshalizer,
+		globalSettingsHandler: globalSettingsHandler,
+		funcGasCost:           funcGasCost,
+		accounts:              accounts,
+		shardCoordinator:      shardCoordinator,
+		gasConfig:             gasConfig,
+		mutExecution:          sync.RWMutex{},
+		payableHandler:        &disabledPayableHandler{},
+		rolesHandler:          roleHandler,
+		esdtStorageHandler:    esdtStorageHandler,
+		enableEpochsHandler:   enableEpochsHandler,
 	}
 
 	e.baseEnabled = &baseEnabled{
-		function:        core.BuiltInFunctionMultiESDTNFTTransfer,
-		activationEpoch: activationEpoch,
-		flagActivated:   atomic.Flag{},
+		function:            core.BuiltInFunctionMultiESDTNFTTransfer,
+		activationFlagName:  esdtMultiTransferFlag,
+		enableEpochsHandler: enableEpochsHandler,
 	}
 
-	epochNotifier.RegisterNotifyHandler(e)
-
 	return e, nil
-}
-
-// EpochConfirmed is called whenever a new epoch is confirmed
-func (e *esdtNFTMultiTransfer) EpochConfirmed(epoch uint32, nonce uint64) {
-	e.baseEnabled.EpochConfirmed(epoch, nonce)
-	e.flagTransferToMeta.SetValue(epoch >= e.transferToMetaEnableEpoch)
-	log.Debug("ESDT NFT transfer to metachain flag", "enabled", e.flagTransferToMeta.IsSet())
-	e.flagCheckCorrectTokenID.SetValue(epoch >= e.checkCorrectTokenIDEnableEpoch)
-	log.Debug("ESDT multi transfer check correct tokenID for transfer role", "enabled", e.flagCheckCorrectTokenID.IsSet())
 }
 
 // SetPayableHandler will set the payable handler to the function
@@ -262,7 +243,8 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !e.flagTransferToMeta.IsSet()
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsBuiltInFunctionOnMetaFlagEnabled()
+	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
@@ -373,7 +355,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	esdtData.Value.Set(transferData.ESDTValue)
 
 	tokenID := esdtTokenKey
-	if e.flagCheckCorrectTokenID.IsSet() {
+	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabled() {
 		tokenID = transferData.ESDTTokenName
 	}
 
