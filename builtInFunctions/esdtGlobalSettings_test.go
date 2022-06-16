@@ -189,7 +189,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, 0, &mock.EpochNotifierStub{})
+	}, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, esdtMetadataContinuousCleanupFlag, &mock.EnableEpochsHandlerStub{})
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -238,7 +238,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
+	}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
 
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -250,7 +250,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, 0, &mock.EpochNotifierStub{})
+	}, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, esdtMetadataContinuousCleanupFlag, &mock.EnableEpochsHandlerStub{})
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)

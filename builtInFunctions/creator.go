@@ -363,7 +363,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, esdtMetadataContinuousCleanupFlag, b.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +372,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, esdtMetadataContinuousCleanupFlag, b.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
