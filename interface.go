@@ -326,6 +326,8 @@ type EnableEpochsHandler interface {
 	IsSCDeployFlagEnabled() bool
 	IsAheadOfTimeGasUsageFlagEnabled() bool
 	IsRepairCallbackFlagEnabled() bool
+	IsDisableExecByCallerFlagEnabled() bool
+	IsRefactorContextFlagEnabled() bool
 
 	IsInterfaceNil() bool
 }

@@ -19,6 +19,8 @@ type EnableEpochsHandlerStub struct {
 	IsSCDeployFlagEnabledField                           bool
 	IsAheadOfTimeGasUsageFlagEnabledField                bool
 	IsRepairCallbackFlagEnabledField                     bool
+	IsDisableExecByCallerFlagEnabledField                bool
+	IsRefactorContextFlagEnabledField                    bool
 }
 
 // IsESDTMultiTransferFlagEnabled -
@@ -104,6 +106,16 @@ func (stub *EnableEpochsHandlerStub) IsAheadOfTimeGasUsageFlagEnabled() bool {
 // IsRepairCallbackFlagEnabled -
 func (stub *EnableEpochsHandlerStub) IsRepairCallbackFlagEnabled() bool {
 	return stub.IsRepairCallbackFlagEnabledField
+}
+
+// IsDisableExecByCallerFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsDisableExecByCallerFlagEnabled() bool {
+	return stub.IsDisableExecByCallerFlagEnabledField
+}
+
+// IsRefactorContextFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsRefactorContextFlagEnabled() bool {
+	return stub.IsRefactorContextFlagEnabledField
 }
 
 // IsInterfaceNil -
