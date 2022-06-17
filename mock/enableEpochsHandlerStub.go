@@ -9,6 +9,16 @@ type EnableEpochsHandlerStub struct {
 	IsOptimizeNFTStoreFlagEnabledField                   bool
 	IsCheckCorrectTokenIDForTransferRoleFlagEnabledField bool
 	IsESDTMetadataContinuousCleanupFlagEnabledField      bool
+	IsMultiESDTTransferFixOnCallBackFlagEnabledField     bool
+	IsFixOOGReturnCodeFlagEnabledField                   bool
+	IsRemoveNonUpdatedStorageFlagEnabledField            bool
+	IsCreateNFTThroughExecByCallerFlagEnabledField       bool
+	IsStorageAPICostOptimizationFlagEnabledField         bool
+	IsFailExecutionOnEveryAPIErrorFlagEnabledField       bool
+	IsManagedCryptoAPIsFlagEnabledField                  bool
+	IsSCDeployFlagEnabledField                           bool
+	IsAheadOfTimeGasUsageFlagEnabledField                bool
+	IsRepairCallbackFlagEnabledField                     bool
 }
 
 // IsESDTMultiTransferFlagEnabled -
@@ -44,6 +54,56 @@ func (stub *EnableEpochsHandlerStub) IsCheckCorrectTokenIDForTransferRoleFlagEna
 // IsESDTMetadataContinuousCleanupFlagEnabled -
 func (stub *EnableEpochsHandlerStub) IsESDTMetadataContinuousCleanupFlagEnabled() bool {
 	return stub.IsESDTMetadataContinuousCleanupFlagEnabledField
+}
+
+// IsMultiESDTTransferFixOnCallBackFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsMultiESDTTransferFixOnCallBackFlagEnabled() bool {
+	return stub.IsMultiESDTTransferFixOnCallBackFlagEnabledField
+}
+
+// IsFixOOGReturnCodeFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsFixOOGReturnCodeFlagEnabled() bool {
+	return stub.IsFixOOGReturnCodeFlagEnabledField
+}
+
+// IsRemoveNonUpdatedStorageFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsRemoveNonUpdatedStorageFlagEnabled() bool {
+	return stub.IsRemoveNonUpdatedStorageFlagEnabledField
+}
+
+// IsCreateNFTThroughExecByCallerFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsCreateNFTThroughExecByCallerFlagEnabled() bool {
+	return stub.IsCreateNFTThroughExecByCallerFlagEnabledField
+}
+
+// IsStorageAPICostOptimizationFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsStorageAPICostOptimizationFlagEnabled() bool {
+	return stub.IsStorageAPICostOptimizationFlagEnabledField
+}
+
+// IsFailExecutionOnEveryAPIErrorFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsFailExecutionOnEveryAPIErrorFlagEnabled() bool {
+	return stub.IsFailExecutionOnEveryAPIErrorFlagEnabledField
+}
+
+// IsManagedCryptoAPIsFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsManagedCryptoAPIsFlagEnabled() bool {
+	return stub.IsManagedCryptoAPIsFlagEnabledField
+}
+
+// IsSCDeployFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsSCDeployFlagEnabled() bool {
+	return stub.IsSCDeployFlagEnabledField
+}
+
+// IsAheadOfTimeGasUsageFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsAheadOfTimeGasUsageFlagEnabled() bool {
+	return stub.IsAheadOfTimeGasUsageFlagEnabledField
+}
+
+// IsRepairCallbackFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsRepairCallbackFlagEnabled() bool {
+	return stub.IsRepairCallbackFlagEnabledField
 }
 
 // IsInterfaceNil -

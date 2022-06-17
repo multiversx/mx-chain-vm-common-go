@@ -316,6 +316,16 @@ type EnableEpochsHandler interface {
 	IsOptimizeNFTStoreFlagEnabled() bool
 	IsCheckCorrectTokenIDForTransferRoleFlagEnabled() bool
 	IsESDTMetadataContinuousCleanupFlagEnabled() bool
+	IsMultiESDTTransferFixOnCallBackFlagEnabled() bool
+	IsFixOOGReturnCodeFlagEnabled() bool
+	IsRemoveNonUpdatedStorageFlagEnabled() bool
+	IsCreateNFTThroughExecByCallerFlagEnabled() bool
+	IsStorageAPICostOptimizationFlagEnabled() bool
+	IsFailExecutionOnEveryAPIErrorFlagEnabled() bool
+	IsManagedCryptoAPIsFlagEnabled() bool
+	IsSCDeployFlagEnabled() bool
+	IsAheadOfTimeGasUsageFlagEnabled() bool
+	IsRepairCallbackFlagEnabled() bool
 
 	IsInterfaceNil() bool
 }
