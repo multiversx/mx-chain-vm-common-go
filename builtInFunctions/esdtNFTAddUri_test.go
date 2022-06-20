@@ -10,6 +10,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -324,7 +325,12 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 
 	esdtDataStorage := createNewESDTDataStorageHandler()
 	marshalizer := &mock.MarshalizerMock{}
-	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
+	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			assert.Equal(t, core.ESDTRoleNFTAddURI, string(action))
+			return nil
+		},
+	}, 0, &mock.EpochNotifierStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
