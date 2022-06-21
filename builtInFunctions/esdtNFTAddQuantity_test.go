@@ -348,9 +348,16 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	expectedValue := big.NewInt(0).Add(initialValue, valueToAdd)
 
 	marshalizer := &mock.MarshalizerMock{}
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			assert.Equal(t, core.ESDTRoleNFTAddQuantity, string(action))
+			return nil
+		},
+	}
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 		IsOptimizeNFTStoreFlagEnabledField: true,
-	})
+	}
+	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, enableEpochsHandler)
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{

@@ -265,12 +265,24 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	t.Parallel()
 
 	esdtDataStorage := createNewESDTDataStorageHandler()
+	firstCheck := true
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			if firstCheck {
+				assert.Equal(t, core.ESDTRoleNFTCreate, string(action))
+				firstCheck = false
+			} else {
+				assert.Equal(t, core.ESDTRoleNFTAddQuantity, string(action))
+			}
+			return nil
+		},
+	}
 	nftCreate, _ := NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
 		&mock.MarshalizerMock{},
 		&mock.GlobalSettingsHandlerStub{},
-		&mock.ESDTRoleHandlerStub{},
+		esdtRoleHandler,
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		&mock.EnableEpochsHandlerStub{

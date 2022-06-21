@@ -123,7 +123,7 @@ func (e *esdtNFTBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, token
 		return nil
 	}
 
-	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalBurn))
+	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleNFTBurn))
 }
 
 // IsInterfaceNil returns true if underlying object in nil

@@ -351,9 +351,16 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionShouldWork(t *testing.T) 
 
 	esdtDataStorage := createNewESDTDataStorageHandler()
 	marshalizer := &mock.MarshalizerMock{}
-	e, _ := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			assert.Equal(t, core.ESDTRoleNFTUpdateAttributes, string(action))
+			return nil
+		},
+	}
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 		IsESDTMultiTransferFlagEnabledField: true,
-	})
+	}
+	e, _ := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, enableEpochsHandler)
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{

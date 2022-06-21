@@ -110,10 +110,17 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			assert.Equal(t, core.ESDTRoleTransfer, string(action))
+			return nil
+		},
+	}
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 		IsBuiltInFunctionOnMetaFlagEnabledField:              false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
-	})
+	}
+	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, esdtRoleHandler, enableEpochsHandler)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
