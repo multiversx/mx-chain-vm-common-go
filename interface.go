@@ -312,6 +312,7 @@ type EnableEpochsHandler interface {
 	IsESDTMultiTransferFlagEnabled() bool
 	IsGlobalMintBurnFlagEnabled() bool
 	IsESDTTransferRoleFlagEnabled() bool
+	IsBuiltInFunctionsFlagEnabled() bool
 	IsBuiltInFunctionOnMetaFlagEnabled() bool
 	IsOptimizeNFTStoreFlagEnabled() bool
 	IsCheckCorrectTokenIDForTransferRoleFlagEnabled() bool
