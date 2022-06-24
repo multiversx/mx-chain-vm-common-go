@@ -135,9 +135,13 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 
 	t.Run("account has no enabled guardian, expect error", func(t *testing.T) {
 		expectedErr := errors.New("expected err")
+		cleanCalled:= false
 		args.GuardedAccountHandler = &mock.GuardedAccountHandlerStub{
 			GetActiveGuardianCalled: func(handler vmcommon.UserAccountHandler) ([]byte, error) {
 				return nil, expectedErr
+			},
+			CleanOtherThanActiveCalled: func(uah vmcommon.UserAccountHandler) {
+				cleanCalled = true
 			},
 		}
 
@@ -152,13 +156,18 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		require.Nil(t, output)
 		require.Equal(t, expectedErr, err)
 		requireAccountFrozen(t, account, false)
+		require.False(t, cleanCalled)
 	})
 
 	t.Run("freeze account should work", func(t *testing.T) {
+		cleanCalled := false
 		args.GuardedAccountHandler = &mock.GuardedAccountHandlerStub{
 			GetActiveGuardianCalled: func(handler vmcommon.UserAccountHandler) ([]byte, error) {
 				return []byte("active guardian"), nil
 			},
+			 CleanOtherThanActiveCalled: func(uah vmcommon.UserAccountHandler) {
+				 cleanCalled = true
+			 },
 		}
 
 		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
@@ -172,5 +181,6 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		require.Nil(t, err)
 		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 		requireAccountFrozen(t, account, true)
+		require.True(t, cleanCalled)
 	})
 }

@@ -6,8 +6,9 @@ import (
 
 // GuardedAccountHandlerStub -
 type GuardedAccountHandlerStub struct {
-	GetActiveGuardianCalled func(handler vmcommon.UserAccountHandler) ([]byte, error)
-	SetGuardianCalled       func(uah vmcommon.UserAccountHandler, guardianAddress []byte, txGuardianAddress []byte) error
+	GetActiveGuardianCalled    func(handler vmcommon.UserAccountHandler) ([]byte, error)
+	SetGuardianCalled          func(uah vmcommon.UserAccountHandler, guardianAddress []byte, txGuardianAddress []byte) error
+	CleanOtherThanActiveCalled func(uah vmcommon.UserAccountHandler)
 }
 
 // GetActiveGuardian -
@@ -24,6 +25,13 @@ func (gahs *GuardedAccountHandlerStub) SetGuardian(uah vmcommon.UserAccountHandl
 		return gahs.SetGuardianCalled(uah, guardianAddress, txGuardianAddress)
 	}
 	return nil
+}
+
+// CleanOtherThanActive -
+func (gahs *GuardedAccountHandlerStub) CleanOtherThanActive(uah vmcommon.UserAccountHandler) {
+	if gahs.CleanOtherThanActiveCalled != nil {
+		gahs.CleanOtherThanActiveCalled(uah)
+	}
 }
 
 // IsInterfaceNil -

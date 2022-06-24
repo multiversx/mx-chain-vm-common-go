@@ -37,6 +37,8 @@ func (fa *freezeAccountFunc) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	fa.guardedAccountHandler.CleanOtherThanActive(acntSnd)
+
 	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - fa.funcGasCost}, nil
 }
 
