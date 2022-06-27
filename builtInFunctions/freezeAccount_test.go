@@ -135,7 +135,7 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 
 	t.Run("account has no enabled guardian, expect error", func(t *testing.T) {
 		expectedErr := errors.New("expected err")
-		cleanCalled:= false
+		cleanCalled := false
 		args.GuardedAccountHandler = &mock.GuardedAccountHandlerStub{
 			GetActiveGuardianCalled: func(handler vmcommon.UserAccountHandler) ([]byte, error) {
 				return nil, expectedErr
