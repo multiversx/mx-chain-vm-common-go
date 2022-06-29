@@ -230,7 +230,6 @@ type AccountsAdapter interface {
 	RemoveAccount(address []byte) error
 	Commit() ([]byte, error)
 	JournalLen() int
-	RevertToSnapshot(snapshot int) error
 	GetCode(codeHash []byte) []byte
 
 	RootHash() ([]byte, error)
