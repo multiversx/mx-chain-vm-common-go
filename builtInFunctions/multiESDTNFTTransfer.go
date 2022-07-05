@@ -18,7 +18,7 @@ type esdtNFTMultiTransfer struct {
 	*baseEnabled
 	keyPrefix                      []byte
 	marshalizer                    vmcommon.Marshalizer
-	globalSettingsHandler          vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler          vmcommon.ExtendedESDTGlobalSettingsHandler
 	payableHandler                 vmcommon.PayableHandler
 	funcGasCost                    uint64
 	accounts                       vmcommon.AccountsAdapter
@@ -39,7 +39,7 @@ const argumentsPerTransfer = uint64(3)
 func NewESDTNFTMultiTransferFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
@@ -377,7 +377,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 		tokenID = transferData.ESDTTokenName
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, isReturnCallWithError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, acntSnd.AddressBytes(), dstAddress, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, isReturnCallWithError)
 	if err != nil {
 		return nil, err
 	}

@@ -21,7 +21,7 @@ type esdtTransfer struct {
 	funcGasCost           uint64
 	marshalizer           vmcommon.Marshalizer
 	keyPrefix             []byte
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
 	payableHandler        vmcommon.PayableHandler
 	shardCoordinator      vmcommon.Coordinator
 	mutExecution          sync.RWMutex
@@ -37,7 +37,7 @@ type esdtTransfer struct {
 func NewESDTTransferFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	shardCoordinator vmcommon.Coordinator,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	transferToMetaEnableEpoch uint32,
@@ -127,7 +127,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		keyToCheck = tokenID
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(keyToCheck, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, vmInput.ReturnCallAfterError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(keyToCheck, esdtTokenKey, vmInput.CallerAddr, vmInput.RecipientAddr, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -378,9 +378,9 @@ func getESDTDataFromKey(
 // we cannot transfer a limited esdt to destination shard, as there we do not know if that token was transferred or not
 // by an account with transfer account
 func checkIfTransferCanHappenWithLimitedTransfer(
-	tokenID []byte,
-	esdtTokenKey []byte,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	tokenID []byte, esdtTokenKey []byte,
+	senderAddress, destinationAddress []byte,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	roleHandler vmcommon.ESDTRoleHandler,
 	acntSnd, acntDst vmcommon.UserAccountHandler,
 	isReturnWithError bool,
@@ -392,6 +392,10 @@ func checkIfTransferCanHappenWithLimitedTransfer(
 		return nil
 	}
 	if !globalSettingsHandler.IsLimitedTransfer(esdtTokenKey) {
+		return nil
+	}
+
+	if globalSettingsHandler.IsSenderOrDestinationWithTransferRole(senderAddress, destinationAddress, tokenID) {
 		return nil
 	}
 

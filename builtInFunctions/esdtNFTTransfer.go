@@ -16,6 +16,8 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
+const baseESDTKeyPrefix = core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier
+
 var oneValue = big.NewInt(1)
 var zeroByteArray = []byte{0}
 
@@ -23,7 +25,7 @@ type esdtNFTTransfer struct {
 	baseAlwaysActive
 	keyPrefix                      []byte
 	marshalizer                    vmcommon.Marshalizer
-	globalSettingsHandler          vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler          vmcommon.ExtendedESDTGlobalSettingsHandler
 	payableHandler                 vmcommon.PayableHandler
 	funcGasCost                    uint64
 	accounts                       vmcommon.AccountsAdapter
@@ -44,7 +46,7 @@ type esdtNFTTransfer struct {
 func NewESDTNFTTransferFunc(
 	funcGasCost uint64,
 	marshalizer vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
@@ -290,7 +292,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		tokenID = tickerID
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, acntSnd.AddressBytes(), dstAddress, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

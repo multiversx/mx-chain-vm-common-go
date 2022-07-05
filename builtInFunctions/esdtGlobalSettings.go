@@ -177,6 +177,32 @@ func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
 	return esdtMetadata.BurnRoleForAll
 }
 
+// IsSenderOrDestinationWithTransferRole returns true if we have transfer role on the system account
+func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool {
+	if !e.baseEnabled.IsActive() {
+		return false
+	}
+
+	systemAcc, err := e.getSystemAccount()
+	if err != nil {
+		return false
+	}
+
+	esdtTokenTransferRoleKey := append(transferAddressesKeyPrefix, tokenID...)
+	addresses, _, err := getESDTRolesForAcnt(e.marshalizer, systemAcc, esdtTokenTransferRoleKey)
+	if err != nil {
+		return false
+	}
+
+	for _, address := range addresses.Roles {
+		if bytes.Equal(address, sender) || bytes.Equal(address, destination) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {
 	systemSCAccount, err := e.getSystemAccount()
 	if err != nil {
