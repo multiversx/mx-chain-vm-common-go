@@ -126,7 +126,7 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 }
 
 // IsSenderOrDestinationWithTransferRole returns true if we have transfer role on the system account
-func (e *esdtTransferAddress) IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool {
+func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool {
 	if !e.baseEnabled.IsActive() {
 		return false
 	}

@@ -6,19 +6,22 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/marshal"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type esdtGlobalSettings struct {
 	*baseEnabled
-	keyPrefix []byte
-	set       bool
-	accounts  vmcommon.AccountsAdapter
+	keyPrefix   []byte
+	set         bool
+	accounts    vmcommon.AccountsAdapter
+	marshalizer marshal.Marshalizer
 }
 
 // NewESDTGlobalSettingsFunc returns the esdt pause/un-pause built-in function component
 func NewESDTGlobalSettingsFunc(
 	accounts vmcommon.AccountsAdapter,
+	marshalizer marshal.Marshalizer,
 	set bool,
 	function string,
 	activationEpoch uint32,
@@ -27,14 +30,18 @@ func NewESDTGlobalSettingsFunc(
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
+	if check.IfNil(marshalizer) {
+		return nil, ErrNilMarshalizer
+	}
 	if !isCorrectFunction(function) {
 		return nil, ErrInvalidArguments
 	}
 
 	e := &esdtGlobalSettings{
-		keyPrefix: []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		set:       set,
-		accounts:  accounts,
+		keyPrefix:   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		set:         set,
+		accounts:    accounts,
+		marshalizer: marshalizer,
 	}
 
 	e.baseEnabled = &baseEnabled{

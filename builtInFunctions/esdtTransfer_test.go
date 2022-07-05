@@ -163,7 +163,7 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 
 	marshalizer := &mock.MarshalizerMock{}
 	accountStub := &mock.AccountsStub{}
-	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
+	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
 	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, 1000, 0, &mock.EpochNotifierStub{})
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
@@ -247,7 +247,7 @@ func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
 			return nil
 		},
 	}
-	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, true, core.BuiltInFunctionESDTSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
+	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
 	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, rolesHandler, 1000, 0, &mock.EpochNotifierStub{})
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
