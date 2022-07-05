@@ -157,3 +157,6 @@ var ErrInvalidMetadata = errors.New("invalid metadata")
 
 // ErrInvalidLiquidityForESDT signals that liquidity is invalid for ESDT
 var ErrInvalidLiquidityForESDT = errors.New("invalid liquidity for ESDT")
+
+// ErrTooManyTransferAddresses signals that too many transfer address roles has been added
+var ErrTooManyTransferAddresses = errors.New("too many transfer addresses")

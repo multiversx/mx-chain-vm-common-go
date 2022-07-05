@@ -408,6 +408,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshalizer, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, true)
+	if err != nil {
+		return nil, err
+	}
+	err = b.builtInFunctions.Add(vmcommon.BuiltInFunctionESDTTransferRoleDeleteAddress, newFunc)
+	if err != nil {
+		return nil, err
+	}
+
 	return b.builtInFunctions, nil
 }
 
