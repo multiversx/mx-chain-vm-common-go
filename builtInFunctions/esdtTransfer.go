@@ -217,6 +217,9 @@ func determineIsSCCallAfter(vmInput *vmcommon.ContractCallInput, destAddress []b
 	if !vmcommon.IsSmartContractAddress(destAddress) {
 		return false
 	}
+	if len(vmInput.Arguments[minLenArguments]) == 0 {
+		return false
+	}
 
 	return true
 }
@@ -228,8 +231,7 @@ func mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int)
 	if bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		return false
 	}
-
-	if len(vmInput.Arguments) > minLenArguments {
+	if len(vmInput.Arguments) > minLenArguments && len(vmInput.Arguments[minLenArguments]) > 0 {
 		return false
 	}
 
