@@ -76,7 +76,8 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 			assert.Equal(t, core.ESDTRoleTransfer, string(action))
 			return nil
 		},
-	}transferFunc, _ := NewESDTTransferFunc(
+	}
+	transferFunc, _ := NewESDTTransferFunc(
 		10,
 		marshalizer,
 		&mock.GlobalSettingsHandlerStub{},
