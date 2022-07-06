@@ -231,7 +231,10 @@ func mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int)
 	if bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		return false
 	}
-	if len(vmInput.Arguments) > minLenArguments && len(vmInput.Arguments[minLenArguments]) > 0 {
+	// TODO change the following if to
+	//   if len(vmInput.Arguments) > minLenArguments && len(vmInput.Arguments[minLenArguments]) > 0 {
+	//   + add a flag
+	if len(vmInput.Arguments) > minLenArguments {
 		return false
 	}
 
