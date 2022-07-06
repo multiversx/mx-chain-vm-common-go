@@ -199,6 +199,14 @@ type ESDTGlobalSettingsHandler interface {
 	IsInterfaceNil() bool
 }
 
+// ExtendedESDTGlobalSettingsHandler provides global settings functions for an ESDT token
+type ExtendedESDTGlobalSettingsHandler interface {
+	IsPaused(esdtTokenKey []byte) bool
+	IsLimitedTransfer(esdtTokenKey []byte) bool
+	IsBurnForAll(esdtTokenKey []byte) bool
+	IsInterfaceNil() bool
+}
+
 // ESDTRoleHandler provides IsAllowedToExecute function for an ESDT
 type ESDTRoleHandler interface {
 	CheckAllowedToExecute(account UserAccountHandler, tokenID []byte, action []byte) error
@@ -288,6 +296,7 @@ type ESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	AddToLiquiditySystemAcc(esdtTokenKey []byte, nonce uint64, transferValue *big.Int) error
 	IsInterfaceNil() bool
 }
 

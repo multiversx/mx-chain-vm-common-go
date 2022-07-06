@@ -10,6 +10,7 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -354,7 +355,72 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	expectedQuantity := big.NewInt(0).Sub(initialQuantity, quantityToBurn)
 
 	marshalizer := &mock.MarshalizerMock{}
-	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			assert.Equal(t, core.ESDTRoleNFTBurn, string(action))
+			return nil
+		},
+	}
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	esdtData := &esdt.ESDigitalToken{
+		TokenMetaData: &esdt.MetaData{
+			Name: []byte("test"),
+		},
+		Value: initialQuantity,
+	}
+	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	tokenKey := append([]byte(key), nonce.Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+	output, err := ebf.ProcessBuiltinFunction(
+		userAcc,
+		nil,
+		&vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:   big.NewInt(0),
+				Arguments:   [][]byte{[]byte(tokenIdentifier), nonce.Bytes(), quantityToBurn.Bytes()},
+				CallerAddr:  []byte("address 1"),
+				GasProvided: 12,
+			},
+			RecipientAddr: []byte("address 1"),
+		},
+	)
+
+	require.NotNil(t, output)
+	require.NoError(t, err)
+	require.Equal(t, vmcommon.Ok, output.ReturnCode)
+
+	res, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	finalTokenData := esdt.ESDigitalToken{}
+	_ = marshalizer.Unmarshal(&finalTokenData, res)
+	require.Equal(t, expectedQuantity.Bytes(), finalTokenData.Value.Bytes())
+}
+
+func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
+	t.Parallel()
+
+	tokenIdentifier := "testTkn"
+	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+
+	nonce := big.NewInt(33)
+	initialQuantity := big.NewInt(50)
+	quantityToBurn := big.NewInt(37)
+	expectedQuantity := big.NewInt(0).Sub(initialQuantity, quantityToBurn)
+
+	marshalizer := &mock.MarshalizerMock{}
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{
+		IsBurnForAllCalled: func(token []byte) bool {
+			return true
+		},
+	}, &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			return errors.New("no burn allowed")
+		},
+	})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{

@@ -71,12 +71,17 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	transferFunc, _ := NewESDTTransferFunc(
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			assert.Equal(t, core.ESDTRoleTransfer, string(action))
+			return nil
+		},
+	}transferFunc, _ := NewESDTTransferFunc(
 		10,
 		marshalizer,
 		&mock.GlobalSettingsHandlerStub{},
 		&mock.ShardCoordinatorStub{},
-		&mock.ESDTRoleHandlerStub{},
+		esdtRoleHandler,
 		1000,
 		0,
 		0,
