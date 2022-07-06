@@ -2,6 +2,7 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"encoding/hex"
 	"math/big"
 	"testing"
 
@@ -354,4 +355,68 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshalizer.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
+}
+
+func TestDetermineIsSCCallAfter(t *testing.T) {
+	t.Parallel()
+
+	scAddress, _ := hex.DecodeString("00000000000000000500e9a061848044cc9c6ac2d78dca9e4f72e72a0a5b315c")
+	address, _ := hex.DecodeString("432d6fed4f1d8ac43cd3201fd047b98e27fc9c06efb20c6593ba577cd11228ab")
+	minLenArguments := 4
+	t.Run("less number of arguments should return false", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: make([][]byte, 0),
+			},
+		}
+
+		for i := 0; i < minLenArguments; i++ {
+			assert.False(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+		}
+	})
+	t.Run("ReturnCallAfterError should return false", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments:            [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), []byte("arg5")},
+				CallType:             vm.AsynchronousCall,
+				ReturnCallAfterError: true,
+			},
+		}
+
+		assert.False(t, determineIsSCCallAfter(vmInput, address, minLenArguments))
+	})
+	t.Run("not a sc address should return false", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), []byte("arg5")},
+			},
+		}
+
+		assert.False(t, determineIsSCCallAfter(vmInput, address, minLenArguments))
+	})
+	t.Run("empty last argument", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), []byte("")},
+			},
+		}
+
+		assert.False(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+	})
+	t.Run("should work", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), []byte("arg5")},
+			},
+		}
+
+		t.Run("ReturnCallAfterError == false", func(t *testing.T) {
+			assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+		})
+		t.Run("ReturnCallAfterError == true and CallType == AsynchronousCallBack", func(t *testing.T) {
+			vmInput.CallType = vm.AsynchronousCallBack
+			vmInput.ReturnCallAfterError = true
+			assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+		})
+	})
 }

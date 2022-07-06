@@ -217,6 +217,9 @@ func determineIsSCCallAfter(vmInput *vmcommon.ContractCallInput, destAddress []b
 	if !vmcommon.IsSmartContractAddress(destAddress) {
 		return false
 	}
+	if len(vmInput.Arguments[minLenArguments]) == 0 {
+		return false
+	}
 
 	return true
 }
