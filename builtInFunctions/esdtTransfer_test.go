@@ -420,3 +420,90 @@ func TestDetermineIsSCCallAfter(t *testing.T) {
 		})
 	})
 }
+
+func TestMustVerifyPayable(t *testing.T) {
+	t.Parallel()
+
+	minLenArguments := 4
+	t.Run("call type is AsynchronousCall should return false", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3")},
+				CallType:  vm.AsynchronousCall,
+			},
+		}
+
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+	})
+	t.Run("call type is ESDTTransferAndExecute should return false", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3")},
+				CallType:  vm.ESDTTransferAndExecute,
+			},
+		}
+
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+	})
+	t.Run("arguments represents a SC call should return false", func(t *testing.T) {
+		t.Run("5 arguments", func(t *testing.T) {
+			vmInput := &vmcommon.ContractCallInput{
+				VMInput: vmcommon.VMInput{
+					Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), []byte("arg5")},
+					CallType:  vm.DirectCall,
+				},
+			}
+			assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+		})
+		t.Run("6 arguments", func(t *testing.T) {
+			vmInput := &vmcommon.ContractCallInput{
+				VMInput: vmcommon.VMInput{
+					Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), []byte("arg5"), []byte("arg6")},
+					CallType:  vm.DirectCall,
+				},
+			}
+			assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+		})
+	})
+	t.Run("caller is ESDT address should return false", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments:  [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3")},
+				CallType:   vm.DirectCall,
+				CallerAddr: core.ESDTSCAddress,
+			},
+		}
+
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+	})
+	t.Run("should return true", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3")},
+			},
+		}
+
+		t.Run("call type is DirectCall", func(t *testing.T) {
+			vmInput.CallType = vm.DirectCall
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+		})
+		t.Run("call type is AsynchronousCallBack", func(t *testing.T) {
+			vmInput.CallType = vm.AsynchronousCallBack
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+		})
+		t.Run("call type is ExecOnDestByCaller", func(t *testing.T) {
+			vmInput.CallType = vm.ExecOnDestByCaller
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+		})
+		t.Run("equal arguments than minimum", func(t *testing.T) {
+			vmInput.Arguments = [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4")}
+			vmInput.CallType = vm.ExecOnDestByCaller
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+		})
+		t.Run("5 arguments but no function", func(t *testing.T) {
+			vmInput.Arguments = [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), make([]byte, 0)}
+			vmInput.CallType = vm.ExecOnDestByCaller
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+		})
+	})
+}
