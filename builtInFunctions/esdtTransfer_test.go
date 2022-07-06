@@ -18,7 +18,17 @@ func TestESDTTransfer_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
 	shardC := &mock.ShardCoordinatorStub{}
-	transferFunc, _ := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, shardC, &mock.ESDTRoleHandlerStub{}, 1000, 0, &mock.EpochNotifierStub{})
+	transferFunc, _ := NewESDTTransferFunc(
+		10,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		shardC,
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		0,
+		0,
+		&mock.EpochNotifierStub{},
+	)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 	_, err := transferFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
@@ -67,7 +77,17 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 			return nil
 		},
 	}
-	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, esdtRoleHandler, 1000, 0, &mock.EpochNotifierStub{})
+	transferFunc, _ := NewESDTTransferFunc(
+		10,
+		marshalizer,
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ShardCoordinatorStub{},
+		esdtRoleHandler,
+		1000,
+		0,
+		0,
+		&mock.EpochNotifierStub{},
+	)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -105,7 +125,17 @@ func TestESDTTransfer_ProcessBuiltInFunctionSenderInShard(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, 1000, 0, &mock.EpochNotifierStub{})
+	transferFunc, _ := NewESDTTransferFunc(
+		10,
+		marshalizer,
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ShardCoordinatorStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		0,
+		0,
+		&mock.EpochNotifierStub{},
+	)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -135,7 +165,17 @@ func TestESDTTransfer_ProcessBuiltInFunctionDestInShard(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, 1000, 0, &mock.EpochNotifierStub{})
+	transferFunc, _ := NewESDTTransferFunc(
+		10,
+		marshalizer,
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ShardCoordinatorStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		0,
+		0,
+		&mock.EpochNotifierStub{},
+	)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -165,7 +205,17 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	marshalizer := &mock.MarshalizerMock{}
 	accountStub := &mock.AccountsStub{}
 	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
-	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, 1000, 0, &mock.EpochNotifierStub{})
+	transferFunc, _ := NewESDTTransferFunc(
+		10,
+		marshalizer,
+		esdtGlobalSettingsFunc,
+		&mock.ShardCoordinatorStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		0,
+		0,
+		&mock.EpochNotifierStub{},
+	)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -249,7 +299,17 @@ func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
 		},
 	}
 	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, true, core.BuiltInFunctionESDTSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
-	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, rolesHandler, 1000, 0, &mock.EpochNotifierStub{})
+	transferFunc, _ := NewESDTTransferFunc(
+		10,
+		marshalizer,
+		esdtGlobalSettingsFunc,
+		&mock.ShardCoordinatorStub{},
+		rolesHandler,
+		1000,
+		0,
+		0,
+		&mock.EpochNotifierStub{},
+	)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -324,7 +384,17 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	transferFunc, _ := NewESDTTransferFunc(10, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, 1000, 0, &mock.EpochNotifierStub{})
+	transferFunc, _ := NewESDTTransferFunc(
+		10,
+		marshalizer,
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ShardCoordinatorStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1000,
+		0,
+		0,
+		&mock.EpochNotifierStub{},
+	)
 	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -377,7 +447,8 @@ func TestDetermineIsSCCallAfter(t *testing.T) {
 		}
 
 		for i := 0; i < minLenArguments; i++ {
-			assert.False(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+			assert.False(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments, false))
+			assert.False(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments, true))
 		}
 	})
 	t.Run("ReturnCallAfterError should return false", func(t *testing.T) {
@@ -389,7 +460,8 @@ func TestDetermineIsSCCallAfter(t *testing.T) {
 			},
 		}
 
-		assert.False(t, determineIsSCCallAfter(vmInput, address, minLenArguments))
+		assert.False(t, determineIsSCCallAfter(vmInput, address, minLenArguments, false))
+		assert.False(t, determineIsSCCallAfter(vmInput, address, minLenArguments, true))
 	})
 	t.Run("not a sc address should return false", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
@@ -398,7 +470,8 @@ func TestDetermineIsSCCallAfter(t *testing.T) {
 			},
 		}
 
-		assert.False(t, determineIsSCCallAfter(vmInput, address, minLenArguments))
+		assert.False(t, determineIsSCCallAfter(vmInput, address, minLenArguments, false))
+		assert.False(t, determineIsSCCallAfter(vmInput, address, minLenArguments, true))
 	})
 	t.Run("empty last argument", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
@@ -407,7 +480,8 @@ func TestDetermineIsSCCallAfter(t *testing.T) {
 			},
 		}
 
-		assert.False(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+		assert.False(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments, true))
+		assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments, false))
 	})
 	t.Run("should work", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
@@ -417,12 +491,14 @@ func TestDetermineIsSCCallAfter(t *testing.T) {
 		}
 
 		t.Run("ReturnCallAfterError == false", func(t *testing.T) {
-			assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+			assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments, true))
+			assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments, false))
 		})
 		t.Run("ReturnCallAfterError == true and CallType == AsynchronousCallBack", func(t *testing.T) {
 			vmInput.CallType = vm.AsynchronousCallBack
 			vmInput.ReturnCallAfterError = true
-			assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+			assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments, true))
+			assert.True(t, determineIsSCCallAfter(vmInput, scAddress, minLenArguments, false))
 		})
 	})
 }
@@ -439,7 +515,8 @@ func TestMustVerifyPayable(t *testing.T) {
 			},
 		}
 
-		assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments, true))
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments, false))
 	})
 	t.Run("call type is ESDTTransferAndExecute should return false", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
@@ -449,7 +526,8 @@ func TestMustVerifyPayable(t *testing.T) {
 			},
 		}
 
-		assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments, true))
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments, false))
 	})
 	t.Run("arguments represents a SC call should return false", func(t *testing.T) {
 		t.Run("5 arguments", func(t *testing.T) {
@@ -459,7 +537,8 @@ func TestMustVerifyPayable(t *testing.T) {
 					CallType:  vm.DirectCall,
 				},
 			}
-			assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+			assert.False(t, mustVerifyPayable(vmInput, minLenArguments, true))
+			assert.False(t, mustVerifyPayable(vmInput, minLenArguments, false))
 		})
 		t.Run("6 arguments", func(t *testing.T) {
 			vmInput := &vmcommon.ContractCallInput{
@@ -468,7 +547,8 @@ func TestMustVerifyPayable(t *testing.T) {
 					CallType:  vm.DirectCall,
 				},
 			}
-			assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+			assert.False(t, mustVerifyPayable(vmInput, minLenArguments, true))
+			assert.False(t, mustVerifyPayable(vmInput, minLenArguments, false))
 		})
 	})
 	t.Run("caller is ESDT address should return false", func(t *testing.T) {
@@ -480,7 +560,8 @@ func TestMustVerifyPayable(t *testing.T) {
 			},
 		}
 
-		assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments, true))
+		assert.False(t, mustVerifyPayable(vmInput, minLenArguments, false))
 	})
 	t.Run("should return true", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
@@ -491,26 +572,79 @@ func TestMustVerifyPayable(t *testing.T) {
 
 		t.Run("call type is DirectCall", func(t *testing.T) {
 			vmInput.CallType = vm.DirectCall
-			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, true))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, false))
 		})
 		t.Run("call type is AsynchronousCallBack", func(t *testing.T) {
 			vmInput.CallType = vm.AsynchronousCallBack
-			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, true))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, false))
 		})
 		t.Run("call type is ExecOnDestByCaller", func(t *testing.T) {
 			vmInput.CallType = vm.ExecOnDestByCaller
-			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, true))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, false))
 		})
 		t.Run("equal arguments than minimum", func(t *testing.T) {
 			vmInput.Arguments = [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4")}
 			vmInput.CallType = vm.ExecOnDestByCaller
-			assert.True(t, mustVerifyPayable(vmInput, minLenArguments))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, true))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, false))
 		})
 		t.Run("5 arguments but no function", func(t *testing.T) {
 			vmInput.Arguments = [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), make([]byte, 0)}
 			vmInput.CallType = vm.ExecOnDestByCaller
-			// TODO change this to assert.True after fixing TODO from L234 in esdtTransfer.go
-			assert.False(t, mustVerifyPayable(vmInput, minLenArguments))
+			assert.True(t, mustVerifyPayable(vmInput, minLenArguments, true))
+			t.Run("backwards compatibility", func(t *testing.T) {
+				assert.False(t, mustVerifyPayable(vmInput, minLenArguments, false))
+			})
 		})
 	})
+}
+
+func TestESDTTransfer_EpochChange(t *testing.T) {
+	t.Parallel()
+
+	var functionHandler vmcommon.EpochSubscriberHandler
+	notifier := &mock.EpochNotifierStub{
+		RegisterNotifyHandlerCalled: func(handler vmcommon.EpochSubscriberHandler) {
+			functionHandler = handler
+		},
+	}
+	transferFunc, _ := NewESDTTransferFunc(
+		10,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ShardCoordinatorStub{},
+		&mock.ESDTRoleHandlerStub{},
+		1,
+		2,
+		3,
+		notifier,
+	)
+
+	functionHandler.EpochConfirmed(0, 0)
+	assert.False(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
+
+	functionHandler.EpochConfirmed(1, 0)
+	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
+
+	functionHandler.EpochConfirmed(2, 0)
+	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
+
+	functionHandler.EpochConfirmed(3, 0)
+	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.True(t, transferFunc.flagCheckFunctionArgument.IsSet())
+
+	functionHandler.EpochConfirmed(4, 0)
+	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.True(t, transferFunc.flagCheckFunctionArgument.IsSet())
 }
