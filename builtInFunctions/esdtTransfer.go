@@ -26,11 +26,13 @@ type esdtTransfer struct {
 	shardCoordinator      vmcommon.Coordinator
 	mutExecution          sync.RWMutex
 
-	rolesHandler                   vmcommon.ESDTRoleHandler
-	transferToMetaEnableEpoch      uint32
-	flagTransferToMeta             atomic.Flag
-	checkCorrectTokenIDEnableEpoch uint32
-	flagCheckCorrectTokenID        atomic.Flag
+	rolesHandler                     vmcommon.ESDTRoleHandler
+	transferToMetaEnableEpoch        uint32
+	flagTransferToMeta               atomic.Flag
+	checkCorrectTokenIDEnableEpoch   uint32
+	flagCheckCorrectTokenID          atomic.Flag
+	checkFunctionArgumentEnableEpoch uint32
+	flagCheckFunctionArgument        atomic.Flag
 }
 
 // NewESDTTransferFunc returns the esdt transfer built-in function component
@@ -42,6 +44,7 @@ func NewESDTTransferFunc(
 	rolesHandler vmcommon.ESDTRoleHandler,
 	transferToMetaEnableEpoch uint32,
 	checkCorrectTokenIDEnableEpoch uint32,
+	checkFunctionArgumentEnableEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtTransfer, error) {
 	if check.IfNil(marshalizer) {
@@ -61,15 +64,16 @@ func NewESDTTransferFunc(
 	}
 
 	e := &esdtTransfer{
-		funcGasCost:                    funcGasCost,
-		marshalizer:                    marshalizer,
-		keyPrefix:                      []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		globalSettingsHandler:          globalSettingsHandler,
-		payableHandler:                 &disabledPayableHandler{},
-		shardCoordinator:               shardCoordinator,
-		rolesHandler:                   rolesHandler,
-		checkCorrectTokenIDEnableEpoch: checkCorrectTokenIDEnableEpoch,
-		transferToMetaEnableEpoch:      transferToMetaEnableEpoch,
+		funcGasCost:                      funcGasCost,
+		marshalizer:                      marshalizer,
+		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		globalSettingsHandler:            globalSettingsHandler,
+		payableHandler:                   &disabledPayableHandler{},
+		shardCoordinator:                 shardCoordinator,
+		rolesHandler:                     rolesHandler,
+		checkCorrectTokenIDEnableEpoch:   checkCorrectTokenIDEnableEpoch,
+		transferToMetaEnableEpoch:        transferToMetaEnableEpoch,
+		checkFunctionArgumentEnableEpoch: checkFunctionArgumentEnableEpoch,
 	}
 
 	epochNotifier.RegisterNotifyHandler(e)
@@ -83,6 +87,8 @@ func (e *esdtTransfer) EpochConfirmed(epoch uint32, _ uint64) {
 	log.Debug("ESDT transfer to metachain flag", "enabled", e.flagTransferToMeta.IsSet())
 	e.flagCheckCorrectTokenID.SetValue(epoch >= e.checkCorrectTokenIDEnableEpoch)
 	log.Debug("ESDT transfer check correct tokenID for transfer role", "enabled", e.flagCheckCorrectTokenID.IsSet())
+	e.flagCheckFunctionArgument.SetValue(epoch >= e.checkFunctionArgumentEnableEpoch)
+	log.Debug("ESDT transfer check function argument", "enabled", e.flagCheckFunctionArgument.IsSet())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -144,10 +150,10 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		}
 	}
 
-	isSCCallAfter := determineIsSCCallAfter(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTTransfer)
+	isSCCallAfter := determineIsSCCallAfter(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTTransfer, e.flagCheckFunctionArgument.IsSet())
 	vmOutput := &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}
 	if !check.IfNil(acntDst) {
-		if mustVerifyPayable(vmInput, core.MinLenArgumentsESDTTransfer) {
+		if mustVerifyPayable(vmInput, core.MinLenArgumentsESDTTransfer, e.flagCheckFunctionArgument.IsSet()) {
 			isPayable, errPayable := e.payableHandler.IsPayable(vmInput.CallerAddr, vmInput.RecipientAddr)
 			if errPayable != nil {
 				return nil, errPayable
@@ -207,7 +213,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-func determineIsSCCallAfter(vmInput *vmcommon.ContractCallInput, destAddress []byte, minLenArguments int) bool {
+func determineIsSCCallAfter(vmInput *vmcommon.ContractCallInput, destAddress []byte, minLenArguments int, checkEmptyFunction bool) bool {
 	if len(vmInput.Arguments) <= minLenArguments {
 		return false
 	}
@@ -217,25 +223,30 @@ func determineIsSCCallAfter(vmInput *vmcommon.ContractCallInput, destAddress []b
 	if !vmcommon.IsSmartContractAddress(destAddress) {
 		return false
 	}
-	if len(vmInput.Arguments[minLenArguments]) == 0 {
-		return false
+	if checkEmptyFunction {
+		if len(vmInput.Arguments[minLenArguments]) == 0 {
+			return false
+		}
 	}
 
 	return true
 }
 
-func mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int) bool {
+func mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int, checkEmptyFunction bool) bool {
 	if vmInput.CallType == vm.AsynchronousCall || vmInput.CallType == vm.ESDTTransferAndExecute {
 		return false
 	}
 	if bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		return false
 	}
-	// TODO change the following if to
-	//   if len(vmInput.Arguments) > minLenArguments && len(vmInput.Arguments[minLenArguments]) > 0 {
-	//   + add a flag
 	if len(vmInput.Arguments) > minLenArguments {
-		return false
+		if checkEmptyFunction {
+			if len(vmInput.Arguments[minLenArguments]) > 0 {
+				return false
+			}
+		} else {
+			return false
+		}
 	}
 
 	return true
