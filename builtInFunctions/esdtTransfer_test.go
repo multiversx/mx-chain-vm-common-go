@@ -204,7 +204,7 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 
 	marshalizer := &mock.MarshalizerMock{}
 	accountStub := &mock.AccountsStub{}
-	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
+	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshalizer, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
 	transferFunc, _ := NewESDTTransferFunc(
 		10,
 		marshalizer,
@@ -298,7 +298,7 @@ func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
 			return nil
 		},
 	}
-	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, true, core.BuiltInFunctionESDTSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
+	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshalizer, true, core.BuiltInFunctionESDTSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
 	transferFunc, _ := NewESDTTransferFunc(
 		10,
 		marshalizer,
