@@ -550,19 +550,19 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Nil(t, err)
 
-	tokenData, _ := getESDTDataFromKey(userAcc, esdtTokenKey, e.marshalizer)
+	tokenData, _ := getESDTDataFromKey(userAcc, esdtTokenKey, e.marshaller)
 
 	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
 	esdtUserMetadata.Frozen = false
 	tokenData.Properties = esdtUserMetadata.ToBytes()
-	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshalizer)
+	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshaller)
 
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Nil(t, err)
 
 	esdtUserMetadata.Frozen = true
 	tokenData.Properties = esdtUserMetadata.ToBytes()
-	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshalizer)
+	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshaller)
 
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
@@ -581,7 +581,7 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 
 	systemAcc, _ := e.getSystemAccount()
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
-	marshalledData, _ := e.marshalizer.Marshal(esdtData)
+	marshalledData, _ := e.marshaller.Marshal(esdtData)
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
@@ -590,7 +590,7 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 	assert.Nil(t, err)
 
 	esdtData = &esdt.ESDigitalToken{Value: big.NewInt(10), Reserved: []byte{1}}
-	marshalledData, _ = e.marshalizer.Marshal(esdtData)
+	marshalledData, _ = e.marshaller.Marshal(esdtData)
 
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
 	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))

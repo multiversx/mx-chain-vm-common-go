@@ -63,7 +63,7 @@ func createAccountsAdapterWithMap() vmcommon.AccountsAdapter {
 }
 
 func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler) *esdtNFTMultiTransfer {
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard
 	shardCoordinator.ComputeIdCalled = func(address []byte) uint32 {
@@ -74,7 +74,7 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 
 	multiTransfer, _ := NewESDTNFTMultiTransferFunc(
 		1,
-		marshalizer,
+		marshaller,
 		globalSettingsHandler,
 		accounts,
 		shardCoordinator,
@@ -338,11 +338,11 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransfer.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransfer.marshaller, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransfer.marshaller, sender.(vmcommon.UserAccountHandler))
 
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransfer.marshalizer, destination.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransfer.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransfer.marshaller, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransfer.marshaller, destination.(vmcommon.UserAccountHandler))
 
 	_ = multiTransfer.accounts.SaveAccount(sender)
 	_ = multiTransfer.accounts.SaveAccount(destination)
@@ -383,10 +383,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 	destination, err = multiTransfer.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransfer.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
-	testNFTTokenShouldExist(t, multiTransfer.marshalizer, sender, token2, 0, big.NewInt(2))
-	testNFTTokenShouldExist(t, multiTransfer.marshalizer, destination, token1, tokenNonce, big.NewInt(4))
-	testNFTTokenShouldExist(t, multiTransfer.marshalizer, destination, token2, 0, big.NewInt(4))
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, sender, token2, 0, big.NewInt(2))
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, destination, token1, tokenNonce, big.NewInt(4))
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, destination, token2, 0, big.NewInt(4))
 	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
 	assert.Equal(t, scCallFunctionAsHex, funcName)
 	require.Equal(t, 1, len(args))
@@ -419,8 +419,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
@@ -455,7 +455,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 
 	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
 
@@ -480,8 +480,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 	destination, err = multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token1, tokenNonce, big.NewInt(1))
-	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token2, 0, big.NewInt(1))
+	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshaller, destination, token1, tokenNonce, big.NewInt(1))
+	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshaller, destination, token2, 0, big.NewInt(1))
 	funcName, args = extractScResultsFromVmOutput(t, vmOutput)
 	assert.Equal(t, scCallFunctionAsHex, funcName)
 	require.Equal(t, 1, len(args))
@@ -514,8 +514,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationAddT
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
@@ -550,7 +550,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationAddT
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
@@ -606,7 +606,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsOneTransfer(t *
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
@@ -637,13 +637,13 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsOneTransfer(t *
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
 	destinationNumTokens1 := big.NewInt(1000)
 	destination, err := multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens1, multiTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens1, multiTransferDestinationShard.marshaller, destination.(vmcommon.UserAccountHandler))
 	_ = multiTransferDestinationShard.accounts.SaveAccount(destination)
 	_, _ = multiTransferDestinationShard.accounts.Commit()
 
@@ -669,7 +669,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsOneTransfer(t *
 	require.Nil(t, err)
 
 	expectedTokens1 := big.NewInt(0).Add(destinationNumTokens1, big.NewInt(1))
-	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token1, tokenNonce, expectedTokens1)
+	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshaller, destination, token1, tokenNonce, expectedTokens1)
 }
 
 func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(t *testing.T) {
@@ -697,8 +697,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
@@ -729,16 +729,16 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token2, 0, big.NewInt(2))          // 3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token2, 0, big.NewInt(2))          // 3 initial - 1 transferred
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
 	destinationNumTokens1 := big.NewInt(1000)
 	destinationNumTokens2 := big.NewInt(1000)
 	destination, err := multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens1, multiTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, destinationNumTokens2, multiTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens1, multiTransferDestinationShard.marshaller, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, destinationNumTokens2, multiTransferDestinationShard.marshaller, destination.(vmcommon.UserAccountHandler))
 	_ = multiTransferDestinationShard.accounts.SaveAccount(destination)
 	_, _ = multiTransferDestinationShard.accounts.Commit()
 
@@ -765,8 +765,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 
 	expectedTokens1 := big.NewInt(0).Add(destinationNumTokens1, big.NewInt(1))
 	expectedTokens2 := big.NewInt(0).Add(destinationNumTokens2, big.NewInt(1))
-	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token1, tokenNonce, expectedTokens1)
-	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshalizer, destination, token2, 0, expectedTokens2)
+	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshaller, destination, token1, tokenNonce, expectedTokens1)
+	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshaller, destination, token2, 0, expectedTokens2)
 }
 
 func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *testing.T) {
@@ -794,8 +794,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransferSenderShard.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, multiTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
@@ -826,14 +826,14 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token2, 0, big.NewInt(2))
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token2, 0, big.NewInt(2))
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
 	destinationNumTokens := big.NewInt(1000)
 	destination, err := multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens, multiTransferDestinationShard.marshalizer, destination.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, destinationNumTokens, multiTransferDestinationShard.marshaller, destination.(vmcommon.UserAccountHandler))
 	_ = multiTransferDestinationShard.accounts.SaveAccount(destination)
 	_, _ = multiTransferDestinationShard.accounts.Commit()
 
@@ -884,8 +884,8 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
 	esdtFrozen := ESDTUserMetadata{Frozen: true}
 
 	_ = transferFunc.accounts.SaveAccount(sender)
@@ -910,7 +910,7 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	tokenId := append(keyPrefix, token1...)
 	esdtKey := computeESDTNFTTokenKey(tokenId, tokenNonce)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(0), Properties: esdtFrozen.ToBytes()}
-	marshaledData, _ := transferFunc.marshalizer.Marshal(esdtToken)
+	marshaledData, _ := transferFunc.marshaller.Marshal(esdtToken)
 	_ = destination.(vmcommon.UserAccountHandler).AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 	_ = transferFunc.accounts.SaveAccount(destination)
 	_, _ = transferFunc.accounts.Commit()
@@ -950,8 +950,8 @@ func TestESDTNFTMultiTransfer_NotEnoughGas(t *testing.T) {
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()
 	// reload sender account
@@ -990,8 +990,8 @@ func TestESDTNFTMultiTransfer_WithEgldValue(t *testing.T) {
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
-	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
-	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
+	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()
 

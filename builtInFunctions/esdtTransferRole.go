@@ -18,7 +18,7 @@ var transferAddressesKeyPrefix = []byte(core.ElrondProtectedKeyPrefix + transfer
 type esdtTransferAddress struct {
 	*baseEnabled
 	set             bool
-	marshalizer     vmcommon.Marshalizer
+	marshaller      vmcommon.Marshalizer
 	accounts        vmcommon.AccountsAdapter
 	maxNumAddresses uint32
 }
@@ -26,13 +26,13 @@ type esdtTransferAddress struct {
 // NewESDTTransferRoleAddressFunc returns the esdt transfer role address handler built-in function component
 func NewESDTTransferRoleAddressFunc(
 	accounts vmcommon.AccountsAdapter,
-	marshalizer marshal.Marshalizer,
+	marshaller marshal.Marshalizer,
 	activationEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 	maxNumAddresses uint32,
 	set bool,
 ) (*esdtTransferAddress, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(epochNotifier) {
@@ -44,7 +44,7 @@ func NewESDTTransferRoleAddressFunc(
 
 	e := &esdtTransferAddress{
 		accounts:        accounts,
-		marshalizer:     marshalizer,
+		marshaller:      marshaller,
 		maxNumAddresses: maxNumAddresses,
 		set:             set,
 	}
@@ -86,7 +86,7 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 	}
 
 	esdtTokenTransferRoleKey := append(transferAddressesKeyPrefix, vmInput.Arguments[0]...)
-	addresses, _, err := getESDTRolesForAcnt(e.marshalizer, systemAcc, esdtTokenTransferRoleKey)
+	addresses, _, err := getESDTRolesForAcnt(e.marshaller, systemAcc, esdtTokenTransferRoleKey)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 		deleteRoles(addresses, vmInput.Arguments[1:])
 	}
 
-	err = saveRolesToAccount(systemAcc, esdtTokenTransferRoleKey, addresses, e.marshalizer)
+	err = saveRolesToAccount(systemAcc, esdtTokenTransferRoleKey, addresses, e.marshaller)
 	if err != nil {
 		return nil, err
 	}

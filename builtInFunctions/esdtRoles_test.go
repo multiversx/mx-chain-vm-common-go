@@ -117,19 +117,19 @@ func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldWorkEvenIfAccntTrieI
 func TestEsdtRoles_ProcessBuiltinFunction_SetRolesShouldWork(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, true)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, true)
 
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{}
-					return marshalizer.Marshal(roles)
+					return marshaller.Marshal(roles)
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					roles := &esdt.ESDTRoles{}
-					_ = marshalizer.Unmarshal(roles, value)
+					_ = marshaller.Unmarshal(roles, value)
 					require.Equal(t, roles.Roles, [][]byte{[]byte(core.ESDTRoleLocalMint)})
 					return nil
 				},
@@ -149,8 +149,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesShouldWork(t *testing.T) {
 func TestEsdtRoles_ProcessBuiltinFunction_SetRolesMultiNFT(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, true)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, true)
 
 	tokenID := []byte("tokenID")
 	roleKey := append(roleKeyPrefix, tokenID...)
@@ -161,12 +161,12 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesMultiNFT(t *testing.T) {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{}
-					return marshalizer.Marshal(roles)
+					return marshaller.Marshal(roles)
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					if bytes.Equal(key, roleKey) {
 						roles := &esdt.ESDTRoles{}
-						_ = marshalizer.Unmarshal(roles, value)
+						_ = marshaller.Unmarshal(roles, value)
 						require.Equal(t, roles.Roles, [][]byte{[]byte(core.ESDTRoleNFTCreate), []byte(core.ESDTRoleNFTCreateMultiShard)})
 						return nil
 					}
@@ -198,8 +198,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesMultiNFT(t *testing.T) {
 func TestEsdtRoles_ProcessBuiltinFunction_SaveFailedShouldErr(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, true)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, true)
 
 	localErr := errors.New("local err")
 	acc := &mock.UserAccountStub{
@@ -207,7 +207,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_SaveFailedShouldErr(t *testing.T) {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{}
-					return marshalizer.Marshal(roles)
+					return marshaller.Marshal(roles)
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					return localErr
@@ -228,19 +228,19 @@ func TestEsdtRoles_ProcessBuiltinFunction_SaveFailedShouldErr(t *testing.T) {
 func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesDoesNotExistsShouldWork(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
 
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					roles := &esdt.ESDTRoles{}
-					return marshalizer.Marshal(roles)
+					return marshaller.Marshal(roles)
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					roles := &esdt.ESDTRoles{}
-					_ = marshalizer.Unmarshal(roles, value)
+					_ = marshaller.Unmarshal(roles, value)
 					require.Len(t, roles.Roles, 0)
 					return nil
 				},
@@ -260,8 +260,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesDoesNotExistsShouldWork(t *t
 func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesShouldWork(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
 
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -270,11 +270,11 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesShouldWork(t *testing.T) {
 					roles := &esdt.ESDTRoles{
 						Roles: [][]byte{[]byte(core.ESDTRoleLocalMint)},
 					}
-					return marshalizer.Marshal(roles)
+					return marshaller.Marshal(roles)
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					roles := &esdt.ESDTRoles{}
-					_ = marshalizer.Unmarshal(roles, value)
+					_ = marshaller.Unmarshal(roles, value)
 					require.Len(t, roles.Roles, 0)
 					return nil
 				},
@@ -294,8 +294,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesShouldWork(t *testing.T) {
 func TestEsdtRoles_CheckAllowedToExecuteNilAccountShouldErr(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(nil, []byte("ID"), []byte(core.ESDTRoleLocalBurn))
 	require.Equal(t, ErrNilUserAccount, err)
@@ -304,8 +304,8 @@ func TestEsdtRoles_CheckAllowedToExecuteNilAccountShouldErr(t *testing.T) {
 func TestEsdtRoles_CheckAllowedToExecuteCannotGetESDTRole(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{Fail: true}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
+	marshaller := &mock.MarshalizerMock{Fail: true}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -322,8 +322,8 @@ func TestEsdtRoles_CheckAllowedToExecuteCannotGetESDTRole(t *testing.T) {
 func TestEsdtRoles_CheckAllowedToExecuteIsNewNotAllowed(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -340,8 +340,8 @@ func TestEsdtRoles_CheckAllowedToExecuteIsNewNotAllowed(t *testing.T) {
 func TestEsdtRoles_CheckAllowed_ShouldWork(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -350,7 +350,7 @@ func TestEsdtRoles_CheckAllowed_ShouldWork(t *testing.T) {
 					roles := &esdt.ESDTRoles{
 						Roles: [][]byte{[]byte(core.ESDTRoleLocalMint)},
 					}
-					return marshalizer.Marshal(roles)
+					return marshaller.Marshal(roles)
 				},
 			}
 		},
@@ -361,8 +361,8 @@ func TestEsdtRoles_CheckAllowed_ShouldWork(t *testing.T) {
 func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshalizer, false)
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -371,7 +371,7 @@ func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 					roles := &esdt.ESDTRoles{
 						Roles: [][]byte{[]byte(core.ESDTRoleLocalBurn)},
 					}
-					return marshalizer.Marshal(roles)
+					return marshaller.Marshal(roles)
 				},
 			}
 		},

@@ -24,7 +24,7 @@ var zeroByteArray = []byte{0}
 type esdtNFTTransfer struct {
 	baseAlwaysActive
 	keyPrefix                        []byte
-	marshalizer                      vmcommon.Marshalizer
+	marshaller                       vmcommon.Marshalizer
 	globalSettingsHandler            vmcommon.ExtendedESDTGlobalSettingsHandler
 	payableHandler                   vmcommon.PayableHandler
 	funcGasCost                      uint64
@@ -47,7 +47,7 @@ type esdtNFTTransfer struct {
 // NewESDTNFTTransferFunc returns the esdt NFT transfer built-in function component
 func NewESDTNFTTransferFunc(
 	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
@@ -60,7 +60,7 @@ func NewESDTNFTTransferFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTTransfer, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
@@ -84,7 +84,7 @@ func NewESDTNFTTransferFunc(
 
 	e := &esdtNFTTransfer{
 		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:                      marshalizer,
+		marshaller:                       marshaller,
 		globalSettingsHandler:            globalSettingsHandler,
 		funcGasCost:                      funcGasCost,
 		accounts:                         accounts,
@@ -181,7 +181,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	esdtTransferData := &esdt.ESDigitalToken{}
 	if !bytes.Equal(vmInput.Arguments[3], zeroByteArray) {
 		marshaledNFTTransfer := vmInput.Arguments[3]
-		err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
+		err = e.marshaller.Unmarshal(esdtTransferData, marshaledNFTTransfer)
 		if err != nil {
 			return nil, err
 		}
@@ -336,7 +336,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	}
 
 	if !wasAlreadySent || esdtTransferData.Value.Cmp(oneValue) == 0 {
-		marshaledNFTTransfer, err := e.marshalizer.Marshal(esdtTransferData)
+		marshaledNFTTransfer, err := e.marshaller.Marshal(esdtTransferData)
 		if err != nil {
 			return err
 		}

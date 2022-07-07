@@ -31,7 +31,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 type builtInFuncCreator struct {
 	mapDNSAddresses                     map[string]struct{}
 	enableUserNameChange                bool
-	marshalizer                         vmcommon.Marshalizer
+	marshaller                          vmcommon.Marshalizer
 	accounts                            vmcommon.AccountsAdapter
 	builtInFunctions                    vmcommon.BuiltInFunctionContainer
 	gasConfig                           *vmcommon.GasCost
@@ -72,7 +72,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	b := &builtInFuncCreator{
 		mapDNSAddresses:                     args.MapDNSAddresses,
 		enableUserNameChange:                args.EnableUserNameChange,
-		marshalizer:                         args.Marshalizer,
+		marshaller:                          args.Marshalizer,
 		accounts:                            args.Accounts,
 		shardCoordinator:                    args.ShardCoordinator,
 		epochNotifier:                       args.EpochNotifier,
@@ -161,7 +161,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(b.accounts, b.marshalizer, true, core.BuiltInFunctionESDTPause, 0, b.epochNotifier)
+	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTPause, 0, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	}
 	b.esdtGlobalSettingsHandler = globalSettingsFunc
 
-	setRoleFunc, err := NewESDTRolesFunc(b.marshalizer, true)
+	setRoleFunc, err := NewESDTRolesFunc(b.marshaller, true)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 	newFunc, err = NewESDTTransferFunc(
 		b.gasConfig.BuiltInCost.ESDTTransfer,
-		b.marshalizer,
+		b.marshaller,
 		globalSettingsFunc,
 		b.shardCoordinator,
 		setRoleFunc,
@@ -199,7 +199,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshalizer, globalSettingsFunc, b.globalMintBurnDisableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshaller, globalSettingsFunc, b.globalMintBurnDisableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +208,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTFreezeWipeFunc(b.marshalizer, true, false)
+	newFunc, err = NewESDTFreezeWipeFunc(b.marshaller, true, false)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTFreezeWipeFunc(b.marshalizer, false, false)
+	newFunc, err = NewESDTFreezeWipeFunc(b.marshaller, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTFreezeWipeFunc(b.marshalizer, false, true)
+	newFunc, err = NewESDTFreezeWipeFunc(b.marshaller, false, true)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshalizer, false, core.BuiltInFunctionESDTUnPause, 0, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, 0, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -244,7 +244,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTRolesFunc(b.marshalizer, false)
+	newFunc, err = NewESDTRolesFunc(b.marshaller, false)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshalizer, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshaller, globalSettingsFunc, setRoleFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshalizer, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshaller, globalSettingsFunc, setRoleFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +274,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 	args := ArgsNewESDTDataStorage{
 		Accounts:                b.accounts,
 		GlobalSettingsHandler:   globalSettingsFunc,
-		Marshalizer:             b.marshalizer,
+		Marshalizer:             b.marshaller,
 		SaveToSystemEnableEpoch: b.saveNFTToSystemAccountEnableEpoch,
 		EpochNotifier:           b.epochNotifier,
 		ShardCoordinator:        b.shardCoordinator,
@@ -303,7 +303,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTCreateFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshalizer, globalSettingsFunc, setRoleFunc, b.esdtStorageHandler, b.accounts, b.saveNFTToSystemAccountEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTCreateFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshaller, globalSettingsFunc, setRoleFunc, b.esdtStorageHandler, b.accounts, b.saveNFTToSystemAccountEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 	newFunc, err = NewESDTNFTTransferFunc(
 		b.gasConfig.BuiltInCost.ESDTNFTTransfer,
-		b.marshalizer,
+		b.marshaller,
 		globalSettingsFunc,
 		b.accounts,
 		b.shardCoordinator,
@@ -335,7 +335,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTNFTCreateRoleTransfer(b.marshalizer, b.accounts, b.shardCoordinator)
+	newFunc, err = NewESDTNFTCreateRoleTransfer(b.marshaller, b.accounts, b.shardCoordinator)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +364,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 	newFunc, err = NewESDTNFTMultiTransferFunc(
 		b.gasConfig.BuiltInCost.ESDTNFTMultiTransfer,
-		b.marshalizer,
+		b.marshaller,
 		globalSettingsFunc,
 		b.accounts,
 		b.shardCoordinator,
@@ -385,7 +385,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshalizer, true, core.BuiltInFunctionESDTSetLimitedTransfer, b.esdtTransferRoleEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, b.esdtTransferRoleEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -394,7 +394,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshalizer, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, b.esdtTransferRoleEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, b.esdtTransferRoleEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +405,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 
 	argsNewDeleteFunc := ArgsNewESDTDeleteMetadata{
 		FuncGasCost:     b.gasConfig.BuiltInCost.ESDTNFTBurn,
-		Marshalizer:     b.marshalizer,
+		Marshalizer:     b.marshaller,
 		Accounts:        b.accounts,
 		ActivationEpoch: b.sendESDTMetadataAlwaysEnableEpoch,
 		EpochNotifier:   b.epochNotifier,
@@ -431,7 +431,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshalizer, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +440,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshalizer, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +449,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshalizer, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, 100, false)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, 100, false)
 	if err != nil {
 		return nil, err
 	}
@@ -458,7 +458,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshalizer, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, 100, true)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, 100, true)
 	if err != nil {
 		return nil, err
 	}

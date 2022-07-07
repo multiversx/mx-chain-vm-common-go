@@ -81,7 +81,7 @@ func TestESDTNFTCreateRoleTransfer_ProcessWithErrors(t *testing.T) {
 }
 
 func createESDTNFTCreateRoleTransferComponent(t *testing.T) *esdtNFTCreateRoleTransfer {
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(2)
 	mapAccounts := make(map[string]vmcommon.UserAccountHandler)
 	accounts := &mock.AccountsStub{
@@ -101,7 +101,7 @@ func createESDTNFTCreateRoleTransferComponent(t *testing.T) *esdtNFTCreateRoleTr
 		},
 	}
 
-	e, err := NewESDTNFTCreateRoleTransfer(marshalizer, accounts, shardCoordinator)
+	e, err := NewESDTNFTCreateRoleTransfer(marshaller, accounts, shardCoordinator)
 	assert.Nil(t, err)
 	assert.NotNil(t, e)
 	return e
@@ -124,7 +124,7 @@ func TestESDTNFTCreateRoleTransfer_ProcessAtCurrentShard(t *testing.T) {
 	userAcc := destAcc.(vmcommon.UserAccountHandler)
 
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
-	err := saveRolesToAccount(userAcc, esdtTokenRoleKey, &esdt.ESDTRoles{Roles: [][]byte{[]byte(core.ESDTRoleNFTCreate), []byte(core.ESDTRoleNFTAddQuantity)}}, e.marshalizer)
+	err := saveRolesToAccount(userAcc, esdtTokenRoleKey, &esdt.ESDTRoles{Roles: [][]byte{[]byte(core.ESDTRoleNFTCreate), []byte(core.ESDTRoleNFTAddQuantity)}}, e.marshaller)
 	assert.Nil(t, err)
 	_ = saveLatestNonce(userAcc, tokenID, 100)
 	_ = e.accounts.SaveAccount(userAcc)
@@ -198,7 +198,7 @@ func checkNFTCreateRoleExists(t *testing.T, e *esdtNFTCreateRoleTransfer, addr [
 	destAcc, _ := e.accounts.LoadAccount(addr)
 	userAcc := destAcc.(vmcommon.UserAccountHandler)
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
-	roles, _, _ := getESDTRolesForAcnt(e.marshalizer, userAcc, esdtTokenRoleKey)
+	roles, _, _ := getESDTRolesForAcnt(e.marshaller, userAcc, esdtTokenRoleKey)
 	assert.Equal(t, 1, len(roles.Roles))
 	index, _ := doesRoleExist(roles, []byte(core.ESDTRoleNFTCreate))
 	assert.Equal(t, expectedIndex, index)

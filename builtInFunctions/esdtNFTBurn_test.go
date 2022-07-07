@@ -17,7 +17,7 @@ import (
 func TestNewESDTNFTBurnFunc(t *testing.T) {
 	t.Parallel()
 
-	// nil marshalizer
+	// nil marshaller
 	ebf, err := NewESDTNFTBurnFunc(10, nil, nil, nil)
 	require.True(t, check.IfNil(ebf))
 	require.Equal(t, ErrNilESDTNFTStorageHandler, err)
@@ -242,12 +242,12 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.T) 
 func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
@@ -273,7 +273,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionInvalidBurnQuantity(t *testing.T)
 	initialQuantity := big.NewInt(55)
 	quantityToBurn := big.NewInt(75)
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 
 	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
 
@@ -284,7 +284,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionInvalidBurnQuantity(t *testing.T)
 		},
 		Value: initialQuantity,
 	}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
@@ -307,7 +307,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionInvalidBurnQuantity(t *testing.T)
 func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
 		IsPausedCalled: func(_ []byte) bool {
 			return true
@@ -323,7 +323,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaus
 		},
 		Value: big.NewInt(10),
 	}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
@@ -354,7 +354,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	quantityToBurn := big.NewInt(37)
 	expectedQuantity := big.NewInt(0).Sub(initialQuantity, quantityToBurn)
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleNFTBurn, string(action))
@@ -370,7 +370,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		},
 		Value: initialQuantity,
 	}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
@@ -396,7 +396,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.NotNil(t, res)
 
 	finalTokenData := esdt.ESDigitalToken{}
-	_ = marshalizer.Unmarshal(&finalTokenData, res)
+	_ = marshaller.Unmarshal(&finalTokenData, res)
 	require.Equal(t, expectedQuantity.Bytes(), finalTokenData.Value.Bytes())
 }
 
@@ -411,7 +411,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 	quantityToBurn := big.NewInt(37)
 	expectedQuantity := big.NewInt(0).Sub(initialQuantity, quantityToBurn)
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{
 		IsBurnForAllCalled: func(token []byte) bool {
 			return true
@@ -429,7 +429,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 		},
 		Value: initialQuantity,
 	}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 	output, err := ebf.ProcessBuiltinFunction(
@@ -455,6 +455,6 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 	require.NotNil(t, res)
 
 	finalTokenData := esdt.ESDigitalToken{}
-	_ = marshalizer.Unmarshal(&finalTokenData, res)
+	_ = marshaller.Unmarshal(&finalTokenData, res)
 	require.Equal(t, expectedQuantity.Bytes(), finalTokenData.Value.Bytes())
 }

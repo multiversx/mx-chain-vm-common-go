@@ -12,16 +12,16 @@ import (
 
 type esdtGlobalSettings struct {
 	*baseEnabled
-	keyPrefix   []byte
-	set         bool
-	accounts    vmcommon.AccountsAdapter
-	marshalizer marshal.Marshalizer
+	keyPrefix  []byte
+	set        bool
+	accounts   vmcommon.AccountsAdapter
+	marshaller marshal.Marshalizer
 }
 
 // NewESDTGlobalSettingsFunc returns the esdt pause/un-pause built-in function component
 func NewESDTGlobalSettingsFunc(
 	accounts vmcommon.AccountsAdapter,
-	marshalizer marshal.Marshalizer,
+	marshaller marshal.Marshalizer,
 	set bool,
 	function string,
 	activationEpoch uint32,
@@ -30,7 +30,7 @@ func NewESDTGlobalSettingsFunc(
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if !isCorrectFunction(function) {
@@ -38,10 +38,10 @@ func NewESDTGlobalSettingsFunc(
 	}
 
 	e := &esdtGlobalSettings{
-		keyPrefix:   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		set:         set,
-		accounts:    accounts,
-		marshalizer: marshalizer,
+		keyPrefix:  []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		set:        set,
+		accounts:   accounts,
+		marshaller: marshaller,
 	}
 
 	e.baseEnabled = &baseEnabled{
@@ -189,7 +189,7 @@ func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, desti
 	}
 
 	esdtTokenTransferRoleKey := append(transferAddressesKeyPrefix, tokenID...)
-	addresses, _, err := getESDTRolesForAcnt(e.marshalizer, systemAcc, esdtTokenTransferRoleKey)
+	addresses, _, err := getESDTRolesForAcnt(e.marshaller, systemAcc, esdtTokenTransferRoleKey)
 	if err != nil {
 		return false
 	}

@@ -13,7 +13,7 @@ import (
 type esdtLocalMint struct {
 	baseAlwaysActive
 	keyPrefix             []byte
-	marshalizer           vmcommon.Marshalizer
+	marshaller            vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	funcGasCost           uint64
@@ -23,11 +23,11 @@ type esdtLocalMint struct {
 // NewESDTLocalMintFunc returns the esdt local mint built-in function component
 func NewESDTLocalMintFunc(
 	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtLocalMint, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
@@ -39,7 +39,7 @@ func NewESDTLocalMintFunc(
 
 	e := &esdtLocalMint{
 		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:           marshalizer,
+		marshaller:            marshaller,
 		globalSettingsHandler: globalSettingsHandler,
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
@@ -85,7 +85,7 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[1])
 	esdtTokenKey := append(e.keyPrefix, tokenID...)
-	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Set(value), e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Set(value), e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

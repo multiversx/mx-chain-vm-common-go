@@ -19,7 +19,7 @@ const existsOnShard = byte(1)
 type esdtDataStorage struct {
 	accounts              vmcommon.AccountsAdapter
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
-	marshalizer           vmcommon.Marshalizer
+	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
 	shardCoordinator      vmcommon.Coordinator
 	txDataParser          vmcommon.CallArgsParser
@@ -64,7 +64,7 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 	e := &esdtDataStorage{
 		accounts:              args.Accounts,
 		globalSettingsHandler: args.GlobalSettingsHandler,
-		marshalizer:           args.Marshalizer,
+		marshaller:            args.Marshalizer,
 		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
 		shardCoordinator:      args.ShardCoordinator,
 		txDataParser:          parsers.NewCallArgsParser(),
@@ -115,7 +115,7 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 		return esdtData, true, nil
 	}
 
-	err = e.marshalizer.Unmarshal(esdtData, marshaledData)
+	err = e.marshaller.Unmarshal(esdtData, marshaledData)
 	if err != nil {
 		return nil, false, err
 	}
@@ -149,7 +149,7 @@ func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
 	}
 
 	esdtData := &esdt.ESDigitalToken{}
-	err = e.marshalizer.Unmarshal(esdtData, marshaledData)
+	err = e.marshaller.Unmarshal(esdtData, marshaledData)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -194,7 +194,7 @@ func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
 		return nil
 	}
 
-	err = e.marshalizer.Unmarshal(esdtData, marshaledData)
+	err = e.marshaller.Unmarshal(esdtData, marshaledData)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	}
 
 	if !e.flagSaveToSystemAccount.IsSet() {
-		marshaledData, err := e.marshalizer.Marshal(esdtData)
+		marshaledData, err := e.marshaller.Marshal(esdtData)
 		if err != nil {
 			return nil, err
 		}
@@ -322,7 +322,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		Value:      esdtData.Value,
 		Properties: esdtData.Properties,
 	}
-	marshaledData, err := e.marshalizer.Marshal(esdtDataOnAccount)
+	marshaledData, err := e.marshaller.Marshal(esdtDataOnAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +384,7 @@ func (e *esdtDataStorage) marshalAndSaveData(
 	esdtData *esdt.ESDigitalToken,
 	esdtNFTTokenKey []byte,
 ) error {
-	marshaledData, err := e.marshalizer.Marshal(esdtData)
+	marshaledData, err := e.marshaller.Marshal(esdtData)
 	if err != nil {
 		return err
 	}
@@ -511,7 +511,7 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromNFTTransfer(
 ) error {
 	if !bytes.Equal(arguments[3], zeroByteArray) {
 		esdtTransferData := &esdt.ESDigitalToken{}
-		err := e.marshalizer.Unmarshal(esdtTransferData, arguments[3])
+		err := e.marshaller.Unmarshal(esdtTransferData, arguments[3])
 		if err != nil {
 			return err
 		}
@@ -546,7 +546,7 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromMultiTransfer(
 		if nonce > 0 && len(arguments[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
 			esdtTransferData := &esdt.ESDigitalToken{}
 			marshaledNFTTransfer := arguments[tokenStartIndex+2]
-			err := e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
+			err := e.marshaller.Unmarshal(esdtTransferData, marshaledNFTTransfer)
 			if err != nil {
 				return fmt.Errorf("%w for token %s", err, string(tokenID))
 			}

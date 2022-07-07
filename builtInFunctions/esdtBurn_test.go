@@ -59,9 +59,9 @@ func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, marshalizer, globalSettingsHandler, 1000, &mock.EpochNotifierStub{})
+	burnFunc, _ := NewESDTBurnFunc(10, marshaller, globalSettingsHandler, 1000, &mock.EpochNotifierStub{})
 
 	input := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -80,7 +80,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 
 	esdtKey := append(burnFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(100), Properties: esdtFrozen.ToBytes()}
-	marshaledData, _ := marshalizer.Marshal(esdtToken)
+	marshaledData, _ := marshaller.Marshal(esdtToken)
 	_ = accSnd.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 
 	_, err := burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
@@ -90,7 +90,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 		return true
 	}
 	esdtToken = &esdt.ESDigitalToken{Value: big.NewInt(100), Properties: esdtNotFrozen.ToBytes()}
-	marshaledData, _ = marshalizer.Marshal(esdtToken)
+	marshaledData, _ = marshaller.Marshal(esdtToken)
 	_ = accSnd.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
@@ -103,7 +103,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	assert.Nil(t, err)
 
 	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
-	_ = marshalizer.Unmarshal(esdtToken, marshaledData)
+	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 
 	value = big.NewInt(100).Bytes()

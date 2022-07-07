@@ -292,7 +292,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	assert.Nil(t, err)
 	require.NotNil(t, vmOutput)
 
-	createdEsdt, latestNonce := readNFTData(t, sender, nftCreate.marshalizer, []byte(token), 1, address)
+	createdEsdt, latestNonce := readNFTData(t, sender, nftCreate.marshaller, []byte(token), 1, address)
 	assert.Equal(t, uint64(1), latestNonce)
 	expectedEsdt := &esdt.ESDigitalToken{
 		Type:  uint32(core.NonFungible),
@@ -369,7 +369,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 
 	roleAcc, _ := nftCreate.getAccount(address)
 
-	createdEsdt, latestNonce := readNFTData(t, roleAcc, nftCreate.marshalizer, []byte(token), 1, address)
+	createdEsdt, latestNonce := readNFTData(t, roleAcc, nftCreate.marshaller, []byte(token), 1, address)
 	assert.Equal(t, uint64(1), latestNonce)
 	expectedEsdt := &esdt.ESDigitalToken{
 		Type:  uint32(core.NonFungible),
@@ -394,7 +394,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 	assert.Equal(t, tokenMetaData, metaData)
 }
 
-func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshalizer vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
+func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
 	nonceKey := getNonceKey(tokenID)
 	latestNonceBytes, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(nonceKey)
 	require.Nil(t, err)
@@ -407,7 +407,7 @@ func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshalizer 
 	require.Nil(t, err)
 
 	esdtData := &esdt.ESDigitalToken{}
-	err = marshalizer.Unmarshal(esdtData, data)
+	err = marshaller.Unmarshal(esdtData, data)
 	require.Nil(t, err)
 
 	return esdtData, latestNonce
