@@ -36,7 +36,7 @@ func NewESDTNFTCreateRoleTransfer(
 	}
 
 	e := &esdtNFTCreateRoleTransfer{
-		keyPrefix:        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:        []byte(baseESDTKeyPrefix),
 		marshaller:       marshaller,
 		accounts:         accounts,
 		shardCoordinator: shardCoordinator,

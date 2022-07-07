@@ -65,7 +65,7 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 		accounts:              args.Accounts,
 		globalSettingsHandler: args.GlobalSettingsHandler,
 		marshaller:            args.Marshalizer,
-		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:             []byte(baseESDTKeyPrefix),
 		shardCoordinator:      args.ShardCoordinator,
 		txDataParser:          parsers.NewCallArgsParser(),
 

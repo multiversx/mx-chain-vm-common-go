@@ -316,7 +316,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	t.Parallel()
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 
 	nonce := big.NewInt(33)
 	initialValue := big.NewInt(5)

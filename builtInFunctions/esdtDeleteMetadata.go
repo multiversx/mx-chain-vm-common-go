@@ -49,7 +49,7 @@ func NewESDTDeleteMetadataFunc(
 	}
 
 	e := &esdtDeleteMetaData{
-		keyPrefix:      []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:      []byte(baseESDTKeyPrefix),
 		marshaller:     args.Marshalizer,
 		funcGasCost:    args.FuncGasCost,
 		accounts:       args.Accounts,

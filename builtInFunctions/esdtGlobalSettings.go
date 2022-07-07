@@ -38,7 +38,7 @@ func NewESDTGlobalSettingsFunc(
 	}
 
 	e := &esdtGlobalSettings{
-		keyPrefix:  []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:  []byte(baseESDTKeyPrefix),
 		set:        set,
 		accounts:   accounts,
 		marshaller: marshaller,

@@ -83,7 +83,7 @@ func NewESDTNFTTransferFunc(
 	}
 
 	e := &esdtNFTTransfer{
-		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:                        []byte(baseESDTKeyPrefix),
 		marshaller:                       marshaller,
 		globalSettingsHandler:            globalSettingsHandler,
 		funcGasCost:                      funcGasCost,

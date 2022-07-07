@@ -38,7 +38,7 @@ func NewESDTBurnFunc(
 	e := &esdtBurn{
 		funcGasCost:           funcGasCost,
 		marshaller:            marshaller,
-		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:             []byte(baseESDTKeyPrefix),
 		globalSettingsHandler: globalSettingsHandler,
 	}
 

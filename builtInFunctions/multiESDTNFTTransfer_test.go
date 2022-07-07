@@ -568,7 +568,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationAddT
 
 	multiTransferDestinationShard.globalSettingsHandler = &mock.GlobalSettingsHandlerStub{
 		IsPausedCalled: func(tokenKey []byte) bool {
-			esdtTokenKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier)
+			esdtTokenKey := []byte(baseESDTKeyPrefix)
 			esdtTokenKey = append(esdtTokenKey, token2...)
 			if bytes.Equal(tokenKey, esdtTokenKey) {
 				return true

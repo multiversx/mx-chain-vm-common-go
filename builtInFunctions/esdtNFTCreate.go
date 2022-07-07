@@ -64,7 +64,7 @@ func NewESDTNFTCreateFunc(
 	}
 
 	e := &esdtNFTCreate{
-		keyPrefix:                   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:                   []byte(baseESDTKeyPrefix),
 		marshaller:                  marshaller,
 		globalSettingsHandler:       globalSettingsHandler,
 		rolesHandler:                rolesHandler,

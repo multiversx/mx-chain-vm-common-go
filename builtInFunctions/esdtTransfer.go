@@ -66,7 +66,7 @@ func NewESDTTransferFunc(
 	e := &esdtTransfer{
 		funcGasCost:                      funcGasCost,
 		marshaller:                       marshaller,
-		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:                        []byte(baseESDTKeyPrefix),
 		globalSettingsHandler:            globalSettingsHandler,
 		payableHandler:                   &disabledPayableHandler{},
 		shardCoordinator:                 shardCoordinator,

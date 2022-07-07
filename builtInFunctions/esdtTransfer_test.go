@@ -266,7 +266,7 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 
 	systemAccount := mock.NewUserAccount(vmcommon.SystemAccountAddress)
 	esdtGlobal := ESDTGlobalMetadata{Paused: true}
-	pauseKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(key))
+	pauseKey := []byte(baseESDTKeyPrefix + string(key))
 	_ = systemAccount.AccountDataHandler().SaveKeyValue(pauseKey, esdtGlobal.ToBytes())
 
 	accountStub.LoadAccountCalled = func(address []byte) (vmcommon.AccountHandler, error) {
@@ -335,7 +335,7 @@ func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
 
 	systemAccount := mock.NewUserAccount(vmcommon.SystemAccountAddress)
 	esdtGlobal := ESDTGlobalMetadata{LimitedTransfer: true}
-	pauseKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(key))
+	pauseKey := []byte(baseESDTKeyPrefix + string(key))
 	_ = systemAccount.AccountDataHandler().SaveKeyValue(pauseKey, esdtGlobal.ToBytes())
 
 	accountStub.LoadAccountCalled = func(address []byte) (vmcommon.AccountHandler, error) {

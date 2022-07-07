@@ -76,7 +76,7 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e := &esdtNFTMultiTransfer{
-		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:                        []byte(baseESDTKeyPrefix),
 		marshaller:                       marshaller,
 		globalSettingsHandler:            globalSettingsHandler,
 		funcGasCost:                      funcGasCost,

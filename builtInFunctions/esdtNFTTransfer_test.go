@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var keyPrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier)
+var keyPrefix = []byte(baseESDTKeyPrefix)
 
 func createNftTransferWithStubArguments() *esdtNFTTransfer {
 	nftTransfer, _ := NewESDTNFTTransferFunc(

@@ -58,7 +58,7 @@ func TestESDTGlobalSettingsPause_ProcessBuiltInFunction(t *testing.T) {
 	_, err = globalSettingsFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
 
-	pauseKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(key))
+	pauseKey := []byte(baseESDTKeyPrefix + string(key))
 	assert.True(t, globalSettingsFunc.IsPaused(pauseKey))
 	assert.False(t, globalSettingsFunc.IsLimitedTransfer(pauseKey))
 
@@ -123,7 +123,7 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 	_, err = globalSettingsFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
 
-	tokenID := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(key))
+	tokenID := []byte(baseESDTKeyPrefix + string(key))
 	assert.False(t, globalSettingsFunc.IsPaused(tokenID))
 	assert.True(t, globalSettingsFunc.IsLimitedTransfer(tokenID))
 
@@ -198,7 +198,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 	_, err = globalSettingsFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
 
-	tokenID := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(key))
+	tokenID := []byte(baseESDTKeyPrefix + string(key))
 	assert.False(t, globalSettingsFunc.IsPaused(tokenID))
 	assert.False(t, globalSettingsFunc.IsLimitedTransfer(tokenID))
 	assert.True(t, globalSettingsFunc.IsBurnForAll(tokenID))
