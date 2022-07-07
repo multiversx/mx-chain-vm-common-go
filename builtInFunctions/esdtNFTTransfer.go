@@ -23,23 +23,25 @@ var zeroByteArray = []byte{0}
 
 type esdtNFTTransfer struct {
 	baseAlwaysActive
-	keyPrefix                      []byte
-	marshalizer                    vmcommon.Marshalizer
-	globalSettingsHandler          vmcommon.ExtendedESDTGlobalSettingsHandler
-	payableHandler                 vmcommon.PayableHandler
-	funcGasCost                    uint64
-	accounts                       vmcommon.AccountsAdapter
-	shardCoordinator               vmcommon.Coordinator
-	gasConfig                      vmcommon.BaseOperationCost
-	mutExecution                   sync.RWMutex
-	rolesHandler                   vmcommon.ESDTRoleHandler
-	esdtStorageHandler             vmcommon.ESDTNFTStorageHandler
-	transferToMetaEnableEpoch      uint32
-	flagTransferToMeta             atomic.Flag
-	check0TransferEnableEpoch      uint32
-	flagCheck0Transfer             atomic.Flag
-	checkCorrectTokenIDEnableEpoch uint32
-	flagCheckCorrectTokenID        atomic.Flag
+	keyPrefix                        []byte
+	marshalizer                      vmcommon.Marshalizer
+	globalSettingsHandler            vmcommon.ExtendedESDTGlobalSettingsHandler
+	payableHandler                   vmcommon.PayableHandler
+	funcGasCost                      uint64
+	accounts                         vmcommon.AccountsAdapter
+	shardCoordinator                 vmcommon.Coordinator
+	gasConfig                        vmcommon.BaseOperationCost
+	mutExecution                     sync.RWMutex
+	rolesHandler                     vmcommon.ESDTRoleHandler
+	esdtStorageHandler               vmcommon.ESDTNFTStorageHandler
+	transferToMetaEnableEpoch        uint32
+	flagTransferToMeta               atomic.Flag
+	check0TransferEnableEpoch        uint32
+	flagCheck0Transfer               atomic.Flag
+	checkCorrectTokenIDEnableEpoch   uint32
+	flagCheckCorrectTokenID          atomic.Flag
+	checkFunctionArgumentEnableEpoch uint32
+	flagCheckFunctionArgument        atomic.Flag
 }
 
 // NewESDTNFTTransferFunc returns the esdt NFT transfer built-in function component
@@ -54,6 +56,7 @@ func NewESDTNFTTransferFunc(
 	transferToMetaEnableEpoch uint32,
 	checkZeroTransferEnableEpoch uint32,
 	checkCorrectTokenIDEnableEpoch uint32,
+	checkFunctionArgumentEnableEpoch uint32,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTTransfer, error) {
@@ -80,20 +83,21 @@ func NewESDTNFTTransferFunc(
 	}
 
 	e := &esdtNFTTransfer{
-		keyPrefix:                      []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:                    marshalizer,
-		globalSettingsHandler:          globalSettingsHandler,
-		funcGasCost:                    funcGasCost,
-		accounts:                       accounts,
-		shardCoordinator:               shardCoordinator,
-		gasConfig:                      gasConfig,
-		mutExecution:                   sync.RWMutex{},
-		payableHandler:                 &disabledPayableHandler{},
-		rolesHandler:                   rolesHandler,
-		transferToMetaEnableEpoch:      transferToMetaEnableEpoch,
-		check0TransferEnableEpoch:      checkZeroTransferEnableEpoch,
-		checkCorrectTokenIDEnableEpoch: checkCorrectTokenIDEnableEpoch,
-		esdtStorageHandler:             esdtStorageHandler,
+		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshalizer:                      marshalizer,
+		globalSettingsHandler:            globalSettingsHandler,
+		funcGasCost:                      funcGasCost,
+		accounts:                         accounts,
+		shardCoordinator:                 shardCoordinator,
+		gasConfig:                        gasConfig,
+		mutExecution:                     sync.RWMutex{},
+		payableHandler:                   &disabledPayableHandler{},
+		rolesHandler:                     rolesHandler,
+		transferToMetaEnableEpoch:        transferToMetaEnableEpoch,
+		check0TransferEnableEpoch:        checkZeroTransferEnableEpoch,
+		checkCorrectTokenIDEnableEpoch:   checkCorrectTokenIDEnableEpoch,
+		checkFunctionArgumentEnableEpoch: checkFunctionArgumentEnableEpoch,
+		esdtStorageHandler:               esdtStorageHandler,
 	}
 
 	epochNotifier.RegisterNotifyHandler(e)
@@ -109,6 +113,8 @@ func (e *esdtNFTTransfer) EpochConfirmed(epoch uint32, _ uint64) {
 	log.Debug("ESDT NFT transfer check zero transfer", "enabled", e.flagCheck0Transfer.IsSet())
 	e.flagCheckCorrectTokenID.SetValue(epoch >= e.checkCorrectTokenIDEnableEpoch)
 	log.Debug("ESDT NFT transfer check correct tokenID for transfer role", "enabled", e.flagCheckCorrectTokenID.IsSet())
+	e.flagCheckFunctionArgument.SetValue(epoch >= e.checkFunctionArgumentEnableEpoch)
+	log.Debug("ESDT NFT transfer check function argument", "enabled", e.flagCheckFunctionArgument.IsSet())
 }
 
 // SetPayableHandler will set the payable handler to the function
@@ -184,7 +190,8 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 		esdtTransferData.Type = uint32(core.NonFungible)
 	}
 
-	err = e.addNFTToDestination(vmInput.CallerAddr, vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, nonce, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
+	verifyPayable := mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer, e.flagCheckFunctionArgument.IsSet())
+	err = e.addNFTToDestination(vmInput.CallerAddr, vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, nonce, verifyPayable, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +278,8 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, ErrWrongTypeAssertion
 		}
 
-		err = e.addNFTToDestination(vmInput.CallerAddr, dstAddress, userAccount, esdtData, esdtTokenKey, nonce, mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer), vmInput.ReturnCallAfterError)
+		verifyPayable := mustVerifyPayable(vmInput, core.MinLenArgumentsESDTNFTTransfer, e.flagCheckFunctionArgument.IsSet())
+		err = e.addNFTToDestination(vmInput.CallerAddr, dstAddress, userAccount, esdtData, esdtTokenKey, nonce, verifyPayable, vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -347,7 +355,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[4:]...)
 	}
 
-	isSCCallAfter := determineIsSCCallAfter(vmInput, dstAddress, core.MinLenArgumentsESDTNFTTransfer)
+	isSCCallAfter := determineIsSCCallAfter(vmInput, dstAddress, core.MinLenArgumentsESDTNFTTransfer, e.flagCheckFunctionArgument.IsSet())
 
 	if e.shardCoordinator.SelfId() != e.shardCoordinator.ComputeId(dstAddress) {
 		gasToTransfer := uint64(0)
