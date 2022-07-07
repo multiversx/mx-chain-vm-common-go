@@ -2,6 +2,7 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
@@ -41,6 +42,9 @@ func NewESDTTransferRoleAddressFunc(
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
+	if maxNumAddresses < 1 {
+		return nil, ErrInvalidMaxNumAddresses
+	}
 
 	e := &esdtTransferAddress{
 		accounts:        accounts,
@@ -79,6 +83,9 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 	if !bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
 		return nil, ErrAddressIsNotESDTSystemSC
 	}
+	if !vmcommon.IsSystemAccountAddress(vmInput.RecipientAddr) {
+		return nil, ErrOnlySystemAccountAccepted
+	}
 
 	systemAcc, err := e.getSystemAccount()
 	if err != nil {
@@ -92,21 +99,9 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 	}
 
 	if e.set {
-		for _, newAddress := range vmInput.Arguments[1:] {
-			isNew := true
-			for _, address := range addresses.Roles {
-				if bytes.Equal(newAddress, address) {
-					isNew = false
-					break
-				}
-			}
-			if isNew {
-				addresses.Roles = append(addresses.Roles, newAddress)
-			}
-		}
-
-		if uint32(len(addresses.Roles)) > e.maxNumAddresses {
-			return nil, ErrTooManyTransferAddresses
+		err = e.addNewAddresses(vmInput, addresses)
+		if err != nil {
+			return nil, err
 		}
 	} else {
 		deleteRoles(addresses, vmInput.Arguments[1:])
@@ -123,6 +118,27 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), vmInput.Arguments[0], 0, big.NewInt(0), logData...)
 
 	return vmOutput, nil
+}
+
+func (e *esdtTransferAddress) addNewAddresses(vmInput *vmcommon.ContractCallInput, addresses *esdt.ESDTRoles) error {
+	for _, newAddress := range vmInput.Arguments[1:] {
+		isNew := true
+		for _, address := range addresses.Roles {
+			if bytes.Equal(newAddress, address) {
+				isNew = false
+				break
+			}
+		}
+		if isNew {
+			addresses.Roles = append(addresses.Roles, newAddress)
+		}
+	}
+
+	if uint32(len(addresses.Roles)) > e.maxNumAddresses {
+		return ErrTooManyTransferAddresses
+	}
+
+	return nil
 }
 
 func (e *esdtTransferAddress) getSystemAccount() (vmcommon.UserAccountHandler, error) {

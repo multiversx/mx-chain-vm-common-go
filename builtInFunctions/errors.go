@@ -160,3 +160,6 @@ var ErrInvalidLiquidityForESDT = errors.New("invalid liquidity for ESDT")
 
 // ErrTooManyTransferAddresses signals that too many transfer address roles has been added
 var ErrTooManyTransferAddresses = errors.New("too many transfer addresses")
+
+// ErrInvalidMaxNumAddresses signals that there is an invalid max number of addresses
+var ErrInvalidMaxNumAddresses = errors.New("invalid max number of addresses")

@@ -25,6 +25,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	CheckCorrectTokenIDEnableEpoch      uint32
 	SendESDTMetadataAlwaysEnableEpoch   uint32
 	CheckFunctionArgumentEnableEpoch    uint32
+	MaxNumOfAddressesForTransferRole    uint32
 	ConfigAddress                       []byte
 }
 
@@ -48,6 +49,7 @@ type builtInFuncCreator struct {
 	checkCorrectTokenIDEnableEpoch      uint32
 	sendESDTMetadataAlwaysEnableEpoch   uint32
 	checkFunctionArgumentEnableEpoch    uint32
+	maxNumOfAddressesForTransferRole    uint32
 	configAddress                       []byte
 }
 
@@ -85,6 +87,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		checkCorrectTokenIDEnableEpoch:      args.CheckCorrectTokenIDEnableEpoch,
 		sendESDTMetadataAlwaysEnableEpoch:   args.SendESDTMetadataAlwaysEnableEpoch,
 		checkFunctionArgumentEnableEpoch:    args.CheckFunctionArgumentEnableEpoch,
+		maxNumOfAddressesForTransferRole:    args.MaxNumOfAddressesForTransferRole,
 		configAddress:                       args.ConfigAddress,
 	}
 
@@ -449,7 +452,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, 100, false)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, b.maxNumOfAddressesForTransferRole, false)
 	if err != nil {
 		return nil, err
 	}
@@ -458,7 +461,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() (vmcommon.BuiltInF
 		return nil, err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, 100, true)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, b.maxNumOfAddressesForTransferRole, true)
 	if err != nil {
 		return nil, err
 	}
