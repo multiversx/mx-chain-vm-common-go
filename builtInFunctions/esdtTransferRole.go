@@ -112,6 +112,11 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	err = e.accounts.SaveAccount(systemAcc)
+	if err != nil {
+		return nil, err
+	}
+
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 
 	logData := append([][]byte{systemAcc.AddressBytes()}, vmInput.Arguments[1:]...)

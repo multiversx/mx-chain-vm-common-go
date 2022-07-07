@@ -72,6 +72,10 @@ func TestESDTTransferRoleProcessBuiltInFunction_Errors(t *testing.T) {
 	accounts.LoadAccountCalled = func(address []byte) (vmcommon.AccountHandler, error) {
 		return systemAcc, nil
 	}
+	errNotImplemented := errors.New("not implemented")
+	accounts.SaveAccountCalled = func(account vmcommon.AccountHandler) error {
+		return errNotImplemented
+	}
 	e.maxNumAddresses = 1
 	_, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Equal(t, err, ErrTooManyTransferAddresses)
@@ -84,6 +88,11 @@ func TestESDTTransferRoleProcessBuiltInFunction_Errors(t *testing.T) {
 	systemAcc.Storage[string(append(transferAddressesKeyPrefix, vmInput.Arguments[0]...))] = []byte{1, 1, 1}
 	_, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Equal(t, err, errors.New("MarshalizerMock generic error"))
+
+	marshaller.Fail = false
+	systemAcc.Storage[string(append(transferAddressesKeyPrefix, vmInput.Arguments[0]...))] = nil
+	_, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
+	assert.Equal(t, err, errNotImplemented)
 }
 
 func TestESDTTransferRoleProcessBuiltInFunction_AddNewAddresses(t *testing.T) {
