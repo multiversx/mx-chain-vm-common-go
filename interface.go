@@ -242,7 +242,6 @@ type AccountsAdapter interface {
 	GetCode(codeHash []byte) []byte
 
 	RootHash() ([]byte, error)
-	RecreateTrie(rootHash []byte) error
 	IsInterfaceNil() bool
 }
 
