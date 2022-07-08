@@ -59,7 +59,7 @@ func NewESDTNFTTransferFunc(
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTTransfer, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshaller
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
@@ -74,7 +74,7 @@ func NewESDTNFTTransferFunc(
 		return nil, ErrNilRolesHandler
 	}
 	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochNotifier
+		return nil, ErrNilEpochHandler
 	}
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler

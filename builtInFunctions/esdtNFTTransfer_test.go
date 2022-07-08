@@ -190,7 +190,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilMarshaller, err)
+	assert.Equal(t, ErrNilMarshalizer, err)
 
 	nftTransfer, err = NewESDTNFTTransferFunc(
 		0,
@@ -280,7 +280,7 @@ func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 	)
 	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilEpochNotifier, err)
+	assert.Equal(t, ErrNilEpochHandler, err)
 
 	nftTransfer, err = NewESDTNFTTransferFunc(
 		0,

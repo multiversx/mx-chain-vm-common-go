@@ -32,7 +32,7 @@ func TestNewFreezeAccountFuncAndNewUnfreezeAccountFunc(t *testing.T) {
 				args.Marshaller = nil
 				return args
 			},
-			expectedErr: ErrNilMarshaller,
+			expectedErr: ErrNilMarshalizer,
 		},
 		{
 			args: func() FreezeAccountArgs {

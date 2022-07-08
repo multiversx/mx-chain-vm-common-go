@@ -62,7 +62,7 @@ type builtInFuncCreator struct {
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
 func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*builtInFuncCreator, error) {
 	if check.IfNil(args.Marshalizer) {
-		return nil, ErrNilMarshaller
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -74,7 +74,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		return nil, ErrNilShardCoordinator
 	}
 	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochNotifier
+		return nil, ErrNilEpochHandler
 	}
 	if check.IfNil(args.GuardedAccountHandler) {
 		return nil, ErrNilGuardedAccountHandler

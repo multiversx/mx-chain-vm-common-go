@@ -71,7 +71,7 @@ func TestNewESDTDataStorage(t *testing.T) {
 	args.Marshalizer = nil
 	e, err := NewESDTDataStorage(args)
 	assert.Nil(t, e)
-	assert.Equal(t, err, ErrNilMarshaller)
+	assert.Equal(t, err, ErrNilMarshalizer)
 
 	args = createMockArgsForNewESDTDataStorage()
 	args.Accounts = nil
@@ -95,7 +95,7 @@ func TestNewESDTDataStorage(t *testing.T) {
 	args.EpochNotifier = nil
 	e, err = NewESDTDataStorage(args)
 	assert.Nil(t, e)
-	assert.Equal(t, err, ErrNilEpochNotifier)
+	assert.Equal(t, err, ErrNilEpochHandler)
 
 	args = createMockArgsForNewESDTDataStorage()
 	e, err = NewESDTDataStorage(args)

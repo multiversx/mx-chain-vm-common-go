@@ -35,7 +35,7 @@ func TestNewESDTNFTUpdateAttributesFunc(t *testing.T) {
 	// nil epoch notifier
 	e, err = NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, nil)
 	require.True(t, check.IfNil(e))
-	require.Equal(t, ErrNilEpochNotifier, err)
+	require.Equal(t, ErrNilEpochHandler, err)
 
 	// should work
 	e, err = NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 1, &mock.EpochNotifierStub{})

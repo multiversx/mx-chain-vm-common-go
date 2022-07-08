@@ -28,7 +28,7 @@ func NewESDTLocalBurnFunc(
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtLocalBurn, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshaller
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler

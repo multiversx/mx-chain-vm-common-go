@@ -52,10 +52,10 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
 	if check.IfNil(args.Marshalizer) {
-		return nil, ErrNilMarshaller
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochNotifier
+		return nil, ErrNilEpochHandler
 	}
 	if check.IfNil(args.ShardCoordinator) {
 		return nil, ErrNilShardCoordinator
