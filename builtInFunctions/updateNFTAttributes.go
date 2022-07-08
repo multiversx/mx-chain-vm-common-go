@@ -21,7 +21,7 @@ type esdtNFTupdate struct {
 	mutExecution          sync.RWMutex
 }
 
-// NewESDTNFTAddUriFunc returns the esdt NFT update attribute built-in function component
+// NewESDTNFTUpdateAttributesFunc returns the esdt NFT update attribute built-in function component
 func NewESDTNFTUpdateAttributesFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,

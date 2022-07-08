@@ -93,12 +93,12 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	args = createMockArguments()
 	args.EpochNotifier = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilEpochNotifier)
+	assert.Equal(t, err, ErrNilEpochHandler)
 
 	args = createMockArguments()
 	args.Marshalizer = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilMarshaller)
+	assert.Equal(t, err, ErrNilMarshalizer)
 
 	args = createMockArguments()
 	args.Accounts = nil
@@ -136,7 +136,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 
 	container, err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, container.Len(), 28)
+	assert.Equal(t, container.Len(), 32)
 
 	err = SetPayableHandler(container, nil)
 	assert.NotNil(t, err)

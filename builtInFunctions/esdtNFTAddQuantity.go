@@ -126,6 +126,10 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
+	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, value)
+	if err != nil {
+		return nil, err
+	}
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,

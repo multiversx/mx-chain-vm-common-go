@@ -5,9 +5,11 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -135,11 +137,13 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	t.Parallel()
 
 	marshalizer := &mock.MarshalizerMock{}
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(50, marshalizer, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			assert.Equal(t, core.ESDTRoleLocalMint, string(action))
 			return nil
 		},
-	})
+	}
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(50, marshalizer, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler)
 
 	sndAccout := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {

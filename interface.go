@@ -95,6 +95,12 @@ type BlockchainHook interface {
 	// GetESDTToken loads the ESDT digital token for the given key
 	GetESDTToken(address []byte, tokenID []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 
+	// IsPaused returns true if the tokenID is paused globally
+	IsPaused(tokenID []byte) bool
+
+	// IsLimitedTransfer return true if the tokenID has limited transfers
+	IsLimitedTransfer(tokenID []byte) bool
+
 	// GetSnapshot gets the number of entries in the journal as a snapshot id
 	GetSnapshot() int
 
@@ -189,8 +195,16 @@ type Marshalizer interface {
 
 // ESDTGlobalSettingsHandler provides global settings functions for an ESDT token
 type ESDTGlobalSettingsHandler interface {
-	IsPaused(token []byte) bool
-	IsLimitedTransfer(tokenKey []byte) bool
+	IsPaused(esdtTokenKey []byte) bool
+	IsLimitedTransfer(esdtTokenKey []byte) bool
+	IsInterfaceNil() bool
+}
+
+// ExtendedESDTGlobalSettingsHandler provides global settings functions for an ESDT token
+type ExtendedESDTGlobalSettingsHandler interface {
+	IsPaused(esdtTokenKey []byte) bool
+	IsLimitedTransfer(esdtTokenKey []byte) bool
+	IsBurnForAll(esdtTokenKey []byte) bool
 	IsInterfaceNil() bool
 }
 
@@ -229,7 +243,6 @@ type AccountsAdapter interface {
 	GetCode(codeHash []byte) []byte
 
 	RootHash() ([]byte, error)
-	RecreateTrie(rootHash []byte) error
 	IsInterfaceNil() bool
 }
 
@@ -283,6 +296,7 @@ type ESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	AddToLiquiditySystemAcc(esdtTokenKey []byte, nonce uint64, transferValue *big.Int) error
 	IsInterfaceNil() bool
 }
 
