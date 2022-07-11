@@ -45,7 +45,7 @@ func NewESDTNFTAddQuantityFunc(
 		return nil, ErrNilRolesHandler
 	}
 	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochNotifier
+		return nil, ErrNilEpochHandler
 	}
 
 	e := &esdtNFTAddQuantity{
@@ -123,6 +123,10 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 	esdtData.Value.Add(esdtData.Value, value)
 
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, false, vmInput.ReturnCallAfterError)
+	if err != nil {
+		return nil, err
+	}
+	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, value)
 	if err != nil {
 		return nil, err
 	}

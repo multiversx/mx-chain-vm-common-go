@@ -45,7 +45,7 @@ func NewESDTNFTCreateFunc(
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTCreate, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshaller
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
@@ -57,7 +57,7 @@ func NewESDTNFTCreateFunc(
 		return nil, ErrNilESDTNFTStorageHandler
 	}
 	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochNotifier
+		return nil, ErrNilEpochHandler
 	}
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter

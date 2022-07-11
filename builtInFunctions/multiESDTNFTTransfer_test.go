@@ -29,6 +29,8 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 
@@ -88,6 +90,8 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 			},
 		},
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
 	)
 
@@ -108,10 +112,12 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
-	assert.Equal(t, ErrNilMarshaller, err)
+	assert.Equal(t, ErrNilMarshalizer, err)
 
 	multiTransfer, err = NewESDTNFTMultiTransferFunc(
 		0,
@@ -124,6 +130,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -140,6 +148,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -156,6 +166,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -172,10 +184,12 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
-	assert.Equal(t, ErrNilEpochNotifier, err)
+	assert.Equal(t, ErrNilEpochHandler, err)
 
 	multiTransfer, err = NewESDTNFTMultiTransferFunc(
 		0,
@@ -188,6 +202,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		nil,
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -204,6 +220,8 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
+		0,
 		nil,
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -224,6 +242,8 @@ func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
+		0,
+		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.False(t, check.IfNil(multiTransfer))
@@ -240,7 +260,7 @@ func TestESDTNFTMultiTransfer_SetPayable(t *testing.T) {
 	handler := &mock.PayableHandlerStub{}
 	err = multiTransfer.SetPayableHandler(handler)
 	assert.Nil(t, err)
-	assert.True(t, handler == multiTransfer.payableHandler) //pointer testing
+	assert.True(t, handler == multiTransfer.payableHandler) // pointer testing
 }
 
 func TestESDTNFTMultiTransfer_SetNewGasConfig(t *testing.T) {
@@ -328,7 +348,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 	_ = multiTransfer.accounts.SaveAccount(destination)
 	_, _ = multiTransfer.accounts.Commit()
 
-	//reload accounts
+	// reload accounts
 	sender, err = multiTransfer.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 	destination, err = multiTransfer.accounts.LoadAccount(destinationAddress)
@@ -357,13 +377,13 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 	_ = multiTransfer.accounts.SaveAccount(sender)
 	_, _ = multiTransfer.accounts.Commit()
 
-	//reload accounts
+	// reload accounts
 	sender, err = multiTransfer.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 	destination, err = multiTransfer.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransfer.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransfer.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 	testNFTTokenShouldExist(t, multiTransfer.marshalizer, sender, token2, 0, big.NewInt(2))
 	testNFTTokenShouldExist(t, multiTransfer.marshalizer, destination, token1, tokenNonce, big.NewInt(4))
 	testNFTTokenShouldExist(t, multiTransfer.marshalizer, destination, token2, 0, big.NewInt(4))
@@ -404,7 +424,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -431,11 +451,11 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 
 	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
 
@@ -499,7 +519,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationAddT
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -526,11 +546,11 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationAddT
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
@@ -590,7 +610,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsOneTransfer(t *
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -613,11 +633,11 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsOneTransfer(t *
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
 	destinationNumTokens1 := big.NewInt(1000)
@@ -682,7 +702,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -705,12 +725,12 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token2, 0, big.NewInt(2))          //3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token2, 0, big.NewInt(2))          // 3 initial - 1 transferred
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
 	destinationNumTokens1 := big.NewInt(1000)
@@ -779,7 +799,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -802,11 +822,11 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	_ = multiTransferSenderShard.accounts.SaveAccount(sender)
 	_, _ = multiTransferSenderShard.accounts.Commit()
 
-	//reload sender account
+	// reload sender account
 	sender, err = multiTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) //3 initial - 1 transferred
+	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 	testNFTTokenShouldExist(t, multiTransferSenderShard.marshalizer, sender, token2, 0, big.NewInt(2))
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
@@ -870,7 +890,7 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()
-	//reload sender account
+	// reload sender account
 	sender, err = transferFunc.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -934,7 +954,7 @@ func TestESDTNFTMultiTransfer_NotEnoughGas(t *testing.T) {
 	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshalizer, sender.(vmcommon.UserAccountHandler))
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()
-	//reload sender account
+	// reload sender account
 	sender, err = transferFunc.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
@@ -1005,4 +1025,55 @@ func TestComputeInsufficientQuantityESDTError(t *testing.T) {
 	resErr = computeInsufficientQuantityESDTError([]byte("my-token-2"), 5)
 	require.NotNil(t, resErr)
 	require.Equal(t, errors.New("insufficient quantity for token: my-token-2 nonce 5").Error(), resErr.Error())
+}
+
+func TestESDTNFTMultiTransfer_EpochChange(t *testing.T) {
+	t.Parallel()
+
+	var functionHandler vmcommon.EpochSubscriberHandler
+	notifier := &mock.EpochNotifierStub{
+		RegisterNotifyHandlerCalled: func(handler vmcommon.EpochSubscriberHandler) {
+			functionHandler = handler
+		},
+	}
+	transferFunc, _ := NewESDTNFTMultiTransferFunc(
+		0,
+		&mock.MarshalizerMock{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.AccountsStub{},
+		&mock.ShardCoordinatorStub{},
+		vmcommon.BaseOperationCost{},
+		0,
+		notifier,
+		&mock.ESDTRoleHandlerStub{},
+		1,
+		2,
+		3,
+		createNewESDTDataStorageHandler(),
+	)
+
+	functionHandler.EpochConfirmed(0, 0)
+	assert.False(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
+
+	functionHandler.EpochConfirmed(1, 0)
+	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
+
+	functionHandler.EpochConfirmed(2, 0)
+	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
+
+	functionHandler.EpochConfirmed(3, 0)
+	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.True(t, transferFunc.flagCheckFunctionArgument.IsSet())
+
+	functionHandler.EpochConfirmed(4, 0)
+	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
+	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
+	assert.True(t, transferFunc.flagCheckFunctionArgument.IsSet())
 }

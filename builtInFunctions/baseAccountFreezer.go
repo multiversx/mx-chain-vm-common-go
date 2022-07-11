@@ -30,10 +30,10 @@ type baseAccountFreezer struct {
 
 func newBaseAccountFreezer(args BaseAccountFreezerArgs) (*baseAccountFreezer, error) {
 	if check.IfNil(args.Marshaller) {
-		return nil, ErrNilMarshaller
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochNotifier
+		return nil, ErrNilEpochHandler
 	}
 	if check.IfNil(args.GuardedAccountHandler) {
 		return nil, ErrNilGuardedAccountHandler

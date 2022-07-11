@@ -13,7 +13,7 @@ type esdtNFTBurn struct {
 	baseAlwaysActive
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
@@ -23,7 +23,7 @@ type esdtNFTBurn struct {
 func NewESDTNFTBurnFunc(
 	funcGasCost uint64,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 ) (*esdtNFTBurn, error) {
 	if check.IfNil(esdtStorageHandler) {
@@ -79,12 +79,12 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 		return nil, ErrInvalidArguments
 	}
 
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTBurn))
+	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	err = e.isAllowedToBurn(acntSnd, vmInput.Arguments[0])
 	if err != nil {
 		return nil, err
 	}
 
-	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
 	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
@@ -114,6 +114,16 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTBurn), vmInput.Arguments[0], nonce, quantityToBurn, vmInput.CallerAddr)
 
 	return vmOutput, nil
+}
+
+func (e *esdtNFTBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, tokenID []byte) error {
+	esdtTokenKey := append(e.keyPrefix, tokenID...)
+	isBurnForAll := e.globalSettingsHandler.IsBurnForAll(esdtTokenKey)
+	if isBurnForAll {
+		return nil
+	}
+
+	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleNFTBurn))
 }
 
 // IsInterfaceNil returns true if underlying object in nil

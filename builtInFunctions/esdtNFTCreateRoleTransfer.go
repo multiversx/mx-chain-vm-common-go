@@ -26,7 +26,7 @@ func NewESDTNFTCreateRoleTransfer(
 	shardCoordinator vmcommon.Coordinator,
 ) (*esdtNFTCreateRoleTransfer, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshaller
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter

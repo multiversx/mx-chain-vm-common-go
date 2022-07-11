@@ -25,7 +25,7 @@ func TestNewBaseAccountFreezer(t *testing.T) {
 				args.Marshaller = nil
 				return args
 			},
-			expectedErr: ErrNilMarshaller,
+			expectedErr: ErrNilMarshalizer,
 		},
 		{
 			args: func() BaseAccountFreezerArgs {
@@ -33,7 +33,7 @@ func TestNewBaseAccountFreezer(t *testing.T) {
 				args.EpochNotifier = nil
 				return args
 			},
-			expectedErr: ErrNilEpochNotifier,
+			expectedErr: ErrNilEpochHandler,
 		},
 		{
 			args: func() BaseAccountFreezerArgs {

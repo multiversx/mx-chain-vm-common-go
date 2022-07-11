@@ -47,7 +47,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 	)
 	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilMarshaller, err)
+	assert.Equal(t, ErrNilMarshalizer, err)
 
 	nftCreate, err = NewESDTNFTCreateFunc(
 		0,
@@ -103,7 +103,7 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 	)
 	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilEpochNotifier, err)
+	assert.Equal(t, ErrNilEpochHandler, err)
 }
 
 func TestNewESDTNFTCreateFunc(t *testing.T) {
@@ -235,12 +235,24 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	t.Parallel()
 
 	esdtDataStorage := createNewESDTDataStorageHandler()
+	firstCheck := true
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			if firstCheck {
+				assert.Equal(t, core.ESDTRoleNFTCreate, string(action))
+				firstCheck = false
+			} else {
+				assert.Equal(t, core.ESDTRoleNFTAddQuantity, string(action))
+			}
+			return nil
+		},
+	}
 	nftCreate, _ := NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
 		&mock.MarshalizerMock{},
 		&mock.GlobalSettingsHandlerStub{},
-		&mock.ESDTRoleHandlerStub{},
+		esdtRoleHandler,
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		0,
@@ -301,8 +313,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	tokenKey := []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + token)
 	tokenKey = append(tokenKey, big.NewInt(1).Bytes()...)
 
-	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey)
-	assert.Equal(t, tokenMetaData, metaData)
+	esdtData, _, _ := esdtDataStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+	assert.Equal(t, tokenMetaData, esdtData.TokenMetaData)
+	assert.Equal(t, esdtData.Value, quantity)
 }
 
 func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {

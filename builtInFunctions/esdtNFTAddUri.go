@@ -41,7 +41,7 @@ func NewESDTNFTAddUriFunc(
 		return nil, ErrNilRolesHandler
 	}
 	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochNotifier
+		return nil, ErrNilEpochHandler
 	}
 
 	e := &esdtNFTAddUri{

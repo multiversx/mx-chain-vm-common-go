@@ -29,7 +29,7 @@ func NewESDTBurnFunc(
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtBurn, error) {
 	if check.IfNil(marshalizer) {
-		return nil, ErrNilMarshaller
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler

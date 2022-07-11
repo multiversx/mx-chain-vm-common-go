@@ -46,7 +46,7 @@ func TestNewSetGuardianFunc(t *testing.T) {
 				args.EpochNotifier = nil
 				return args
 			},
-			expectedErr: ErrNilEpochNotifier,
+			expectedErr: ErrNilEpochHandler,
 		},
 	}
 
