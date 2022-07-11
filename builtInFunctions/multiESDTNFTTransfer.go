@@ -17,8 +17,8 @@ import (
 type esdtNFTMultiTransfer struct {
 	*baseEnabled
 	keyPrefix                        []byte
-	marshalizer                      vmcommon.Marshalizer
-	globalSettingsHandler            vmcommon.ESDTGlobalSettingsHandler
+	marshaller                       vmcommon.Marshalizer
+	globalSettingsHandler            vmcommon.ExtendedESDTGlobalSettingsHandler
 	payableHandler                   vmcommon.PayableHandler
 	funcGasCost                      uint64
 	accounts                         vmcommon.AccountsAdapter
@@ -40,8 +40,8 @@ const argumentsPerTransfer = uint64(3)
 // NewESDTNFTMultiTransferFunc returns the esdt NFT multi transfer built-in function component
 func NewESDTNFTMultiTransferFunc(
 	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	marshaller vmcommon.Marshalizer,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
@@ -53,7 +53,7 @@ func NewESDTNFTMultiTransferFunc(
 	checkFunctionArgumentEnableEpoch uint32,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 ) (*esdtNFTMultiTransfer, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
@@ -76,8 +76,8 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e := &esdtNFTMultiTransfer{
-		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:                      marshalizer,
+		keyPrefix:                        []byte(baseESDTKeyPrefix),
+		marshaller:                       marshaller,
 		globalSettingsHandler:            globalSettingsHandler,
 		funcGasCost:                      funcGasCost,
 		accounts:                         accounts,
@@ -204,7 +204,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			esdtTransferData := &esdt.ESDigitalToken{}
 			if len(vmInput.Arguments[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
 				marshaledNFTTransfer := vmInput.Arguments[tokenStartIndex+2]
-				err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
+				err = e.marshaller.Unmarshal(esdtTransferData, marshaledNFTTransfer)
 				if err != nil {
 					return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 				}
@@ -228,7 +228,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		} else {
 			transferredValue := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2])
 			value.Set(transferredValue)
-			err = addToESDTBalance(acntDst, esdtTokenKey, transferredValue, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+			err = addToESDTBalance(acntDst, esdtTokenKey, transferredValue, e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 			if err != nil {
 				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
@@ -383,7 +383,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 		tokenID = transferData.ESDTTokenName
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, isReturnCallWithError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, acntSnd.AddressBytes(), dstAddress, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, isReturnCallWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +457,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 			sendCrossShardAsMarshalledData := !wasAlreadySent || esdtTransfer.ESDTValue.Cmp(oneValue) == 0 ||
 				len(esdtTransfer.ESDTValue.Bytes()) > vmcommon.MaxLengthForValueToOptTransfer
 			if sendCrossShardAsMarshalledData {
-				marshaledNFTTransfer, err := e.marshalizer.Marshal(listESDTData[i])
+				marshaledNFTTransfer, err := e.marshaller.Marshal(listESDTData[i])
 				if err != nil {
 					return err
 				}

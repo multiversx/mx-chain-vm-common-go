@@ -19,9 +19,9 @@ var zero = big.NewInt(0)
 type esdtTransfer struct {
 	baseAlwaysActive
 	funcGasCost           uint64
-	marshalizer           vmcommon.Marshalizer
+	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
 	payableHandler        vmcommon.PayableHandler
 	shardCoordinator      vmcommon.Coordinator
 	mutExecution          sync.RWMutex
@@ -38,8 +38,8 @@ type esdtTransfer struct {
 // NewESDTTransferFunc returns the esdt transfer built-in function component
 func NewESDTTransferFunc(
 	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	marshaller vmcommon.Marshalizer,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	shardCoordinator vmcommon.Coordinator,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	transferToMetaEnableEpoch uint32,
@@ -47,7 +47,7 @@ func NewESDTTransferFunc(
 	checkFunctionArgumentEnableEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtTransfer, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
@@ -65,8 +65,8 @@ func NewESDTTransferFunc(
 
 	e := &esdtTransfer{
 		funcGasCost:                      funcGasCost,
-		marshalizer:                      marshalizer,
-		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshaller:                       marshaller,
+		keyPrefix:                        []byte(baseESDTKeyPrefix),
 		globalSettingsHandler:            globalSettingsHandler,
 		payableHandler:                   &disabledPayableHandler{},
 		shardCoordinator:                 shardCoordinator,
@@ -133,7 +133,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		keyToCheck = tokenID
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(keyToCheck, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, vmInput.ReturnCallAfterError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(keyToCheck, esdtTokenKey, vmInput.CallerAddr, vmInput.RecipientAddr, e.globalSettingsHandler, e.rolesHandler, acntSnd, acntDst, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +144,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			return nil, ErrNotEnoughGas
 		}
 
-		err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+		err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +163,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		err = addToESDTBalance(acntDst, esdtTokenKey, value, e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+		err = addToESDTBalance(acntDst, esdtTokenKey, value, e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 		if err != nil {
 			return nil, err
 		}
@@ -285,11 +285,11 @@ func addToESDTBalance(
 	userAcnt vmcommon.UserAccountHandler,
 	key []byte,
 	value *big.Int,
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	isReturnWithError bool,
 ) error {
-	esdtData, err := getESDTDataFromKey(userAcnt, key, marshalizer)
+	esdtData, err := getESDTDataFromKey(userAcnt, key, marshaller)
 	if err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func addToESDTBalance(
 		return ErrInsufficientFunds
 	}
 
-	err = saveESDTData(userAcnt, esdtData, key, marshalizer)
+	err = saveESDTData(userAcnt, esdtData, key, marshaller)
 	if err != nil {
 		return err
 	}
@@ -355,14 +355,14 @@ func saveESDTData(
 	userAcnt vmcommon.UserAccountHandler,
 	esdtData *esdt.ESDigitalToken,
 	key []byte,
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 ) error {
 	isValueZero := esdtData.Value.Cmp(zero) == 0
 	if isValueZero && arePropertiesEmpty(esdtData.Properties) {
 		return userAcnt.AccountDataHandler().SaveKeyValue(key, nil)
 	}
 
-	marshaledData, err := marshalizer.Marshal(esdtData)
+	marshaledData, err := marshaller.Marshal(esdtData)
 	if err != nil {
 		return err
 	}
@@ -373,7 +373,7 @@ func saveESDTData(
 func getESDTDataFromKey(
 	userAcnt vmcommon.UserAccountHandler,
 	key []byte,
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 ) (*esdt.ESDigitalToken, error) {
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
 	marshaledData, err := userAcnt.AccountDataHandler().RetrieveValue(key)
@@ -381,7 +381,7 @@ func getESDTDataFromKey(
 		return esdtData, nil
 	}
 
-	err = marshalizer.Unmarshal(esdtData, marshaledData)
+	err = marshaller.Unmarshal(esdtData, marshaledData)
 	if err != nil {
 		return nil, err
 	}
@@ -394,9 +394,9 @@ func getESDTDataFromKey(
 // we cannot transfer a limited esdt to destination shard, as there we do not know if that token was transferred or not
 // by an account with transfer account
 func checkIfTransferCanHappenWithLimitedTransfer(
-	tokenID []byte,
-	esdtTokenKey []byte,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	tokenID []byte, esdtTokenKey []byte,
+	senderAddress, destinationAddress []byte,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	roleHandler vmcommon.ESDTRoleHandler,
 	acntSnd, acntDst vmcommon.UserAccountHandler,
 	isReturnWithError bool,
@@ -408,6 +408,10 @@ func checkIfTransferCanHappenWithLimitedTransfer(
 		return nil
 	}
 	if !globalSettingsHandler.IsLimitedTransfer(esdtTokenKey) {
+		return nil
+	}
+
+	if globalSettingsHandler.IsSenderOrDestinationWithTransferRole(senderAddress, destinationAddress, tokenID) {
 		return nil
 	}
 

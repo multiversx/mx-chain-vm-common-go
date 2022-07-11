@@ -204,6 +204,7 @@ type ExtendedESDTGlobalSettingsHandler interface {
 	IsPaused(esdtTokenKey []byte) bool
 	IsLimitedTransfer(esdtTokenKey []byte) bool
 	IsBurnForAll(esdtTokenKey []byte) bool
+	IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool
 	IsInterfaceNil() bool
 }
 

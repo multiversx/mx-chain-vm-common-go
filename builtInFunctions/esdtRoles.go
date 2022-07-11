@@ -15,22 +15,22 @@ var roleKeyPrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTRoleIdentifi
 
 type esdtRoles struct {
 	baseAlwaysActive
-	set         bool
-	marshalizer vmcommon.Marshalizer
+	set        bool
+	marshaller vmcommon.Marshalizer
 }
 
 // NewESDTRolesFunc returns the esdt change roles built-in function component
 func NewESDTRolesFunc(
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	set bool,
 ) (*esdtRoles, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 
 	e := &esdtRoles{
-		set:         set,
-		marshalizer: marshalizer,
+		set:        set,
+		marshaller: marshaller,
 	}
 
 	return e, nil
@@ -58,7 +58,7 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 
 	esdtTokenRoleKey := append(roleKeyPrefix, vmInput.Arguments[0]...)
 
-	roles, _, err := getESDTRolesForAcnt(e.marshalizer, acntDst, esdtTokenRoleKey)
+	roles, _, err := getESDTRolesForAcnt(e.marshaller, acntDst, esdtTokenRoleKey)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 		break
 	}
 
-	err = saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshalizer)
+	err = saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshaller)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func doesRoleExist(roles *esdt.ESDTRoles, role []byte) (int, bool) {
 }
 
 func getESDTRolesForAcnt(
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	acnt vmcommon.UserAccountHandler,
 	key []byte,
 ) (*esdt.ESDTRoles, bool, error) {
@@ -140,7 +140,7 @@ func getESDTRolesForAcnt(
 		return roles, true, nil
 	}
 
-	err = marshalizer.Unmarshal(roles, marshaledData)
+	err = marshaller.Unmarshal(roles, marshaledData)
 	if err != nil {
 		return nil, false, err
 	}
@@ -155,7 +155,7 @@ func (e *esdtRoles) CheckAllowedToExecute(account vmcommon.UserAccountHandler, t
 	}
 
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
-	roles, isNew, err := getESDTRolesForAcnt(e.marshalizer, account, esdtTokenRoleKey)
+	roles, isNew, err := getESDTRolesForAcnt(e.marshaller, account, esdtTokenRoleKey)
 	if err != nil {
 		return err
 	}

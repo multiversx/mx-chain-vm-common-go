@@ -14,8 +14,8 @@ import (
 func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	freeze, _ := NewESDTFreezeWipeFunc(marshalizer, true, false)
+	marshaller := &mock.MarshalizerMock{}
+	freeze, _ := NewESDTFreezeWipeFunc(marshaller, true, false)
 	_, err := freeze.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -59,7 +59,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 	esdtToken := &esdt.ESDigitalToken{}
 	esdtKey := append(freeze.keyPrefix, key...)
 	marshaledData, _ := acnt.AccountDataHandler().RetrieveValue(esdtKey)
-	_ = marshalizer.Unmarshal(esdtToken, marshaledData)
+	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 
 	esdtUserData := ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.True(t, esdtUserData.Frozen)
@@ -68,8 +68,8 @@ func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	freeze, _ := NewESDTFreezeWipeFunc(marshalizer, true, false)
+	marshaller := &mock.MarshalizerMock{}
+	freeze, _ := NewESDTFreezeWipeFunc(marshaller, true, false)
 	_, err := freeze.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -85,7 +85,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	input.RecipientAddr = []byte("dst")
 	esdtKey := append(freeze.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(10)}
-	marshaledData, _ := freeze.marshalizer.Marshal(esdtToken)
+	marshaledData, _ := freeze.marshaller.Marshal(esdtToken)
 	acnt := mock.NewUserAccount(input.RecipientAddr)
 	_ = acnt.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 
@@ -94,23 +94,23 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 
 	esdtToken = &esdt.ESDigitalToken{}
 	marshaledData, _ = acnt.AccountDataHandler().RetrieveValue(esdtKey)
-	_ = marshalizer.Unmarshal(esdtToken, marshaledData)
+	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 
 	esdtUserData := ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.True(t, esdtUserData.Frozen)
 
-	unFreeze, _ := NewESDTFreezeWipeFunc(marshalizer, false, false)
+	unFreeze, _ := NewESDTFreezeWipeFunc(marshaller, false, false)
 	_, err = unFreeze.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Nil(t, err)
 
 	marshaledData, _ = acnt.AccountDataHandler().RetrieveValue(esdtKey)
-	_ = marshalizer.Unmarshal(esdtToken, marshaledData)
+	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 
 	esdtUserData = ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.False(t, esdtUserData.Frozen)
 
 	// cannot wipe if account is not frozen
-	wipe, _ := NewESDTFreezeWipeFunc(marshalizer, false, true)
+	wipe, _ := NewESDTFreezeWipeFunc(marshaller, false, true)
 	_, err = wipe.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Equal(t, ErrCannotWipeAccountNotFrozen, err)
 
@@ -122,11 +122,11 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	esdtToken = &esdt.ESDigitalToken{
 		Properties: metaData.ToBytes(),
 	}
-	esdtTokenBytes, _ := marshalizer.Marshal(esdtToken)
+	esdtTokenBytes, _ := marshaller.Marshal(esdtToken)
 	err = acnt.AccountDataHandler().SaveKeyValue(esdtKey, esdtTokenBytes)
 	assert.NoError(t, err)
 
-	wipe, _ = NewESDTFreezeWipeFunc(marshalizer, false, true)
+	wipe, _ = NewESDTFreezeWipeFunc(marshaller, false, true)
 	_, err = wipe.ProcessBuiltinFunction(nil, acnt, input)
 	assert.NoError(t, err)
 

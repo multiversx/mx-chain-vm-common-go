@@ -16,14 +16,16 @@ import (
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
+const baseESDTKeyPrefix = core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier
+
 var oneValue = big.NewInt(1)
 var zeroByteArray = []byte{0}
 
 type esdtNFTTransfer struct {
 	baseAlwaysActive
 	keyPrefix                        []byte
-	marshalizer                      vmcommon.Marshalizer
-	globalSettingsHandler            vmcommon.ESDTGlobalSettingsHandler
+	marshaller                       vmcommon.Marshalizer
+	globalSettingsHandler            vmcommon.ExtendedESDTGlobalSettingsHandler
 	payableHandler                   vmcommon.PayableHandler
 	funcGasCost                      uint64
 	accounts                         vmcommon.AccountsAdapter
@@ -45,8 +47,8 @@ type esdtNFTTransfer struct {
 // NewESDTNFTTransferFunc returns the esdt NFT transfer built-in function component
 func NewESDTNFTTransferFunc(
 	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	marshaller vmcommon.Marshalizer,
+	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
@@ -58,7 +60,7 @@ func NewESDTNFTTransferFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTTransfer, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
@@ -81,8 +83,8 @@ func NewESDTNFTTransferFunc(
 	}
 
 	e := &esdtNFTTransfer{
-		keyPrefix:                        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:                      marshalizer,
+		keyPrefix:                        []byte(baseESDTKeyPrefix),
+		marshaller:                       marshaller,
 		globalSettingsHandler:            globalSettingsHandler,
 		funcGasCost:                      funcGasCost,
 		accounts:                         accounts,
@@ -179,7 +181,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	esdtTransferData := &esdt.ESDigitalToken{}
 	if !bytes.Equal(vmInput.Arguments[3], zeroByteArray) {
 		marshaledNFTTransfer := vmInput.Arguments[3]
-		err = e.marshalizer.Unmarshal(esdtTransferData, marshaledNFTTransfer)
+		err = e.marshaller.Unmarshal(esdtTransferData, marshaledNFTTransfer)
 		if err != nil {
 			return nil, err
 		}
@@ -298,7 +300,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		tokenID = tickerID
 	}
 
-	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
+	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, acntSnd.AddressBytes(), dstAddress, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +336,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	}
 
 	if !wasAlreadySent || esdtTransferData.Value.Cmp(oneValue) == 0 {
-		marshaledNFTTransfer, err := e.marshalizer.Marshal(esdtTransferData)
+		marshaledNFTTransfer, err := e.marshaller.Marshal(esdtTransferData)
 		if err != nil {
 			return err
 		}
