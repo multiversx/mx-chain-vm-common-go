@@ -65,15 +65,15 @@ func TestESDTTransferRoleProcessBuiltInFunction_Errors(t *testing.T) {
 	_, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Equal(t, err, ErrOnlySystemAccountAccepted)
 
+	errNotImplemented := errors.New("not implemented")
 	vmInput.RecipientAddr = vmcommon.SystemAccountAddress
 	_, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
-	assert.Equal(t, err, errors.New("not implemented"))
+	assert.Equal(t, err, errNotImplemented)
 
 	systemAcc := mock.NewUserAccount(vmcommon.SystemAccountAddress)
 	accounts.LoadAccountCalled = func(address []byte) (vmcommon.AccountHandler, error) {
 		return systemAcc, nil
 	}
-	errNotImplemented := errors.New("not implemented")
 	accounts.SaveAccountCalled = func(account vmcommon.AccountHandler) error {
 		return errNotImplemented
 	}
