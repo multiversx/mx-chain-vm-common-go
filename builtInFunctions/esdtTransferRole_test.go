@@ -2,13 +2,14 @@ package builtInFunctions
 
 import (
 	"errors"
+	"math/big"
+	"testing"
+
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
 )
 
 func TestNewESDTTransferRoleAddressFunc(t *testing.T) {
