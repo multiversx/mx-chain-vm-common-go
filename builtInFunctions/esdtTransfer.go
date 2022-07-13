@@ -22,17 +22,15 @@ type esdtTransfer struct {
 	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
 	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
-	payableHandler        vmcommon.PayableHandler
+	payableHandler        vmcommon.PayableChecker
 	shardCoordinator      vmcommon.Coordinator
 	mutExecution          sync.RWMutex
 
-	rolesHandler                     vmcommon.ESDTRoleHandler
-	transferToMetaEnableEpoch        uint32
-	flagTransferToMeta               atomic.Flag
-	checkCorrectTokenIDEnableEpoch   uint32
-	flagCheckCorrectTokenID          atomic.Flag
-	checkFunctionArgumentEnableEpoch uint32
-	flagCheckFunctionArgument        atomic.Flag
+	rolesHandler                   vmcommon.ESDTRoleHandler
+	transferToMetaEnableEpoch      uint32
+	flagTransferToMeta             atomic.Flag
+	checkCorrectTokenIDEnableEpoch uint32
+	flagCheckCorrectTokenID        atomic.Flag
 }
 
 // NewESDTTransferFunc returns the esdt transfer built-in function component
@@ -44,7 +42,6 @@ func NewESDTTransferFunc(
 	rolesHandler vmcommon.ESDTRoleHandler,
 	transferToMetaEnableEpoch uint32,
 	checkCorrectTokenIDEnableEpoch uint32,
-	checkFunctionArgumentEnableEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtTransfer, error) {
 	if check.IfNil(marshaller) {
@@ -64,16 +61,15 @@ func NewESDTTransferFunc(
 	}
 
 	e := &esdtTransfer{
-		funcGasCost:                      funcGasCost,
-		marshaller:                       marshaller,
-		keyPrefix:                        []byte(baseESDTKeyPrefix),
-		globalSettingsHandler:            globalSettingsHandler,
-		payableHandler:                   &disabledPayableHandler{},
-		shardCoordinator:                 shardCoordinator,
-		rolesHandler:                     rolesHandler,
-		checkCorrectTokenIDEnableEpoch:   checkCorrectTokenIDEnableEpoch,
-		transferToMetaEnableEpoch:        transferToMetaEnableEpoch,
-		checkFunctionArgumentEnableEpoch: checkFunctionArgumentEnableEpoch,
+		funcGasCost:                    funcGasCost,
+		marshaller:                     marshaller,
+		keyPrefix:                      []byte(baseESDTKeyPrefix),
+		globalSettingsHandler:          globalSettingsHandler,
+		payableHandler:                 &disabledPayableHandler{},
+		shardCoordinator:               shardCoordinator,
+		rolesHandler:                   rolesHandler,
+		checkCorrectTokenIDEnableEpoch: checkCorrectTokenIDEnableEpoch,
+		transferToMetaEnableEpoch:      transferToMetaEnableEpoch,
 	}
 
 	epochNotifier.RegisterNotifyHandler(e)
@@ -87,8 +83,6 @@ func (e *esdtTransfer) EpochConfirmed(epoch uint32, _ uint64) {
 	log.Debug("ESDT transfer to metachain flag", "enabled", e.flagTransferToMeta.IsSet())
 	e.flagCheckCorrectTokenID.SetValue(epoch >= e.checkCorrectTokenIDEnableEpoch)
 	log.Debug("ESDT transfer check correct tokenID for transfer role", "enabled", e.flagCheckCorrectTokenID.IsSet())
-	e.flagCheckFunctionArgument.SetValue(epoch >= e.checkFunctionArgumentEnableEpoch)
-	log.Debug("ESDT transfer check function argument", "enabled", e.flagCheckFunctionArgument.IsSet())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -150,17 +144,12 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		}
 	}
 
-	isSCCallAfter := determineIsSCCallAfter(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTTransfer, e.flagCheckFunctionArgument.IsSet())
+	isSCCallAfter := e.payableHandler.DetermineIsSCCallAfter(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTTransfer)
 	vmOutput := &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}
 	if !check.IfNil(acntDst) {
-		if mustVerifyPayable(vmInput, core.MinLenArgumentsESDTTransfer, e.flagCheckFunctionArgument.IsSet()) {
-			isPayable, errPayable := e.payableHandler.IsPayable(vmInput.CallerAddr, vmInput.RecipientAddr)
-			if errPayable != nil {
-				return nil, errPayable
-			}
-			if !isPayable {
-				return nil, ErrAccountNotPayable
-			}
+		err = e.payableHandler.CheckPayable(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTNFTTransfer)
+		if err != nil {
+			return nil, err
 		}
 
 		err = addToESDTBalance(acntDst, esdtTokenKey, value, e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
@@ -211,45 +200,6 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, vmInput.RecipientAddr)
 	return vmOutput, nil
-}
-
-func determineIsSCCallAfter(vmInput *vmcommon.ContractCallInput, destAddress []byte, minLenArguments int, checkEmptyFunction bool) bool {
-	if len(vmInput.Arguments) <= minLenArguments {
-		return false
-	}
-	if vmInput.ReturnCallAfterError && vmInput.CallType != vm.AsynchronousCallBack {
-		return false
-	}
-	if !vmcommon.IsSmartContractAddress(destAddress) {
-		return false
-	}
-	if checkEmptyFunction {
-		if len(vmInput.Arguments[minLenArguments]) == 0 {
-			return false
-		}
-	}
-
-	return true
-}
-
-func mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int, checkEmptyFunction bool) bool {
-	if vmInput.CallType == vm.AsynchronousCall || vmInput.CallType == vm.ESDTTransferAndExecute {
-		return false
-	}
-	if bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress) {
-		return false
-	}
-	if len(vmInput.Arguments) > minLenArguments {
-		if checkEmptyFunction {
-			if len(vmInput.Arguments[minLenArguments]) > 0 {
-				return false
-			}
-		} else {
-			return false
-		}
-	}
-
-	return true
 }
 
 func addOutputTransferToVMOutput(
@@ -424,8 +374,8 @@ func checkIfTransferCanHappenWithLimitedTransfer(
 	return errDestination
 }
 
-// SetPayableHandler will set the payable handler to the function
-func (e *esdtTransfer) SetPayableHandler(payableHandler vmcommon.PayableHandler) error {
+// SetPayableChecker will set the payableCheck handler to the function
+func (e *esdtTransfer) SetPayableChecker(payableHandler vmcommon.PayableChecker) error {
 	if check.IfNil(payableHandler) {
 		return ErrNilPayableHandler
 	}

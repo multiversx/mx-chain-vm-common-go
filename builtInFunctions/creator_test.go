@@ -126,14 +126,14 @@ func TestCreateBuiltInContainter_Create(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
-	container, err := f.CreateBuiltInFunctionContainer()
+	err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, container.Len(), 31)
+	assert.Equal(t, f.BuiltInFunctionContainer().Len(), 31)
 
-	err = SetPayableHandler(container, nil)
+	err = f.SetPayableHandler(nil)
 	assert.NotNil(t, err)
 
-	err = SetPayableHandler(container, &mock.PayableHandlerStub{})
+	err = f.SetPayableHandler(&mock.PayableHandlerStub{})
 	assert.Nil(t, err)
 
 	fillGasMapInternal(args.GasMap, 5)
