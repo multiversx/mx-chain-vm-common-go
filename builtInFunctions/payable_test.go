@@ -229,6 +229,8 @@ func TestMustVerifyPayable(t *testing.T) {
 }
 
 func TestPayableCheck_CheckPayable(t *testing.T) {
+	t.Parallel()
+
 	p := createMockPayableChecker(0, 0)
 	p.payableHandler = &mock.PayableHandlerStub{
 		IsPayableCalled: func(address []byte) (bool, error) {

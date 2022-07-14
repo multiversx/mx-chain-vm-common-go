@@ -2,7 +2,7 @@ package builtInFunctions
 
 import vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 
-// disabledPayableHandler is a disabled payableCheck handler implements PayableChecker interface but it is disabled
+// disabledPayableHandler is a disabled payableCheck handler that implements PayableChecker interface but it is disabled
 type disabledPayableHandler struct {
 }
 

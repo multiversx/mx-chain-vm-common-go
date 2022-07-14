@@ -71,7 +71,7 @@ func (p *payableCheck) mustVerifyPayable(vmInput *vmcommon.ContractCallInput, mi
 	return true
 }
 
-// CheckPayable returns error the destination account is a smart contract and there is no sc call after transfer
+// CheckPayable returns error if the destination account a non-payable smart contract and there is no sc call after transfer
 func (p *payableCheck) CheckPayable(vmInput *vmcommon.ContractCallInput, dstAddress []byte, minLenArguments int) error {
 	if !p.mustVerifyPayable(vmInput, minLenArguments) {
 		return nil
