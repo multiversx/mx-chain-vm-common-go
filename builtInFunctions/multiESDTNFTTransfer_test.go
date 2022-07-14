@@ -852,13 +852,13 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	_ = multiTransferDestinationShard.SetPayableChecker(payableChecker)
 	vmOutput, err = multiTransferDestinationShard.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Error(t, err)
-	require.Equal(t, "sending value to non payableCheck contract", err.Error())
+	require.Equal(t, "sending value to non payable contract", err.Error())
 
 	// check the multi transfer for fungible ESDT transfers as well
 	vmInput.Arguments = [][]byte{big.NewInt(2).Bytes(), token1, big.NewInt(0).Bytes(), quantityBytes, token2, big.NewInt(0).Bytes(), quantityBytes}
 	vmOutput, err = multiTransferDestinationShard.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Error(t, err)
-	require.Equal(t, "sending value to non payableCheck contract", err.Error())
+	require.Equal(t, "sending value to non payable contract", err.Error())
 }
 
 func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
