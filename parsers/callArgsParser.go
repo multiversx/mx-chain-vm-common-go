@@ -1,5 +1,7 @@
 package parsers
 
+import "strings"
+
 type callArgsParser struct {
 }
 
@@ -24,12 +26,24 @@ func (parser *callArgsParser) ParseData(data string) (string, [][]byte, error) {
 		return "", nil, err
 	}
 
-	arguments, err = parser.parseArguments(tokens)
+	arguments, err = parser.parseArguments(tokens, minNumCallArguments)
 	if err != nil {
 		return "", nil, err
 	}
 
 	return function, arguments, nil
+}
+
+// ParseArguments parses strings of the following format:
+// argFooHex@argBarHex...
+func (parser *callArgsParser) ParseArguments(data string) ([][]byte, error) {
+	tokens := strings.Split(data, atSeparator)
+	arguments, err := parser.parseArguments(tokens, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return arguments, nil
 }
 
 func (parser *callArgsParser) parseFunction(tokens []string) (string, error) {
@@ -41,10 +55,10 @@ func (parser *callArgsParser) parseFunction(tokens []string) (string, error) {
 	return function, nil
 }
 
-func (parser *callArgsParser) parseArguments(tokens []string) ([][]byte, error) {
+func (parser *callArgsParser) parseArguments(tokens []string, startIndex int) ([][]byte, error) {
 	arguments := make([][]byte, 0)
 
-	for i := minNumCallArguments; i < len(tokens); i++ {
+	for i := startIndex; i < len(tokens); i++ {
 		argument, err := decodeToken(tokens[i])
 		if err != nil {
 			return nil, err

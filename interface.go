@@ -304,6 +304,7 @@ type SimpleESDTNFTStorageHandler interface {
 // CallArgsParser will handle parsing transaction data to function and arguments
 type CallArgsParser interface {
 	ParseData(data string) (string, [][]byte, error)
+	ParseArguments(data string) ([][]byte, error)
 	IsInterfaceNil() bool
 }
 
