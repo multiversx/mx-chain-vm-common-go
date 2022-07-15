@@ -26,7 +26,7 @@ func (parser *callArgsParser) ParseData(data string) (string, [][]byte, error) {
 		return "", nil, err
 	}
 
-	arguments, err = parser.parseArguments(tokens, minNumCallArguments)
+	arguments, err = parser.parseArguments(tokens)
 	if err != nil {
 		return "", nil, err
 	}
@@ -35,12 +35,18 @@ func (parser *callArgsParser) ParseData(data string) (string, [][]byte, error) {
 }
 
 // ParseArguments parses strings of the following format:
-// argFooHex@argBarHex...
+// argFoo@hex(argBarHex)...
 func (parser *callArgsParser) ParseArguments(data string) ([][]byte, error) {
 	tokens := strings.Split(data, atSeparator)
-	arguments, err := parser.parseArguments(tokens, 0)
-	if err != nil {
-		return nil, err
+	arguments := make([][]byte, 0)
+	arguments = append(arguments, []byte(tokens[0]))
+	for i := minNumCallArguments; i < len(tokens); i++ {
+		argument, err := decodeToken(tokens[i])
+		if err != nil {
+			return nil, err
+		}
+
+		arguments = append(arguments, argument)
 	}
 
 	return arguments, nil
@@ -55,10 +61,10 @@ func (parser *callArgsParser) parseFunction(tokens []string) (string, error) {
 	return function, nil
 }
 
-func (parser *callArgsParser) parseArguments(tokens []string, startIndex int) ([][]byte, error) {
+func (parser *callArgsParser) parseArguments(tokens []string) ([][]byte, error) {
 	arguments := make([][]byte, 0)
 
-	for i := startIndex; i < len(tokens); i++ {
+	for i := minNumCallArguments; i < len(tokens); i++ {
 		argument, err := decodeToken(tokens[i])
 		if err != nil {
 			return nil, err

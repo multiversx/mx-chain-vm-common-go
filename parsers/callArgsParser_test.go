@@ -55,9 +55,9 @@ func TestCallArgsParser_ParseArgs(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, [][]byte{{}}, arguments)
 
-	arguments, err = parser.ParseArguments("0A0A@0B0B")
+	arguments, err = parser.ParseArguments("1@0A0A@0B0B")
 	require.Nil(t, err)
-	require.Equal(t, [][]byte{{10, 10}, {11, 11}}, arguments)
+	require.Equal(t, [][]byte{{49}, {10, 10}, {11, 11}}, arguments)
 
 	arguments, err = parser.ParseArguments("@0A0A@0B0B")
 	require.Nil(t, err)
