@@ -39,6 +39,7 @@ func (parser *callArgsParser) ParseData(data string) (string, [][]byte, error) {
 func (parser *callArgsParser) ParseArguments(data string) ([][]byte, error) {
 	tokens := strings.Split(data, atSeparator)
 	arguments := make([][]byte, 0, len(tokens))
+	arguments = append(arguments, []byte(tokens[0]))
 	parsedArgs, err := parser.parseArguments(tokens)
 	if err != nil {
 		return nil, err
