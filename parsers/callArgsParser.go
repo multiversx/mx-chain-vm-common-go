@@ -38,16 +38,12 @@ func (parser *callArgsParser) ParseData(data string) (string, [][]byte, error) {
 // argFoo@hex(argBarHex)...
 func (parser *callArgsParser) ParseArguments(data string) ([][]byte, error) {
 	tokens := strings.Split(data, atSeparator)
-	arguments := make([][]byte, 0)
-	arguments = append(arguments, []byte(tokens[0]))
-	for i := minNumCallArguments; i < len(tokens); i++ {
-		argument, err := decodeToken(tokens[i])
-		if err != nil {
-			return nil, err
-		}
-
-		arguments = append(arguments, argument)
+	arguments := make([][]byte, 0, len(tokens))
+	parsedArgs, err := parser.parseArguments(tokens)
+	if err != nil {
+		return nil, err
 	}
+	arguments = append(arguments, parsedArgs...)
 
 	return arguments, nil
 }
