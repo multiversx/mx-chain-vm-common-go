@@ -44,3 +44,33 @@ func TestCallArgsParser_ParseDataWhenErrorneousInput(t *testing.T) {
 	require.Equal(t, "", function)
 	require.Nil(t, arguments)
 }
+
+func TestCallArgsParser_ParseArgs(t *testing.T) {
+	t.Parallel()
+
+	parser := NewCallArgsParser()
+	require.NotNil(t, parser)
+
+	arguments, err := parser.ParseArguments("")
+	require.Nil(t, err)
+	require.Equal(t, [][]byte{{}}, arguments)
+
+	arguments, err = parser.ParseArguments("1@0A0A@0B0B")
+	require.Nil(t, err)
+	require.Equal(t, [][]byte{{49}, {10, 10}, {11, 11}}, arguments)
+
+	arguments, err = parser.ParseArguments("@0A0A@0B0B")
+	require.Nil(t, err)
+	require.Equal(t, [][]byte{{}, {10, 10}, {11, 11}}, arguments)
+}
+
+func TestCallArgsParser_ParseArgsWhenErrorneousInput(t *testing.T) {
+	t.Parallel()
+
+	parser := NewCallArgsParser()
+	require.NotNil(t, parser)
+
+	arguments, err := parser.ParseArguments("foo@BADARG")
+	require.Equal(t, ErrTokenizeFailed, err)
+	require.Nil(t, arguments)
+}

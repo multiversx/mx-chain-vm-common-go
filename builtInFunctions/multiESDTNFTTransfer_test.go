@@ -30,7 +30,6 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
-		0,
 		createNewESDTDataStorageHandler(),
 	)
 
@@ -91,7 +90,6 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 		},
 		1000,
 		0,
-		0,
 		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts),
 	)
 
@@ -113,7 +111,6 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
-		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -130,7 +127,6 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
-		0,
 		0,
 		createNewESDTDataStorageHandler(),
 	)
@@ -149,7 +145,6 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
-		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -166,7 +161,6 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
-		0,
 		0,
 		createNewESDTDataStorageHandler(),
 	)
@@ -185,7 +179,6 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
-		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -203,7 +196,6 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		nil,
 		1000,
 		0,
-		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.True(t, check.IfNil(multiTransfer))
@@ -220,7 +212,6 @@ func TestNewESDTNFTMultiTransferFunc_NilArgumentsShouldErr(t *testing.T) {
 		&mock.EpochNotifierStub{},
 		&mock.ESDTRoleHandlerStub{},
 		1000,
-		0,
 		0,
 		nil,
 	)
@@ -243,7 +234,6 @@ func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		1000,
 		0,
-		0,
 		createNewESDTDataStorageHandler(),
 	)
 	assert.False(t, check.IfNil(multiTransfer))
@@ -254,11 +244,11 @@ func TestESDTNFTMultiTransfer_SetPayable(t *testing.T) {
 	t.Parallel()
 
 	multiTransfer := createESDTNFTMultiTransferWithStubArguments()
-	err := multiTransfer.SetPayableHandler(nil)
+	err := multiTransfer.SetPayableChecker(nil)
 	assert.Equal(t, ErrNilPayableHandler, err)
 
 	handler := &mock.PayableHandlerStub{}
-	err = multiTransfer.SetPayableHandler(handler)
+	err = multiTransfer.SetPayableChecker(handler)
 	assert.Nil(t, err)
 	assert.True(t, handler == multiTransfer.payableHandler) // pointer testing
 }
@@ -319,12 +309,14 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 	t.Parallel()
 
 	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransfer.SetPayableHandler(
+	payableChecker, _ := NewPayableCheckFunc(
 		&mock.PayableHandlerStub{
 			IsPayableCalled: func(address []byte) (bool, error) {
 				return true, nil
 			},
-		})
+		}, 0, 0, &mock.EpochNotifierStub{})
+
+	_ = multiTransfer.SetPayableChecker(payableChecker)
 	senderAddress := bytes.Repeat([]byte{2}, 32)
 	destinationAddress := bytes.Repeat([]byte{0}, 32)
 	destinationAddress[25] = 1
@@ -403,10 +395,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 	}
 
 	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferSenderShard.SetPayableHandler(payableHandler)
+	_ = multiTransferSenderShard.SetPayableChecker(payableHandler)
 
 	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
+	_ = multiTransferDestinationShard.SetPayableChecker(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{1}, 32)
 	destinationAddress := bytes.Repeat([]byte{0}, 32)
@@ -498,10 +490,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationAddT
 	}
 
 	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferSenderShard.SetPayableHandler(payableHandler)
+	_ = multiTransferSenderShard.SetPayableChecker(payableHandler)
 
 	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
+	_ = multiTransferDestinationShard.SetPayableChecker(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{1}, 32)
 	destinationAddress := bytes.Repeat([]byte{0}, 32)
@@ -592,10 +584,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsOneTransfer(t *
 	}
 
 	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferSenderShard.SetPayableHandler(payableHandler)
+	_ = multiTransferSenderShard.SetPayableChecker(payableHandler)
 
 	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
+	_ = multiTransferDestinationShard.SetPayableChecker(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
@@ -682,10 +674,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 	}
 
 	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferSenderShard.SetPayableHandler(payableHandler)
+	_ = multiTransferSenderShard.SetPayableChecker(payableHandler)
 
 	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
+	_ = multiTransferDestinationShard.SetPayableChecker(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
@@ -772,17 +764,18 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHold
 func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *testing.T) {
 	t.Parallel()
 
-	payableHandler := &mock.PayableHandlerStub{
-		IsPayableCalled: func(address []byte) (bool, error) {
-			return true, nil
-		},
-	}
+	payableChecker, _ := NewPayableCheckFunc(
+		&mock.PayableHandlerStub{
+			IsPayableCalled: func(address []byte) (bool, error) {
+				return true, nil
+			},
+		}, 0, 0, &mock.EpochNotifierStub{})
 
 	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferSenderShard.SetPayableHandler(payableHandler)
+	_ = multiTransferSenderShard.SetPayableChecker(payableChecker)
 
 	multiTransferDestinationShard := createESDTNFTMultiTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
-	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
+	_ = multiTransferDestinationShard.SetPayableChecker(payableChecker)
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
@@ -849,12 +842,14 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 		RecipientAddr: destinationAddress,
 	}
 
-	payableHandler = &mock.PayableHandlerStub{
-		IsPayableCalled: func(address []byte) (bool, error) {
-			return false, nil
-		},
-	}
-	_ = multiTransferDestinationShard.SetPayableHandler(payableHandler)
+	payableChecker, _ = NewPayableCheckFunc(
+		&mock.PayableHandlerStub{
+			IsPayableCalled: func(address []byte) (bool, error) {
+				return false, nil
+			},
+		}, 0, 0, &mock.EpochNotifierStub{})
+
+	_ = multiTransferDestinationShard.SetPayableChecker(payableChecker)
 	vmOutput, err = multiTransferDestinationShard.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Error(t, err)
 	require.Equal(t, "sending value to non payable contract", err.Error())
@@ -871,7 +866,7 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 
 	globalSettings := &mock.GlobalSettingsHandlerStub{}
 	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, globalSettings)
-	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
+	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
@@ -938,7 +933,7 @@ func TestESDTNFTMultiTransfer_NotEnoughGas(t *testing.T) {
 	t.Parallel()
 
 	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
-	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
+	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
@@ -978,7 +973,7 @@ func TestESDTNFTMultiTransfer_WithEgldValue(t *testing.T) {
 	t.Parallel()
 
 	transferFunc := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
-	_ = transferFunc.SetPayableHandler(&mock.PayableHandlerStub{})
+	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	senderAddress := bytes.Repeat([]byte{2}, 32)
 	destinationAddress := bytes.Repeat([]byte{1}, 32)
@@ -1048,32 +1043,26 @@ func TestESDTNFTMultiTransfer_EpochChange(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		1,
 		2,
-		3,
 		createNewESDTDataStorageHandler(),
 	)
 
 	functionHandler.EpochConfirmed(0, 0)
 	assert.False(t, transferFunc.flagTransferToMeta.IsSet())
 	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
 
 	functionHandler.EpochConfirmed(1, 0)
 	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
 	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
 
 	functionHandler.EpochConfirmed(2, 0)
 	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
 	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-	assert.False(t, transferFunc.flagCheckFunctionArgument.IsSet())
 
 	functionHandler.EpochConfirmed(3, 0)
 	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
 	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-	assert.True(t, transferFunc.flagCheckFunctionArgument.IsSet())
 
 	functionHandler.EpochConfirmed(4, 0)
 	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
 	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-	assert.True(t, transferFunc.flagCheckFunctionArgument.IsSet())
 }

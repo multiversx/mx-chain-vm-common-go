@@ -62,7 +62,7 @@ var ErrUserNameChangeIsDisabled = errors.New("user name change is disabled")
 // ErrBuiltInFunctionCalledWithValue signals that builtin function was called with value that is not allowed
 var ErrBuiltInFunctionCalledWithValue = errors.New("built in function called with tx value is not allowed")
 
-// ErrAccountNotPayable will be sent when trying to send money to a non-payable account
+// ErrAccountNotPayable will be sent when trying to send tokens to a non-payableCheck account
 var ErrAccountNotPayable = errors.New("sending value to non payable contract")
 
 // ErrNilUserAccount signals that nil user account was provided
