@@ -348,6 +348,7 @@ type EnableEpochsHandler interface {
 	IsDisableExecByCallerFlagEnabled() bool
 	IsRefactorContextFlagEnabled() bool
 	IsCheckFunctionArgumentFlagEnabled() bool
+	IsCheckExecuteOnReadOnlyFlagEnabled() bool
 
 	IsInterfaceNil() bool
 }
