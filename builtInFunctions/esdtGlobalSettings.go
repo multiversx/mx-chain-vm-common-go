@@ -5,6 +5,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
+	"github.com/ElrondNetwork/elrond-go-core/marshal"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
@@ -14,11 +15,13 @@ type esdtGlobalSettings struct {
 	set                 bool
 	accounts            vmcommon.AccountsAdapter
 	enableEpochsHandler vmcommon.EnableEpochsHandler
+	marshaller          marshal.Marshalizer
 }
 
 // NewESDTGlobalSettingsFunc returns the esdt pause/un-pause built-in function component
 func NewESDTGlobalSettingsFunc(
 	accounts vmcommon.AccountsAdapter,
+	marshaller marshal.Marshalizer,
 	set bool,
 	function string,
 	activationFlagName string,
@@ -26,6 +29,9 @@ func NewESDTGlobalSettingsFunc(
 ) (*esdtGlobalSettings, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
+	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(enableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
@@ -35,9 +41,10 @@ func NewESDTGlobalSettingsFunc(
 	}
 
 	e := &esdtGlobalSettings{
-		keyPrefix: []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		set:       set,
-		accounts:  accounts,
+		keyPrefix:  []byte(baseESDTKeyPrefix),
+		set:        set,
+		accounts:   accounts,
+		marshaller: marshaller,
 	}
 
 	e.baseEnabled = &baseEnabled{
@@ -169,6 +176,32 @@ func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
 	}
 
 	return esdtMetadata.BurnRoleForAll
+}
+
+// IsSenderOrDestinationWithTransferRole returns true if we have transfer role on the system account
+func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool {
+	if !e.baseEnabled.IsActive() {
+		return false
+	}
+
+	systemAcc, err := e.getSystemAccount()
+	if err != nil {
+		return false
+	}
+
+	esdtTokenTransferRoleKey := append(transferAddressesKeyPrefix, tokenID...)
+	addresses, _, err := getESDTRolesForAcnt(e.marshaller, systemAcc, esdtTokenTransferRoleKey)
+	if err != nil {
+		return false
+	}
+
+	for _, address := range addresses.Roles {
+		if bytes.Equal(address, sender) || bytes.Equal(address, destination) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {

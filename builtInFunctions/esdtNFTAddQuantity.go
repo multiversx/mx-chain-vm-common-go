@@ -45,7 +45,7 @@ func NewESDTNFTAddQuantityFunc(
 	}
 
 	e := &esdtNFTAddQuantity{
-		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:             []byte(baseESDTKeyPrefix),
 		globalSettingsHandler: globalSettingsHandler,
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,

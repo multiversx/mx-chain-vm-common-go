@@ -43,7 +43,7 @@ func NewESDTNFTAddUriFunc(
 	}
 
 	e := &esdtNFTAddUri{
-		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:             []byte(baseESDTKeyPrefix),
 		esdtStorageHandler:    esdtStorageHandler,
 		funcGasCost:           funcGasCost,
 		mutExecution:          sync.RWMutex{},

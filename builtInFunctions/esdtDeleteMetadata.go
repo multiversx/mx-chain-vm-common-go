@@ -18,7 +18,7 @@ type esdtDeleteMetaData struct {
 	delete         bool
 	accounts       vmcommon.AccountsAdapter
 	keyPrefix      []byte
-	marshalizer    vmcommon.Marshalizer
+	marshaller     vmcommon.Marshalizer
 	funcGasCost    uint64
 }
 
@@ -47,8 +47,8 @@ func NewESDTDeleteMetadataFunc(
 	}
 
 	e := &esdtDeleteMetaData{
-		keyPrefix:      []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:    args.Marshalizer,
+		keyPrefix:      []byte(baseESDTKeyPrefix),
+		marshaller:     args.Marshalizer,
 		funcGasCost:    args.FuncGasCost,
 		accounts:       args.Accounts,
 		allowedAddress: args.AllowedAddress,
@@ -218,7 +218,7 @@ func (e *esdtDeleteMetaData) addMetadata(args [][]byte) error {
 		esdtTokenKey := append(e.keyPrefix, tokenID...)
 		esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 		metaData := &esdt.MetaData{}
-		err = e.marshalizer.Unmarshal(metaData, args[i+2])
+		err = e.marshaller.Unmarshal(metaData, args[i+2])
 		if err != nil {
 			return err
 		}
@@ -267,7 +267,7 @@ func (e *esdtDeleteMetaData) getESDTDigitalTokenDataFromSystemAccount(
 	}
 
 	esdtData := &esdt.ESDigitalToken{}
-	err = e.marshalizer.Unmarshal(esdtData, marshaledData)
+	err = e.marshaller.Unmarshal(esdtData, marshaledData)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (e *esdtDeleteMetaData) marshalAndSaveData(
 	esdtData *esdt.ESDigitalToken,
 	esdtNFTTokenKey []byte,
 ) error {
-	marshaledData, err := e.marshalizer.Marshal(esdtData)
+	marshaledData, err := e.marshaller.Marshal(esdtData)
 	if err != nil {
 		return err
 	}

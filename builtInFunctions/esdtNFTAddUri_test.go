@@ -17,7 +17,7 @@ import (
 func TestNewESDTNFTAddUriFunc(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil marshalizer should error", func(t *testing.T) {
+	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
 		e, err := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, nil, nil, nil, nil)
@@ -271,14 +271,14 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.T) {
 func TestESDTNFTAddUri_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
 		IsESDTMultiTransferFlagEnabledField: true,
 	})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := e.ProcessBuiltinFunction(
 		userAcc,
@@ -301,7 +301,7 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
 		IsPausedCalled: func(_ []byte) bool {
 			return true
@@ -319,7 +319,7 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused
 		},
 		Value: big.NewInt(10),
 	}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 
 	output, err := e.ProcessBuiltinFunction(
@@ -344,14 +344,14 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	t.Parallel()
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 
 	nonce := big.NewInt(33)
 	initialValue := big.NewInt(5)
 	URIToAdd := []byte("NewURI")
 
 	esdtDataStorage := createNewESDTDataStorageHandler()
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleNFTAddURI, string(action))
@@ -370,7 +370,7 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		},
 		Value: initialValue,
 	}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 

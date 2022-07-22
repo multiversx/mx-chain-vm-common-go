@@ -122,7 +122,7 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationNoDataInSystemAcc(t *testin
 	}
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 	nonce := uint64(10)
 	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
 	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
@@ -145,7 +145,7 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetDataFromSystemAcc(t *tes
 	}
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 	nonce := uint64(10)
 	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
 	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
@@ -180,7 +180,7 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationMarshalERR(t *testing.T) {
 	}
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 	nonce := uint64(10)
 	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
 	esdtDataBytes = append(esdtDataBytes, esdtDataBytes...)
@@ -206,7 +206,7 @@ func TestEsdtDataStorage_MarshalErrorOnSystemACC(t *testing.T) {
 	}
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 	nonce := uint64(10)
 	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
 	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
@@ -250,7 +250,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 	}
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 	nonce := uint64(10)
 	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
 	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
@@ -293,7 +293,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
 	}
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
 	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
@@ -356,7 +356,7 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	}
 	esdtDataOnSystemAcc := &esdt.ESDigitalToken{TokenMetaData: metaData}
 	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(tickerID)
+	key := baseESDTKeyPrefix + string(tickerID)
 	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
@@ -457,7 +457,7 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 	err = e.SaveNFTMetaDataToSystemAccount(scr)
 	assert.Nil(t, err)
 
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(tickerID)
+	key := baseESDTKeyPrefix + string(tickerID)
 	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
 	esdtGetData, _, _ := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
 
@@ -517,7 +517,7 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *test
 	err = e.SaveNFTMetaDataToSystemAccount(scr)
 	assert.Nil(t, err)
 
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + string(tickerID)
+	key := baseESDTKeyPrefix + string(tickerID)
 	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
 	esdtGetData, _, _ := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
 
@@ -558,19 +558,19 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Nil(t, err)
 
-	tokenData, _ := getESDTDataFromKey(userAcc, esdtTokenKey, e.marshalizer)
+	tokenData, _ := getESDTDataFromKey(userAcc, esdtTokenKey, e.marshaller)
 
 	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
 	esdtUserMetadata.Frozen = false
 	tokenData.Properties = esdtUserMetadata.ToBytes()
-	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshalizer)
+	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshaller)
 
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Nil(t, err)
 
 	esdtUserMetadata.Frozen = true
 	tokenData.Properties = esdtUserMetadata.ToBytes()
-	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshalizer)
+	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshaller)
 
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
@@ -589,7 +589,7 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 
 	systemAcc, _ := e.getSystemAccount()
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
-	marshalledData, _ := e.marshalizer.Marshal(esdtData)
+	marshalledData, _ := e.marshaller.Marshal(esdtData)
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
@@ -598,7 +598,7 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 	assert.Nil(t, err)
 
 	esdtData = &esdt.ESDigitalToken{Value: big.NewInt(10), Reserved: []byte{1}}
-	marshalledData, _ = e.marshalizer.Marshal(esdtData)
+	marshalledData, _ = e.marshaller.Marshal(esdtData)
 
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
 	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))

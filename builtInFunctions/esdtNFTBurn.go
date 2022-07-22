@@ -37,7 +37,7 @@ func NewESDTNFTBurnFunc(
 	}
 
 	e := &esdtNFTBurn{
-		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		keyPrefix:             []byte(baseESDTKeyPrefix),
 		esdtStorageHandler:    esdtStorageHandler,
 		globalSettingsHandler: globalSettingsHandler,
 		rolesHandler:          rolesHandler,
