@@ -265,12 +265,6 @@ type BuiltInFunctionContainer interface {
 	IsInterfaceNil() bool
 }
 
-// EpochSubscriberHandler defines the behavior of a component that can be notified if a new epoch was confirmed
-type EpochSubscriberHandler interface {
-	EpochConfirmed(epoch uint32, timestamp uint64)
-	IsInterfaceNil() bool
-}
-
 // ESDTTransferParser can parse single and multi ESDT / NFT transfers
 type ESDTTransferParser interface {
 	ParseESDTTransfers(sndAddr []byte, rcvAddr []byte, function string, args [][]byte) (*ParsedESDTTransfers, error)
@@ -347,6 +341,7 @@ type EnableEpochsHandler interface {
 	IsRepairCallbackFlagEnabled() bool
 	IsDisableExecByCallerFlagEnabled() bool
 	IsRefactorContextFlagEnabled() bool
+	IsCheckFunctionArgumentFlagEnabled() bool
 
 	IsInterfaceNil() bool
 }

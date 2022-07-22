@@ -413,7 +413,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, b.maxNumOfAddressesForTransferRole, false)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.enableEpochsHandler, b.maxNumOfAddressesForTransferRole, false)
 	if err != nil {
 		return err
 	}
@@ -422,7 +422,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, b.maxNumOfAddressesForTransferRole, true)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.enableEpochsHandler, b.maxNumOfAddressesForTransferRole, true)
 	if err != nil {
 		return err
 	}
@@ -469,9 +469,7 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 func (b *builtInFuncCreator) SetPayableHandler(payableHandler vmcommon.PayableHandler) error {
 	payableChecker, err := NewPayableCheckFunc(
 		payableHandler,
-		b.checkFunctionArgumentEnableEpoch,
-		b.fixAsnycCallbackCheckEnableEpoch,
-		b.epochNotifier,
+		b.enableEpochsHandler,
 	)
 	if err != nil {
 		return err

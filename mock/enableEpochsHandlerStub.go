@@ -22,6 +22,7 @@ type EnableEpochsHandlerStub struct {
 	IsRepairCallbackFlagEnabledField                     bool
 	IsDisableExecByCallerFlagEnabledField                bool
 	IsRefactorContextFlagEnabledField                    bool
+	IsCheckFunctionArgumentFlagEnabledField              bool
 }
 
 // IsESDTMultiTransferFlagEnabled -
@@ -122,6 +123,11 @@ func (stub *EnableEpochsHandlerStub) IsDisableExecByCallerFlagEnabled() bool {
 // IsRefactorContextFlagEnabled -
 func (stub *EnableEpochsHandlerStub) IsRefactorContextFlagEnabled() bool {
 	return stub.IsRefactorContextFlagEnabledField
+}
+
+// IsCheckFunctionArgumentFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsCheckFunctionArgumentFlagEnabled() bool {
+	return stub.IsCheckFunctionArgumentFlagEnabledField
 }
 
 // IsInterfaceNil -

@@ -88,7 +88,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, marshaller, globalSettingsHandler, 1000, &mock.EnableEpochsHandlerStub{})
+	burnFunc, _ := NewESDTBurnFunc(10, marshaller, globalSettingsHandler, &mock.EnableEpochsHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{

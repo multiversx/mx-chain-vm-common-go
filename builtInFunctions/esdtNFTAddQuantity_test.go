@@ -24,7 +24,7 @@ func TestNewESDTNFTAddQuantityFunc(t *testing.T) {
 		require.True(t, check.IfNil(eqf))
 		require.Equal(t, ErrNilESDTNFTStorageHandler, err)
 	})
-	t.Run("nil pause handler should error", func(t *testing.T) {
+	t.Run("nil global settings handler should error", func(t *testing.T) {
 		t.Parallel()
 
 		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), nil, nil, nil)

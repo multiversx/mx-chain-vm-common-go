@@ -314,7 +314,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 			IsPayableCalled: func(address []byte) (bool, error) {
 				return true, nil
 			},
-		}, 0, 0, &mock.EpochNotifierStub{})
+		}, &mock.EnableEpochsHandlerStub{
+			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField:         true,
+		})
 
 	_ = multiTransfer.SetPayableChecker(payableChecker)
 	senderAddress := bytes.Repeat([]byte{2}, 32)
@@ -769,7 +772,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 			IsPayableCalled: func(address []byte) (bool, error) {
 				return true, nil
 			},
-		}, 0, 0, &mock.EpochNotifierStub{})
+		}, &mock.EnableEpochsHandlerStub{
+			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField:         true,
+		})
 
 	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
 	_ = multiTransferSenderShard.SetPayableChecker(payableChecker)
@@ -847,7 +853,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 			IsPayableCalled: func(address []byte) (bool, error) {
 				return false, nil
 			},
-		}, 0, 0, &mock.EpochNotifierStub{})
+		}, &mock.EnableEpochsHandlerStub{
+			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField:         true,
+		})
 
 	_ = multiTransferDestinationShard.SetPayableChecker(payableChecker)
 	vmOutput, err = multiTransferDestinationShard.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
@@ -1020,49 +1029,4 @@ func TestComputeInsufficientQuantityESDTError(t *testing.T) {
 	resErr = computeInsufficientQuantityESDTError([]byte("my-token-2"), 5)
 	require.NotNil(t, resErr)
 	require.Equal(t, errors.New("insufficient quantity for token: my-token-2 nonce 5").Error(), resErr.Error())
-}
-
-func TestESDTNFTMultiTransfer_EpochChange(t *testing.T) {
-	t.Parallel()
-
-	var functionHandler vmcommon.EpochSubscriberHandler
-	notifier := &mock.EpochNotifierStub{
-		RegisterNotifyHandlerCalled: func(handler vmcommon.EpochSubscriberHandler) {
-			functionHandler = handler
-		},
-	}
-	transferFunc, _ := NewESDTNFTMultiTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		0,
-		notifier,
-		&mock.ESDTRoleHandlerStub{},
-		1,
-		2,
-		createNewESDTDataStorageHandler(),
-	)
-
-	functionHandler.EpochConfirmed(0, 0)
-	assert.False(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(1, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(2, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(3, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(4, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
 }

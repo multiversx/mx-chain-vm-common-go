@@ -24,7 +24,7 @@ func TestNewESDTNFTUpdateAttributesFunc(t *testing.T) {
 		require.True(t, check.IfNil(e))
 		require.Equal(t, ErrNilESDTNFTStorageHandler, err)
 	})
-	t.Run("nil pause handler should error", func(t *testing.T) {
+	t.Run("nil global settings handler should error", func(t *testing.T) {
 		t.Parallel()
 
 		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), nil, nil, nil)

@@ -469,7 +469,10 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 			IsPayableCalled: func(address []byte) (bool, error) {
 				return true, nil
 			},
-		}, 0, 0, &mock.EpochNotifierStub{})
+		}, &mock.EnableEpochsHandlerStub{
+			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField:         true,
+		})
 
 	_ = nftTransfer.SetPayableChecker(payableChecker)
 	senderAddress := bytes.Repeat([]byte{2}, 32)

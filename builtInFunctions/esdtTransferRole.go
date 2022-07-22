@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-go-core/marshal"
@@ -28,16 +27,15 @@ type esdtTransferAddress struct {
 func NewESDTTransferRoleAddressFunc(
 	accounts vmcommon.AccountsAdapter,
 	marshaller marshal.Marshalizer,
-	activationEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	maxNumAddresses uint32,
 	set bool,
 ) (*esdtTransferAddress, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -54,15 +52,13 @@ func NewESDTTransferRoleAddressFunc(
 	}
 
 	e.baseEnabled = &baseEnabled{
-		function:        vmcommon.BuiltInFunctionESDTTransferRoleAddAddress,
-		activationEpoch: activationEpoch,
-		flagActivated:   atomic.Flag{},
+		function:            vmcommon.BuiltInFunctionESDTTransferRoleAddAddress,
+		activationFlagName:  esdtMetadataContinuousCleanupFlag,
+		enableEpochsHandler: enableEpochsHandler,
 	}
 	if !set {
 		e.function = vmcommon.BuiltInFunctionESDTTransferRoleDeleteAddress
 	}
-
-	epochNotifier.RegisterNotifyHandler(e)
 
 	return e, nil
 }
