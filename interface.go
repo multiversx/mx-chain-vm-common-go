@@ -359,7 +359,6 @@ type EnableEpochsHandler interface {
 	FixOOGReturnCodeEnableEpoch() uint32
 	RemoveNonUpdatedStorageEnableEpoch() uint32
 	CreateNFTThroughExecByCallerEnableEpoch() uint32
-	UseDifferentGasCostForReadingCachedStorageEpoch() uint32
 	FixFailExecutionOnErrorEnableEpoch() uint32
 	ManagedCryptoAPIEnableEpoch() uint32
 	DisableExecByCallerEnableEpoch() uint32

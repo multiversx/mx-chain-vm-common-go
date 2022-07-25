@@ -167,11 +167,6 @@ func (stub *EnableEpochsHandlerStub) CreateNFTThroughExecByCallerEnableEpoch() u
 	return stub.CreateNFTThroughExecByCallerEnableEpochField
 }
 
-// UseDifferentGasCostForReadingCachedStorageEpoch -
-func (stub *EnableEpochsHandlerStub) UseDifferentGasCostForReadingCachedStorageEpoch() uint32 {
-	return stub.UseDifferentGasCostForReadingCachedStorageEpochField
-}
-
 // FixFailExecutionOnErrorEnableEpoch -
 func (stub *EnableEpochsHandlerStub) FixFailExecutionOnErrorEnableEpoch() uint32 {
 	return stub.FixFailExecutionOnErrorEnableEpochField
