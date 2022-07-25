@@ -177,11 +177,6 @@ func (stub *EnableEpochsHandlerStub) FixFailExecutionOnErrorEnableEpoch() uint32
 	return stub.FixFailExecutionOnErrorEnableEpochField
 }
 
-// TimeOutForSCExecutionInMilliseconds -
-func (stub *EnableEpochsHandlerStub) TimeOutForSCExecutionInMilliseconds() uint32 {
-	return stub.TimeOutForSCExecutionInMillisecondsField
-}
-
 // ManagedCryptoAPIEnableEpoch -
 func (stub *EnableEpochsHandlerStub) ManagedCryptoAPIEnableEpoch() uint32 {
 	return stub.ManagedCryptoAPIEnableEpochField

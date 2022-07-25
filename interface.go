@@ -361,7 +361,6 @@ type EnableEpochsHandler interface {
 	CreateNFTThroughExecByCallerEnableEpoch() uint32
 	UseDifferentGasCostForReadingCachedStorageEpoch() uint32
 	FixFailExecutionOnErrorEnableEpoch() uint32
-	TimeOutForSCExecutionInMilliseconds() uint32
 	ManagedCryptoAPIEnableEpoch() uint32
 	DisableExecByCallerEnableEpoch() uint32
 	RefactorContextEnableEpoch() uint32
