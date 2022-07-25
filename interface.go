@@ -364,6 +364,7 @@ type EnableEpochsHandler interface {
 	DisableExecByCallerEnableEpoch() uint32
 	RefactorContextEnableEpoch() uint32
 	CheckExecuteReadOnlyEnableEpoch() uint32
+	StorageAPICostOptimizationEnableEpoch() uint32
 
 	IsInterfaceNil() bool
 }
