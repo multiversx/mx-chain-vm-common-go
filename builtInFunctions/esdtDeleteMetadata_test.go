@@ -42,7 +42,7 @@ func TestNewESDTDeleteMetadataFunc(t *testing.T) {
 		_, err := NewESDTDeleteMetadataFunc(args)
 		assert.Equal(t, err, ErrNilAccountsAdapter)
 	})
-	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+	t.Run("nil active handler should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgsForNewESDTDelete()

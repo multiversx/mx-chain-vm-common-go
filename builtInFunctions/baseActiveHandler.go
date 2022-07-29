@@ -8,7 +8,7 @@ func (b baseAlwaysActiveHandler) IsActive() bool {
 	return trueHandler()
 }
 
-// IsInterfaceNil returns true if there is no value under the interface
+// IsInterfaceNil always returns false
 func (b baseAlwaysActiveHandler) IsInterfaceNil() bool {
 	return false
 }
