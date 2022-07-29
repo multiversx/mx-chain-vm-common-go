@@ -335,6 +335,7 @@ type AcceptPayableChecker interface {
 type EnableEpochsHandler interface {
 	IsGlobalMintBurnFlagEnabled() bool
 	IsESDTTransferRoleFlagEnabled() bool
+	IsBuiltInFunctionsFlagEnabled() bool
 	IsCheckCorrectTokenIDForTransferRoleFlagEnabled() bool
 	IsMultiESDTTransferFixOnCallBackFlagEnabled() bool
 	IsFixOOGReturnCodeFlagEnabled() bool

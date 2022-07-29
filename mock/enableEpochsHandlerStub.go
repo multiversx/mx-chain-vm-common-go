@@ -4,6 +4,7 @@ package mock
 type EnableEpochsHandlerStub struct {
 	IsGlobalMintBurnFlagEnabledField                     bool
 	IsESDTTransferRoleFlagEnabledField                   bool
+	IsBuiltInFunctionsFlagEnabledField                   bool
 	IsCheckCorrectTokenIDForTransferRoleFlagEnabledField bool
 	IsMultiESDTTransferFixOnCallBackFlagEnabledField     bool
 	IsFixOOGReturnCodeFlagEnabledField                   bool
@@ -49,6 +50,11 @@ func (stub *EnableEpochsHandlerStub) IsGlobalMintBurnFlagEnabled() bool {
 // IsESDTTransferRoleFlagEnabled -
 func (stub *EnableEpochsHandlerStub) IsESDTTransferRoleFlagEnabled() bool {
 	return stub.IsESDTTransferRoleFlagEnabledField
+}
+
+// IsBuiltInFunctionsFlagEnabled -
+func (stub *EnableEpochsHandlerStub) IsBuiltInFunctionsFlagEnabled() bool {
+	return stub.IsBuiltInFunctionsFlagEnabledField
 }
 
 // IsCheckCorrectTokenIDForTransferRoleFlagEnabled -
