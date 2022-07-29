@@ -10,12 +10,12 @@ import (
 )
 
 type esdtGlobalSettings struct {
-	*baseEnabled
-	keyPrefix           []byte
-	set                 bool
-	accounts            vmcommon.AccountsAdapter
-	enableEpochsHandler vmcommon.EnableEpochsHandler
-	marshaller          marshal.Marshalizer
+	baseActiveHandler
+	keyPrefix  []byte
+	set        bool
+	accounts   vmcommon.AccountsAdapter
+	marshaller marshal.Marshalizer
+	function   string
 }
 
 // NewESDTGlobalSettingsFunc returns the esdt pause/un-pause built-in function component
@@ -24,8 +24,7 @@ func NewESDTGlobalSettingsFunc(
 	marshaller marshal.Marshalizer,
 	set bool,
 	function string,
-	activationFlagName string,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	activeHandler func() bool,
 ) (*esdtGlobalSettings, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -33,8 +32,8 @@ func NewESDTGlobalSettingsFunc(
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(enableEpochsHandler) {
-		return nil, ErrNilEnableEpochsHandler
+	if activeHandler == nil {
+		return nil, ErrNilActiveHandler
 	}
 	if !isCorrectFunction(function) {
 		return nil, ErrInvalidArguments
@@ -45,13 +44,10 @@ func NewESDTGlobalSettingsFunc(
 		set:        set,
 		accounts:   accounts,
 		marshaller: marshaller,
+		function:   function,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:            function,
-		activationFlagName:  activationFlagName,
-		enableEpochsHandler: enableEpochsHandler,
-	}
+	e.baseActiveHandler.activeHandler = activeHandler
 
 	return e, nil
 }
@@ -180,7 +176,7 @@ func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
 
 // IsSenderOrDestinationWithTransferRole returns true if we have transfer role on the system account
 func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool {
-	if !e.baseEnabled.IsActive() {
+	if !e.activeHandler() {
 		return false
 	}
 

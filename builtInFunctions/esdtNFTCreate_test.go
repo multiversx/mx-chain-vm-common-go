@@ -26,7 +26,7 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 		createNewESDTDataStorageHandler(),
 		&mock.AccountsStub{},
 		&mock.EnableEpochsHandlerStub{
-			IsOptimizeNFTStoreFlagEnabledField: true,
+			IsValueLengthCheckFlagEnabledField: true,
 		},
 	)
 
@@ -36,7 +36,7 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil marshalizer should error", func(t *testing.T) {
+	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
 		nftCreate, err := NewESDTNFTCreateFunc(
@@ -146,7 +146,7 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 		createNewESDTDataStorageHandler(),
 		&mock.AccountsStub{},
 		&mock.EnableEpochsHandlerStub{
-			IsOptimizeNFTStoreFlagEnabledField: true,
+			IsValueLengthCheckFlagEnabledField: true,
 		},
 	)
 	assert.False(t, check.IfNil(nftCreate))
@@ -244,7 +244,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		&mock.EnableEpochsHandlerStub{
-			IsOptimizeNFTStoreFlagEnabledField: true,
+			IsValueLengthCheckFlagEnabledField: true,
 		},
 	)
 	sender := mock.NewAccountWrapMock([]byte("address"))
@@ -286,7 +286,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		&mock.EnableEpochsHandlerStub{
-			IsOptimizeNFTStoreFlagEnabledField: true,
+			IsValueLengthCheckFlagEnabledField: true,
 		},
 	)
 	address := bytes.Repeat([]byte{1}, 32)
@@ -354,7 +354,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 
 	accounts := createAccountsAdapterWithMap()
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsOptimizeNFTStoreFlagEnabledField: true,
+		IsValueLengthCheckFlagEnabledField:      true,
+		IsSaveToSystemAccountFlagEnabledField:   true,
+		IsCheckFrozenCollectionFlagEnabledField: true,
 	}
 	esdtDataStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
 	nftCreate, _ := NewESDTNFTCreateFunc(
@@ -365,9 +367,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		esdtDataStorage,
 		esdtDataStorage.accounts,
-		&mock.EnableEpochsHandlerStub{
-			IsOptimizeNFTStoreFlagEnabledField: true,
-		},
+		enableEpochsHandler,
 	)
 	address := bytes.Repeat([]byte{1}, 32)
 	userAddress := bytes.Repeat([]byte{2}, 32)

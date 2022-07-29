@@ -11,7 +11,7 @@ import (
 )
 
 type esdtBurn struct {
-	*baseDisabled
+	baseActiveHandler
 	funcGasCost           uint64
 	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
@@ -24,7 +24,7 @@ func NewESDTBurnFunc(
 	funcGasCost uint64,
 	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	activeHandler func() bool,
 ) (*esdtBurn, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
@@ -32,8 +32,8 @@ func NewESDTBurnFunc(
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
-		return nil, ErrNilEnableEpochsHandler
+	if activeHandler == nil {
+		return nil, ErrNilActiveHandler
 	}
 
 	e := &esdtBurn{
@@ -43,10 +43,7 @@ func NewESDTBurnFunc(
 		globalSettingsHandler: globalSettingsHandler,
 	}
 
-	e.baseDisabled = &baseDisabled{
-		function:            core.BuiltInFunctionESDTBurn,
-		enableEpochsHandler: enableEpochsHandler,
-	}
+	e.baseActiveHandler.activeHandler = activeHandler
 
 	return e, nil
 }

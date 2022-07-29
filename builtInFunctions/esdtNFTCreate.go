@@ -16,7 +16,7 @@ import (
 var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
 
 type esdtNFTCreate struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	keyPrefix             []byte
 	accounts              vmcommon.AccountsAdapter
 	marshaller            vmcommon.Marshalizer
@@ -172,7 +172,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 			return nil, err
 		}
 	}
-	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
+	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsValueLengthCheckFlagEnabled()
 	if isValueLengthCheckFlagEnabled && len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}

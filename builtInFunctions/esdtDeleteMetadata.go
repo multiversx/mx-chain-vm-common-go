@@ -13,23 +13,24 @@ import (
 const numArgsPerAdd = 3
 
 type esdtDeleteMetaData struct {
-	*baseEnabled
+	baseActiveHandler
 	allowedAddress []byte
 	delete         bool
 	accounts       vmcommon.AccountsAdapter
 	keyPrefix      []byte
 	marshaller     vmcommon.Marshalizer
 	funcGasCost    uint64
+	function       string
 }
 
 // ArgsNewESDTDeleteMetadata defines the argument list for new esdt delete metadata built in function
 type ArgsNewESDTDeleteMetadata struct {
-	FuncGasCost         uint64
-	Marshalizer         vmcommon.Marshalizer
-	Accounts            vmcommon.AccountsAdapter
-	EnableEpochsHandler vmcommon.EnableEpochsHandler
-	AllowedAddress      []byte
-	Delete              bool
+	FuncGasCost    uint64
+	Marshalizer    vmcommon.Marshalizer
+	Accounts       vmcommon.AccountsAdapter
+	AllowedAddress []byte
+	Delete         bool
+	ActiveHandler  func() bool
 }
 
 // NewESDTDeleteMetadataFunc returns the esdt metadata deletion built-in function component
@@ -42,8 +43,8 @@ func NewESDTDeleteMetadataFunc(
 	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
-	if check.IfNil(args.EnableEpochsHandler) {
-		return nil, ErrNilEnableEpochsHandler
+	if args.ActiveHandler == nil {
+		return nil, ErrNilActiveHandler
 	}
 
 	e := &esdtDeleteMetaData{
@@ -53,13 +54,10 @@ func NewESDTDeleteMetadataFunc(
 		accounts:       args.Accounts,
 		allowedAddress: args.AllowedAddress,
 		delete:         args.Delete,
+		function:       core.BuiltInFunctionMultiESDTNFTTransfer,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:            core.BuiltInFunctionMultiESDTNFTTransfer,
-		activationFlagName:  esdtMetadataContinuousCleanupFlag,
-		enableEpochsHandler: args.EnableEpochsHandler,
-	}
+	e.baseActiveHandler.activeHandler = args.ActiveHandler
 
 	return e, nil
 }

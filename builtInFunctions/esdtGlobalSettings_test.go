@@ -17,28 +17,28 @@ func TestNewESDTGlobalSettingsFunc(t *testing.T) {
 	t.Run("nil accounts should error", func(t *testing.T) {
 		t.Parallel()
 
-		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(nil, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(nil, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, trueHandler)
 		assert.Equal(t, ErrNilAccountsAdapter, err)
 		assert.True(t, check.IfNil(globalSettingsFunc))
 	})
 	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
-		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, nil, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, nil, true, core.BuiltInFunctionESDTPause, trueHandler)
 		assert.Equal(t, ErrNilMarshalizer, err)
 		assert.True(t, check.IfNil(globalSettingsFunc))
 	})
-	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+	t.Run("nil active handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, defaultFlag, nil)
-		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, nil)
+		assert.Equal(t, ErrNilActiveHandler, err)
 		assert.True(t, check.IfNil(globalSettingsFunc))
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(globalSettingsFunc))
 	})
@@ -52,7 +52,7 @@ func TestESDTGlobalSettingsPause_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler)
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -100,7 +100,7 @@ func TestESDTGlobalSettingsPause_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, false, core.BuiltInFunctionESDTUnPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+	}, &mock.MarshalizerMock{}, false, core.BuiltInFunctionESDTUnPause, falseHandler)
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -117,9 +117,7 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTSetLimitedTransfer, esdtTransferRoleFlag, &mock.EnableEpochsHandlerStub{
-		IsESDTTransferRoleFlagEnabledField: true,
-	})
+	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTSetLimitedTransfer, trueHandler)
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -167,7 +165,7 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler)
 
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -178,9 +176,7 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, esdtTransferRoleFlag, &mock.EnableEpochsHandlerStub{
-		IsESDTTransferRoleFlagEnabledField: true,
-	})
+	}, &mock.MarshalizerMock{}, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, trueHandler)
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -196,7 +192,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, esdtMetadataContinuousCleanupFlag, &mock.EnableEpochsHandlerStub{})
+	}, &mock.MarshalizerMock{}, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, falseHandler)
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -245,7 +241,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, defaultFlag, &mock.EnableEpochsHandlerStub{})
+	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler)
 
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -257,7 +253,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, esdtMetadataContinuousCleanupFlag, &mock.EnableEpochsHandlerStub{})
+	}, &mock.MarshalizerMock{}, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, falseHandler)
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)

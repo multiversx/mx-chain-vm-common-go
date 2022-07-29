@@ -18,6 +18,12 @@ import (
 )
 
 func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsESDTNFTImprovementV1FlagEnabledField:               true,
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	}
+
 	multiTransfer, _ := NewESDTNFTMultiTransferFunc(
 		0,
 		&mock.MarshalizerMock{},
@@ -25,11 +31,7 @@ func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 		&mock.AccountsStub{},
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
-		&mock.EnableEpochsHandlerStub{
-			IsESDTMultiTransferFlagEnabledField:                  true,
-			IsBuiltInFunctionOnMetaFlagEnabledField:              false,
-			IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
-		},
+		enableEpochsHandler,
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
 	)
@@ -73,8 +75,8 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 	accounts := createAccountsAdapterWithMap()
 
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsESDTMultiTransferFlagEnabledField:                  true,
-		IsBuiltInFunctionOnMetaFlagEnabledField:              false,
+		IsESDTNFTImprovementV1FlagEnabledField:               true,
+		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	}
 	multiTransfer, _ := NewESDTNFTMultiTransferFunc(
@@ -102,7 +104,7 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil marshalizer should error", func(t *testing.T) {
+	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
 		multiTransfer, err := NewESDTNFTMultiTransferFunc(
@@ -315,8 +317,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *tes
 				return true, nil
 			},
 		}, &mock.EnableEpochsHandlerStub{
-			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
-			IsCheckFunctionArgumentFlagEnabledField:         true,
+			IsFixAsyncCallbackCheckFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField: true,
 		})
 
 	_ = multiTransfer.SetPayableChecker(payableChecker)
@@ -773,8 +775,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 				return true, nil
 			},
 		}, &mock.EnableEpochsHandlerStub{
-			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
-			IsCheckFunctionArgumentFlagEnabledField:         true,
+			IsFixAsyncCallbackCheckFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField: true,
 		})
 
 	multiTransferSenderShard := createESDTNFTMultiTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
@@ -854,8 +856,8 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 				return false, nil
 			},
 		}, &mock.EnableEpochsHandlerStub{
-			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
-			IsCheckFunctionArgumentFlagEnabledField:         true,
+			IsFixAsyncCallbackCheckFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField: true,
 		})
 
 	_ = multiTransferDestinationShard.SetPayableChecker(payableChecker)

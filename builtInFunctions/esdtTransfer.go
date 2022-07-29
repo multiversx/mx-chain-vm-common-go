@@ -16,7 +16,7 @@ import (
 var zero = big.NewInt(0)
 
 type esdtTransfer struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	funcGasCost           uint64
 	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
@@ -91,7 +91,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !e.enableEpochsHandler.IsBuiltInFunctionOnMetaFlagEnabled()
+	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !e.enableEpochsHandler.IsTransferToMetaFlagEnabled()
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}

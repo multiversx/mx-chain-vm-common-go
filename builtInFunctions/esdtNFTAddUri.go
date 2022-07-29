@@ -10,7 +10,7 @@ import (
 )
 
 type esdtNFTAddUri struct {
-	*baseEnabled
+	baseActiveHandler
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
@@ -27,7 +27,7 @@ func NewESDTNFTAddUriFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	activeHandler func() bool,
 ) (*esdtNFTAddUri, error) {
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
@@ -38,8 +38,8 @@ func NewESDTNFTAddUriFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
-		return nil, ErrNilEnableEpochsHandler
+	if activeHandler == nil {
+		return nil, ErrNilActiveHandler
 	}
 
 	e := &esdtNFTAddUri{
@@ -52,11 +52,7 @@ func NewESDTNFTAddUriFunc(
 		rolesHandler:          rolesHandler,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:            core.BuiltInFunctionESDTNFTAddURI,
-		activationFlagName:  esdtMultiTransferFlag,
-		enableEpochsHandler: enableEpochsHandler,
-	}
+	e.baseActiveHandler.activeHandler = activeHandler
 
 	return e, nil
 }

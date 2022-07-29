@@ -13,7 +13,7 @@ import (
 const maxLenForAddNFTQuantity = 32
 
 type esdtNFTAddQuantity struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	keyPrefix             []byte
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
@@ -103,7 +103,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
-	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
+	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsValueLengthCheckFlagEnabled()
 	if isValueLengthCheckFlagEnabled && len(vmInput.Arguments[2]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for add nft quantity is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}

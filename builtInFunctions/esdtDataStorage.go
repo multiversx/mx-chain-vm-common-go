@@ -103,7 +103,7 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 		return nil, false, err
 	}
 
-	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
+	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled()
 	if !isSaveToSystemAccountFlagEnabled || nonce == 0 {
 		return esdtData, false, nil
 	}
@@ -162,8 +162,7 @@ func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
 	nonce uint64,
 	isReturnWithError bool,
 ) error {
-	isCheckFrozenCollectionFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
-	if !isCheckFrozenCollectionFlagEnabled {
+	if !e.enableEpochsHandler.IsCheckFrozenCollectionFlagEnabled() {
 		return nil
 	}
 	if nonce == 0 || isReturnWithError {
@@ -224,8 +223,8 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 	nonce uint64,
 	transferValue *big.Int,
 ) error {
-	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
-	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabled()
+	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled()
+	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsSendAlwaysFlagEnabled()
 	if !isSaveToSystemAccountFlagEnabled || !isSendAlwaysFlagEnabled || nonce == 0 {
 		return nil
 	}
@@ -284,7 +283,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
-	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
+	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled()
 	if isSaveToSystemAccountFlagEnabled {
 		err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdate)
 		if err != nil {
@@ -348,7 +347,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		TokenMetaData: esdtData.TokenMetaData,
 		Properties:    make([]byte, e.shardCoordinator.NumberOfShards()),
 	}
-	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabled()
+	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsSendAlwaysFlagEnabled()
 	if len(currentSaveData) == 0 && isSendAlwaysFlagEnabled {
 		esdtDataOnSystemAcc.Properties = nil
 		esdtDataOnSystemAcc.Reserved = []byte{1}
@@ -409,8 +408,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 	nonce uint64,
 	dstAddress []byte,
 ) (bool, error) {
-	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
-	if !isSaveToSystemAccountFlagEnabled {
+	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
 		return false, nil
 	}
 
@@ -422,8 +420,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 		return true, nil
 	}
 
-	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabled()
-	if isSendAlwaysFlagEnabled {
+	if e.enableEpochsHandler.IsSendAlwaysFlagEnabled() {
 		return false, nil
 	}
 
@@ -461,12 +458,10 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 func (e *esdtDataStorage) SaveNFTMetaDataToSystemAccount(
 	tx data.TransactionHandler,
 ) error {
-	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
-	if !isSaveToSystemAccountFlagEnabled {
+	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
 		return nil
 	}
-	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabled()
-	if isSendAlwaysFlagEnabled {
+	if e.enableEpochsHandler.IsSendAlwaysFlagEnabled() {
 		return nil
 	}
 	if check.IfNil(tx) {

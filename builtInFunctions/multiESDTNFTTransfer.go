@@ -14,7 +14,7 @@ import (
 )
 
 type esdtNFTMultiTransfer struct {
-	*baseEnabled
+	baseActiveHandler
 	keyPrefix             []byte
 	marshaller            vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
@@ -80,11 +80,7 @@ func NewESDTNFTMultiTransferFunc(
 		enableEpochsHandler:   enableEpochsHandler,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:            core.BuiltInFunctionMultiESDTNFTTransfer,
-		activationFlagName:  esdtMultiTransferFlag,
-		enableEpochsHandler: enableEpochsHandler,
-	}
+	e.baseActiveHandler.activeHandler = e.enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled
 
 	return e, nil
 }
@@ -242,7 +238,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsBuiltInFunctionOnMetaFlagEnabled()
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsTransferToMetaFlagEnabled()
 	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr

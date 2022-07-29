@@ -34,8 +34,7 @@ func NewPayableCheckFunc(
 
 func (p *payableCheck) mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int) bool {
 	typeToVerify := vm.AsynchronousCall
-	isAsyncCallbackCheckFlagSet := p.enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabled()
-	if isAsyncCallbackCheckFlagSet {
+	if p.enableEpochsHandler.IsFixAsyncCallbackCheckFlagEnabled() {
 		typeToVerify = vm.AsynchronousCallBack
 		if vmInput.ReturnCallAfterError {
 			return false

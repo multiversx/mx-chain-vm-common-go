@@ -333,14 +333,9 @@ type AcceptPayableChecker interface {
 
 // EnableEpochsHandler is used to verify which flags are set in the current epoch based on EnableEpochs config
 type EnableEpochsHandler interface {
-	IsESDTMultiTransferFlagEnabled() bool
 	IsGlobalMintBurnFlagEnabled() bool
 	IsESDTTransferRoleFlagEnabled() bool
-	IsBuiltInFunctionsFlagEnabled() bool
-	IsBuiltInFunctionOnMetaFlagEnabled() bool
-	IsOptimizeNFTStoreFlagEnabled() bool
 	IsCheckCorrectTokenIDForTransferRoleFlagEnabled() bool
-	IsESDTMetadataContinuousCleanupFlagEnabled() bool
 	IsMultiESDTTransferFixOnCallBackFlagEnabled() bool
 	IsFixOOGReturnCodeFlagEnabled() bool
 	IsRemoveNonUpdatedStorageFlagEnabled() bool
@@ -355,6 +350,14 @@ type EnableEpochsHandler interface {
 	IsRefactorContextFlagEnabled() bool
 	IsCheckFunctionArgumentFlagEnabled() bool
 	IsCheckExecuteOnReadOnlyFlagEnabled() bool
+	IsFixAsyncCallbackCheckFlagEnabled() bool
+	IsSaveToSystemAccountFlagEnabled() bool
+	IsCheckFrozenCollectionFlagEnabled() bool
+	IsSendAlwaysFlagEnabled() bool
+	IsValueLengthCheckFlagEnabled() bool
+	IsCheckTransferFlagEnabled() bool
+	IsTransferToMetaFlagEnabled() bool
+	IsESDTNFTImprovementV1FlagEnabled() bool
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32
 	RemoveNonUpdatedStorageEnableEpoch() uint32

@@ -21,7 +21,7 @@ var oneValue = big.NewInt(1)
 var zeroByteArray = []byte{0}
 
 type esdtNFTTransfer struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	keyPrefix             []byte
 	marshaller            vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
@@ -204,7 +204,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsBuiltInFunctionOnMetaFlagEnabled()
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsTransferToMetaFlagEnabled()
 	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
@@ -228,8 +228,8 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if esdtData.Value.Cmp(quantityToTransfer) < 0 {
 		return nil, ErrInvalidNFTQuantity
 	}
-	isCheck0TransferFlagEnabled := e.enableEpochsHandler.IsOptimizeNFTStoreFlagEnabled()
-	if isCheck0TransferFlagEnabled && quantityToTransfer.Cmp(zero) <= 0 {
+	isCheckTransferFlagEnabled := e.enableEpochsHandler.IsCheckTransferFlagEnabled()
+	if isCheckTransferFlagEnabled && quantityToTransfer.Cmp(zero) <= 0 {
 		return nil, ErrInvalidNFTQuantity
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)

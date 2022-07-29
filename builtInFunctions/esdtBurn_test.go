@@ -15,24 +15,24 @@ import (
 func TestNewESDTBurnFunc(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil marshalizer should error", func(t *testing.T) {
+	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
-		burnFunc, err := NewESDTBurnFunc(10, nil, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		burnFunc, err := NewESDTBurnFunc(10, nil, &mock.GlobalSettingsHandlerStub{}, trueHandler)
 		assert.Equal(t, ErrNilMarshalizer, err)
 		assert.True(t, check.IfNil(burnFunc))
 	})
-	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+	t.Run("nil active handler should error", func(t *testing.T) {
 		t.Parallel()
 
 		burnFunc, err := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil)
-		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+		assert.Equal(t, ErrNilActiveHandler, err)
 		assert.True(t, check.IfNil(burnFunc))
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		burnFunc, err := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		burnFunc, err := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, trueHandler)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(burnFunc))
 	})
@@ -42,7 +42,7 @@ func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, globalSettingsHandler, &mock.EnableEpochsHandlerStub{})
+	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, globalSettingsHandler, trueHandler)
 	_, err := burnFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -88,7 +88,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, marshaller, globalSettingsHandler, &mock.EnableEpochsHandlerStub{})
+	burnFunc, _ := NewESDTBurnFunc(10, marshaller, globalSettingsHandler, trueHandler)
 
 	input := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{

@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createMockPayableChecker(isESDTMetadataContinuousCleanupFlagEnabled, isCheckFunctionArgumentFlagEnabled bool) *payableCheck {
+func createMockPayableChecker(isFixAsyncCallbackCheckFlagEnabledField, isCheckFunctionArgumentFlagEnabled bool) *payableCheck {
 	p, _ := NewPayableCheckFunc(
 		&mock.PayableHandlerStub{},
 		&mock.EnableEpochsHandlerStub{
-			IsESDTMetadataContinuousCleanupFlagEnabledField: isESDTMetadataContinuousCleanupFlagEnabled,
-			IsCheckFunctionArgumentFlagEnabledField:         isCheckFunctionArgumentFlagEnabled,
+			IsFixAsyncCallbackCheckFlagEnabledField: isFixAsyncCallbackCheckFlagEnabledField,
+			IsCheckFunctionArgumentFlagEnabledField: isCheckFunctionArgumentFlagEnabled,
 		})
 	return p
 }

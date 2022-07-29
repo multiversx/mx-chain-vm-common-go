@@ -14,21 +14,19 @@ import (
 
 func createMockArgsForNewESDTDelete() ArgsNewESDTDeleteMetadata {
 	return ArgsNewESDTDeleteMetadata{
-		FuncGasCost: 1,
-		Marshalizer: &mock.MarshalizerMock{},
-		Accounts:    &mock.AccountsStub{},
-		EnableEpochsHandler: &mock.EnableEpochsHandlerStub{
-			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
-		},
+		FuncGasCost:    1,
+		Marshalizer:    &mock.MarshalizerMock{},
+		Accounts:       &mock.AccountsStub{},
 		AllowedAddress: bytes.Repeat([]byte{1}, 32),
 		Delete:         true,
+		ActiveHandler:  trueHandler,
 	}
 }
 
 func TestNewESDTDeleteMetadataFunc(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil marshalizer should error", func(t *testing.T) {
+	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgsForNewESDTDelete()
@@ -48,9 +46,9 @@ func TestNewESDTDeleteMetadataFunc(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgsForNewESDTDelete()
-		args.EnableEpochsHandler = nil
+		args.ActiveHandler = nil
 		_, err := NewESDTDeleteMetadataFunc(args)
-		assert.Equal(t, err, ErrNilEnableEpochsHandler)
+		assert.Equal(t, err, ErrNilActiveHandler)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()

@@ -25,8 +25,8 @@ func createNewESDTDataStorageHandler() *esdtDataStorage {
 		GlobalSettingsHandler: &mock.GlobalSettingsHandlerStub{},
 		Marshalizer:           &mock.MarshalizerMock{},
 		EnableEpochsHandler: &mock.EnableEpochsHandlerStub{
-			IsOptimizeNFTStoreFlagEnabledField:              true,
-			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
+			IsSaveToSystemAccountFlagEnabledField: true,
+			IsSendAlwaysFlagEnabledField:          true,
 		},
 		ShardCoordinator: &mock.ShardCoordinatorStub{},
 	}
@@ -44,8 +44,8 @@ func createMockArgsForNewESDTDataStorage() ArgsNewESDTDataStorage {
 		GlobalSettingsHandler: &mock.GlobalSettingsHandlerStub{},
 		Marshalizer:           &mock.MarshalizerMock{},
 		EnableEpochsHandler: &mock.EnableEpochsHandlerStub{
-			IsOptimizeNFTStoreFlagEnabledField:              true,
-			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
+			IsSaveToSystemAccountFlagEnabledField: true,
+			IsSendAlwaysFlagEnabledField:          true,
 		},
 		ShardCoordinator: &mock.ShardCoordinatorStub{},
 	}
@@ -330,7 +330,7 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.Nil(t, err)
 
 	enableEpochsHandler, _ := args.EnableEpochsHandler.(*mock.EnableEpochsHandlerStub)
-	enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabledField = false
+	enableEpochsHandler.IsSendAlwaysFlagEnabledField = false
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return core.MetachainShardId
 	}
@@ -338,7 +338,7 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.True(t, val)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabledField = true
+	enableEpochsHandler.IsSendAlwaysFlagEnabledField = true
 
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return 1
@@ -368,7 +368,7 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.False(t, val)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabledField = false
+	enableEpochsHandler.IsSendAlwaysFlagEnabledField = false
 	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.False(t, val)
 	assert.Nil(t, err)
@@ -390,15 +390,15 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 	e, _ := NewESDTDataStorage(args)
 
 	enableEpochsHandler, _ := args.EnableEpochsHandler.(*mock.EnableEpochsHandlerStub)
-	enableEpochsHandler.IsOptimizeNFTStoreFlagEnabledField = false
+	enableEpochsHandler.IsSaveToSystemAccountFlagEnabledField = false
 	err := e.SaveNFTMetaDataToSystemAccount(nil)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsOptimizeNFTStoreFlagEnabledField = true
+	enableEpochsHandler.IsSaveToSystemAccountFlagEnabledField = true
 	err = e.SaveNFTMetaDataToSystemAccount(nil)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsESDTMetadataContinuousCleanupFlagEnabledField = false
+	enableEpochsHandler.IsSendAlwaysFlagEnabledField = false
 	err = e.SaveNFTMetaDataToSystemAccount(nil)
 	assert.Equal(t, err, ErrNilTransactionHandler)
 
@@ -471,7 +471,7 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *test
 	shardCoordinator := &mock.ShardCoordinatorStub{}
 	args.ShardCoordinator = shardCoordinator
 	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsOptimizeNFTStoreFlagEnabledField: true,
+		IsSaveToSystemAccountFlagEnabledField: true,
 	}
 	e, _ := NewESDTDataStorage(args)
 
@@ -538,7 +538,7 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 	e, _ := NewESDTDataStorage(args)
 
 	enableEpochsHandler, _ := args.EnableEpochsHandler.(*mock.EnableEpochsHandlerStub)
-	enableEpochsHandler.IsOptimizeNFTStoreFlagEnabledField = false
+	enableEpochsHandler.IsCheckFrozenCollectionFlagEnabledField = false
 
 	acnt, _ := e.accounts.LoadAccount([]byte("address1"))
 	userAcc := acnt.(vmcommon.UserAccountHandler)
@@ -548,7 +548,7 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 	err := e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsOptimizeNFTStoreFlagEnabledField = true
+	enableEpochsHandler.IsCheckFrozenCollectionFlagEnabledField = true
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 0, false)
 	assert.Nil(t, err)
 

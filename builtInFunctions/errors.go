@@ -163,3 +163,6 @@ var ErrInvalidMaxNumAddresses = errors.New("invalid max number of addresses")
 
 // ErrNilEnableEpochsHandler signals that a nil enable epochs handler was provided
 var ErrNilEnableEpochsHandler = errors.New("nil enable epochs handler")
+
+// ErrNilActiveHandler signals that a nil active handler has been provided
+var ErrNilActiveHandler = errors.New("nil active handler")

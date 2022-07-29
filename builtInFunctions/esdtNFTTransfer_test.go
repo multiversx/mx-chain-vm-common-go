@@ -29,8 +29,8 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
 		&mock.EnableEpochsHandlerStub{
-			IsBuiltInFunctionOnMetaFlagEnabledField:              false,
-			IsOptimizeNFTStoreFlagEnabledField:                   true,
+			IsTransferToMetaFlagEnabledField:                     false,
+			IsSaveToSystemAccountFlagEnabledField:                true,
 			IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 		},
 	)
@@ -89,7 +89,9 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 
 func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler) *esdtNFTTransfer {
 	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
-		IsOptimizeNFTStoreFlagEnabledField: true,
+		IsTransferToMetaFlagEnabledField:        true,
+		IsCheckTransferFlagEnabledField:         true,
+		IsCheckFrozenCollectionFlagEnabledField: true,
 	})
 	return nftTransfer
 }
@@ -172,7 +174,7 @@ func testNFTTokenShouldExist(
 func TestNewESDTNFTTransferFunc(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil marshalizer should error", func(t *testing.T) {
+	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
 		nftTransfer, err := NewESDTNFTTransferFunc(
@@ -470,8 +472,8 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 				return true, nil
 			},
 		}, &mock.EnableEpochsHandlerStub{
-			IsESDTMetadataContinuousCleanupFlagEnabledField: true,
-			IsCheckFunctionArgumentFlagEnabledField:         true,
+			IsFixAsyncCallbackCheckFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField: true,
 		})
 
 	_ = nftTransfer.SetPayableChecker(payableChecker)
@@ -892,7 +894,9 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 
 	globalSettings := &mock.GlobalSettingsHandlerStub{}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsOptimizeNFTStoreFlagEnabledField: true,
+		IsTransferToMetaFlagEnabledField:        true,
+		IsCheckTransferFlagEnabledField:         true,
+		IsCheckFrozenCollectionFlagEnabledField: true,
 	}
 	transferFunc, _ := createNFTTransferAndStorageHandler(0, 1, globalSettings, enableEpochsHandler)
 

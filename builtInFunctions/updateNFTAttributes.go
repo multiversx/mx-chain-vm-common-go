@@ -10,7 +10,7 @@ import (
 )
 
 type esdtNFTupdate struct {
-	*baseEnabled
+	baseActiveHandler
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
@@ -27,7 +27,7 @@ func NewESDTNFTUpdateAttributesFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	activeHandler func() bool,
 ) (*esdtNFTupdate, error) {
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
@@ -38,8 +38,8 @@ func NewESDTNFTUpdateAttributesFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
-		return nil, ErrNilEnableEpochsHandler
+	if activeHandler == nil {
+		return nil, ErrNilActiveHandler
 	}
 
 	e := &esdtNFTupdate{
@@ -52,11 +52,7 @@ func NewESDTNFTUpdateAttributesFunc(
 		rolesHandler:          rolesHandler,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:            core.BuiltInFunctionESDTNFTUpdateAttributes,
-		activationFlagName:  esdtMultiTransferFlag,
-		enableEpochsHandler: enableEpochsHandler,
-	}
+	e.baseActiveHandler.activeHandler = activeHandler
 
 	return e, nil
 }

@@ -9,6 +9,9 @@ import (
 
 var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 
+var trueHandler = func() bool { return true }
+var falseHandler = func() bool { return false }
+
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
 	GasMap                           map[string]map[string]uint64
@@ -144,7 +147,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTPause, defaultFlag, b.enableEpochsHandler)
+	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTPause, trueHandler)
 	if err != nil {
 		return err
 	}
@@ -178,7 +181,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshaller, globalSettingsFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshaller, globalSettingsFunc, b.enableEpochsHandler.IsGlobalMintBurnFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -214,7 +217,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, defaultFlag, b.enableEpochsHandler)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, trueHandler)
 	if err != nil {
 		return err
 	}
@@ -315,7 +318,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -324,7 +327,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -350,7 +353,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, esdtTransferRoleFlag, b.enableEpochsHandler)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -359,7 +362,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, esdtTransferRoleFlag, b.enableEpochsHandler)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -369,12 +372,12 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	argsNewDeleteFunc := ArgsNewESDTDeleteMetadata{
-		FuncGasCost:         b.gasConfig.BuiltInCost.ESDTNFTBurn,
-		Marshalizer:         b.marshaller,
-		Accounts:            b.accounts,
-		EnableEpochsHandler: b.enableEpochsHandler,
-		AllowedAddress:      b.configAddress,
-		Delete:              true,
+		FuncGasCost:    b.gasConfig.BuiltInCost.ESDTNFTBurn,
+		Marshalizer:    b.marshaller,
+		Accounts:       b.accounts,
+		AllowedAddress: b.configAddress,
+		Delete:         true,
+		ActiveHandler:  b.enableEpochsHandler.IsSendAlwaysFlagEnabled,
 	}
 	newFunc, err = NewESDTDeleteMetadataFunc(argsNewDeleteFunc)
 	if err != nil {
@@ -395,7 +398,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, esdtMetadataContinuousCleanupFlag, b.enableEpochsHandler)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -404,7 +407,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, esdtMetadataContinuousCleanupFlag, b.enableEpochsHandler)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -413,7 +416,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.enableEpochsHandler, b.maxNumOfAddressesForTransferRole, false)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.maxNumOfAddressesForTransferRole, false, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -422,7 +425,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.enableEpochsHandler, b.maxNumOfAddressesForTransferRole, true)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.maxNumOfAddressesForTransferRole, true, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
 	if err != nil {
 		return err
 	}

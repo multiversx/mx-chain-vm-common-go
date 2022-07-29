@@ -16,7 +16,7 @@ const transfer = "transfer"
 var transferAddressesKeyPrefix = []byte(core.ElrondProtectedKeyPrefix + transfer + core.ESDTKeyIdentifier)
 
 type esdtTransferAddress struct {
-	*baseEnabled
+	baseActiveHandler
 	set             bool
 	marshaller      vmcommon.Marshalizer
 	accounts        vmcommon.AccountsAdapter
@@ -27,21 +27,21 @@ type esdtTransferAddress struct {
 func NewESDTTransferRoleAddressFunc(
 	accounts vmcommon.AccountsAdapter,
 	marshaller marshal.Marshalizer,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	maxNumAddresses uint32,
 	set bool,
+	activeHandler func() bool,
 ) (*esdtTransferAddress, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
-	}
-	if check.IfNil(enableEpochsHandler) {
-		return nil, ErrNilEnableEpochsHandler
 	}
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
 	if maxNumAddresses < 1 {
 		return nil, ErrInvalidMaxNumAddresses
+	}
+	if activeHandler == nil {
+		return nil, ErrNilActiveHandler
 	}
 
 	e := &esdtTransferAddress{
@@ -51,14 +51,7 @@ func NewESDTTransferRoleAddressFunc(
 		set:             set,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:            vmcommon.BuiltInFunctionESDTTransferRoleAddAddress,
-		activationFlagName:  esdtMetadataContinuousCleanupFlag,
-		enableEpochsHandler: enableEpochsHandler,
-	}
-	if !set {
-		e.function = vmcommon.BuiltInFunctionESDTTransferRoleDeleteAddress
-	}
+	e.baseActiveHandler.activeHandler = activeHandler
 
 	return e, nil
 }
