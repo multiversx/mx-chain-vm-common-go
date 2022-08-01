@@ -83,6 +83,8 @@ type OutputTransfer struct {
 	GasLimit uint64
 	// GasLocked holds the amount of gas to be kept aside for the eventual callback execution
 	GasLocked uint64
+	// AsyncData to be used in cross call
+	AsyncData []byte
 	// Data to be used in cross call
 	Data []byte
 	// CallType is set if it is a smart contract invocation
