@@ -27,7 +27,7 @@ func NewESDTNFTAddUriFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
-	activeHandler func() bool,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtNFTAddUri, error) {
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
@@ -38,8 +38,8 @@ func NewESDTNFTAddUriFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if activeHandler == nil {
-		return nil, ErrNilActiveHandler
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtNFTAddUri{
@@ -52,7 +52,7 @@ func NewESDTNFTAddUriFunc(
 		rolesHandler:          rolesHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = activeHandler
+	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled
 
 	return e, nil
 }

@@ -24,7 +24,7 @@ func NewESDTBurnFunc(
 	funcGasCost uint64,
 	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
-	activeHandler func() bool,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtBurn, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
@@ -32,8 +32,8 @@ func NewESDTBurnFunc(
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if activeHandler == nil {
-		return nil, ErrNilActiveHandler
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtBurn{
@@ -43,7 +43,7 @@ func NewESDTBurnFunc(
 		globalSettingsHandler: globalSettingsHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = activeHandler
+	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsGlobalMintBurnFlagEnabled
 
 	return e, nil
 }

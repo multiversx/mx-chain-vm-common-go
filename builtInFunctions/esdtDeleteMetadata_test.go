@@ -19,7 +19,9 @@ func createMockArgsForNewESDTDelete() ArgsNewESDTDeleteMetadata {
 		Accounts:       &mock.AccountsStub{},
 		AllowedAddress: bytes.Repeat([]byte{1}, 32),
 		Delete:         true,
-		ActiveHandler:  trueHandler,
+		EnableEpochsHandler: &mock.EnableEpochsHandlerStub{
+			IsSendAlwaysFlagEnabledField: true,
+		},
 	}
 }
 
@@ -42,13 +44,13 @@ func TestNewESDTDeleteMetadataFunc(t *testing.T) {
 		_, err := NewESDTDeleteMetadataFunc(args)
 		assert.Equal(t, err, ErrNilAccountsAdapter)
 	})
-	t.Run("nil active handler should error", func(t *testing.T) {
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
 		t.Parallel()
 
 		args := createMockArgsForNewESDTDelete()
-		args.ActiveHandler = nil
+		args.EnableEpochsHandler = nil
 		_, err := NewESDTDeleteMetadataFunc(args)
-		assert.Equal(t, err, ErrNilActiveHandler)
+		assert.Equal(t, err, ErrNilEnableEpochsHandler)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()

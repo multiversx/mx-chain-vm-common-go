@@ -47,8 +47,7 @@ func (p *payableCheck) mustVerifyPayable(vmInput *vmcommon.ContractCallInput, mi
 		return false
 	}
 	if len(vmInput.Arguments) > minLenArguments {
-		isCheckFunctionArgumentFlagSet := p.enableEpochsHandler.IsCheckFunctionArgumentFlagEnabled()
-		if isCheckFunctionArgumentFlagSet {
+		if p.enableEpochsHandler.IsCheckFunctionArgumentFlagEnabled() {
 			if len(vmInput.Arguments[minLenArguments]) > 0 {
 				return false
 			}
@@ -88,8 +87,7 @@ func (p *payableCheck) DetermineIsSCCallAfter(vmInput *vmcommon.ContractCallInpu
 	if !vmcommon.IsSmartContractAddress(destAddress) {
 		return false
 	}
-	isCheckFunctionArgumentFlagSet := p.enableEpochsHandler.IsCheckFunctionArgumentFlagEnabled()
-	if isCheckFunctionArgumentFlagSet {
+	if p.enableEpochsHandler.IsCheckFunctionArgumentFlagEnabled() {
 		if len(vmInput.Arguments[minLenArguments]) == 0 {
 			return false
 		}

@@ -29,7 +29,7 @@ func NewESDTTransferRoleAddressFunc(
 	marshaller marshal.Marshalizer,
 	maxNumAddresses uint32,
 	set bool,
-	activeHandler func() bool,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtTransferAddress, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
@@ -40,8 +40,8 @@ func NewESDTTransferRoleAddressFunc(
 	if maxNumAddresses < 1 {
 		return nil, ErrInvalidMaxNumAddresses
 	}
-	if activeHandler == nil {
-		return nil, ErrNilActiveHandler
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtTransferAddress{
@@ -51,7 +51,7 @@ func NewESDTTransferRoleAddressFunc(
 		set:             set,
 	}
 
-	e.baseActiveHandler.activeHandler = activeHandler
+	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsSendAlwaysFlagEnabled
 
 	return e, nil
 }

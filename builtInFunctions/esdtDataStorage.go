@@ -103,8 +103,7 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 		return nil, false, err
 	}
 
-	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled()
-	if !isSaveToSystemAccountFlagEnabled || nonce == 0 {
+	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() || nonce == 0 {
 		return esdtData, false, nil
 	}
 
@@ -283,8 +282,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
-	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled()
-	if isSaveToSystemAccountFlagEnabled {
+	if e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
 		err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdate)
 		if err != nil {
 			return nil, err
@@ -295,7 +293,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
 
-	if !isSaveToSystemAccountFlagEnabled {
+	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
 		marshaledData, err := e.marshaller.Marshal(esdtData)
 		if err != nil {
 			return nil, err
