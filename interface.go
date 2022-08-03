@@ -330,3 +330,45 @@ type AcceptPayableChecker interface {
 	SetPayableChecker(payableHandler PayableChecker) error
 	IsInterfaceNil() bool
 }
+
+// EnableEpochsHandler is used to verify which flags are set in the current epoch based on EnableEpochs config
+type EnableEpochsHandler interface {
+	IsGlobalMintBurnFlagEnabled() bool
+	IsESDTTransferRoleFlagEnabled() bool
+	IsBuiltInFunctionsFlagEnabled() bool
+	IsCheckCorrectTokenIDForTransferRoleFlagEnabled() bool
+	IsMultiESDTTransferFixOnCallBackFlagEnabled() bool
+	IsFixOOGReturnCodeFlagEnabled() bool
+	IsRemoveNonUpdatedStorageFlagEnabled() bool
+	IsCreateNFTThroughExecByCallerFlagEnabled() bool
+	IsStorageAPICostOptimizationFlagEnabled() bool
+	IsFailExecutionOnEveryAPIErrorFlagEnabled() bool
+	IsManagedCryptoAPIsFlagEnabled() bool
+	IsSCDeployFlagEnabled() bool
+	IsAheadOfTimeGasUsageFlagEnabled() bool
+	IsRepairCallbackFlagEnabled() bool
+	IsDisableExecByCallerFlagEnabled() bool
+	IsRefactorContextFlagEnabled() bool
+	IsCheckFunctionArgumentFlagEnabled() bool
+	IsCheckExecuteOnReadOnlyFlagEnabled() bool
+	IsFixAsyncCallbackCheckFlagEnabled() bool
+	IsSaveToSystemAccountFlagEnabled() bool
+	IsCheckFrozenCollectionFlagEnabled() bool
+	IsSendAlwaysFlagEnabled() bool
+	IsValueLengthCheckFlagEnabled() bool
+	IsCheckTransferFlagEnabled() bool
+	IsTransferToMetaFlagEnabled() bool
+	IsESDTNFTImprovementV1FlagEnabled() bool
+	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
+	FixOOGReturnCodeEnableEpoch() uint32
+	RemoveNonUpdatedStorageEnableEpoch() uint32
+	CreateNFTThroughExecByCallerEnableEpoch() uint32
+	FixFailExecutionOnErrorEnableEpoch() uint32
+	ManagedCryptoAPIEnableEpoch() uint32
+	DisableExecByCallerEnableEpoch() uint32
+	RefactorContextEnableEpoch() uint32
+	CheckExecuteReadOnlyEnableEpoch() uint32
+	StorageAPICostOptimizationEnableEpoch() uint32
+
+	IsInterfaceNil() bool
+}

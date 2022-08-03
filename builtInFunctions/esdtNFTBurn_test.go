@@ -314,7 +314,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaus
 		},
 	}
 
-	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}), globalSettingsHandler, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, &mock.EnableEpochsHandlerStub{}), globalSettingsHandler, &mock.ESDTRoleHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
