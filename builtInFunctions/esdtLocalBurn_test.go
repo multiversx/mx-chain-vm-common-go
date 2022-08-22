@@ -121,25 +121,25 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t 
 func TestEsdtLocalBurn_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleLocalBurn, string(action))
 			return nil
 		},
 	}
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(50, marshalizer, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler)
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler)
 
 	sndAccout := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					return marshalizer.Marshal(esdtData)
+					return marshaller.Marshal(esdtData)
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshalizer.Unmarshal(esdtData, value)
+					_ = marshaller.Unmarshal(esdtData, value)
 					require.Equal(t, big.NewInt(99), esdtData.Value)
 					return nil
 				},
@@ -173,8 +173,8 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 func TestEsdtLocalBurn_ProcessBuiltinFunction_WithGlobalBurn(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(50, marshalizer, &mock.GlobalSettingsHandlerStub{
+	marshaller := &mock.MarshalizerMock{}
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{
 		IsBurnForAllCalled: func(token []byte) bool {
 			return true
 		},
@@ -189,11 +189,11 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_WithGlobalBurn(t *testing.T) {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					return marshalizer.Marshal(esdtData)
+					return marshaller.Marshal(esdtData)
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshalizer.Unmarshal(esdtData, value)
+					_ = marshaller.Unmarshal(esdtData, value)
 					require.Equal(t, big.NewInt(99), esdtData.Value)
 					return nil
 				},

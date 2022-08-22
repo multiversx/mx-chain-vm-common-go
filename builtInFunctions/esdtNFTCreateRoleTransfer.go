@@ -14,18 +14,18 @@ import (
 type esdtNFTCreateRoleTransfer struct {
 	baseAlwaysActive
 	keyPrefix        []byte
-	marshalizer      vmcommon.Marshalizer
+	marshaller       vmcommon.Marshalizer
 	accounts         vmcommon.AccountsAdapter
 	shardCoordinator vmcommon.Coordinator
 }
 
 // NewESDTNFTCreateRoleTransfer returns the esdt NFT create role transfer built-in function component
 func NewESDTNFTCreateRoleTransfer(
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 ) (*esdtNFTCreateRoleTransfer, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(accounts) {
@@ -36,8 +36,8 @@ func NewESDTNFTCreateRoleTransfer(
 	}
 
 	e := &esdtNFTCreateRoleTransfer{
-		keyPrefix:        []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:      marshalizer,
+		keyPrefix:        []byte(baseESDTKeyPrefix),
+		marshaller:       marshaller,
 		accounts:         accounts,
 		shardCoordinator: shardCoordinator,
 	}
@@ -167,20 +167,20 @@ func (e *esdtNFTCreateRoleTransfer) deleteCreateRoleFromAccount(
 	acntDst vmcommon.UserAccountHandler,
 	esdtTokenRoleKey []byte,
 ) error {
-	roles, _, err := getESDTRolesForAcnt(e.marshalizer, acntDst, esdtTokenRoleKey)
+	roles, _, err := getESDTRolesForAcnt(e.marshaller, acntDst, esdtTokenRoleKey)
 	if err != nil {
 		return err
 	}
 
 	deleteRoles(roles, [][]byte{[]byte(core.ESDTRoleNFTCreate)})
-	return saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshalizer)
+	return saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshaller)
 }
 
 func (e *esdtNFTCreateRoleTransfer) addCreateRoleToAccount(
 	acntDst vmcommon.UserAccountHandler,
 	esdtTokenRoleKey []byte,
 ) error {
-	roles, _, err := getESDTRolesForAcnt(e.marshalizer, acntDst, esdtTokenRoleKey)
+	roles, _, err := getESDTRolesForAcnt(e.marshaller, acntDst, esdtTokenRoleKey)
 	if err != nil {
 		return err
 	}
@@ -192,16 +192,16 @@ func (e *esdtNFTCreateRoleTransfer) addCreateRoleToAccount(
 	}
 
 	roles.Roles = append(roles.Roles, []byte(core.ESDTRoleNFTCreate))
-	return saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshalizer)
+	return saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshaller)
 }
 
 func saveRolesToAccount(
 	acntDst vmcommon.UserAccountHandler,
 	esdtTokenRoleKey []byte,
 	roles *esdt.ESDTRoles,
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 ) error {
-	marshaledData, err := marshalizer.Marshal(roles)
+	marshaledData, err := marshaller.Marshal(roles)
 	if err != nil {
 		return err
 	}

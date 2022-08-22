@@ -11,27 +11,27 @@ import (
 
 type esdtFreezeWipe struct {
 	baseAlwaysActive
-	marshalizer vmcommon.Marshalizer
-	keyPrefix   []byte
-	wipe        bool
-	freeze      bool
+	marshaller vmcommon.Marshalizer
+	keyPrefix  []byte
+	wipe       bool
+	freeze     bool
 }
 
 // NewESDTFreezeWipeFunc returns the esdt freeze/un-freeze/wipe built-in function component
 func NewESDTFreezeWipeFunc(
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	freeze bool,
 	wipe bool,
 ) (*esdtFreezeWipe, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 
 	e := &esdtFreezeWipe{
-		marshalizer: marshalizer,
-		keyPrefix:   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		freeze:      freeze,
-		wipe:        wipe,
+		marshaller: marshaller,
+		keyPrefix:  []byte(baseESDTKeyPrefix),
+		freeze:     freeze,
+		wipe:       wipe,
 	}
 
 	return e, nil
@@ -84,7 +84,7 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 }
 
 func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, tokenKey []byte) error {
-	tokenData, err := getESDTDataFromKey(acntDst, tokenKey, e.marshalizer)
+	tokenData, err := getESDTDataFromKey(acntDst, tokenKey, e.marshaller)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, t
 }
 
 func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) error {
-	tokenData, err := getESDTDataFromKey(acntDst, tokenKey, e.marshalizer)
+	tokenData, err := getESDTDataFromKey(acntDst, tokenKey, e.marshaller)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, token
 	esdtUserMetadata.Frozen = e.freeze
 	tokenData.Properties = esdtUserMetadata.ToBytes()
 
-	err = saveESDTData(acntDst, tokenData, tokenKey, e.marshalizer)
+	err = saveESDTData(acntDst, tokenData, tokenKey, e.marshaller)
 	if err != nil {
 		return err
 	}

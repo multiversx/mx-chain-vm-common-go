@@ -23,18 +23,18 @@ const MinArgsForMultiESDTNFTTransfer = 4
 const ArgsPerTransfer = 3
 
 type esdtTransferParser struct {
-	marshalizer vmcommon.Marshalizer
+	marshaller vmcommon.Marshalizer
 }
 
 // NewESDTTransferParser creates a new esdt transfer parser
 func NewESDTTransferParser(
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 ) (*esdtTransferParser, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 
-	return &esdtTransferParser{marshalizer: marshalizer}, nil
+	return &esdtTransferParser{marshaller: marshaller}, nil
 }
 
 // ParseESDTTransfers returns the list of esdt transfers, the callFunction and callArgs from the given arguments
@@ -175,7 +175,7 @@ func (e *esdtTransferParser) createNewESDTTransfer(
 
 		if !isTxAtSender && len(args[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
 			transferESDTData := &esdt.ESDigitalToken{}
-			err := e.marshalizer.Unmarshal(transferESDTData, args[tokenStartIndex+2])
+			err := e.marshaller.Unmarshal(transferESDTData, args[tokenStartIndex+2])
 			if err != nil {
 				return nil, err
 			}

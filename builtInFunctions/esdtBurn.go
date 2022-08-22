@@ -14,7 +14,7 @@ import (
 type esdtBurn struct {
 	*baseDisabled
 	funcGasCost           uint64
-	marshalizer           vmcommon.Marshalizer
+	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	mutExecution          sync.RWMutex
@@ -23,12 +23,12 @@ type esdtBurn struct {
 // NewESDTBurnFunc returns the esdt burn built-in function component
 func NewESDTBurnFunc(
 	funcGasCost uint64,
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	disableEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtBurn, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
@@ -37,8 +37,8 @@ func NewESDTBurnFunc(
 
 	e := &esdtBurn{
 		funcGasCost:           funcGasCost,
-		marshalizer:           marshalizer,
-		keyPrefix:             []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
+		marshaller:            marshaller,
+		keyPrefix:             []byte(baseESDTKeyPrefix),
 		globalSettingsHandler: globalSettingsHandler,
 	}
 
@@ -96,7 +96,7 @@ func (e *esdtBurn) ProcessBuiltinFunction(
 		return nil, ErrNotEnoughGas
 	}
 
-	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshalizer, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
+	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

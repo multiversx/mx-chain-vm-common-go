@@ -17,7 +17,7 @@ import (
 func TestNewESDTNFTAddQuantityFunc(t *testing.T) {
 	t.Parallel()
 
-	// nil marshalizer
+	// nil marshaller
 	eqf, err := NewESDTNFTAddQuantityFunc(10, nil, nil, nil, 0, nil)
 	require.True(t, check.IfNil(eqf))
 	require.Equal(t, ErrNilESDTNFTStorageHandler, err)
@@ -247,12 +247,12 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.
 func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, 0, &mock.EpochNotifierStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"), esdtDataBytes)
 	output, err := eqf.ProcessBuiltinFunction(
 		userAcc,
@@ -275,7 +275,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) 
 func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused(t *testing.T) {
 	t.Parallel()
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
 		IsPausedCalled: func(_ []byte) bool {
 			return true
@@ -291,7 +291,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsP
 		},
 		Value: big.NewInt(10),
 	}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 
 	output, err := eqf.ProcessBuiltinFunction(
@@ -316,14 +316,14 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	t.Parallel()
 
 	tokenIdentifier := "testTkn"
-	key := core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier + tokenIdentifier
+	key := baseESDTKeyPrefix + tokenIdentifier
 
 	nonce := big.NewInt(33)
 	initialValue := big.NewInt(5)
 	valueToAdd := big.NewInt(37)
 	expectedValue := big.NewInt(0).Add(initialValue, valueToAdd)
 
-	marshalizer := &mock.MarshalizerMock{}
+	marshaller := &mock.MarshalizerMock{}
 	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleNFTAddQuantity, string(action))
@@ -339,7 +339,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		},
 		Value: initialValue,
 	}
-	esdtDataBytes, _ := marshalizer.Marshal(esdtData)
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 
@@ -366,6 +366,6 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.NotNil(t, res)
 
 	finalTokenData := esdt.ESDigitalToken{}
-	_ = marshalizer.Unmarshal(&finalTokenData, res)
+	_ = marshaller.Unmarshal(&finalTokenData, res)
 	require.Equal(t, expectedValue.Bytes(), finalTokenData.Value.Bytes())
 }
