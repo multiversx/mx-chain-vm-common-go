@@ -529,7 +529,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 
 func (b *builtInFuncCreator) createBaseAccountFreezerArgs(funcGasCost uint64) BaseAccountFreezerArgs {
 	return BaseAccountFreezerArgs{
-		Marshaller:            b.marshalizer,
+		Marshaller:            b.marshaller,
 		EpochNotifier:         b.epochNotifier,
 		FuncGasCost:           funcGasCost,
 		GuardedAccountHandler: b.guardedAccountHandler,
