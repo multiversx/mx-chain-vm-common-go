@@ -13,13 +13,13 @@ import (
 
 func createMockArgsForNewESDTDelete() ArgsNewESDTDeleteMetadata {
 	return ArgsNewESDTDeleteMetadata{
-		FuncGasCost:     1,
-		Marshalizer:     &mock.MarshalizerMock{},
-		Accounts:        &mock.AccountsStub{},
-		ActivationEpoch: 0,
-		EpochNotifier:   &mock.EpochNotifierStub{},
-		AllowedAddress:  bytes.Repeat([]byte{1}, 32),
-		Delete:          true,
+		FuncGasCost:      1,
+		Marshalizer:      &mock.MarshalizerMock{},
+		Accounts:         &mock.AccountsStub{},
+		ActivationEpoch:  0,
+		EpochNotifier:    &mock.EpochNotifierStub{},
+		AllowedAddresses: [][]byte{bytes.Repeat([]byte{1}, 32)},
+		Delete:           true,
 	}
 }
 
@@ -74,12 +74,12 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 	assert.Equal(t, err, ErrAddressIsNotAllowed)
 
 	vmInput := &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: big.NewInt(0)}}
-	vmInput.CallerAddr = e.allowedAddress
+	vmInput.CallerAddr = e.allowedAddresses[0]
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
 	assert.Equal(t, err, ErrInvalidRcvAddr)
 
-	vmInput.RecipientAddr = e.allowedAddress
+	vmInput.RecipientAddr = e.allowedAddresses[0]
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
 	assert.Equal(t, err, ErrInvalidNumOfArgs)
@@ -176,8 +176,8 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionAdd(t *testing.T) {
 	e, _ := NewESDTDeleteMetadataFunc(args)
 
 	vmInput := &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: big.NewInt(0)}}
-	vmInput.CallerAddr = e.allowedAddress
-	vmInput.RecipientAddr = e.allowedAddress
+	vmInput.CallerAddr = e.allowedAddresses[0]
+	vmInput.RecipientAddr = e.allowedAddresses[0]
 	vmInput.Arguments = [][]byte{{1}, {0}, {1}}
 	vmInput.Arguments[0] = []byte("TOKEN-ababab")
 	vmInput.Arguments[1] = []byte{1}
@@ -206,8 +206,8 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionDelete(t *testing.T) {
 	e, _ := NewESDTDeleteMetadataFunc(args)
 
 	vmInput := &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: big.NewInt(0)}}
-	vmInput.CallerAddr = e.allowedAddress
-	vmInput.RecipientAddr = e.allowedAddress
+	vmInput.CallerAddr = args.AllowedAddresses[0]
+	vmInput.RecipientAddr = args.AllowedAddresses[0]
 	vmInput.Arguments = [][]byte{{1}, {2}, {1}, {1}}
 
 	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
@@ -248,4 +248,64 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionDelete(t *testing.T) {
 	vmInput.Arguments = append(vmInput.Arguments, []byte{1}, []byte{2}, []byte{4}, []byte{10})
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.NotNil(t, vmOutput)
+}
+
+func TestEsdtDeleteMetaData_ProcessBuiltinFunctionDeleteAllowedAddresses(t *testing.T) {
+	t.Parallel()
+
+	allowedAddress1 := bytes.Repeat([]byte{1}, 32)
+	allowedAddress2 := bytes.Repeat([]byte{2}, 32)
+	allowedAddress3 := bytes.Repeat([]byte{3}, 32)
+	notAllowedAddress := bytes.Repeat([]byte{4}, 32)
+
+	args := createMockArgsForNewESDTDelete()
+	args.AllowedAddresses = [][]byte{
+		allowedAddress1,
+		allowedAddress2,
+		allowedAddress3,
+	}
+
+	e, _ := NewESDTDeleteMetadataFunc(args)
+	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+	accounts := &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return acnt, nil
+		}}
+
+	e.accounts = accounts
+
+	tokenName := []byte("TOKEN-ababab")
+	nrIntervals := []byte{1}
+	interval0Start := []byte{1}
+	interval0End := []byte{10}
+
+	arguments := [][]byte{
+		tokenName,
+		nrIntervals,
+		interval0Start,
+		interval0End,
+	}
+
+	var tests = []struct {
+		name          string
+		address       []byte
+		expectedError error
+	}{
+		{"allowAddress 1", allowedAddress1, nil},
+		{"allowAddress 2", allowedAddress2, nil},
+		{"allowAddress 3", allowedAddress3, nil},
+		{"not allowed Address", notAllowedAddress, ErrAddressIsNotAllowed},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vmInput := &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: big.NewInt(0)}}
+			vmInput.CallerAddr = tt.address
+			vmInput.RecipientAddr = tt.address
+			vmInput.Arguments = arguments
+
+			_, err := e.ProcessBuiltinFunction(nil, nil, vmInput)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
 }

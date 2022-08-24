@@ -29,7 +29,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	CheckFunctionArgumentEnableEpoch    uint32
 	FixAsyncCallbackCheckEnableEpoch    uint32
 	MaxNumOfAddressesForTransferRole    uint32
-	ConfigAddress                       []byte
+	ConfigAddresses                     [][]byte
 }
 
 type builtInFuncCreator struct {
@@ -54,7 +54,7 @@ type builtInFuncCreator struct {
 	checkFunctionArgumentEnableEpoch    uint32
 	fixAsnycCallbackCheckEnableEpoch    uint32
 	maxNumOfAddressesForTransferRole    uint32
-	configAddress                       []byte
+	configAddresses                     [][]byte
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -92,7 +92,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		sendESDTMetadataAlwaysEnableEpoch:   args.SendESDTMetadataAlwaysEnableEpoch,
 		checkFunctionArgumentEnableEpoch:    args.CheckFunctionArgumentEnableEpoch,
 		maxNumOfAddressesForTransferRole:    args.MaxNumOfAddressesForTransferRole,
-		configAddress:                       args.ConfigAddress,
+		configAddresses:                     args.ConfigAddresses,
 	}
 
 	var err error
@@ -413,13 +413,13 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	argsNewDeleteFunc := ArgsNewESDTDeleteMetadata{
-		FuncGasCost:     b.gasConfig.BuiltInCost.ESDTNFTBurn,
-		Marshalizer:     b.marshaller,
-		Accounts:        b.accounts,
-		ActivationEpoch: b.sendESDTMetadataAlwaysEnableEpoch,
-		EpochNotifier:   b.epochNotifier,
-		AllowedAddress:  b.configAddress,
-		Delete:          true,
+		FuncGasCost:      b.gasConfig.BuiltInCost.ESDTNFTBurn,
+		Marshalizer:      b.marshaller,
+		Accounts:         b.accounts,
+		ActivationEpoch:  b.sendESDTMetadataAlwaysEnableEpoch,
+		EpochNotifier:    b.epochNotifier,
+		AllowedAddresses: b.configAddresses,
+		Delete:           true,
 	}
 	newFunc, err = NewESDTDeleteMetadataFunc(argsNewDeleteFunc)
 	if err != nil {

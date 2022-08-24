@@ -15,23 +15,23 @@ const numArgsPerAdd = 3
 
 type esdtDeleteMetaData struct {
 	*baseEnabled
-	allowedAddress []byte
-	delete         bool
-	accounts       vmcommon.AccountsAdapter
-	keyPrefix      []byte
-	marshaller     vmcommon.Marshalizer
-	funcGasCost    uint64
+	allowedAddresses [][]byte
+	delete           bool
+	accounts         vmcommon.AccountsAdapter
+	keyPrefix        []byte
+	marshaller       vmcommon.Marshalizer
+	funcGasCost      uint64
 }
 
 // ArgsNewESDTDeleteMetadata defines the argument list for new esdt delete metadata built in function
 type ArgsNewESDTDeleteMetadata struct {
-	FuncGasCost     uint64
-	Marshalizer     vmcommon.Marshalizer
-	Accounts        vmcommon.AccountsAdapter
-	ActivationEpoch uint32
-	EpochNotifier   vmcommon.EpochNotifier
-	AllowedAddress  []byte
-	Delete          bool
+	FuncGasCost      uint64
+	Marshalizer      vmcommon.Marshalizer
+	Accounts         vmcommon.AccountsAdapter
+	ActivationEpoch  uint32
+	EpochNotifier    vmcommon.EpochNotifier
+	AllowedAddresses [][]byte
+	Delete           bool
 }
 
 // NewESDTDeleteMetadataFunc returns the esdt metadata deletion built-in function component
@@ -49,12 +49,12 @@ func NewESDTDeleteMetadataFunc(
 	}
 
 	e := &esdtDeleteMetaData{
-		keyPrefix:      []byte(baseESDTKeyPrefix),
-		marshaller:     args.Marshalizer,
-		funcGasCost:    args.FuncGasCost,
-		accounts:       args.Accounts,
-		allowedAddress: args.AllowedAddress,
-		delete:         args.Delete,
+		keyPrefix:        []byte(baseESDTKeyPrefix),
+		marshaller:       args.Marshalizer,
+		funcGasCost:      args.FuncGasCost,
+		accounts:         args.Accounts,
+		allowedAddresses: args.AllowedAddresses,
+		delete:           args.Delete,
 	}
 
 	e.baseEnabled = &baseEnabled{
@@ -83,7 +83,7 @@ func (e *esdtDeleteMetaData) ProcessBuiltinFunction(
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return nil, ErrBuiltInFunctionCalledWithValue
 	}
-	if !bytes.Equal(vmInput.CallerAddr, e.allowedAddress) {
+	if !e.isAllowed(vmInput.CallerAddr) {
 		return nil, ErrAddressIsNotAllowed
 	}
 	if !bytes.Equal(vmInput.CallerAddr, vmInput.RecipientAddr) {
@@ -309,6 +309,15 @@ func (e *esdtDeleteMetaData) marshalAndSaveData(
 	}
 
 	return nil
+}
+
+func (e *esdtDeleteMetaData) isAllowed(address []byte) bool {
+	for _, allowedAddress := range e.allowedAddresses {
+		if bytes.Equal(address, allowedAddress) {
+			return true
+		}
+	}
+	return false
 }
 
 // IsInterfaceNil returns true if underlying object is nil
