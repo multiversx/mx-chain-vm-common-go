@@ -350,7 +350,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	key := baseESDTKeyPrefix + tokenIdentifier
 
 	nonce := big.NewInt(33)
-	initialQuantity := big.NewInt(50)
+	initialQuantity := big.NewInt(100)
 	quantityToBurn := big.NewInt(37)
 	expectedQuantity := big.NewInt(0).Sub(initialQuantity, quantityToBurn)
 
