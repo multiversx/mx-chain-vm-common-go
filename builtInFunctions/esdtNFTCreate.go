@@ -20,7 +20,7 @@ type esdtNFTCreate struct {
 	baseAlwaysActive
 	keyPrefix             []byte
 	accounts              vmcommon.AccountsAdapter
-	marshalizer           vmcommon.Marshalizer
+	marshaller            vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	funcGasCost           uint64
@@ -36,7 +36,7 @@ type esdtNFTCreate struct {
 func NewESDTNFTCreateFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
-	marshalizer vmcommon.Marshalizer,
+	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
@@ -44,7 +44,7 @@ func NewESDTNFTCreateFunc(
 	valueLengthCheckEnableEpoch uint32,
 	epochNotifier vmcommon.EpochNotifier,
 ) (*esdtNFTCreate, error) {
-	if check.IfNil(marshalizer) {
+	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
@@ -64,8 +64,8 @@ func NewESDTNFTCreateFunc(
 	}
 
 	e := &esdtNFTCreate{
-		keyPrefix:                   []byte(core.ElrondProtectedKeyPrefix + core.ESDTKeyIdentifier),
-		marshalizer:                 marshalizer,
+		keyPrefix:                   []byte(baseESDTKeyPrefix),
+		marshaller:                  marshaller,
 		globalSettingsHandler:       globalSettingsHandler,
 		rolesHandler:                rolesHandler,
 		funcGasCost:                 funcGasCost,

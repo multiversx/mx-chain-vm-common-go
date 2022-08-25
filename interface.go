@@ -205,6 +205,7 @@ type ExtendedESDTGlobalSettingsHandler interface {
 	IsPaused(esdtTokenKey []byte) bool
 	IsLimitedTransfer(esdtTokenKey []byte) bool
 	IsBurnForAll(esdtTokenKey []byte) bool
+	IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool
 	IsInterfaceNil() bool
 }
 
@@ -265,12 +266,6 @@ type BuiltInFunctionContainer interface {
 	IsInterfaceNil() bool
 }
 
-// AcceptPayableHandler defines the methods to accept a payable handler through a set function
-type AcceptPayableHandler interface {
-	SetPayableHandler(payableHandler PayableHandler) error
-	IsInterfaceNil() bool
-}
-
 // EpochSubscriberHandler defines the behavior of a component that can be notified if a new epoch was confirmed
 type EpochSubscriberHandler interface {
 	EpochConfirmed(epoch uint32, timestamp uint64)
@@ -310,6 +305,30 @@ type SimpleESDTNFTStorageHandler interface {
 // CallArgsParser will handle parsing transaction data to function and arguments
 type CallArgsParser interface {
 	ParseData(data string) (string, [][]byte, error)
+	ParseArguments(data string) ([][]byte, error)
+	IsInterfaceNil() bool
+}
+
+// BuiltInFunctionFactory will handle built-in functions and components
+type BuiltInFunctionFactory interface {
+	ESDTGlobalSettingsHandler() ESDTGlobalSettingsHandler
+	NFTStorageHandler() SimpleESDTNFTStorageHandler
+	BuiltInFunctionContainer() BuiltInFunctionContainer
+	SetPayableHandler(handler PayableHandler) error
+	CreateBuiltInFunctionContainer() error
+	IsInterfaceNil() bool
+}
+
+// PayableChecker will handle checking if transfer can happen of ESDT tokens towards destination
+type PayableChecker interface {
+	CheckPayable(vmInput *ContractCallInput, dstAddress []byte, minLenArguments int) error
+	DetermineIsSCCallAfter(vmInput *ContractCallInput, destAddress []byte, minLenArguments int) bool
+	IsInterfaceNil() bool
+}
+
+// AcceptPayableChecker defines the methods to accept a payable handler through a set function
+type AcceptPayableChecker interface {
+	SetPayableChecker(payableHandler PayableChecker) error
 	IsInterfaceNil() bool
 }
 

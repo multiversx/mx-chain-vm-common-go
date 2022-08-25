@@ -18,6 +18,12 @@ const BuiltInFunctionESDTSetBurnRoleForAll = "ESDTSetBurnRoleForAll"
 // BuiltInFunctionESDTUnSetBurnRoleForAll represents the defined built in function name for esdt unset burn role for all
 const BuiltInFunctionESDTUnSetBurnRoleForAll = "ESDTUnSetBurnRoleForAll"
 
+// BuiltInFunctionESDTTransferRoleAddAddress represents the defined built in function name for esdt transfer role add address
+const BuiltInFunctionESDTTransferRoleAddAddress = "ESDTTransferRoleAddAddress"
+
+// BuiltInFunctionESDTTransferRoleDeleteAddress represents the defined built in function name for transfer role delete address
+const BuiltInFunctionESDTTransferRoleDeleteAddress = "ESDTTransferRoleDeleteAddress"
+
 // ESDTRoleBurnForAll represents the role for burn for all
 const ESDTRoleBurnForAll = "ESDTRoleBurnForAll"
 

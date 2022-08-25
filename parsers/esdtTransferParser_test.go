@@ -167,7 +167,7 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferOne(t *testing.T) {
 	assert.Equal(t, parsedData.CallFunction, "function")
 
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(20)}
-	marshaled, _ := esdtParser.marshalizer.Marshal(esdtData)
+	marshaled, _ := esdtParser.marshaller.Marshal(esdtData)
 
 	parsedData, err = esdtParser.ParseESDTTransfers(
 		sndAddr,
@@ -223,7 +223,7 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferMore(t *testing.T) {
 	assert.Equal(t, parsedData.CallFunction, "function")
 
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(20)}
-	marshaled, _ := esdtParser.marshalizer.Marshal(esdtData)
+	marshaled, _ := esdtParser.marshaller.Marshal(esdtData)
 	parsedData, err = esdtParser.ParseESDTTransfers(
 		sndAddr,
 		dstAddr,
