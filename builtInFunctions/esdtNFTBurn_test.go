@@ -361,7 +361,8 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 			return nil
 		},
 	}
-	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler)
+	storageHandler := createNewESDTDataStorageHandler()
+	ebf, _ := NewESDTNFTBurnFunc(10, storageHandler, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler)
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -371,8 +372,11 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		Value: initialQuantity,
 	}
 	esdtDataBytes, _ := marshaller.Marshal(esdtData)
-	tokenKey := append([]byte(key), nonce.Bytes()...)
-	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+	nftTokenKey := append([]byte(key), nonce.Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(nftTokenKey, esdtDataBytes)
+
+	_ = storageHandler.saveESDTMetaDataToSystemAccount(0, nftTokenKey, nonce.Uint64(), esdtData, true)
+	_ = storageHandler.AddToLiquiditySystemAcc([]byte(key), nonce.Uint64(), initialQuantity)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
@@ -391,7 +395,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 
-	res, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	res, err := userAcc.AccountDataHandler().RetrieveValue(nftTokenKey)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
@@ -412,7 +416,8 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 	expectedQuantity := big.NewInt(0).Sub(initialQuantity, quantityToBurn)
 
 	marshaller := &mock.MarshalizerMock{}
-	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{
+	storageHandler := createNewESDTDataStorageHandler()
+	ebf, _ := NewESDTNFTBurnFunc(10, storageHandler, &mock.GlobalSettingsHandlerStub{
 		IsBurnForAllCalled: func(token []byte) bool {
 			return true
 		},
@@ -432,6 +437,9 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+	_ = storageHandler.saveESDTMetaDataToSystemAccount(0, tokenKey, nonce.Uint64(), esdtData, true)
+	_ = storageHandler.AddToLiquiditySystemAcc([]byte(key), nonce.Uint64(), initialQuantity)
+
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
 		nil,
