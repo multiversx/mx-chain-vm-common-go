@@ -32,9 +32,6 @@ var ErrWrongTypeAssertion = errors.New("wrong type assertion")
 // ErrNilSCDestAccount signals that destination account is nil
 var ErrNilSCDestAccount = errors.New("nil destination SC account")
 
-// ErrNilEpochHandler signals that a nil epoch handler was provided
-var ErrNilEpochHandler = errors.New("nil epoch handler")
-
 // ErrNotEnoughGas signals that not enough gas has been provided
 var ErrNotEnoughGas = errors.New("not enough gas was sent in the transaction")
 
@@ -163,3 +160,9 @@ var ErrTooManyTransferAddresses = errors.New("too many transfer addresses")
 
 // ErrInvalidMaxNumAddresses signals that there is an invalid max number of addresses
 var ErrInvalidMaxNumAddresses = errors.New("invalid max number of addresses")
+
+// ErrNilEnableEpochsHandler signals that a nil enable epochs handler was provided
+var ErrNilEnableEpochsHandler = errors.New("nil enable epochs handler")
+
+// ErrNilActiveHandler signals that a nil active handler has been provided
+var ErrNilActiveHandler = errors.New("nil active handler")
