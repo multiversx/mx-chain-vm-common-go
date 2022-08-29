@@ -349,7 +349,6 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	if len(currentSaveData) == 0 && isSendAlwaysFlagEnabled {
 		esdtDataOnSystemAcc.Properties = nil
 		esdtDataOnSystemAcc.Reserved = []byte{1}
-		esdtDataOnSystemAcc.Value.Set(esdtData.Value)
 	}
 
 	if !isSendAlwaysFlagEnabled {
