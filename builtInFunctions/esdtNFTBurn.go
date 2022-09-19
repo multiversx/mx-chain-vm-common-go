@@ -10,7 +10,7 @@ import (
 )
 
 type esdtNFTBurn struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
@@ -102,6 +102,11 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 	esdtData.Value.Sub(esdtData.Value, quantityToBurn)
 
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, false, vmInput.ReturnCallAfterError)
+	if err != nil {
+		return nil, err
+	}
+
+	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, big.NewInt(0).Neg(quantityToBurn))
 	if err != nil {
 		return nil, err
 	}

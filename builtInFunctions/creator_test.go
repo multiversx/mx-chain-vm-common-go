@@ -14,13 +14,13 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 	fillGasMapInternal(gasMap, 1)
 
 	args := ArgsCreateBuiltInFunctionContainer{
-		GasMap:                           gasMap,
-		MapDNSAddresses:                  make(map[string]struct{}),
-		EnableUserNameChange:             false,
-		Marshalizer:                      &mock.MarshalizerMock{},
-		Accounts:                         &mock.AccountsStub{},
-		ShardCoordinator:                 mock.NewMultiShardsCoordinatorMock(1),
-		EpochNotifier:                    &mock.EpochNotifierStub{},
+		GasMap:               gasMap,
+		MapDNSAddresses:      make(map[string]struct{}),
+		EnableUserNameChange: false,
+		Marshalizer:          &mock.MarshalizerMock{},
+		Accounts:             &mock.AccountsStub{},
+		ShardCoordinator:     mock.NewMultiShardsCoordinatorMock(1),
+		EnableEpochsHandler:  &mock.EnableEpochsHandlerStub{},
 		MaxNumOfAddressesForTransferRole: 100,
 	}
 
@@ -88,9 +88,9 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilShardCoordinator)
 
 	args = createMockArguments()
-	args.EpochNotifier = nil
+	args.EnableEpochsHandler = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilEpochHandler)
+	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 
 	args = createMockArguments()
 	args.Marshalizer = nil

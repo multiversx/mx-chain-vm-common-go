@@ -27,17 +27,18 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		&mock.ShardCoordinatorStub{},
 		vmcommon.BaseOperationCost{},
 		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		0,
 		createNewESDTDataStorageHandler(),
-		&mock.EpochNotifierStub{},
+		&mock.EnableEpochsHandlerStub{
+			IsTransferToMetaFlagEnabledField:                     false,
+			IsSaveToSystemAccountFlagEnabledField:                true,
+			IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		},
 	)
 
 	return nftTransfer
 }
 
-func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler) (*esdtNFTTransfer, *esdtDataStorage) {
+func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler, enableEpochsHandler vmcommon.EnableEpochsHandler) (*esdtNFTTransfer, *esdtDataStorage) {
 	marshaller := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard
@@ -63,7 +64,7 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 		},
 	}
 
-	esdtStorageHandler := createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts)
+	esdtStorageHandler := createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts, enableEpochsHandler)
 	nftTransfer, _ := NewESDTNFTTransferFunc(
 		1,
 		marshaller,
@@ -79,18 +80,19 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 				return nil
 			},
 		},
-		1000,
-		0,
-		0,
 		esdtStorageHandler,
-		&mock.EpochNotifierStub{},
+		enableEpochsHandler,
 	)
 
 	return nftTransfer, esdtStorageHandler
 }
 
 func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler) *esdtNFTTransfer {
-	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler)
+	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:        true,
+		IsCheckTransferFlagEnabledField:         true,
+		IsCheckFrozenCollectionFlagEnabledField: true,
+	})
 	return nftTransfer
 }
 
@@ -169,148 +171,145 @@ func testNFTTokenShouldExist(
 	assert.Equal(tb, expectedValue, esdtData.Value)
 }
 
-func TestNewESDTNFTTransferFunc_NilArgumentsShouldErr(t *testing.T) {
-	t.Parallel()
-
-	nftTransfer, err := NewESDTNFTTransferFunc(
-		0,
-		nil,
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		0,
-		createNewESDTDataStorageHandler(),
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilMarshalizer, err)
-
-	nftTransfer, err = NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		nil,
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		0,
-		createNewESDTDataStorageHandler(),
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
-
-	nftTransfer, err = NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		nil,
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		0,
-		createNewESDTDataStorageHandler(),
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilAccountsAdapter, err)
-
-	nftTransfer, err = NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		nil,
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		0,
-		createNewESDTDataStorageHandler(),
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilShardCoordinator, err)
-
-	nftTransfer, err = NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		nil,
-		1000,
-		0,
-		0,
-		createNewESDTDataStorageHandler(),
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilRolesHandler, err)
-
-	nftTransfer, err = NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		0,
-		createNewESDTDataStorageHandler(),
-		nil,
-	)
-	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilEpochHandler, err)
-
-	nftTransfer, err = NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		0,
-		nil,
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftTransfer))
-	assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
-}
-
 func TestNewESDTNFTTransferFunc(t *testing.T) {
 	t.Parallel()
 
-	nftTransfer, err := NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		0,
-		createNewESDTDataStorageHandler(),
-		&mock.EpochNotifierStub{},
-	)
-	assert.False(t, check.IfNil(nftTransfer))
-	assert.Nil(t, err)
+	t.Run("nil marshaller should error", func(t *testing.T) {
+		t.Parallel()
+
+		nftTransfer, err := NewESDTNFTTransferFunc(
+			0,
+			nil,
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.AccountsStub{},
+			&mock.ShardCoordinatorStub{},
+			vmcommon.BaseOperationCost{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftTransfer))
+		assert.Equal(t, ErrNilMarshalizer, err)
+	})
+	t.Run("nil global settings handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		nftTransfer, err := NewESDTNFTTransferFunc(
+			0,
+			&mock.MarshalizerMock{},
+			nil,
+			&mock.AccountsStub{},
+			&mock.ShardCoordinatorStub{},
+			vmcommon.BaseOperationCost{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftTransfer))
+		assert.Equal(t, ErrNilGlobalSettingsHandler, err)
+	})
+	t.Run("nil accounts adapter should error", func(t *testing.T) {
+		t.Parallel()
+
+		nftTransfer, err := NewESDTNFTTransferFunc(
+			0,
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			nil,
+			&mock.ShardCoordinatorStub{},
+			vmcommon.BaseOperationCost{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftTransfer))
+		assert.Equal(t, ErrNilAccountsAdapter, err)
+	})
+	t.Run("nil shard coordinator should error", func(t *testing.T) {
+		t.Parallel()
+
+		nftTransfer, err := NewESDTNFTTransferFunc(
+			0,
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.AccountsStub{},
+			nil,
+			vmcommon.BaseOperationCost{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftTransfer))
+		assert.Equal(t, ErrNilShardCoordinator, err)
+	})
+	t.Run("nil roles handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		nftTransfer, err := NewESDTNFTTransferFunc(
+			0,
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.AccountsStub{},
+			&mock.ShardCoordinatorStub{},
+			vmcommon.BaseOperationCost{},
+			nil,
+			createNewESDTDataStorageHandler(),
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftTransfer))
+		assert.Equal(t, ErrNilRolesHandler, err)
+	})
+	t.Run("nil esdt storage handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		nftTransfer, err := NewESDTNFTTransferFunc(
+			0,
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.AccountsStub{},
+			&mock.ShardCoordinatorStub{},
+			vmcommon.BaseOperationCost{},
+			&mock.ESDTRoleHandlerStub{},
+			nil,
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftTransfer))
+		assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
+	})
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		nftTransfer, err := NewESDTNFTTransferFunc(
+			0,
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.AccountsStub{},
+			&mock.ShardCoordinatorStub{},
+			vmcommon.BaseOperationCost{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			nil,
+		)
+		assert.True(t, check.IfNil(nftTransfer))
+		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		nftTransfer, err := NewESDTNFTTransferFunc(
+			0,
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.AccountsStub{},
+			&mock.ShardCoordinatorStub{},
+			vmcommon.BaseOperationCost{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.False(t, check.IfNil(nftTransfer))
+		assert.Nil(t, err)
+	})
 }
 
 func TestEsdtNFTTransfer_SetPayable(t *testing.T) {
@@ -472,7 +471,10 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 			IsPayableCalled: func(address []byte) (bool, error) {
 				return true, nil
 			},
-		}, 0, 0, &mock.EpochNotifierStub{})
+		}, &mock.EnableEpochsHandlerStub{
+			IsFixAsyncCallbackCheckFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField: true,
+		})
 
 	_ = nftTransfer.SetPayableChecker(payableChecker)
 	senderAddress := bytes.Repeat([]byte{2}, 32)
@@ -891,8 +893,12 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 	t.Parallel()
 
 	globalSettings := &mock.GlobalSettingsHandlerStub{}
-	transferFunc, esdtStorageHandler := createNFTTransferAndStorageHandler(0, 1, globalSettings)
-	esdtStorageHandler.flagCheckFrozenCollection.SetValue(true)
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:        true,
+		IsCheckTransferFlagEnabledField:         true,
+		IsCheckFrozenCollectionFlagEnabledField: true,
+	}
+	transferFunc, _ := createNFTTransferAndStorageHandler(0, 1, globalSettings, enableEpochsHandler)
 
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
@@ -941,59 +947,4 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 	vmInput.ReturnCallAfterError = true
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	assert.Nil(t, err)
-}
-
-func TestESDTNFTTransfer_EpochChange(t *testing.T) {
-	t.Parallel()
-
-	var functionHandler vmcommon.EpochSubscriberHandler
-	notifier := &mock.EpochNotifierStub{
-		RegisterNotifyHandlerCalled: func(handler vmcommon.EpochSubscriberHandler) {
-			functionHandler = handler
-		},
-	}
-	transferFunc, _ := NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1,
-		2,
-		3,
-		createNewESDTDataStorageHandler(),
-		notifier,
-	)
-
-	functionHandler.EpochConfirmed(0, 0)
-	assert.False(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(1, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(2, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(3, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(4, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(5, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
 }

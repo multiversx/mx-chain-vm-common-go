@@ -3,33 +3,35 @@ package builtInFunctions
 import (
 	"encoding/hex"
 	"errors"
+	"testing"
+
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/data/vm"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
-func createMockPayableChecker(fix1, fix2 uint32) *payableCheck {
+func createMockPayableChecker(isFixAsyncCallbackCheckFlagEnabledField, isCheckFunctionArgumentFlagEnabled bool) *payableCheck {
 	p, _ := NewPayableCheckFunc(
 		&mock.PayableHandlerStub{},
-		fix1,
-		fix2,
-		&mock.EpochNotifierStub{})
+		&mock.EnableEpochsHandlerStub{
+			IsFixAsyncCallbackCheckFlagEnabledField: isFixAsyncCallbackCheckFlagEnabledField,
+			IsCheckFunctionArgumentFlagEnabledField: isCheckFunctionArgumentFlagEnabled,
+		})
 	return p
 }
 
 func TestNewPayableCheckFunc(t *testing.T) {
 	t.Parallel()
 
-	_, err := NewPayableCheckFunc(nil, 0, 0, &mock.EpochNotifierStub{})
+	_, err := NewPayableCheckFunc(nil, &mock.EnableEpochsHandlerStub{})
 	assert.Equal(t, err, ErrNilPayableHandler)
 
-	_, err = NewPayableCheckFunc(&mock.PayableHandlerStub{}, 0, 0, nil)
-	assert.Equal(t, err, ErrNilEpochHandler)
+	_, err = NewPayableCheckFunc(&mock.PayableHandlerStub{}, nil)
+	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 
-	p := createMockPayableChecker(1, 2)
+	p := createMockPayableChecker(false, false)
 	assert.False(t, p.IsInterfaceNil())
 }
 
@@ -38,8 +40,8 @@ func TestDetermineIsSCCallAfter(t *testing.T) {
 
 	scAddress, _ := hex.DecodeString("00000000000000000500e9a061848044cc9c6ac2d78dca9e4f72e72a0a5b315c")
 	address, _ := hex.DecodeString("432d6fed4f1d8ac43cd3201fd047b98e27fc9c06efb20c6593ba577cd11228ab")
-	p1 := createMockPayableChecker(0, 0)
-	p2 := createMockPayableChecker(1, 1)
+	p1 := createMockPayableChecker(true, true)
+	p2 := createMockPayableChecker(false, false)
 	minLenArguments := 4
 	t.Run("less number of arguments should return false", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
@@ -107,8 +109,8 @@ func TestMustVerifyPayable(t *testing.T) {
 	t.Parallel()
 
 	minLenArguments := 4
-	p1 := createMockPayableChecker(0, 0)
-	p2 := createMockPayableChecker(1, 1)
+	p1 := createMockPayableChecker(true, true)
+	p2 := createMockPayableChecker(false, false)
 
 	t.Run("call type is AsynchronousCall should return false", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
@@ -231,7 +233,7 @@ func TestMustVerifyPayable(t *testing.T) {
 func TestPayableCheck_CheckPayable(t *testing.T) {
 	t.Parallel()
 
-	p := createMockPayableChecker(0, 0)
+	p := createMockPayableChecker(true, true)
 	p.payableHandler = &mock.PayableHandlerStub{
 		IsPayableCalled: func(address []byte) (bool, error) {
 			return false, nil

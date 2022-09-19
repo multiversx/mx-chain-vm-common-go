@@ -5,13 +5,12 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type esdtNFTAddUri struct {
-	*baseEnabled
+	baseActiveHandler
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
@@ -28,8 +27,7 @@ func NewESDTNFTAddUriFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
-	activationEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtNFTAddUri, error) {
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
@@ -40,8 +38,8 @@ func NewESDTNFTAddUriFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtNFTAddUri{
@@ -54,13 +52,7 @@ func NewESDTNFTAddUriFunc(
 		rolesHandler:          rolesHandler,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:        core.BuiltInFunctionESDTNFTAddURI,
-		activationEpoch: activationEpoch,
-		flagActivated:   atomic.Flag{},
-	}
-
-	epochNotifier.RegisterNotifyHandler(e)
+	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled
 
 	return e, nil
 }

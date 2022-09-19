@@ -12,7 +12,7 @@ import (
 )
 
 type esdtNFTCreateRoleTransfer struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	keyPrefix        []byte
 	marshaller       vmcommon.Marshalizer
 	accounts         vmcommon.AccountsAdapter
