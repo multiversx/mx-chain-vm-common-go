@@ -347,6 +347,11 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	esdtData, _, _ := esdtDataStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
 	assert.Equal(t, tokenMetaData, esdtData.TokenMetaData)
 	assert.Equal(t, esdtData.Value, quantity)
+
+	esdtDataBytes := vmOutput.Logs[0].Topics[3]
+	var esdtDataFromLog esdt.ESDigitalToken
+	_ = nftCreate.marshaller.Unmarshal(&esdtDataFromLog, esdtDataBytes)
+	require.Equal(t, esdtData.TokenMetaData, esdtDataFromLog.TokenMetaData)
 }
 
 func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
