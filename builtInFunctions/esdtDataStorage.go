@@ -372,7 +372,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 
 		if e.flagFixOldTokenLiquidity.IsSet() {
 			if check.IfNil(userAcc) {
-				return ErrNilAccountsAdapter
+				return ErrNilUserAccount
 			}
 			dataOnUserAcc, err := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 			if err != nil {
