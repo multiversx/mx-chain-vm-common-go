@@ -6,7 +6,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	"github.com/ElrondNetwork/elrond-vm-common"
+	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -119,7 +119,9 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 
 	// can wipe as account is frozen
 	metaData := ESDTUserMetadata{Frozen: true}
+	wipedAmount := big.NewInt(42)
 	esdtToken = &esdt.ESDigitalToken{
+		Value:      wipedAmount,
 		Properties: metaData.ToBytes(),
 	}
 	esdtTokenBytes, _ := marshaller.Marshal(esdtToken)
@@ -127,9 +129,12 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	assert.NoError(t, err)
 
 	wipe, _ = NewESDTFreezeWipeFunc(marshaller, false, true)
-	_, err = wipe.ProcessBuiltinFunction(nil, acnt, input)
+	vmOutput, err := wipe.ProcessBuiltinFunction(nil, acnt, input)
 	assert.NoError(t, err)
 
 	marshaledData, _ = acnt.AccountDataHandler().RetrieveValue(esdtKey)
 	assert.Equal(t, 0, len(marshaledData))
+
+	assert.Len(t, vmOutput.Logs, 1)
+	assert.Equal(t, [][]byte{key, {}, wipedAmount.Bytes(), []byte("dst")}, vmOutput.Logs[0].Topics)
 }

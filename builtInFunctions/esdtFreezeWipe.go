@@ -63,38 +63,46 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
+	identifier, nonce := extractTokenIdentifierAndNonceESDTWipe(vmInput.Arguments[0])
 
 	if e.wipe {
-		err := e.wipeIfApplicable(acntDst, esdtTokenKey)
+		wipedAmount, err := e.wipeIfApplicable(acntDst, esdtTokenKey)
 		if err != nil {
 			return nil, err
 		}
+
+		addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, wipedAmount, vmInput.CallerAddr, acntDst.AddressBytes())
 	} else {
 		err := e.toggleFreeze(acntDst, esdtTokenKey)
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
-	identifier, nonce := extractTokenIdentifierAndNonceESDTWipe(vmInput.Arguments[0])
-	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
+		addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
+	}
 
 	return vmOutput, nil
 }
 
-func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, tokenKey []byte) error {
+func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, tokenKey []byte) (*big.Int, error) {
 	tokenData, err := getESDTDataFromKey(acntDst, tokenKey, e.marshaller)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
 	if !esdtUserMetadata.Frozen {
-		return ErrCannotWipeAccountNotFrozen
+		return nil, ErrCannotWipeAccountNotFrozen
 	}
 
-	return acntDst.AccountDataHandler().SaveKeyValue(tokenKey, nil)
+	err = acntDst.AccountDataHandler().SaveKeyValue(tokenKey, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	wipedAmount := vmcommon.ZeroValueIfNil(tokenData.Value)
+	return wipedAmount, nil
 }
 
 func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) error {
