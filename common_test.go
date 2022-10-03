@@ -1,6 +1,7 @@
 package vmcommon
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,4 +49,9 @@ func TestElrondEI_validateToken(t *testing.T) {
 	assert.True(t, result)
 	result = ValidateToken([]byte("12345-6258d2"))
 	assert.True(t, result)
+}
+
+func TestZeroValueIfNil(t *testing.T) {
+	assert.Equal(t, big.NewInt(0), ZeroValueIfNil(nil))
+	assert.Equal(t, big.NewInt(42), ZeroValueIfNil(big.NewInt(42)))
 }
