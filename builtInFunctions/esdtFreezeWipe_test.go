@@ -53,16 +53,21 @@ func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 
 	input.RecipientAddr = []byte("dst")
 	acnt := mock.NewUserAccount(input.RecipientAddr)
-	_, err = freeze.ProcessBuiltinFunction(nil, acnt, input)
+	vmOutput, err := freeze.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Nil(t, err)
 
-	esdtToken := &esdt.ESDigitalToken{}
+	frozenAmount := big.NewInt(42)
+	esdtToken := &esdt.ESDigitalToken{
+		Value: frozenAmount,
+	}
 	esdtKey := append(freeze.keyPrefix, key...)
 	marshaledData, _ := acnt.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 
 	esdtUserData := ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.True(t, esdtUserData.Frozen)
+	assert.Len(t, vmOutput.Logs, 1)
+	assert.Equal(t, [][]byte{key, {}, frozenAmount.Bytes(), []byte("dst")}, vmOutput.Logs[0].Topics)
 }
 
 func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
@@ -134,7 +139,6 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 
 	marshaledData, _ = acnt.AccountDataHandler().RetrieveValue(esdtKey)
 	assert.Equal(t, 0, len(marshaledData))
-
 	assert.Len(t, vmOutput.Logs, 1)
 	assert.Equal(t, [][]byte{key, {}, wipedAmount.Bytes(), []byte("dst")}, vmOutput.Logs[0].Topics)
 }

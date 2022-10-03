@@ -63,24 +63,26 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
-	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
-	identifier, nonce := extractTokenIdentifierAndNonceESDTWipe(vmInput.Arguments[0])
+
+	var amount *big.Int
+	var err error
 
 	if e.wipe {
-		wipedAmount, err := e.wipeIfApplicable(acntDst, esdtTokenKey)
+		amount, err = e.wipeIfApplicable(acntDst, esdtTokenKey)
 		if err != nil {
 			return nil, err
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, wipedAmount, vmInput.CallerAddr, acntDst.AddressBytes())
 	} else {
-		err := e.toggleFreeze(acntDst, esdtTokenKey)
+		amount, err = e.toggleFreeze(acntDst, esdtTokenKey)
 		if err != nil {
 			return nil, err
 		}
-
-		addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
 	}
+
+	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
+	identifier, nonce := extractTokenIdentifierAndNonceESDTWipe(vmInput.Arguments[0])
+	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, amount, vmInput.CallerAddr, acntDst.AddressBytes())
 
 	return vmOutput, nil
 }
@@ -105,10 +107,10 @@ func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, t
 	return wipedAmount, nil
 }
 
-func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) error {
+func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) (*big.Int, error) {
 	tokenData, err := getESDTDataFromKey(acntDst, tokenKey, e.marshaller)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
@@ -117,10 +119,11 @@ func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, token
 
 	err = saveESDTData(acntDst, tokenData, tokenKey, e.marshaller)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	frozenAmount := vmcommon.ZeroValueIfNil(tokenData.Value)
+	return frozenAmount, nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil
