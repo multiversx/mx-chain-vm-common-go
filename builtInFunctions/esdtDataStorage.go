@@ -263,6 +263,14 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 		return nil
 	}
 
+	if e.flagFixOldTokenLiquidity.IsSet() {
+		// old tokens which were transferred intra shard before the activation of this flag
+		if esdtData.Value.Cmp(zero) == 0 && transferValue.Cmp(zero) < 0 {
+			esdtData.Reserved = nil
+			return e.marshalAndSaveData(systemAcc, esdtData, esdtNFTTokenKey)
+		}
+	}
+
 	esdtData.Value.Add(esdtData.Value, transferValue)
 	if esdtData.Value.Cmp(zero) < 0 {
 		return ErrInvalidLiquidityForESDT
@@ -370,17 +378,9 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		esdtDataOnSystemAcc.Properties = nil
 		esdtDataOnSystemAcc.Reserved = []byte{1}
 
-		if e.flagFixOldTokenLiquidity.IsSet() {
-			if check.IfNil(userAcc) {
-				return ErrNilUserAccount
-			}
-			dataOnUserAcc, err := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
-			if err != nil {
-				return err
-			}
-			if len(dataOnUserAcc) > 0 {
-				esdtDataOnSystemAcc.Reserved = nil
-			}
+		err = e.setReservedToNilForOldToken(esdtDataOnSystemAcc, userAcc, esdtNFTTokenKey)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -395,6 +395,41 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	}
 
 	return e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
+}
+
+func (e *esdtDataStorage) setReservedToNilForOldToken(
+	esdtDataOnSystemAcc *esdt.ESDigitalToken,
+	userAcc vmcommon.UserAccountHandler,
+	esdtNFTTokenKey []byte,
+) error {
+	if !e.flagFixOldTokenLiquidity.IsSet() {
+		return nil
+	}
+
+	if check.IfNil(userAcc) {
+		return ErrNilUserAccount
+	}
+	dataOnUserAcc, err := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	if err != nil {
+		return err
+	}
+	if len(dataOnUserAcc) == 0 {
+		return nil
+	}
+
+	esdtDataOnUserAcc := &esdt.ESDigitalToken{}
+	err = e.marshaller.Unmarshal(esdtDataOnUserAcc, dataOnUserAcc)
+	if err != nil {
+		return err
+	}
+
+	// tokens which were last moved before flagOptimizeNFTStore keep the esdt metaData on the user account
+	// these are not compatible with the new liquidity model,so we set the reserved field to nil
+	if esdtDataOnUserAcc.TokenMetaData != nil {
+		esdtDataOnSystemAcc.Reserved = nil
+	}
+
+	return nil
 }
 
 func (e *esdtDataStorage) marshalAndSaveData(
