@@ -409,13 +409,14 @@ func (e *esdtDataStorage) setReservedToNilForOldToken(
 	if check.IfNil(userAcc) {
 		return ErrNilUserAccount
 	}
-	dataOnUserAcc, err := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
-	if err != nil || len(dataOnUserAcc) == 0 {
+	dataOnUserAcc, errNotCritical := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	shouldIgnoreToken := errNotCritical != nil || len(dataOnUserAcc) == 0
+	if shouldIgnoreToken {
 		return nil
 	}
 
 	esdtDataOnUserAcc := &esdt.ESDigitalToken{}
-	err = e.marshaller.Unmarshal(esdtDataOnUserAcc, dataOnUserAcc)
+	err := e.marshaller.Unmarshal(esdtDataOnUserAcc, dataOnUserAcc)
 	if err != nil {
 		return err
 	}
