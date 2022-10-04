@@ -410,10 +410,7 @@ func (e *esdtDataStorage) setReservedToNilForOldToken(
 		return ErrNilUserAccount
 	}
 	dataOnUserAcc, err := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
-	if err != nil {
-		return err
-	}
-	if len(dataOnUserAcc) == 0 {
+	if err != nil || len(dataOnUserAcc) == 0 {
 		return nil
 	}
 
