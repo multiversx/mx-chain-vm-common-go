@@ -93,6 +93,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		checkCorrectTokenIDEnableEpoch:      args.CheckCorrectTokenIDEnableEpoch,
 		sendESDTMetadataAlwaysEnableEpoch:   args.SendESDTMetadataAlwaysEnableEpoch,
 		checkFunctionArgumentEnableEpoch:    args.CheckFunctionArgumentEnableEpoch,
+		fixOldTokenLiquidityEnableEpoch:     args.FixOldTokenLiquidityEnableEpoch,
 		maxNumOfAddressesForTransferRole:    args.MaxNumOfAddressesForTransferRole,
 		configAddress:                       args.ConfigAddress,
 	}
