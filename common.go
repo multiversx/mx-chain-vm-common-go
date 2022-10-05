@@ -1,5 +1,7 @@
 package vmcommon
 
+import "math/big"
+
 const tickerMinLength = 3
 const tickerMaxLength = 10
 const additionalRandomCharsLength = 6
@@ -84,4 +86,13 @@ func randomCharsAreValid(chars []byte) bool {
 	}
 
 	return true
+}
+
+// ZeroValueIfNil returns 0 if the input is nil, otherwise returns the input
+func ZeroValueIfNil(value *big.Int) *big.Int {
+	if value == nil {
+		return big.NewInt(0)
+	}
+
+	return value
 }
