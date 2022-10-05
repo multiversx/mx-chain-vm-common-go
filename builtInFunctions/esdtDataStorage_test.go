@@ -227,10 +227,10 @@ func TestESDTDataStorage_saveDataToSystemAccNotNFTOrMetaData(t *testing.T) {
 	args := createMockArgsForNewESDTDataStorage()
 	e, _ := NewESDTDataStorage(args)
 
-	err := e.saveESDTMetaDataToSystemAccount(0, []byte("TCK"), 0, nil, true)
+	err := e.saveESDTMetaDataToSystemAccount(nil, 0, []byte("TCK"), 0, nil, true)
 	assert.Nil(t, err)
 
-	err = e.saveESDTMetaDataToSystemAccount(0, []byte("TCK"), 1, &esdt.ESDigitalToken{}, true)
+	err = e.saveESDTMetaDataToSystemAccount(nil, 0, []byte("TCK"), 1, &esdt.ESDigitalToken{}, true)
 	assert.Nil(t, err)
 }
 

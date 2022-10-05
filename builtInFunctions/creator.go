@@ -28,6 +28,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	SendESDTMetadataAlwaysEnableEpoch   uint32
 	CheckFunctionArgumentEnableEpoch    uint32
 	FixAsyncCallbackCheckEnableEpoch    uint32
+	FixOldTokenLiquidityEnableEpoch     uint32
 	MaxNumOfAddressesForTransferRole    uint32
 	ConfigAddress                       []byte
 }
@@ -53,6 +54,7 @@ type builtInFuncCreator struct {
 	sendESDTMetadataAlwaysEnableEpoch   uint32
 	checkFunctionArgumentEnableEpoch    uint32
 	fixAsnycCallbackCheckEnableEpoch    uint32
+	fixOldTokenLiquidityEnableEpoch     uint32
 	maxNumOfAddressesForTransferRole    uint32
 	configAddress                       []byte
 }
@@ -91,6 +93,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		checkCorrectTokenIDEnableEpoch:      args.CheckCorrectTokenIDEnableEpoch,
 		sendESDTMetadataAlwaysEnableEpoch:   args.SendESDTMetadataAlwaysEnableEpoch,
 		checkFunctionArgumentEnableEpoch:    args.CheckFunctionArgumentEnableEpoch,
+		fixOldTokenLiquidityEnableEpoch:     args.FixOldTokenLiquidityEnableEpoch,
 		maxNumOfAddressesForTransferRole:    args.MaxNumOfAddressesForTransferRole,
 		configAddress:                       args.ConfigAddress,
 	}
@@ -283,13 +286,14 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	args := ArgsNewESDTDataStorage{
-		Accounts:                b.accounts,
-		GlobalSettingsHandler:   globalSettingsFunc,
-		Marshalizer:             b.marshaller,
-		SaveToSystemEnableEpoch: b.saveNFTToSystemAccountEnableEpoch,
-		EpochNotifier:           b.epochNotifier,
-		ShardCoordinator:        b.shardCoordinator,
-		SendAlwaysEnableEpoch:   b.sendESDTMetadataAlwaysEnableEpoch,
+		Accounts:                        b.accounts,
+		GlobalSettingsHandler:           globalSettingsFunc,
+		Marshalizer:                     b.marshaller,
+		SaveToSystemEnableEpoch:         b.saveNFTToSystemAccountEnableEpoch,
+		EpochNotifier:                   b.epochNotifier,
+		ShardCoordinator:                b.shardCoordinator,
+		SendAlwaysEnableEpoch:           b.sendESDTMetadataAlwaysEnableEpoch,
+		FixOldTokenLiquidityEnableEpoch: b.fixOldTokenLiquidityEnableEpoch,
 	}
 	b.esdtStorageHandler, err = NewESDTDataStorage(args)
 	if err != nil {

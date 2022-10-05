@@ -30,17 +30,20 @@ type esdtDataStorage struct {
 	checkFrozenCollectionEnableEpoch uint32
 	flagSendAlwaysEnableEpoch        atomic.Flag
 	sendAlwaysEnableEpoch            uint32
+	flagFixOldTokenLiquidity         atomic.Flag
+	fixOldTokenLiquidityEnableEpoch  uint32
 }
 
 // ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
 type ArgsNewESDTDataStorage struct {
-	Accounts                vmcommon.AccountsAdapter
-	GlobalSettingsHandler   vmcommon.ESDTGlobalSettingsHandler
-	Marshalizer             vmcommon.Marshalizer
-	SaveToSystemEnableEpoch uint32
-	SendAlwaysEnableEpoch   uint32
-	EpochNotifier           vmcommon.EpochNotifier
-	ShardCoordinator        vmcommon.Coordinator
+	Accounts                        vmcommon.AccountsAdapter
+	GlobalSettingsHandler           vmcommon.ESDTGlobalSettingsHandler
+	Marshalizer                     vmcommon.Marshalizer
+	SaveToSystemEnableEpoch         uint32
+	SendAlwaysEnableEpoch           uint32
+	FixOldTokenLiquidityEnableEpoch uint32
+	EpochNotifier                   vmcommon.EpochNotifier
+	ShardCoordinator                vmcommon.Coordinator
 }
 
 // NewESDTDataStorage creates a new esdt data storage handler
@@ -75,6 +78,8 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 		checkFrozenCollectionEnableEpoch: args.SaveToSystemEnableEpoch,
 		flagSendAlwaysEnableEpoch:        atomic.Flag{},
 		sendAlwaysEnableEpoch:            args.SendAlwaysEnableEpoch,
+		flagFixOldTokenLiquidity:         atomic.Flag{},
+		fixOldTokenLiquidityEnableEpoch:  args.FixOldTokenLiquidityEnableEpoch,
 	}
 
 	args.EpochNotifier.RegisterNotifyHandler(e)
@@ -258,6 +263,14 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 		return nil
 	}
 
+	if e.flagFixOldTokenLiquidity.IsSet() {
+		// old tokens which were transferred intra shard before the activation of this flag
+		if esdtData.Value.Cmp(zero) == 0 && transferValue.Cmp(zero) < 0 {
+			esdtData.Reserved = nil
+			return e.marshalAndSaveData(systemAcc, esdtData, esdtNFTTokenKey)
+		}
+	}
+
 	esdtData.Value.Add(esdtData.Value, transferValue)
 	if esdtData.Value.Cmp(zero) < 0 {
 		return ErrInvalidLiquidityForESDT
@@ -298,7 +311,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
 	if e.flagSaveToSystemAccount.IsSet() {
-		err = e.saveESDTMetaDataToSystemAccount(senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdate)
+		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdate)
 		if err != nil {
 			return nil, err
 		}
@@ -331,6 +344,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 }
 
 func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
+	userAcc vmcommon.UserAccountHandler,
 	senderShardID uint32,
 	esdtNFTTokenKey []byte,
 	nonce uint64,
@@ -363,6 +377,11 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	if len(currentSaveData) == 0 && e.flagSendAlwaysEnableEpoch.IsSet() {
 		esdtDataOnSystemAcc.Properties = nil
 		esdtDataOnSystemAcc.Reserved = []byte{1}
+
+		err = e.setReservedToNilForOldToken(esdtDataOnSystemAcc, userAcc, esdtNFTTokenKey)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !e.flagSendAlwaysEnableEpoch.IsSet() {
@@ -376,6 +395,39 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	}
 
 	return e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
+}
+
+func (e *esdtDataStorage) setReservedToNilForOldToken(
+	esdtDataOnSystemAcc *esdt.ESDigitalToken,
+	userAcc vmcommon.UserAccountHandler,
+	esdtNFTTokenKey []byte,
+) error {
+	if !e.flagFixOldTokenLiquidity.IsSet() {
+		return nil
+	}
+
+	if check.IfNil(userAcc) {
+		return ErrNilUserAccount
+	}
+	dataOnUserAcc, errNotCritical := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	shouldIgnoreToken := errNotCritical != nil || len(dataOnUserAcc) == 0
+	if shouldIgnoreToken {
+		return nil
+	}
+
+	esdtDataOnUserAcc := &esdt.ESDigitalToken{}
+	err := e.marshaller.Unmarshal(esdtDataOnUserAcc, dataOnUserAcc)
+	if err != nil {
+		return err
+	}
+
+	// tokens which were last moved before flagOptimizeNFTStore keep the esdt metaData on the user account
+	// these are not compatible with the new liquidity model,so we set the reserved field to nil
+	if esdtDataOnUserAcc.TokenMetaData != nil {
+		esdtDataOnSystemAcc.Reserved = nil
+	}
+
+	return nil
 }
 
 func (e *esdtDataStorage) marshalAndSaveData(
@@ -518,7 +570,7 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromNFTTransfer(
 		nonce := big.NewInt(0).SetBytes(arguments[1]).Uint64()
 		esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
-		return e.saveESDTMetaDataToSystemAccount(sndShardID, esdtNFTTokenKey, nonce, esdtTransferData, true)
+		return e.saveESDTMetaDataToSystemAccount(nil, sndShardID, esdtNFTTokenKey, nonce, esdtTransferData, true)
 	}
 	return nil
 }
@@ -552,7 +604,7 @@ func (e *esdtDataStorage) addMetaDataToSystemAccountFromMultiTransfer(
 
 			esdtTokenKey := append(e.keyPrefix, tokenID...)
 			esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-			err = e.saveESDTMetaDataToSystemAccount(sndShardID, esdtNFTTokenKey, nonce, esdtTransferData, true)
+			err = e.saveESDTMetaDataToSystemAccount(nil, sndShardID, esdtNFTTokenKey, nonce, esdtTransferData, true)
 			if err != nil {
 				return err
 			}
@@ -573,6 +625,8 @@ func (e *esdtDataStorage) EpochConfirmed(epoch uint32, _ uint64) {
 	e.flagSendAlwaysEnableEpoch.SetValue(epoch >= e.sendAlwaysEnableEpoch)
 	log.Debug("ESDT send metadata always", "enabled", e.flagSendAlwaysEnableEpoch.IsSet())
 
+	e.flagFixOldTokenLiquidity.SetValue(epoch >= e.fixOldTokenLiquidityEnableEpoch)
+	log.Debug("ESDT fix old token liquidity", "enabled", e.flagFixOldTokenLiquidity.IsSet())
 }
 
 // IsInterfaceNil returns true if underlying object in nil
