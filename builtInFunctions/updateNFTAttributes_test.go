@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var enableEpochsHandler = &mock.EnableEpochsHandlerStub{}
-
 func TestNewESDTNFTUpdateAttributesFunc(t *testing.T) {
 	t.Parallel()
 
@@ -309,6 +307,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionShouldErrOnSaveBecauseTok
 			return true
 		},
 	}
+	var enableEpochsHandler = &mock.EnableEpochsHandlerStub{}
 	e, _ := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, enableEpochsHandler), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
 		IsESDTNFTImprovementV1FlagEnabledField: true,
 	})

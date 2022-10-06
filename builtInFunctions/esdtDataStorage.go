@@ -243,7 +243,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 		return nil
 	}
 
-	if e.flagFixOldTokenLiquidity.IsSet() {
+	if e.enableEpochsHandler.IsFixOldTokenLiquidityEnabled() {
 		// old tokens which were transferred intra shard before the activation of this flag
 		if esdtData.Value.Cmp(zero) == 0 && transferValue.Cmp(zero) < 0 {
 			esdtData.Reserved = nil
@@ -383,7 +383,7 @@ func (e *esdtDataStorage) setReservedToNilForOldToken(
 	userAcc vmcommon.UserAccountHandler,
 	esdtNFTTokenKey []byte,
 ) error {
-	if !e.flagFixOldTokenLiquidity.IsSet() {
+	if !e.enableEpochsHandler.IsFixOldTokenLiquidityEnabled() {
 		return nil
 	}
 

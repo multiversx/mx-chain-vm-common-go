@@ -949,122 +949,12 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestESDTNFTTransfer_EpochChange(t *testing.T) {
-	t.Parallel()
-
-	var functionHandler vmcommon.EpochSubscriberHandler
-	notifier := &mock.EpochNotifierStub{
-		RegisterNotifyHandlerCalled: func(handler vmcommon.EpochSubscriberHandler) {
-			functionHandler = handler
-		},
-	}
-	transferFunc, _ := NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1,
-		2,
-		3,
-		createNewESDTDataStorageHandler(),
-		notifier,
-	)
-
-	functionHandler.EpochConfirmed(0, 0)
-	assert.False(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(1, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(2, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(3, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(4, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(5, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-}
-
-func TestESDTNFTTransfer_EpochChange(t *testing.T) {
-	t.Parallel()
-
-	var functionHandler vmcommon.EpochSubscriberHandler
-	notifier := &mock.EpochNotifierStub{
-		RegisterNotifyHandlerCalled: func(handler vmcommon.EpochSubscriberHandler) {
-			functionHandler = handler
-		},
-	}
-	transferFunc, _ := NewESDTNFTTransferFunc(
-		0,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.AccountsStub{},
-		&mock.ShardCoordinatorStub{},
-		vmcommon.BaseOperationCost{},
-		&mock.ESDTRoleHandlerStub{},
-		1,
-		2,
-		3,
-		createNewESDTDataStorageHandler(),
-		notifier,
-	)
-
-	functionHandler.EpochConfirmed(0, 0)
-	assert.False(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(1, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(2, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(3, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(4, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(5, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheck0Transfer.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-}
-
 func TestEsdtNFTTransfer_ProcessBuiltinFunctionCrossShardsFixOldLiquidityIssue(t *testing.T) {
 	t.Parallel()
 
 	vmInput, sender, nftTransferSenderShard, esdtDataStorageHandler, tokenName, tokenNonce := createSetupToSendNFTCrossShard(t)
 
-	esdtDataStorageHandler.flagFixOldTokenLiquidity.SetValue(true)
+	esdtDataStorageHandler.enableEpochsHandler.(*mock.EnableEpochsHandlerStub).IsFixOldTokenLiquidityEnabledField = true
 	vmOutput, err := nftTransferSenderShard.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
@@ -1084,7 +974,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionCrossShardsFixOldLiquidityIssueWi
 
 	vmInput, sender, nftTransferSenderShard, esdtDataStorageHandler, _, _ := createSetupToSendNFTCrossShard(t)
 
-	esdtDataStorageHandler.flagFixOldTokenLiquidity.SetValue(false)
+	esdtDataStorageHandler.enableEpochsHandler.(*mock.EnableEpochsHandlerStub).IsFixOldTokenLiquidityEnabledField = false
 	_, err := nftTransferSenderShard.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
 	require.Equal(t, err, ErrInvalidLiquidityForESDT)
 }
@@ -1096,11 +986,13 @@ func createSetupToSendNFTCrossShard(t *testing.T) (*vmcommon.ContractCallInput, 
 		},
 	}
 
-	nftTransferSenderShard, esdtDataStorageHandler := createNFTTransferAndStorageHandler(1, 2, &mock.GlobalSettingsHandlerStub{})
+	var enableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsSendAlwaysFlagEnabledField:            true,
+		IsSaveToSystemAccountFlagEnabledField:   true,
+		IsCheckFrozenCollectionFlagEnabledField: true,
+	}
+	nftTransferSenderShard, esdtDataStorageHandler := createNFTTransferAndStorageHandler(1, 2, &mock.GlobalSettingsHandlerStub{}, enableEpochsHandler)
 	_ = nftTransferSenderShard.SetPayableChecker(payableHandler)
-	esdtDataStorageHandler.flagSendAlwaysEnableEpoch.SetValue(true)
-	esdtDataStorageHandler.flagSaveToSystemAccount.SetValue(true)
-	esdtDataStorageHandler.flagCheckFrozenCollection.SetValue(true)
 
 	senderAddress := bytes.Repeat([]byte{1}, 32)
 	destinationAddress := bytes.Repeat([]byte{2}, 32)
