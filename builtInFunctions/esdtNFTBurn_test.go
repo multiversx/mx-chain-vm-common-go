@@ -375,7 +375,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	nftTokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(nftTokenKey, esdtDataBytes)
 
-	_ = storageHandler.saveESDTMetaDataToSystemAccount(0, nftTokenKey, nonce.Uint64(), esdtData, true)
+	_ = storageHandler.saveESDTMetaDataToSystemAccount(userAcc, 0, nftTokenKey, nonce.Uint64(), esdtData, true)
 	_ = storageHandler.AddToLiquiditySystemAcc([]byte(key), nonce.Uint64(), initialQuantity)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
@@ -437,7 +437,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
-	_ = storageHandler.saveESDTMetaDataToSystemAccount(0, tokenKey, nonce.Uint64(), esdtData, true)
+	_ = storageHandler.saveESDTMetaDataToSystemAccount(userAcc, 0, tokenKey, nonce.Uint64(), esdtData, true)
 	_ = storageHandler.AddToLiquiditySystemAcc([]byte(key), nonce.Uint64(), initialQuantity)
 
 	output, err := ebf.ProcessBuiltinFunction(
