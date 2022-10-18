@@ -137,7 +137,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Nil(t, err)
 
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 
@@ -151,6 +151,6 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Nil(t, err)
 
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	assert.Equal(t, len(marshaledData), 0)
 }

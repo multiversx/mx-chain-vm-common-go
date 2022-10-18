@@ -309,7 +309,7 @@ func getESDTDataFromKey(
 	marshaller vmcommon.Marshalizer,
 ) (*esdt.ESDigitalToken, error) {
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
-	marshaledData, err := userAcnt.AccountDataHandler().RetrieveValue(key)
+	marshaledData, _, err := userAcnt.AccountDataHandler().RetrieveValue(key)
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, nil
 	}

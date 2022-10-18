@@ -259,7 +259,7 @@ func (e *esdtDeleteMetaData) getESDTDigitalTokenDataFromSystemAccount(
 	systemAcc vmcommon.UserAccountHandler,
 	esdtNFTTokenKey []byte,
 ) (*esdt.ESDigitalToken, error) {
-	marshaledData, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	marshaledData, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return nil, nil
 	}

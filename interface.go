@@ -171,7 +171,7 @@ type UserAccountHandler interface {
 
 // AccountDataHandler models what how to manipulate data held by a SC account
 type AccountDataHandler interface {
-	RetrieveValue(key []byte) ([]byte, error)
+	RetrieveValue(key []byte) ([]byte, uint32, error)
 	SaveKeyValue(key []byte, value []byte) error
 	IsInterfaceNil() bool
 }
