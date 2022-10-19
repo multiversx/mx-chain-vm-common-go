@@ -21,7 +21,7 @@ type BlockchainHook interface {
 	// GetStorageData should yield the storage value for a certain account and index.
 	// Should return an empty byte array if the key is missing from the account storage,
 	// or if account does not exist.
-	GetStorageData(accountAddress []byte, index []byte) ([]byte, error)
+	GetStorageData(accountAddress []byte, index []byte) ([]byte, uint32, error)
 
 	// GetBlockhash returns the hash of the block with the asked nonce if available
 	GetBlockhash(nonce uint64) ([]byte, error)
