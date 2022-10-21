@@ -28,6 +28,7 @@ type EnableEpochsHandlerStub struct {
 	IsCheckTransferFlagEnabledField                      bool
 	IsTransferToMetaFlagEnabledField                     bool
 	IsESDTNFTImprovementV1FlagEnabledField               bool
+	IsFixOldTokenLiquidityEnabledField                   bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
 	FixOOGReturnCodeEnableEpochField                     uint32
 	RemoveNonUpdatedStorageEnableEpochField              uint32
@@ -195,6 +196,11 @@ func (stub *EnableEpochsHandlerStub) CreateNFTThroughExecByCallerEnableEpoch() u
 // FixFailExecutionOnErrorEnableEpoch -
 func (stub *EnableEpochsHandlerStub) FixFailExecutionOnErrorEnableEpoch() uint32 {
 	return stub.FixFailExecutionOnErrorEnableEpochField
+}
+
+// IsFixOldTokenLiquidityEnabled -
+func (stub *EnableEpochsHandlerStub) IsFixOldTokenLiquidityEnabled() bool {
+	return stub.IsFixOldTokenLiquidityEnabledField
 }
 
 // ManagedCryptoAPIEnableEpoch -
