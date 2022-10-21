@@ -10,10 +10,14 @@ import (
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-go-core/data/vm"
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
-var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
+var (
+	log         = logger.GetOrCreate("builtInFunctions")
+	noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
+)
 
 type esdtNFTCreate struct {
 	baseAlwaysActiveHandler
@@ -192,8 +196,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		},
 	}
 
-	var esdtDataBytes []byte
-	esdtDataBytes, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -218,6 +221,11 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - gasToUse,
 		ReturnData:   [][]byte{big.NewInt(0).SetUint64(nextNonce).Bytes()},
+	}
+
+	esdtDataBytes, err := e.marshaller.Marshal(esdtData)
+	if err != nil {
+		log.Warn("esdtNFTCreate.ProcessBuiltinFunction: cannot marshall esdt data for log", "error", err)
 	}
 
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), vmInput.Arguments[0], nextNonce, quantity, vmInput.CallerAddr, esdtDataBytes)
