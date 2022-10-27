@@ -249,7 +249,7 @@ func (e *esdtNFTCreate) getAccount(address []byte) (vmcommon.UserAccountHandler,
 
 func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, error) {
 	nonceKey := getNonceKey(tokenID)
-	nonceData, err := acnt.AccountDataHandler().RetrieveValue(nonceKey)
+	nonceData, _, err := acnt.AccountDataHandler().RetrieveValue(nonceKey)
 	if err != nil {
 		return 0, err
 	}

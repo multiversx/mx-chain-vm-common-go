@@ -90,7 +90,7 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 
 	_, err = skv.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Nil(t, err)
-	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
+	retrievedValue, _, _ := acc.AccountDataHandler().RetrieveValue(key)
 	require.True(t, bytes.Equal(retrievedValue, value))
 
 	vmInput.CallerAddr = []byte("other")
@@ -137,7 +137,7 @@ func TestSaveKeyValueStorage_ProcessBuiltinFunctionNilAccountSender(t *testing.T
 
 	_, err := skv.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, err)
-	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
+	retrievedValue, _, _ := acc.AccountDataHandler().RetrieveValue(key)
 	require.True(t, bytes.Equal(retrievedValue, value))
 }
 
@@ -178,9 +178,9 @@ func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 
 	_, err = skv.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Nil(t, err)
-	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
+	retrievedValue, _, _ := acc.AccountDataHandler().RetrieveValue(key)
 	require.True(t, bytes.Equal(retrievedValue, value))
-	retrievedValue, _ = acc.AccountDataHandler().RetrieveValue(key2)
+	retrievedValue, _, _ = acc.AccountDataHandler().RetrieveValue(key2)
 	require.True(t, bytes.Equal(retrievedValue, value2))
 
 	vmInput.GasProvided = 1

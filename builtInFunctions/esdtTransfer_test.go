@@ -145,11 +145,11 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 
 	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
 	assert.Nil(t, err)
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 
-	marshaledData, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(10)) == 0)
 }
@@ -182,7 +182,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionSenderInShard(t *testing.T) {
 
 	_, err := transferFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Nil(t, err)
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 }
@@ -212,7 +212,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionDestInShard(t *testing.T) {
 	assert.Nil(t, err)
 	esdtKey := append(transferFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{}
-	marshaledData, _ := accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ := accDst.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(10)) == 0)
 	assert.Equal(t, uint64(0), vmOutput.GasRemaining)
@@ -264,7 +264,7 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
 	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
 
-	marshaledData, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(100)) == 0)
 
@@ -416,7 +416,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	vmOutput, err := transferFunc.ProcessBuiltinFunction(nil, accDst, input)
 	assert.Nil(t, err)
 
-	marshaledData, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(10)) == 0)
 
@@ -426,7 +426,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	assert.Nil(t, err)
 	vmOutput.GasRemaining = input.GasProvided - transferFunc.funcGasCost
 
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 }

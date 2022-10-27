@@ -166,7 +166,7 @@ func testNFTTokenShouldExist(
 	tokenId := append(keyPrefix, tokenName...)
 	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenId, nonce)
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
-	marshaledData, _ := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	marshaledData, _, _ := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	_ = marshaller.Unmarshal(esdtData, marshaledData)
 	assert.Equal(tb, expectedValue, esdtData.Value)
 }

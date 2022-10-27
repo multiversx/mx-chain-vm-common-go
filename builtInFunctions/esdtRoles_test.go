@@ -70,8 +70,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldErr(t *testing.T) {
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
-					return nil, nil
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					return nil, 0, nil
 				},
 			}
 		},
@@ -94,8 +94,8 @@ func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldWorkEvenIfAccntTrieI
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(_ []byte) ([]byte, error) {
-					return nil, nil
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					return nil, 0, nil
 				},
 				SaveKeyValueCalled: func(_ []byte, _ []byte) error {
 					saveKeyWasCalled = true
@@ -123,9 +123,10 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesShouldWork(t *testing.T) {
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					roles := &esdt.ESDTRoles{}
-					return marshaller.Marshal(roles)
+					serializedRoles, err := marshaller.Marshal(roles)
+					return serializedRoles, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					roles := &esdt.ESDTRoles{}
@@ -159,9 +160,10 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesMultiNFT(t *testing.T) {
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					roles := &esdt.ESDTRoles{}
-					return marshaller.Marshal(roles)
+					serializedRoles, err := marshaller.Marshal(roles)
+					return serializedRoles, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					if bytes.Equal(key, roleKey) {
@@ -205,9 +207,10 @@ func TestEsdtRoles_ProcessBuiltinFunction_SaveFailedShouldErr(t *testing.T) {
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					roles := &esdt.ESDTRoles{}
-					return marshaller.Marshal(roles)
+					serializedRoles, err := marshaller.Marshal(roles)
+					return serializedRoles, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					return localErr
@@ -234,9 +237,10 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesDoesNotExistsShouldWork(t *t
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					roles := &esdt.ESDTRoles{}
-					return marshaller.Marshal(roles)
+					serializedRoles, err := marshaller.Marshal(roles)
+					return serializedRoles, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					roles := &esdt.ESDTRoles{}
@@ -266,11 +270,12 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesShouldWork(t *testing.T) {
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					roles := &esdt.ESDTRoles{
 						Roles: [][]byte{[]byte(core.ESDTRoleLocalMint)},
 					}
-					return marshaller.Marshal(roles)
+					serializedRoles, err := marshaller.Marshal(roles)
+					return serializedRoles, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					roles := &esdt.ESDTRoles{}
@@ -310,8 +315,8 @@ func TestEsdtRoles_CheckAllowedToExecuteCannotGetESDTRole(t *testing.T) {
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
-					return nil, nil
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					return nil, 0, nil
 				},
 			}
 		},
@@ -328,8 +333,8 @@ func TestEsdtRoles_CheckAllowedToExecuteIsNewNotAllowed(t *testing.T) {
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
-					return nil, nil
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					return nil, 0, nil
 				},
 			}
 		},
@@ -346,11 +351,12 @@ func TestEsdtRoles_CheckAllowed_ShouldWork(t *testing.T) {
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					roles := &esdt.ESDTRoles{
 						Roles: [][]byte{[]byte(core.ESDTRoleLocalMint)},
 					}
-					return marshaller.Marshal(roles)
+					serializedRoles, err := marshaller.Marshal(roles)
+					return serializedRoles, 0, err
 				},
 			}
 		},
@@ -367,11 +373,12 @@ func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					roles := &esdt.ESDTRoles{
 						Roles: [][]byte{[]byte(core.ESDTRoleLocalBurn)},
 					}
-					return marshaller.Marshal(roles)
+					serializedRoles, err := marshaller.Marshal(roles)
+					return serializedRoles, 0, err
 				},
 			}
 		},
