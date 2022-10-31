@@ -302,7 +302,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
 	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, false, false)
 	assert.Nil(t, err)
 
-	val, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	val, _, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
 	assert.Nil(t, val)
 	assert.Nil(t, err)
 

@@ -93,7 +93,7 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 		Value: big.NewInt(0),
 		Type:  uint32(core.Fungible),
 	}
-	marshaledData, err := accnt.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	marshaledData, _, err := accnt.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, true, nil
 	}
@@ -126,7 +126,7 @@ func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
 		return nil, nil, err
 	}
 
-	marshaledData, err := systemAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	marshaledData, _, err := systemAcc.AccountDataHandler().RetrieveValue(tokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return nil, systemAcc, nil
 	}
@@ -172,7 +172,7 @@ func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
 		Value: big.NewInt(0),
 		Type:  uint32(core.Fungible),
 	}
-	marshaledData, err := accnt.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	marshaledData, _, err := accnt.AccountDataHandler().RetrieveValue(esdtTokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return nil
 	}
@@ -343,7 +343,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		return err
 	}
 
-	currentSaveData, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	currentSaveData, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	if !mustUpdate && len(currentSaveData) > 0 {
 		return nil
 	}
@@ -390,7 +390,7 @@ func (e *esdtDataStorage) setReservedToNilForOldToken(
 	if check.IfNil(userAcc) {
 		return ErrNilUserAccount
 	}
-	dataOnUserAcc, errNotCritical := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	dataOnUserAcc, _, errNotCritical := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	shouldIgnoreToken := errNotCritical != nil || len(dataOnUserAcc) == 0
 	if shouldIgnoreToken {
 		return nil

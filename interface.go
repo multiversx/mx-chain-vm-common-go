@@ -21,7 +21,7 @@ type BlockchainHook interface {
 	// GetStorageData should yield the storage value for a certain account and index.
 	// Should return an empty byte array if the key is missing from the account storage,
 	// or if account does not exist.
-	GetStorageData(accountAddress []byte, index []byte) ([]byte, error)
+	GetStorageData(accountAddress []byte, index []byte) ([]byte, uint32, error)
 
 	// GetBlockhash returns the hash of the block with the asked nonce if available
 	GetBlockhash(nonce uint64) ([]byte, error)
@@ -171,7 +171,7 @@ type UserAccountHandler interface {
 
 // AccountDataHandler models what how to manipulate data held by a SC account
 type AccountDataHandler interface {
-	RetrieveValue(key []byte) ([]byte, error)
+	RetrieveValue(key []byte) ([]byte, uint32, error)
 	SaveKeyValue(key []byte, value []byte) error
 	IsInterfaceNil() bool
 }
