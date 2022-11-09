@@ -246,7 +246,7 @@ type AccountsAdapter interface {
 	GetCode(codeHash []byte) []byte
 
 	RootHash() ([]byte, error)
-	ExecuteSmartContractCall(input *vmcommon.ContractCallInput) *vmcommon.VMOutput
+	ExecuteSmartContractCall(input *ContractCallInput) *VMOutput
 	IsInterfaceNil() bool
 }
 
