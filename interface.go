@@ -281,6 +281,18 @@ type EpochNotifier interface {
 	IsInterfaceNil() bool
 }
 
+// RoundSubscriberHandler defines the behavior of a component that can be notified if a new epoch was confirmed
+type RoundSubscriberHandler interface {
+	RoundConfirmed(round uint64, timestamp uint64)
+	IsInterfaceNil() bool
+}
+
+// RoundNotifier can notify upon an epoch change and provide the current epoch
+type RoundNotifier interface {
+	RegisterNotifyHandler(handler RoundSubscriberHandler)
+	IsInterfaceNil() bool
+}
+
 // ESDTTransferParser can parse single and multi ESDT / NFT transfers
 type ESDTTransferParser interface {
 	ParseESDTTransfers(sndAddr []byte, rcvAddr []byte, function string, args [][]byte) (*ParsedESDTTransfers, error)
