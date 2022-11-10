@@ -107,8 +107,8 @@ type BlockchainHook interface {
 	// RevertToSnapshot reverts snaphots up to the specified one
 	RevertToSnapshot(snapshot int) error
 
-	// ExecuteSmartContractCall on System VM
-	ExecuteSmartContractCall(input *ContractCallInput) *VMOutput
+	// ExecuteSmartContractCallOnOtherVM on another VM
+	ExecuteSmartContractCallOnOtherVM(input *ContractCallInput) (*VMOutput, error)
 
 	// IsInterfaceNil returns true if there is no value under the interface
 	IsInterfaceNil() bool
@@ -246,7 +246,6 @@ type AccountsAdapter interface {
 	GetCode(codeHash []byte) []byte
 
 	RootHash() ([]byte, error)
-	ExecuteSmartContractCall(input *ContractCallInput) *VMOutput
 	IsInterfaceNil() bool
 }
 
