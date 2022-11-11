@@ -32,6 +32,11 @@ func (odp *operationDataFieldParser) parseSingleESDTNFTTransfer(args [][]byte, f
 
 	responseParse.Tokens = append(responseParse.Tokens, token)
 	responseParse.ESDTValues = append(responseParse.ESDTValues, esdtNFTTransfer.ESDTValue.String())
+
+	if len(rcvAddr) != len(sender) {
+		return responseParse
+	}
+
 	responseParse.Receivers = append(responseParse.Receivers, rcvAddr)
 	responseParse.ReceiversShardID = append(responseParse.ReceiversShardID, receiverShardID)
 
