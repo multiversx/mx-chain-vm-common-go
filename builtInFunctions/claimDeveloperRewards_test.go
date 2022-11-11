@@ -41,7 +41,8 @@ func TestClaimDeveloperRewards_ProcessBuiltinFunction(t *testing.T) {
 	acc.AddToDeveloperReward(value)
 	vmOutput, err = cdr.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, err)
-	require.Equal(t, value, vmOutput.OutputAccounts[string(vmInput.CallerAddr)].BalanceDelta)
+	require.Equal(t, 1, len(vmOutput.OutputAccounts[string(vmInput.CallerAddr)].OutputTransfers))
+	require.Equal(t, value, vmOutput.OutputAccounts[string(vmInput.CallerAddr)].OutputTransfers[0].Value)
 	require.Equal(t, uint64(0), vmOutput.GasRemaining)
 
 	acc.OwnerAddress = sender

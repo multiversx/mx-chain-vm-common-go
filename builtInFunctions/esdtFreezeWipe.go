@@ -10,7 +10,7 @@ import (
 )
 
 type esdtFreezeWipe struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	marshaller vmcommon.Marshalizer
 	keyPrefix  []byte
 	wipe       bool

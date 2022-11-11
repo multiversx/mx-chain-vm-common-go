@@ -11,7 +11,7 @@ import (
 )
 
 type claimDeveloperRewards struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	gasCost      uint64
 	mutExecution sync.RWMutex
 }
@@ -80,7 +80,7 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 	}
 	outputAcc := &vmcommon.OutputAccount{
 		Address:         vmInput.CallerAddr,
-		BalanceDelta:    big.NewInt(0).Set(value),
+		BalanceDelta:    big.NewInt(0),
 		OutputTransfers: []vmcommon.OutputTransfer{outTransfer},
 	}
 

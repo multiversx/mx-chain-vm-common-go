@@ -3,56 +3,64 @@ package builtInFunctions
 import (
 	"bytes"
 	"errors"
+	"math/big"
+	"testing"
+
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
 )
 
 func createMockArgsForNewESDTDelete() ArgsNewESDTDeleteMetadata {
 	return ArgsNewESDTDeleteMetadata{
-		FuncGasCost:     1,
-		Marshalizer:     &mock.MarshalizerMock{},
-		Accounts:        &mock.AccountsStub{},
-		ActivationEpoch: 0,
-		EpochNotifier:   &mock.EpochNotifierStub{},
-		AllowedAddress:  bytes.Repeat([]byte{1}, 32),
-		Delete:          true,
+		FuncGasCost:    1,
+		Marshalizer:    &mock.MarshalizerMock{},
+		Accounts:       &mock.AccountsStub{},
+		AllowedAddress: bytes.Repeat([]byte{1}, 32),
+		Delete:         true,
+		EnableEpochsHandler: &mock.EnableEpochsHandlerStub{
+			IsSendAlwaysFlagEnabledField: true,
+		},
 	}
 }
 
 func TestNewESDTDeleteMetadataFunc(t *testing.T) {
 	t.Parallel()
 
-	args := createMockArgsForNewESDTDelete()
-	args.Marshalizer = nil
-	_, err := NewESDTDeleteMetadataFunc(args)
-	assert.Equal(t, err, ErrNilMarshalizer)
+	t.Run("nil marshaller should error", func(t *testing.T) {
+		t.Parallel()
 
-	args = createMockArgsForNewESDTDelete()
-	args.Accounts = nil
-	_, err = NewESDTDeleteMetadataFunc(args)
-	assert.Equal(t, err, ErrNilAccountsAdapter)
+		args := createMockArgsForNewESDTDelete()
+		args.Marshalizer = nil
+		_, err := NewESDTDeleteMetadataFunc(args)
+		assert.Equal(t, err, ErrNilMarshalizer)
+	})
+	t.Run("nil accounts adapter should error", func(t *testing.T) {
+		t.Parallel()
 
-	args = createMockArgsForNewESDTDelete()
-	args.EpochNotifier = nil
-	_, err = NewESDTDeleteMetadataFunc(args)
-	assert.Equal(t, err, ErrNilEpochHandler)
+		args := createMockArgsForNewESDTDelete()
+		args.Accounts = nil
+		_, err := NewESDTDeleteMetadataFunc(args)
+		assert.Equal(t, err, ErrNilAccountsAdapter)
+	})
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+		t.Parallel()
 
-	args = createMockArgsForNewESDTDelete()
-	e, err := NewESDTDeleteMetadataFunc(args)
-	assert.Nil(t, err)
-	assert.False(t, e.IsInterfaceNil())
-	assert.True(t, e.IsActive())
+		args := createMockArgsForNewESDTDelete()
+		args.EnableEpochsHandler = nil
+		_, err := NewESDTDeleteMetadataFunc(args)
+		assert.Equal(t, err, ErrNilEnableEpochsHandler)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
 
-	args = createMockArgsForNewESDTDelete()
-	args.ActivationEpoch = 1
-	e, _ = NewESDTDeleteMetadataFunc(args)
-	assert.False(t, e.IsActive())
-
-	e.SetNewGasConfig(&vmcommon.GasCost{})
+		args := createMockArgsForNewESDTDelete()
+		e, err := NewESDTDeleteMetadataFunc(args)
+		assert.Nil(t, err)
+		assert.False(t, e.IsInterfaceNil())
+		assert.True(t, e.IsActive())
+	})
 }
 
 func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {

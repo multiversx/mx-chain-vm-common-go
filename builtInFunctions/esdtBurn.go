@@ -6,13 +6,12 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type esdtBurn struct {
-	*baseDisabled
+	baseActiveHandler
 	funcGasCost           uint64
 	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
@@ -25,14 +24,16 @@ func NewESDTBurnFunc(
 	funcGasCost uint64,
 	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
-	disableEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtBurn, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
 	if check.IfNil(globalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
+	}
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtBurn{
@@ -42,13 +43,7 @@ func NewESDTBurnFunc(
 		globalSettingsHandler: globalSettingsHandler,
 	}
 
-	e.baseDisabled = &baseDisabled{
-		function:          core.BuiltInFunctionESDTBurn,
-		deActivationEpoch: disableEpoch,
-		flagActivated:     atomic.Flag{},
-	}
-
-	epochNotifier.RegisterNotifyHandler(e)
+	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsGlobalMintBurnFlagEnabled
 
 	return e, nil
 }

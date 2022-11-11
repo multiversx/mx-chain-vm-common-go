@@ -10,7 +10,7 @@ import (
 )
 
 type esdtNFTBurn struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler

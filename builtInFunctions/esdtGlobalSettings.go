@@ -4,18 +4,18 @@ import (
 	"bytes"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/marshal"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
 type esdtGlobalSettings struct {
-	*baseEnabled
+	baseActiveHandler
 	keyPrefix  []byte
 	set        bool
 	accounts   vmcommon.AccountsAdapter
 	marshaller marshal.Marshalizer
+	function   string
 }
 
 // NewESDTGlobalSettingsFunc returns the esdt pause/un-pause built-in function component
@@ -24,14 +24,16 @@ func NewESDTGlobalSettingsFunc(
 	marshaller marshal.Marshalizer,
 	set bool,
 	function string,
-	activationEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	activeHandler func() bool,
 ) (*esdtGlobalSettings, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
+	}
+	if activeHandler == nil {
+		return nil, ErrNilActiveHandler
 	}
 	if !isCorrectFunction(function) {
 		return nil, ErrInvalidArguments
@@ -42,15 +44,10 @@ func NewESDTGlobalSettingsFunc(
 		set:        set,
 		accounts:   accounts,
 		marshaller: marshaller,
+		function:   function,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:        function,
-		activationEpoch: activationEpoch,
-		flagActivated:   atomic.Flag{},
-	}
-
-	epochNotifier.RegisterNotifyHandler(e)
+	e.baseActiveHandler.activeHandler = activeHandler
 
 	return e, nil
 }
@@ -179,7 +176,7 @@ func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
 
 // IsSenderOrDestinationWithTransferRole returns true if we have transfer role on the system account
 func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool {
-	if !e.baseEnabled.IsActive() {
+	if !e.activeHandler() {
 		return false
 	}
 
@@ -209,7 +206,7 @@ func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobal
 		return nil, err
 	}
 
-	val, _ := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	val, _, _ := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	return &esdtMetaData, nil
 }
