@@ -87,4 +87,16 @@ func TestESDTNFTTransfer(t *testing.T) {
 			ReceiversShardID: []uint32{0},
 		}, res)
 	})
+
+	t.Run("NFTTransferWrongReceiverAddressFromDataField", func(t *testing.T) {
+		t.Parallel()
+		dataField := []byte("ESDTNFTTransfer@54455354312d373563613361@01@01@")
+		res := parser.Parse(dataField, sender, sender, 3)
+		require.Equal(t, &ResponseParseData{
+			Operation:  "ESDTNFTTransfer",
+			ESDTValues: []string{"1"},
+			Tokens:     []string{"TEST1-75ca3a-01"},
+		}, res)
+
+	})
 }
