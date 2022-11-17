@@ -29,8 +29,6 @@ func (rc ReturnCode) String() string {
 		return "contract invalid"
 	case ExecutionFailed:
 		return "execution failed"
-	case EncodingFailed:
-		return "address encoding failed"
 	default:
 		return fmt.Sprintf("unknown error, code: %d", rc)
 	}
@@ -75,7 +73,4 @@ const (
 
 	// SimulateFailed is returned when tx simulation fails execution
 	SimulateFailed ReturnCode = 12
-
-	// EncodingFailed is returned when an address encoding fails
-	EncodingFailed ReturnCode = 13
 )
