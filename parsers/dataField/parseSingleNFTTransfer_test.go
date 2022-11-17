@@ -11,7 +11,7 @@ import (
 
 var log = logger.GetOrCreate("parse-tests")
 
-var pubKeyConv, _ = pubkeyConverter.NewBech32PubkeyConverter(32, "erd")
+var pubKeyConv, _ = pubkeyConverter.NewBech32PubkeyConverter(32, addressPrefix)
 
 var sender, _ = pubKeyConv.Decode("erd1kqdm94ef5dr9nz3208rrsdzkgwkz53saj4t5chx26cm4hlq8qz8qqd9207")
 var receiver, _ = pubKeyConv.Decode("erd1kszzq4egxj5m3t22vt2s8vplmxmqrstghecmnk3tq9mn5fdy7pqqgvzkug")
