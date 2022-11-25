@@ -32,8 +32,8 @@ func (awm *AccountWrapMock) DirtyData() map[string][]byte {
 }
 
 // RetrieveValue -
-func (awm *AccountWrapMock) RetrieveValue(key []byte) ([]byte, error) {
-	return awm.storage[string(key)], nil
+func (awm *AccountWrapMock) RetrieveValue(key []byte) ([]byte, uint32, error) {
+	return awm.storage[string(key)], 0, nil
 }
 
 // SaveKeyValue -
@@ -85,7 +85,7 @@ func (awm *AccountWrapMock) ClaimDeveloperRewards([]byte) (*big.Int, error) {
 }
 
 // AddToDeveloperReward -
-func (awm *AccountWrapMock) AddToDeveloperReward(*big.Int) {
+func (awm *AccountWrapMock) AddToDeveloperReward(_ *big.Int) {
 
 }
 
@@ -149,7 +149,7 @@ func (awm *AccountWrapMock) AddressBytes() []byte {
 	return awm.address
 }
 
-// DataTrieTracker -
+// AccountDataHandler -
 func (awm *AccountWrapMock) AccountDataHandler() vmcommon.AccountDataHandler {
 	return awm
 }

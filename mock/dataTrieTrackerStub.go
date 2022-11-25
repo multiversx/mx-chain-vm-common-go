@@ -4,7 +4,7 @@ package mock
 type DataTrieTrackerStub struct {
 	ClearDataCachesCalled func()
 	DirtyDataCalled       func() map[string][]byte
-	RetrieveValueCalled   func(key []byte) ([]byte, error)
+	RetrieveValueCalled   func(key []byte) ([]byte, uint32, error)
 	SaveKeyValueCalled    func(key []byte, value []byte) error
 }
 
@@ -24,11 +24,11 @@ func (dtts *DataTrieTrackerStub) DirtyData() map[string][]byte {
 }
 
 // RetrieveValue -
-func (dtts *DataTrieTrackerStub) RetrieveValue(key []byte) ([]byte, error) {
+func (dtts *DataTrieTrackerStub) RetrieveValue(key []byte) ([]byte, uint32, error) {
 	if dtts.RetrieveValueCalled != nil {
 		return dtts.RetrieveValueCalled(key)
 	}
-	return nil, nil
+	return nil, 0, nil
 }
 
 // SaveKeyValue -

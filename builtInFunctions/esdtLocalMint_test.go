@@ -116,8 +116,8 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t 
 	_, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
-					return nil, localErr
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					return nil, 0, localErr
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					return localErr
@@ -148,9 +148,10 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	sndAccout := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, error) {
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					return marshaller.Marshal(esdtData)
+					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}

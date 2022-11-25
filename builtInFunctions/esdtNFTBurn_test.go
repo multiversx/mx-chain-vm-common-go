@@ -314,7 +314,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaus
 		},
 	}
 
-	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}), globalSettingsHandler, &mock.ESDTRoleHandlerStub{})
+	ebf, _ := NewESDTNFTBurnFunc(10, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, &mock.EnableEpochsHandlerStub{}), globalSettingsHandler, &mock.ESDTRoleHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -375,7 +375,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	nftTokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(nftTokenKey, esdtDataBytes)
 
-	_ = storageHandler.saveESDTMetaDataToSystemAccount(0, nftTokenKey, nonce.Uint64(), esdtData, true)
+	_ = storageHandler.saveESDTMetaDataToSystemAccount(userAcc, 0, nftTokenKey, nonce.Uint64(), esdtData, true)
 	_ = storageHandler.AddToLiquiditySystemAcc([]byte(key), nonce.Uint64(), initialQuantity)
 	output, err := ebf.ProcessBuiltinFunction(
 		userAcc,
@@ -395,7 +395,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 
-	res, err := userAcc.AccountDataHandler().RetrieveValue(nftTokenKey)
+	res, _, err := userAcc.AccountDataHandler().RetrieveValue(nftTokenKey)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
@@ -437,7 +437,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	tokenKey := append([]byte(key), nonce.Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
-	_ = storageHandler.saveESDTMetaDataToSystemAccount(0, tokenKey, nonce.Uint64(), esdtData, true)
+	_ = storageHandler.saveESDTMetaDataToSystemAccount(userAcc, 0, tokenKey, nonce.Uint64(), esdtData, true)
 	_ = storageHandler.AddToLiquiditySystemAcc([]byte(key), nonce.Uint64(), initialQuantity)
 
 	output, err := ebf.ProcessBuiltinFunction(
@@ -458,7 +458,7 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 
-	res, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	res, _, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 

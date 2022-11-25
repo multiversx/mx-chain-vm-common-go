@@ -9,60 +9,37 @@ import (
 
 var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 
+var trueHandler = func() bool { return true }
+var falseHandler = func() bool { return false }
+
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
-	GasMap                              map[string]map[string]uint64
-	MapDNSAddresses                     map[string]struct{}
-	EnableUserNameChange                bool
-	Marshalizer                         vmcommon.Marshalizer
-	Accounts                            vmcommon.AccountsAdapter
-	ShardCoordinator                    vmcommon.Coordinator
-	EpochNotifier                       vmcommon.EpochNotifier
-	GuardedAccountHandler               vmcommon.GuardedAccountHandler
-	ESDTNFTImprovementV1ActivationEpoch uint32
-	ESDTTransferRoleEnableEpoch         uint32
-	GlobalMintBurnDisableEpoch          uint32
-	ESDTTransferToMetaEnableEpoch       uint32
-	NFTCreateMultiShardEnableEpoch      uint32
-	SaveNFTToSystemAccountEnableEpoch   uint32
-	CheckCorrectTokenIDEnableEpoch      uint32
-	SendESDTMetadataAlwaysEnableEpoch   uint32
-	CheckFunctionArgumentEnableEpoch    uint32
-	FixAsyncCallbackCheckEnableEpoch    uint32
-	MaxNumOfAddressesForTransferRole    uint32
-	SetGuardianEnableEpoch              uint32
-	GuardianActivationEpochs            uint32
-	FreezeAccountEnableEpoch            uint32
-	ConfigAddress                       []byte
+	GasMap                           map[string]map[string]uint64
+	MapDNSAddresses                  map[string]struct{}
+	EnableUserNameChange             bool
+	Marshalizer                      vmcommon.Marshalizer
+	Accounts                         vmcommon.AccountsAdapter
+	ShardCoordinator                 vmcommon.Coordinator
+	EnableEpochsHandler              vmcommon.EnableEpochsHandler
+	GuardedAccountHandler            vmcommon.GuardedAccountHandler
+	MaxNumOfAddressesForTransferRole uint32
+	ConfigAddress                    []byte
 }
 
 type builtInFuncCreator struct {
-	mapDNSAddresses                     map[string]struct{}
-	enableUserNameChange                bool
-	marshaller                          vmcommon.Marshalizer
-	accounts                            vmcommon.AccountsAdapter
-	builtInFunctions                    vmcommon.BuiltInFunctionContainer
-	gasConfig                           *vmcommon.GasCost
-	shardCoordinator                    vmcommon.Coordinator
-	epochNotifier                       vmcommon.EpochNotifier
-	esdtStorageHandler                  vmcommon.ESDTNFTStorageHandler
-	esdtGlobalSettingsHandler           vmcommon.ESDTGlobalSettingsHandler
-	guardedAccountHandler               vmcommon.GuardedAccountHandler
-	esdtNFTImprovementV1ActivationEpoch uint32
-	esdtTransferRoleEnableEpoch         uint32
-	globalMintBurnDisableEpoch          uint32
-	esdtTransferToMetaEnableEpoch       uint32
-	nftCreateMultiShardEnableEpoch      uint32
-	saveNFTToSystemAccountEnableEpoch   uint32
-	checkCorrectTokenIDEnableEpoch      uint32
-	sendESDTMetadataAlwaysEnableEpoch   uint32
-	checkFunctionArgumentEnableEpoch    uint32
-	fixAsnycCallbackCheckEnableEpoch    uint32
-	maxNumOfAddressesForTransferRole    uint32
-	setGuardianEnableEpoch              uint32
-	guardianActivationEpochs            uint32
-	freezeAccountEnableEpoch            uint32
-	configAddress                       []byte
+	mapDNSAddresses                  map[string]struct{}
+	enableUserNameChange             bool
+	marshaller                       vmcommon.Marshalizer
+	accounts                         vmcommon.AccountsAdapter
+	builtInFunctions                 vmcommon.BuiltInFunctionContainer
+	gasConfig                        *vmcommon.GasCost
+	shardCoordinator                 vmcommon.Coordinator
+	esdtStorageHandler               vmcommon.ESDTNFTStorageHandler
+	esdtGlobalSettingsHandler        vmcommon.ESDTGlobalSettingsHandler
+	enableEpochsHandler              vmcommon.EnableEpochsHandler
+	guardedAccountHandler            vmcommon.GuardedAccountHandler
+	maxNumOfAddressesForTransferRole uint32
+	configAddress                    []byte
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -79,35 +56,23 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if check.IfNil(args.ShardCoordinator) {
 		return nil, ErrNilShardCoordinator
 	}
-	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(args.EnableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 	if check.IfNil(args.GuardedAccountHandler) {
 		return nil, ErrNilGuardedAccountHandler
 	}
 
 	b := &builtInFuncCreator{
-		mapDNSAddresses:                     args.MapDNSAddresses,
-		enableUserNameChange:                args.EnableUserNameChange,
-		marshaller:                          args.Marshalizer,
-		accounts:                            args.Accounts,
-		shardCoordinator:                    args.ShardCoordinator,
-		epochNotifier:                       args.EpochNotifier,
-		guardedAccountHandler:               args.GuardedAccountHandler,
-		esdtNFTImprovementV1ActivationEpoch: args.ESDTNFTImprovementV1ActivationEpoch,
-		esdtTransferRoleEnableEpoch:         args.ESDTTransferRoleEnableEpoch,
-		globalMintBurnDisableEpoch:          args.GlobalMintBurnDisableEpoch,
-		esdtTransferToMetaEnableEpoch:       args.ESDTTransferToMetaEnableEpoch,
-		nftCreateMultiShardEnableEpoch:      args.NFTCreateMultiShardEnableEpoch,
-		saveNFTToSystemAccountEnableEpoch:   args.SaveNFTToSystemAccountEnableEpoch,
-		checkCorrectTokenIDEnableEpoch:      args.CheckCorrectTokenIDEnableEpoch,
-		sendESDTMetadataAlwaysEnableEpoch:   args.SendESDTMetadataAlwaysEnableEpoch,
-		checkFunctionArgumentEnableEpoch:    args.CheckFunctionArgumentEnableEpoch,
-		maxNumOfAddressesForTransferRole:    args.MaxNumOfAddressesForTransferRole,
-		setGuardianEnableEpoch:              args.SetGuardianEnableEpoch,
-		guardianActivationEpochs:            args.GuardianActivationEpochs,
-		freezeAccountEnableEpoch:            args.FreezeAccountEnableEpoch,
-		configAddress:                       args.ConfigAddress,
+		mapDNSAddresses:                  args.MapDNSAddresses,
+		enableUserNameChange:             args.EnableUserNameChange,
+		marshaller:                       args.Marshalizer,
+		accounts:                         args.Accounts,
+		shardCoordinator:                 args.ShardCoordinator,
+		enableEpochsHandler:              args.EnableEpochsHandler,
+		guardedAccountHandler:            args.GuardedAccountHandler,
+		maxNumOfAddressesForTransferRole: args.MaxNumOfAddressesForTransferRole,
+		configAddress:                    args.ConfigAddress,
 	}
 
 	var err error
@@ -188,7 +153,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTPause, 0, b.epochNotifier)
+	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTPause, trueHandler)
 	if err != nil {
 		return err
 	}
@@ -213,10 +178,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		globalSettingsFunc,
 		b.shardCoordinator,
 		setRoleFunc,
-		b.esdtTransferToMetaEnableEpoch,
-		b.checkCorrectTokenIDEnableEpoch,
-		b.epochNotifier,
-	)
+		b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -225,7 +187,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshaller, globalSettingsFunc, b.globalMintBurnDisableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTBurnFunc(b.gasConfig.BuiltInCost.ESDTBurn, b.marshaller, globalSettingsFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -261,7 +223,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, 0, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, trueHandler)
 	if err != nil {
 		return err
 	}
@@ -298,20 +260,18 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	args := ArgsNewESDTDataStorage{
-		Accounts:                b.accounts,
-		GlobalSettingsHandler:   globalSettingsFunc,
-		Marshalizer:             b.marshaller,
-		SaveToSystemEnableEpoch: b.saveNFTToSystemAccountEnableEpoch,
-		EpochNotifier:           b.epochNotifier,
-		ShardCoordinator:        b.shardCoordinator,
-		SendAlwaysEnableEpoch:   b.sendESDTMetadataAlwaysEnableEpoch,
+		Accounts:              b.accounts,
+		GlobalSettingsHandler: globalSettingsFunc,
+		Marshalizer:           b.marshaller,
+		EnableEpochsHandler:   b.enableEpochsHandler,
+		ShardCoordinator:      b.shardCoordinator,
 	}
 	b.esdtStorageHandler, err = NewESDTDataStorage(args)
 	if err != nil {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTAddQuantityFunc(b.gasConfig.BuiltInCost.ESDTNFTAddQuantity, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.saveNFTToSystemAccountEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTAddQuantityFunc(b.gasConfig.BuiltInCost.ESDTNFTAddQuantity, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -329,7 +289,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTCreateFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshaller, globalSettingsFunc, setRoleFunc, b.esdtStorageHandler, b.accounts, b.saveNFTToSystemAccountEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTCreateFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshaller, globalSettingsFunc, setRoleFunc, b.esdtStorageHandler, b.accounts, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -338,20 +298,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTTransferFunc(
-		b.gasConfig.BuiltInCost.ESDTNFTTransfer,
+	newFunc, err = NewESDTNFTTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTTransfer,
 		b.marshaller,
 		globalSettingsFunc,
 		b.accounts,
 		b.shardCoordinator,
 		b.gasConfig.BaseOperationCost,
 		setRoleFunc,
-		b.esdtTransferToMetaEnableEpoch,
-		b.saveNFTToSystemAccountEnableEpoch,
-		b.checkCorrectTokenIDEnableEpoch,
 		b.esdtStorageHandler,
-		b.epochNotifier,
-	)
+		b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -369,7 +324,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -378,7 +333,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.esdtNFTImprovementV1ActivationEpoch, b.epochNotifier)
+	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -387,20 +342,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTMultiTransferFunc(
-		b.gasConfig.BuiltInCost.ESDTNFTMultiTransfer,
+	newFunc, err = NewESDTNFTMultiTransferFunc(b.gasConfig.BuiltInCost.ESDTNFTMultiTransfer,
 		b.marshaller,
 		globalSettingsFunc,
 		b.accounts,
 		b.shardCoordinator,
 		b.gasConfig.BaseOperationCost,
-		b.esdtNFTImprovementV1ActivationEpoch,
-		b.epochNotifier,
+		b.enableEpochsHandler,
 		setRoleFunc,
-		b.esdtTransferToMetaEnableEpoch,
-		b.checkCorrectTokenIDEnableEpoch,
-		b.esdtStorageHandler,
-	)
+		b.esdtStorageHandler)
 	if err != nil {
 		return err
 	}
@@ -409,7 +359,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, b.esdtTransferRoleEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -418,7 +368,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, b.esdtTransferRoleEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -428,13 +378,12 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	argsNewDeleteFunc := ArgsNewESDTDeleteMetadata{
-		FuncGasCost:     b.gasConfig.BuiltInCost.ESDTNFTBurn,
-		Marshalizer:     b.marshaller,
-		Accounts:        b.accounts,
-		ActivationEpoch: b.sendESDTMetadataAlwaysEnableEpoch,
-		EpochNotifier:   b.epochNotifier,
-		AllowedAddress:  b.configAddress,
-		Delete:          true,
+		FuncGasCost:         b.gasConfig.BuiltInCost.ESDTNFTBurn,
+		Marshalizer:         b.marshaller,
+		Accounts:            b.accounts,
+		AllowedAddress:      b.configAddress,
+		Delete:              true,
+		EnableEpochsHandler: b.enableEpochsHandler,
 	}
 	newFunc, err = NewESDTDeleteMetadataFunc(argsNewDeleteFunc)
 	if err != nil {
@@ -455,7 +404,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -464,7 +413,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier)
+	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
 	if err != nil {
 		return err
 	}
@@ -473,7 +422,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, b.maxNumOfAddressesForTransferRole, false)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.maxNumOfAddressesForTransferRole, false, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -482,7 +431,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.sendESDTMetadataAlwaysEnableEpoch, b.epochNotifier, b.maxNumOfAddressesForTransferRole, true)
+	newFunc, err = NewESDTTransferRoleAddressFunc(b.accounts, b.marshaller, b.maxNumOfAddressesForTransferRole, true, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -578,9 +527,7 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 func (b *builtInFuncCreator) SetPayableHandler(payableHandler vmcommon.PayableHandler) error {
 	payableChecker, err := NewPayableCheckFunc(
 		payableHandler,
-		b.checkFunctionArgumentEnableEpoch,
-		b.fixAsnycCallbackCheckEnableEpoch,
-		b.epochNotifier,
+		b.enableEpochsHandler,
 	)
 	if err != nil {
 		return err

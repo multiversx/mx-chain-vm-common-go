@@ -25,8 +25,9 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
 		&mock.AccountsStub{},
-		0,
-		&mock.EpochNotifierStub{},
+		&mock.EnableEpochsHandlerStub{
+			IsValueLengthCheckFlagEnabledField: true,
+		},
 	)
 
 	return nftCreate
@@ -35,75 +36,102 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 	t.Parallel()
 
-	nftCreate, err := NewESDTNFTCreateFunc(
-		0,
-		vmcommon.BaseOperationCost{},
-		nil,
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.ESDTRoleHandlerStub{},
-		createNewESDTDataStorageHandler(),
-		&mock.AccountsStub{},
-		0,
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilMarshalizer, err)
+	t.Run("nil marshaller should error", func(t *testing.T) {
+		t.Parallel()
 
-	nftCreate, err = NewESDTNFTCreateFunc(
-		0,
-		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerMock{},
-		nil,
-		&mock.ESDTRoleHandlerStub{},
-		createNewESDTDataStorageHandler(),
-		&mock.AccountsStub{},
-		0,
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilGlobalSettingsHandler, err)
+		nftCreate, err := NewESDTNFTCreateFunc(
+			0,
+			vmcommon.BaseOperationCost{},
+			nil,
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.AccountsStub{},
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftCreate))
+		assert.Equal(t, ErrNilMarshalizer, err)
+	})
+	t.Run("nil global settings handler should error", func(t *testing.T) {
+		t.Parallel()
 
-	nftCreate, err = NewESDTNFTCreateFunc(
-		0,
-		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		nil,
-		createNewESDTDataStorageHandler(),
-		&mock.AccountsStub{},
-		0,
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilRolesHandler, err)
+		nftCreate, err := NewESDTNFTCreateFunc(
+			0,
+			vmcommon.BaseOperationCost{},
+			&mock.MarshalizerMock{},
+			nil,
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.AccountsStub{},
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftCreate))
+		assert.Equal(t, ErrNilGlobalSettingsHandler, err)
+	})
+	t.Run("nil roles handler should error", func(t *testing.T) {
+		t.Parallel()
 
-	nftCreate, err = NewESDTNFTCreateFunc(
-		0,
-		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.ESDTRoleHandlerStub{},
-		nil,
-		&mock.AccountsStub{},
-		0,
-		&mock.EpochNotifierStub{},
-	)
-	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
+		nftCreate, err := NewESDTNFTCreateFunc(
+			0,
+			vmcommon.BaseOperationCost{},
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			nil,
+			createNewESDTDataStorageHandler(),
+			&mock.AccountsStub{},
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftCreate))
+		assert.Equal(t, ErrNilRolesHandler, err)
+	})
+	t.Run("nil esdt storage handler should error", func(t *testing.T) {
+		t.Parallel()
 
-	nftCreate, err = NewESDTNFTCreateFunc(
-		0,
-		vmcommon.BaseOperationCost{},
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.ESDTRoleHandlerStub{},
-		createNewESDTDataStorageHandler(),
-		&mock.AccountsStub{},
-		0,
-		nil,
-	)
-	assert.True(t, check.IfNil(nftCreate))
-	assert.Equal(t, ErrNilEpochHandler, err)
+		nftCreate, err := NewESDTNFTCreateFunc(
+			0,
+			vmcommon.BaseOperationCost{},
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.ESDTRoleHandlerStub{},
+			nil,
+			&mock.AccountsStub{},
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.True(t, check.IfNil(nftCreate))
+		assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
+	})
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		nftCreate, err := NewESDTNFTCreateFunc(
+			0,
+			vmcommon.BaseOperationCost{},
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.AccountsStub{},
+			nil,
+		)
+		assert.True(t, check.IfNil(nftCreate))
+		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		nftCreate, err := NewESDTNFTCreateFunc(
+			0,
+			vmcommon.BaseOperationCost{},
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+			&mock.AccountsStub{},
+			&mock.EnableEpochsHandlerStub{},
+		)
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(nftCreate))
+	})
 }
 
 func TestNewESDTNFTCreateFunc(t *testing.T) {
@@ -117,8 +145,9 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
 		&mock.AccountsStub{},
-		0,
-		&mock.EpochNotifierStub{},
+		&mock.EnableEpochsHandlerStub{
+			IsValueLengthCheckFlagEnabledField: true,
+		},
 	)
 	assert.False(t, check.IfNil(nftCreate))
 	assert.Nil(t, err)
@@ -214,8 +243,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 		},
 		esdtDataStorage,
 		esdtDataStorage.accounts,
-		0,
-		&mock.EpochNotifierStub{},
+		&mock.EnableEpochsHandlerStub{
+			IsValueLengthCheckFlagEnabledField: true,
+		},
 	)
 	sender := mock.NewAccountWrapMock([]byte("address"))
 	vmInput := &vmcommon.ContractCallInput{
@@ -255,8 +285,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		esdtRoleHandler,
 		esdtDataStorage,
 		esdtDataStorage.accounts,
-		0,
-		&mock.EpochNotifierStub{},
+		&mock.EnableEpochsHandlerStub{
+			IsValueLengthCheckFlagEnabledField: true,
+		},
 	)
 	address := bytes.Repeat([]byte{1}, 32)
 	sender := mock.NewUserAccount(address)
@@ -316,14 +347,23 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	esdtData, _, _ := esdtDataStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
 	assert.Equal(t, tokenMetaData, esdtData.TokenMetaData)
 	assert.Equal(t, esdtData.Value, quantity)
+
+	esdtDataBytes := vmOutput.Logs[0].Topics[3]
+	var esdtDataFromLog esdt.ESDigitalToken
+	_ = nftCreate.marshaller.Unmarshal(&esdtDataFromLog, esdtDataBytes)
+	require.Equal(t, esdtData.TokenMetaData, esdtDataFromLog.TokenMetaData)
 }
 
 func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 	t.Parallel()
 
 	accounts := createAccountsAdapterWithMap()
-	esdtDataStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts)
-	_ = esdtDataStorage.flagSaveToSystemAccount.SetReturningPrevious()
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsValueLengthCheckFlagEnabledField:      true,
+		IsSaveToSystemAccountFlagEnabledField:   true,
+		IsCheckFrozenCollectionFlagEnabledField: true,
+	}
+	esdtDataStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
 	nftCreate, _ := NewESDTNFTCreateFunc(
 		0,
 		vmcommon.BaseOperationCost{},
@@ -332,8 +372,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 		&mock.ESDTRoleHandlerStub{},
 		esdtDataStorage,
 		esdtDataStorage.accounts,
-		0,
-		&mock.EpochNotifierStub{},
+		enableEpochsHandler,
 	)
 	address := bytes.Repeat([]byte{1}, 32)
 	userAddress := bytes.Repeat([]byte{2}, 32)
@@ -396,14 +435,14 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 
 func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
 	nonceKey := getNonceKey(tokenID)
-	latestNonceBytes, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(nonceKey)
+	latestNonceBytes, _, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(nonceKey)
 	require.Nil(t, err)
 	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
 
 	createdTokenID := []byte(baseESDTKeyPrefix)
 	createdTokenID = append(createdTokenID, tokenID...)
 	tokenKey := computeESDTNFTTokenKey(createdTokenID, nonce)
-	data, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(tokenKey)
+	data, _, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(tokenKey)
 	require.Nil(t, err)
 
 	esdtData := &esdt.ESDigitalToken{}

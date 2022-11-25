@@ -10,7 +10,7 @@ import (
 )
 
 type esdtFreezeWipe struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	marshaller vmcommon.Marshalizer
 	keyPrefix  []byte
 	wipe       bool
@@ -64,13 +64,17 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 
+	var amount *big.Int
+	var err error
+
 	if e.wipe {
-		err := e.wipeIfApplicable(acntDst, esdtTokenKey)
+		amount, err = e.wipeIfApplicable(acntDst, esdtTokenKey)
 		if err != nil {
 			return nil, err
 		}
+
 	} else {
-		err := e.toggleFreeze(acntDst, esdtTokenKey)
+		amount, err = e.toggleFreeze(acntDst, esdtTokenKey)
 		if err != nil {
 			return nil, err
 		}
@@ -78,29 +82,35 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 	identifier, nonce := extractTokenIdentifierAndNonceESDTWipe(vmInput.Arguments[0])
-	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, big.NewInt(0), vmInput.CallerAddr, acntDst.AddressBytes())
+	addESDTEntryInVMOutput(vmOutput, []byte(vmInput.Function), identifier, nonce, amount, vmInput.CallerAddr, acntDst.AddressBytes())
 
 	return vmOutput, nil
 }
 
-func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, tokenKey []byte) error {
+func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, tokenKey []byte) (*big.Int, error) {
 	tokenData, err := getESDTDataFromKey(acntDst, tokenKey, e.marshaller)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
 	if !esdtUserMetadata.Frozen {
-		return ErrCannotWipeAccountNotFrozen
+		return nil, ErrCannotWipeAccountNotFrozen
 	}
 
-	return acntDst.AccountDataHandler().SaveKeyValue(tokenKey, nil)
+	err = acntDst.AccountDataHandler().SaveKeyValue(tokenKey, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	wipedAmount := vmcommon.ZeroValueIfNil(tokenData.Value)
+	return wipedAmount, nil
 }
 
-func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) error {
+func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) (*big.Int, error) {
 	tokenData, err := getESDTDataFromKey(acntDst, tokenKey, e.marshaller)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
@@ -109,10 +119,11 @@ func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, token
 
 	err = saveESDTData(acntDst, tokenData, tokenKey, e.marshaller)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	frozenAmount := vmcommon.ZeroValueIfNil(tokenData.Value)
+	return frozenAmount, nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil
