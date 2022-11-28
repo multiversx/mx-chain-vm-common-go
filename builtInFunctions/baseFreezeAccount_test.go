@@ -9,8 +9,7 @@ import (
 
 func createFreezeAccountArgs() FreezeAccountArgs {
 	return FreezeAccountArgs{
-		BaseAccountFreezerArgs:   createBaseAccountFreezerArgs(),
-		FreezeAccountEnableEpoch: 1000,
+		BaseAccountFreezerArgs: createBaseAccountFreezerArgs(),
 	}
 }
 
@@ -18,7 +17,7 @@ func TestBaseFreezeAccount_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
 	args := createFreezeAccountArgs()
-	baseFreezeAccount, _ := newBaseFreezeAccount(args, "")
+	baseFreezeAccount, _ := newBaseFreezeAccount(args)
 	require.Equal(t, args.FuncGasCost, baseFreezeAccount.funcGasCost)
 
 	newFreezeAccountCost := args.FuncGasCost + 1

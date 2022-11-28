@@ -1,45 +1,30 @@
 package builtInFunctions
 
 import (
-	"fmt"
-
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	logger "github.com/ElrondNetwork/elrond-go-logger"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
 const noOfArgsFreezeAccount = 0
 
-var logFreezeAccount = logger.GetOrCreate("systemSmartContracts/baseFreezeAccount")
-
 // FreezeAccountArgs is a struct placeholder for all necessary args
 // to create either a NewFreezeAccountFunc or a NewUnfreezeAccountFunc
 type FreezeAccountArgs struct {
 	BaseAccountFreezerArgs
-	FreezeAccountEnableEpoch uint32
 }
 
 type baseFreezeAccount struct {
-	*baseEnabled
 	*baseAccountFreezer
 }
 
-func newBaseFreezeAccount(args FreezeAccountArgs, builtInFunc string) (*baseFreezeAccount, error) {
+func newBaseFreezeAccount(args FreezeAccountArgs) (*baseFreezeAccount, error) {
 	base, err := newBaseAccountFreezer(args.BaseAccountFreezerArgs)
 	if err != nil {
 		return nil, err
 	}
 
-	baseFreezeAcc := &baseFreezeAccount{}
-	baseFreezeAcc.baseEnabled = &baseEnabled{
-		function:        builtInFunc,
-		activationEpoch: args.FreezeAccountEnableEpoch,
-		flagActivated:   atomic.Flag{},
+	baseFreezeAcc := &baseFreezeAccount{
+		base,
 	}
-	baseFreezeAcc.baseAccountFreezer = base
-
-	logFreezeAccount.Debug(fmt.Sprintf("%s enable epoch:", builtInFunc), args.FreezeAccountEnableEpoch)
-	args.EpochNotifier.RegisterNotifyHandler(baseFreezeAcc)
 
 	return baseFreezeAcc, nil
 }

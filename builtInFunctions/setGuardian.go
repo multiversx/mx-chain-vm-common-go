@@ -5,12 +5,8 @@ import (
 	"fmt"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	logger "github.com/ElrondNetwork/elrond-go-logger"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
-
-var logAccountFreezer = logger.GetOrCreate("systemSmartContracts/setGuardian")
 
 const noOfArgsSetGuardian = 1
 
@@ -18,13 +14,10 @@ const noOfArgsSetGuardian = 1
 // to create a NewSetGuardianFunc
 type SetGuardianArgs struct {
 	BaseAccountFreezerArgs
-
-	GuardianActivationEpochs uint32
-	SetGuardianEnableEpoch   uint32
 }
 
 type setGuardian struct {
-	*baseEnabled
+	baseActiveHandler
 	*baseAccountFreezer
 }
 
@@ -34,16 +27,10 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 	if err != nil {
 		return nil, err
 	}
-	setGuardianFunc := &setGuardian{}
-	setGuardianFunc.baseEnabled = &baseEnabled{
-		function:        core.BuiltInFunctionSetGuardian,
-		activationEpoch: args.SetGuardianEnableEpoch,
-		flagActivated:   atomic.Flag{},
+	setGuardianFunc := &setGuardian{
+		baseAccountFreezer: base,
 	}
-	setGuardianFunc.baseAccountFreezer = base
-
-	logAccountFreezer.Debug("set guardian enable epoch", args.SetGuardianEnableEpoch)
-	args.EpochNotifier.RegisterNotifyHandler(setGuardianFunc)
+	setGuardianFunc.activeHandler = args.EnableEpochsHandler.IsSetGuardianEnabled
 
 	return setGuardianFunc, nil
 }

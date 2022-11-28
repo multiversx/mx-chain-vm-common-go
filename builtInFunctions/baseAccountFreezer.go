@@ -16,11 +16,12 @@ import (
 type BaseAccountFreezerArgs struct {
 	GuardedAccountHandler vmcommon.GuardedAccountHandler
 	Marshaller            marshal.Marshalizer
-	EpochNotifier         vmcommon.EpochNotifier
+	EnableEpochsHandler   vmcommon.EnableEpochsHandler
 	FuncGasCost           uint64
 }
 
 type baseAccountFreezer struct {
+	baseActiveHandler
 	marshaller            marshal.Marshalizer
 	guardedAccountHandler vmcommon.GuardedAccountHandler
 
@@ -32,19 +33,23 @@ func newBaseAccountFreezer(args BaseAccountFreezerArgs) (*baseAccountFreezer, er
 	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(args.EnableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 	if check.IfNil(args.GuardedAccountHandler) {
 		return nil, ErrNilGuardedAccountHandler
 	}
 
-	return &baseAccountFreezer{
+	accFreezer :=  &baseAccountFreezer{
 		funcGasCost:           args.FuncGasCost,
 		marshaller:            args.Marshaller,
 		mutExecution:          sync.RWMutex{},
 		guardedAccountHandler: args.GuardedAccountHandler,
-	}, nil
+	}
+
+	accFreezer.activeHandler = args.EnableEpochsHandler.IsFreezeAccountEnabled
+
+	return accFreezer, nil
 }
 
 func (baf *baseAccountFreezer) checkBaseAccountFreezerArgs(

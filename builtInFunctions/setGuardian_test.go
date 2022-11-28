@@ -15,7 +15,6 @@ import (
 )
 
 const pubKeyLen = 32
-const currentEpoch = 44444
 
 var userAddress = generateRandomByteArray(pubKeyLen)
 
@@ -43,10 +42,10 @@ func TestNewSetGuardianFunc(t *testing.T) {
 		{
 			args: func() SetGuardianArgs {
 				args := createSetGuardianFuncMockArgs()
-				args.EpochNotifier = nil
+				args.EnableEpochsHandler = nil
 				return args
 			},
-			expectedErr: ErrNilEpochHandler,
+			expectedErr: ErrNilEnableEpochsHandler,
 		},
 	}
 
@@ -190,15 +189,18 @@ func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 	}
 
 	args := createSetGuardianFuncMockArgs()
+	args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
+		IsFreezeAccountEnabledField: true,
+		IsSetGuardianEnabledField:   true,
+	}
 	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
-		SetGuardianCalled: func(_ vmcommon.UserAccountHandler, _ []byte,  _ []byte) error {
+		SetGuardianCalled: func(_ vmcommon.UserAccountHandler, _ []byte, _ []byte) error {
 			setGuardianCalled.SetValue(true)
 			return nil
 		},
 	}
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
-	setGuardianFunc.EpochConfirmed(currentEpoch, 0)
 
 	vmInput := getDefaultVmInput([][]byte{generateRandomByteArray(pubKeyLen)})
 	fmt.Println(userAddress)
@@ -218,7 +220,6 @@ func generateRandomByteArray(size uint32) []byte {
 func createSetGuardianFuncMockArgs() SetGuardianArgs {
 	return SetGuardianArgs{
 		BaseAccountFreezerArgs:   createBaseAccountFreezerArgs(),
-		GuardianActivationEpochs: 100,
 	}
 }
 

@@ -441,9 +441,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	argsSetGuardian := SetGuardianArgs{
-		BaseAccountFreezerArgs:   b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.SetGuardian),
-		GuardianActivationEpochs: b.guardianActivationEpochs,
-		SetGuardianEnableEpoch:   b.setGuardianEnableEpoch,
+		BaseAccountFreezerArgs: b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.SetGuardian),
 	}
 	newFunc, err = NewSetGuardianFunc(argsSetGuardian)
 	if err != nil {
@@ -479,16 +477,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 func (b *builtInFuncCreator) createBaseAccountFreezerArgs(funcGasCost uint64) BaseAccountFreezerArgs {
 	return BaseAccountFreezerArgs{
 		Marshaller:            b.marshaller,
-		EpochNotifier:         b.epochNotifier,
 		FuncGasCost:           funcGasCost,
 		GuardedAccountHandler: b.guardedAccountHandler,
+		EnableEpochsHandler:   b.enableEpochsHandler,
 	}
 }
 
 func (b *builtInFuncCreator) createFreezeAccountArgs() FreezeAccountArgs {
 	return FreezeAccountArgs{
-		BaseAccountFreezerArgs:   b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.FreezeAccount),
-		FreezeAccountEnableEpoch: b.freezeAccountEnableEpoch,
+		BaseAccountFreezerArgs: b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.FreezeAccount),
 	}
 }
 
