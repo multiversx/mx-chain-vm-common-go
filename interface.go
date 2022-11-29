@@ -361,6 +361,7 @@ type EnableEpochsHandler interface {
 	IsTransferToMetaFlagEnabled() bool
 	IsESDTNFTImprovementV1FlagEnabled() bool
 	IsFixOldTokenLiquidityEnabled() bool
+	IsRuntimeMemStoreLimitEnabled() bool
 	IsFreezeAccountEnabled() bool
 	IsSetGuardianEnabled() bool
 
