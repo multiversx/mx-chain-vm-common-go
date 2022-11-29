@@ -5,17 +5,50 @@ import (
 	"testing"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewESDTBurnFunc(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil marshaller should error", func(t *testing.T) {
+		t.Parallel()
+
+		burnFunc, err := NewESDTBurnFunc(10, nil, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{
+			IsGlobalMintBurnFlagEnabledField: true,
+		})
+		assert.Equal(t, ErrNilMarshalizer, err)
+		assert.True(t, check.IfNil(burnFunc))
+	})
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		burnFunc, err := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil)
+		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+		assert.True(t, check.IfNil(burnFunc))
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		burnFunc, err := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{
+			IsGlobalMintBurnFlagEnabledField: true,
+		})
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(burnFunc))
+	})
+}
+
 func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, globalSettingsHandler, 1000, &mock.EpochNotifierStub{})
+	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
+		IsGlobalMintBurnFlagEnabledField: true,
+	})
 	_, err := burnFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -61,7 +94,9 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
-	burnFunc, _ := NewESDTBurnFunc(10, marshaller, globalSettingsHandler, 1000, &mock.EpochNotifierStub{})
+	burnFunc, _ := NewESDTBurnFunc(10, marshaller, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
+		IsGlobalMintBurnFlagEnabledField: true,
+	})
 
 	input := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -102,7 +137,7 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Nil(t, err)
 
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 
@@ -116,6 +151,6 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	_, err = burnFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Nil(t, err)
 
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	assert.Equal(t, len(marshaledData), 0)
 }

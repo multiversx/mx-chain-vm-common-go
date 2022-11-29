@@ -30,10 +30,10 @@ func TestNewBaseAccountFreezer(t *testing.T) {
 		{
 			args: func() BaseAccountFreezerArgs {
 				args := createBaseAccountFreezerArgs()
-				args.EpochNotifier = nil
+				args.EnableEpochsHandler = nil
 				return args
 			},
-			expectedErr: ErrNilEpochHandler,
+			expectedErr: ErrNilEnableEpochsHandler,
 		},
 		{
 			args: func() BaseAccountFreezerArgs {
@@ -207,8 +207,11 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 
 func createBaseAccountFreezerArgs() BaseAccountFreezerArgs {
 	return BaseAccountFreezerArgs{
-		Marshaller:            marshallerMock,
-		EpochNotifier:         &mockvm.EpochNotifierStub{},
+		Marshaller: marshallerMock,
+		EnableEpochsHandler: &mockvm.EnableEpochsHandlerStub{
+			IsFreezeAccountEnabledField: false,
+			IsSetGuardianEnabledField:   false,
+		},
 		FuncGasCost:           100000,
 		GuardedAccountHandler: &mockvm.GuardedAccountHandlerStub{},
 	}

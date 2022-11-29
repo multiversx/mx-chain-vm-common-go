@@ -1,7 +1,6 @@
 package builtInFunctions
 
 import (
-	"github.com/ElrondNetwork/elrond-go-core/core"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
@@ -11,7 +10,7 @@ type unfreezeAccountFunc struct {
 
 // NewUnfreezeAccountFunc will instantiate a new unfreeze account built-in function
 func NewUnfreezeAccountFunc(args FreezeAccountArgs) (*unfreezeAccountFunc, error) {
-	base, err := newBaseFreezeAccount(args, core.BuiltInFunctionUnfreezeAccount)
+	base, err := newBaseFreezeAccount(args)
 	if err != nil {
 		return nil, err
 	}

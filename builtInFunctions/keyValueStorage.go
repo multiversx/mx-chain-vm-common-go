@@ -11,7 +11,7 @@ import (
 )
 
 type saveKeyValueStorage struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	gasConfig    vmcommon.BaseOperationCost
 	funcGasCost  uint64
 	mutExecution sync.RWMutex
@@ -71,7 +71,7 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 			return nil, fmt.Errorf("%w it is not allowed to save under key %s", ErrOperationNotPermitted, key)
 		}
 
-		oldValue, _ := acntDest.AccountDataHandler().RetrieveValue(key)
+		oldValue, _, _ := acntDest.AccountDataHandler().RetrieveValue(key)
 		if bytes.Equal(oldValue, value) {
 			continue
 		}

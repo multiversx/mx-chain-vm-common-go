@@ -20,7 +20,7 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 		Marshalizer:                      &mock.MarshalizerMock{},
 		Accounts:                         &mock.AccountsStub{},
 		ShardCoordinator:                 mock.NewMultiShardsCoordinatorMock(1),
-		EpochNotifier:                    &mock.EpochNotifierStub{},
+		EnableEpochsHandler:              &mock.EnableEpochsHandlerStub{},
 		GuardedAccountHandler:            &mock.GuardedAccountHandlerStub{},
 		MaxNumOfAddressesForTransferRole: 100,
 	}
@@ -92,9 +92,9 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilShardCoordinator)
 
 	args = createMockArguments()
-	args.EpochNotifier = nil
+	args.EnableEpochsHandler = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilEpochHandler)
+	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 
 	args = createMockArguments()
 	args.Marshalizer = nil

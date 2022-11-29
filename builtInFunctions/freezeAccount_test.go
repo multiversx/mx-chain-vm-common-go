@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
 	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
@@ -61,8 +60,7 @@ func TestNewFreezeAccountFuncAndNewUnfreezeAccountFunc(t *testing.T) {
 			require.Nil(t, errUnfreeze)
 			require.NotNil(t, freezeAccountFunc)
 			require.NotNil(t, unFreezeAccountFunc)
-			require.Equal(t, core.BuiltInFunctionFreezeAccount, freezeAccountFunc.function)
-			require.Equal(t, core.BuiltInFunctionUnfreezeAccount, unFreezeAccountFunc.function)
+			require.NotEqual(t, freezeAccountFunc, unFreezeAccountFunc)
 		}
 	}
 }
@@ -73,8 +71,8 @@ func TestFreezeUnfreezeAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveFroz
 	args := createFreezeAccountArgs()
 
 	dataTrie := &mock.DataTrieTrackerStub{
-		RetrieveValueCalled: func(key []byte) ([]byte, error) {
-			return []byte("marshalled guardians data"), nil
+		RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+			return []byte("marshalled guardians data"), 0, nil
 		},
 	}
 
@@ -95,11 +93,12 @@ func TestFreezeUnfreezeAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveFroz
 	}
 
 	vmInput := getDefaultVmInput([][]byte{})
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsSetGuardianEnabledField:   true,
+		IsFreezeAccountEnabledField: true,
+	}
 	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
-	freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
-
 	unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
-	unfreezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 
 	t.Run("try to freeze frozen account, expected error", func(t *testing.T) {
 		accountFrozen = true
@@ -125,8 +124,11 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 	vmInput := getDefaultVmInput([][]byte{})
 
 	t.Run("invalid args, expect error", func(t *testing.T) {
+		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+			IsFreezeAccountEnabledField: true,
+			IsSetGuardianEnabledField:   true,
+		}
 		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
-		freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 		output, err := freezeAccountFunc.ProcessBuiltinFunction(nil, nil, vmInput)
 		require.Nil(t, output)
 		require.Error(t, err)
@@ -145,8 +147,11 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 
+		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+			IsFreezeAccountEnabledField: true,
+			IsSetGuardianEnabledField:   true,
+		}
 		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
-		freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 		address := generateRandomByteArray(pubKeyLen)
 		account := mock.NewUserAccount(address)
 		requireAccountFrozen(t, account, false)
@@ -165,13 +170,16 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 			GetActiveGuardianCalled: func(handler vmcommon.UserAccountHandler) ([]byte, error) {
 				return []byte("active guardian"), nil
 			},
-			 CleanOtherThanActiveCalled: func(uah vmcommon.UserAccountHandler) {
-				 cleanCalled = true
-			 },
+			CleanOtherThanActiveCalled: func(uah vmcommon.UserAccountHandler) {
+				cleanCalled = true
+			},
 		}
 
+		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+			IsFreezeAccountEnabledField: true,
+			IsSetGuardianEnabledField:   true,
+		}
 		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
-		freezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 		address := generateRandomByteArray(pubKeyLen)
 		account := mock.NewUserAccount(address)
 		vmInput.CallerAddr = account.Address

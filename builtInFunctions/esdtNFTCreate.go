@@ -7,17 +7,20 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
 	"github.com/ElrondNetwork/elrond-go-core/core/check"
 	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
 	"github.com/ElrondNetwork/elrond-go-core/data/vm"
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-vm-common"
 )
 
-var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
+var (
+	log         = logger.GetOrCreate("builtInFunctions")
+	noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
+)
 
 type esdtNFTCreate struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	keyPrefix             []byte
 	accounts              vmcommon.AccountsAdapter
 	marshaller            vmcommon.Marshalizer
@@ -26,10 +29,8 @@ type esdtNFTCreate struct {
 	funcGasCost           uint64
 	gasConfig             vmcommon.BaseOperationCost
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	mutExecution          sync.RWMutex
-
-	valueLengthCheckEnableEpoch uint32
-	flagValueLengthCheck        atomic.Flag
 }
 
 // NewESDTNFTCreateFunc returns the esdt NFT create built-in function component
@@ -41,8 +42,7 @@ func NewESDTNFTCreateFunc(
 	rolesHandler vmcommon.ESDTRoleHandler,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	accounts vmcommon.AccountsAdapter,
-	valueLengthCheckEnableEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtNFTCreate, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
@@ -56,35 +56,27 @@ func NewESDTNFTCreateFunc(
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
 	}
-	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
 
 	e := &esdtNFTCreate{
-		keyPrefix:                   []byte(baseESDTKeyPrefix),
-		marshaller:                  marshaller,
-		globalSettingsHandler:       globalSettingsHandler,
-		rolesHandler:                rolesHandler,
-		funcGasCost:                 funcGasCost,
-		gasConfig:                   gasConfig,
-		esdtStorageHandler:          esdtStorageHandler,
-		mutExecution:                sync.RWMutex{},
-		valueLengthCheckEnableEpoch: valueLengthCheckEnableEpoch,
-		accounts:                    accounts,
+		keyPrefix:             []byte(baseESDTKeyPrefix),
+		marshaller:            marshaller,
+		globalSettingsHandler: globalSettingsHandler,
+		rolesHandler:          rolesHandler,
+		funcGasCost:           funcGasCost,
+		gasConfig:             gasConfig,
+		esdtStorageHandler:    esdtStorageHandler,
+		enableEpochsHandler:   enableEpochsHandler,
+		mutExecution:          sync.RWMutex{},
+		accounts:              accounts,
 	}
 
-	epochNotifier.RegisterNotifyHandler(e)
-
 	return e, nil
-}
-
-// EpochConfirmed is called whenever a new epoch is confirmed
-func (e *esdtNFTCreate) EpochConfirmed(epoch uint32, _ uint64) {
-	e.flagValueLengthCheck.SetValue(epoch >= e.valueLengthCheckEnableEpoch)
-	log.Debug("ESDT NFT Create quantity value length check", "enabled", e.flagValueLengthCheck.IsSet())
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -184,7 +176,8 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 			return nil, err
 		}
 	}
-	if e.flagValueLengthCheck.IsSet() && len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
+	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsValueLengthCheckFlagEnabled()
+	if isValueLengthCheckFlagEnabled && len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
 
@@ -203,8 +196,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		},
 	}
 
-	var esdtDataBytes []byte
-	esdtDataBytes, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +223,11 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		ReturnData:   [][]byte{big.NewInt(0).SetUint64(nextNonce).Bytes()},
 	}
 
+	esdtDataBytes, err := e.marshaller.Marshal(esdtData)
+	if err != nil {
+		log.Warn("esdtNFTCreate.ProcessBuiltinFunction: cannot marshall esdt data for log", "error", err)
+	}
+
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), vmInput.Arguments[0], nextNonce, quantity, vmInput.CallerAddr, esdtDataBytes)
 
 	return vmOutput, nil
@@ -252,7 +249,7 @@ func (e *esdtNFTCreate) getAccount(address []byte) (vmcommon.UserAccountHandler,
 
 func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, error) {
 	nonceKey := getNonceKey(tokenID)
-	nonceData, err := acnt.AccountDataHandler().RetrieveValue(nonceKey)
+	nonceData, _, err := acnt.AccountDataHandler().RetrieveValue(nonceKey)
 	if err != nil {
 		return 0, err
 	}

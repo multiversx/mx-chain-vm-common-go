@@ -10,7 +10,7 @@ import (
 )
 
 type changeOwnerAddress struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	gasCost      uint64
 	mutExecution sync.RWMutex
 }

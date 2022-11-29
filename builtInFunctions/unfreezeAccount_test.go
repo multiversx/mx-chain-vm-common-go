@@ -17,8 +17,11 @@ func TestUnfreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 	vmInput := getDefaultVmInput([][]byte{})
 
 	t.Run("invalid args, expect error", func(t *testing.T) {
+		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
+			IsFreezeAccountEnabledField: true,
+			IsSetGuardianEnabledField:   true,
+		}
 		unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
-		unfreezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 		output, err := unfreezeAccountFunc.ProcessBuiltinFunction(nil, nil, vmInput)
 		require.Nil(t, output)
 		require.Error(t, err)
@@ -32,8 +35,11 @@ func TestUnfreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
+		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
+			IsFreezeAccountEnabledField: true,
+			IsSetGuardianEnabledField:   true,
+		}
 		unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
-		unfreezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 		address := generateRandomByteArray(pubKeyLen)
 		account := mockvm.NewUserAccount(address)
 		vmInput.CallerAddr = address
@@ -53,8 +59,11 @@ func TestUnfreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 				return []byte("active Guardian"), nil
 			},
 		}
+		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
+			IsFreezeAccountEnabledField: true,
+			IsSetGuardianEnabledField:   true,
+		}
 		unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
-		unfreezeAccountFunc.EpochConfirmed(currentEpoch, 0)
 
 		address := generateRandomByteArray(pubKeyLen)
 		account := mockvm.NewUserAccount(address)
