@@ -188,13 +188,17 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(t
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
 	customLoadAccountCalled := false
-	customAccountsAdapter := &mock.AccountsStub{
-		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
-			customLoadAccountCalled = true
-			return systemAcc, nil
+	customSystemAccount := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+					customLoadAccountCalled = true
+					return esdtMetaDataBytes, 0, nil
+				},
+			}
 		},
 	}
-	esdtDataGet, _, err := e.GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(userAcc, []byte(key), nonce, customAccountsAdapter)
+	esdtDataGet, _, err := e.GetESDTNFTTokenOnDestinationWithCustomSystemAccount(userAcc, []byte(key), nonce, customSystemAccount)
 	assert.Nil(t, err)
 	esdtData.TokenMetaData = metaData
 	assert.Equal(t, esdtData, esdtDataGet)
