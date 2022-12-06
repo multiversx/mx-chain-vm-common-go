@@ -16,8 +16,8 @@ import (
 const existsOnShard = byte(1)
 
 type queryOptions struct {
-	isCustomAccountsAdapterSet bool
-	accountsAdapter            vmcommon.AccountsAdapter
+	isCustomSystemAccountSet bool
+	customSystemAccount      vmcommon.UserAccountHandler
 }
 
 func defaultQueryOptions() queryOptions {
@@ -100,20 +100,20 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 	return e.getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(accnt, esdtTokenKey, nonce, defaultQueryOptions())
 }
 
-// GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter gets the nft token on destination account by using a custom accounts adapter
-func (e *esdtDataStorage) GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(
+// GetESDTNFTTokenOnDestinationWithCustomSystemAccount gets the nft token on destination account by using a custom system account
+func (e *esdtDataStorage) GetESDTNFTTokenOnDestinationWithCustomSystemAccount(
 	accnt vmcommon.UserAccountHandler,
 	esdtTokenKey []byte,
 	nonce uint64,
-	accountsAdapter vmcommon.AccountsAdapter,
+	customSystemAccount vmcommon.UserAccountHandler,
 ) (*esdt.ESDigitalToken, bool, error) {
-	if check.IfNil(accountsAdapter) {
-		return nil, false, ErrNilAccountsAdapter
+	if check.IfNil(customSystemAccount) {
+		return nil, false, ErrNilUserAccount
 	}
 
 	queryOpts := queryOptions{
-		isCustomAccountsAdapterSet: true,
-		accountsAdapter:            accountsAdapter,
+		isCustomSystemAccountSet: true,
+		customSystemAccount:      customSystemAccount,
 	}
 	return e.getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(accnt, esdtTokenKey, nonce, queryOpts)
 }
@@ -468,12 +468,11 @@ func (e *esdtDataStorage) marshalAndSaveData(
 }
 
 func (e *esdtDataStorage) getSystemAccount(options queryOptions) (vmcommon.UserAccountHandler, error) {
-	accountsAdapter := e.accounts
-	if options.isCustomAccountsAdapterSet && !check.IfNil(options.accountsAdapter) {
-		accountsAdapter = options.accountsAdapter
+	if options.isCustomSystemAccountSet && !check.IfNil(options.customSystemAccount) {
+		return options.customSystemAccount, nil
 	}
 
-	systemSCAccount, err := accountsAdapter.LoadAccount(vmcommon.SystemAccountAddress)
+	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
 	if err != nil {
 		return nil, err
 	}
