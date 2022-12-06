@@ -151,7 +151,7 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetDataFromSystemAcc(t *tes
 	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 
-	systemAcc, _ := e.getSystemAccount()
+	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
 	metaData := &esdt.MetaData{
 		Name: []byte("test"),
 	}
@@ -163,6 +163,46 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetDataFromSystemAcc(t *tes
 	assert.Nil(t, err)
 	esdtData.TokenMetaData = metaData
 	assert.Equal(t, esdtData, esdtDataGet)
+}
+
+func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+	}
+
+	tokenIdentifier := "testTkn"
+	key := baseESDTKeyPrefix + tokenIdentifier
+	nonce := uint64(10)
+	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
+	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+
+	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
+	metaData := &esdt.MetaData{
+		Name: []byte("test"),
+	}
+	esdtDataOnSystemAcc := &esdt.ESDigitalToken{TokenMetaData: metaData}
+	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+	customLoadAccountCalled := false
+	customAccountsAdapter := &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			customLoadAccountCalled = true
+			return systemAcc, nil
+		},
+	}
+	esdtDataGet, _, err := e.GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(userAcc, []byte(key), nonce, customAccountsAdapter)
+	assert.Nil(t, err)
+	esdtData.TokenMetaData = metaData
+	assert.Equal(t, esdtData, esdtDataGet)
+	assert.True(t, customLoadAccountCalled)
 }
 
 func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationMarshalERR(t *testing.T) {
@@ -212,7 +252,7 @@ func TestEsdtDataStorage_MarshalErrorOnSystemACC(t *testing.T) {
 	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 
-	systemAcc, _ := e.getSystemAccount()
+	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
 	metaData := &esdt.MetaData{
 		Name: []byte("test"),
 	}
@@ -256,7 +296,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 
-	systemAcc, _ := e.getSystemAccount()
+	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
 	metaData := &esdt.MetaData{
 		Name: []byte("test"),
 	}
@@ -306,7 +346,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
 	assert.Nil(t, val)
 	assert.Nil(t, err)
 
-	esdtMetaData, err := e.getESDTMetaDataFromSystemAccount(tokenKey)
+	esdtMetaData, err := e.getESDTMetaDataFromSystemAccount(tokenKey, defaultQueryOptions())
 	assert.Nil(t, err)
 	assert.Equal(t, esdtData.TokenMetaData, esdtMetaData)
 }
@@ -350,7 +390,7 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.False(t, val)
 	assert.Nil(t, err)
 
-	systemAcc, _ := e.getSystemAccount()
+	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
 	metaData := &esdt.MetaData{
 		Name: []byte("test"),
 	}
@@ -459,7 +499,7 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 
 	key := baseESDTKeyPrefix + string(tickerID)
 	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
-	esdtGetData, _, _ := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+	esdtGetData, _, _ := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey, defaultQueryOptions())
 
 	assert.Equal(t, esdtData.TokenMetaData, esdtGetData.TokenMetaData)
 }
@@ -519,12 +559,12 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *test
 
 	key := baseESDTKeyPrefix + string(tickerID)
 	tokenKey := append([]byte(key), big.NewInt(1).Bytes()...)
-	esdtGetData, _, _ := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+	esdtGetData, _, _ := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey, defaultQueryOptions())
 
 	assert.Equal(t, esdtData.TokenMetaData, esdtGetData.TokenMetaData)
 
 	otherTokenKey := append([]byte(key), big.NewInt(2).Bytes()...)
-	esdtGetData, _, err = e.getESDTDigitalTokenDataFromSystemAccount(otherTokenKey)
+	esdtGetData, _, err = e.getESDTDigitalTokenDataFromSystemAccount(otherTokenKey, defaultQueryOptions())
 	assert.Nil(t, esdtGetData)
 	assert.Nil(t, err)
 }
@@ -587,7 +627,7 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 	err := e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))
 	assert.Equal(t, err, ErrNilESDTData)
 
-	systemAcc, _ := e.getSystemAccount()
+	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
 	marshalledData, _ := e.marshaller.Marshal(esdtData)
 
@@ -604,12 +644,12 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))
 	assert.Nil(t, err)
 
-	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey)
+	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
 	assert.Equal(t, esdtData.Value, big.NewInt(20))
 
 	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(-20))
 	assert.Nil(t, err)
 
-	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey)
+	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
 	assert.Nil(t, esdtData)
 }
