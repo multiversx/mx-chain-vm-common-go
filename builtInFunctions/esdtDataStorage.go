@@ -16,6 +16,15 @@ import (
 
 const existsOnShard = byte(1)
 
+type queryOptions struct {
+	isCustomAccountsAdapterSet bool
+	accountsAdapter            vmcommon.AccountsAdapter
+}
+
+func defaultQueryOptions() queryOptions {
+	return queryOptions{}
+}
+
 type esdtDataStorage struct {
 	accounts              vmcommon.AccountsAdapter
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
@@ -110,6 +119,33 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 	esdtTokenKey []byte,
 	nonce uint64,
 ) (*esdt.ESDigitalToken, bool, error) {
+	return e.getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(accnt, esdtTokenKey, nonce, defaultQueryOptions())
+}
+
+// GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter gets the nft token on destination account by using a custom accounts adapter
+func (e *esdtDataStorage) GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(
+	accnt vmcommon.UserAccountHandler,
+	esdtTokenKey []byte,
+	nonce uint64,
+	accountsAdapter vmcommon.AccountsAdapter,
+) (*esdt.ESDigitalToken, bool, error) {
+	if check.IfNil(accountsAdapter) {
+		return nil, false, ErrNilAccountsAdapter
+	}
+
+	queryOpts := queryOptions{
+		isCustomAccountsAdapterSet: true,
+		accountsAdapter:            accountsAdapter,
+	}
+	return e.getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(accnt, esdtTokenKey, nonce, queryOpts)
+}
+
+func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(
+	accnt vmcommon.UserAccountHandler,
+	esdtTokenKey []byte,
+	nonce uint64,
+	options queryOptions,
+) (*esdt.ESDigitalToken, bool, error) {
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	esdtData := &esdt.ESDigitalToken{
 		Value: big.NewInt(0),
@@ -129,7 +165,7 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 		return esdtData, false, nil
 	}
 
-	esdtMetaData, err := e.getESDTMetaDataFromSystemAccount(esdtNFTTokenKey)
+	esdtMetaData, err := e.getESDTMetaDataFromSystemAccount(esdtNFTTokenKey, options)
 	if err != nil {
 		return nil, false, err
 	}
@@ -142,8 +178,9 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestination(
 
 func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
 	tokenKey []byte,
+	options queryOptions,
 ) (*esdt.ESDigitalToken, vmcommon.UserAccountHandler, error) {
-	systemAcc, err := e.getSystemAccount()
+	systemAcc, err := e.getSystemAccount(options)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -164,8 +201,9 @@ func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
 
 func (e *esdtDataStorage) getESDTMetaDataFromSystemAccount(
 	tokenKey []byte,
+	options queryOptions,
 ) (*esdt.MetaData, error) {
-	esdtData, _, err := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+	esdtData, _, err := e.getESDTDigitalTokenDataFromSystemAccount(tokenKey, options)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +287,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 	}
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	esdtData, systemAcc, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey)
+	esdtData, systemAcc, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
 	if err != nil {
 		return err
 	}
@@ -358,7 +396,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		return nil
 	}
 
-	systemAcc, err := e.getSystemAccount()
+	systemAcc, err := e.getSystemAccount(defaultQueryOptions())
 	if err != nil {
 		return err
 	}
@@ -448,8 +486,13 @@ func (e *esdtDataStorage) marshalAndSaveData(
 	return e.accounts.SaveAccount(systemAcc)
 }
 
-func (e *esdtDataStorage) getSystemAccount() (vmcommon.UserAccountHandler, error) {
-	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+func (e *esdtDataStorage) getSystemAccount(options queryOptions) (vmcommon.UserAccountHandler, error) {
+	accountsAdapter := e.accounts
+	if options.isCustomAccountsAdapterSet && !check.IfNil(options.accountsAdapter) {
+		accountsAdapter = options.accountsAdapter
+	}
+
+	systemSCAccount, err := accountsAdapter.LoadAccount(vmcommon.SystemAccountAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +536,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 	esdtTokenKey := append(e.keyPrefix, tickerID...)
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
-	esdtData, systemAcc, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey)
+	esdtData, systemAcc, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
 	if err != nil {
 		return false, err
 	}
