@@ -441,7 +441,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	argsSetGuardian := SetGuardianArgs{
-		BaseAccountFreezerArgs: b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.SetGuardian),
+		BaseAccountGuarderArgs: b.createBaseAccountGuarderArgs(b.gasConfig.BuiltInCost.SetGuardian),
 	}
 	newFunc, err = NewSetGuardianFunc(argsSetGuardian)
 	if err != nil {
@@ -452,21 +452,21 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	argsFreezeAccount := b.createFreezeAccountArgs()
-	newFunc, err = NewFreezeAccountFunc(argsFreezeAccount)
+	argsGuardAccount := b.createGuardAccountArgs()
+	newFunc, err = NewGuardAccountFunc(argsGuardAccount)
 	if err != nil {
 		return err
 	}
-	err = b.builtInFunctions.Add(core.BuiltInFunctionFreezeAccount, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionGuardAccount, newFunc)
 	if err != nil {
 		return err
 	}
 
-	newFunc, err = NewUnfreezeAccountFunc(argsFreezeAccount)
+	newFunc, err = NewUnGuardAccountFunc(argsGuardAccount)
 	if err != nil {
 		return err
 	}
-	err = b.builtInFunctions.Add(core.BuiltInFunctionUnfreezeAccount, newFunc)
+	err = b.builtInFunctions.Add(core.BuiltInFunctionUnGuardAccount, newFunc)
 	if err != nil {
 		return err
 	}
@@ -474,8 +474,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	return nil
 }
 
-func (b *builtInFuncCreator) createBaseAccountFreezerArgs(funcGasCost uint64) BaseAccountFreezerArgs {
-	return BaseAccountFreezerArgs{
+func (b *builtInFuncCreator) createBaseAccountGuarderArgs(funcGasCost uint64) BaseAccountGuarderArgs {
+	return BaseAccountGuarderArgs{
 		Marshaller:            b.marshaller,
 		FuncGasCost:           funcGasCost,
 		GuardedAccountHandler: b.guardedAccountHandler,
@@ -483,9 +483,9 @@ func (b *builtInFuncCreator) createBaseAccountFreezerArgs(funcGasCost uint64) Ba
 	}
 }
 
-func (b *builtInFuncCreator) createFreezeAccountArgs() FreezeAccountArgs {
-	return FreezeAccountArgs{
-		BaseAccountFreezerArgs: b.createBaseAccountFreezerArgs(b.gasConfig.BuiltInCost.FreezeAccount),
+func (b *builtInFuncCreator) createGuardAccountArgs() GuardAccountArgs {
+	return GuardAccountArgs{
+		BaseAccountGuarderArgs: b.createBaseAccountGuarderArgs(b.gasConfig.BuiltInCost.GuardAccount),
 	}
 }
 

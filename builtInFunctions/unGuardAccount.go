@@ -4,34 +4,34 @@ import (
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
-type unfreezeAccountFunc struct {
-	*baseFreezeAccount
+type unGuardAccountFunc struct {
+	*baseGuardAccount
 }
 
-// NewUnfreezeAccountFunc will instantiate a new unfreeze account built-in function
-func NewUnfreezeAccountFunc(args FreezeAccountArgs) (*unfreezeAccountFunc, error) {
-	base, err := newBaseFreezeAccount(args)
+// NewUnGuardAccountFunc will instantiate a new un-guard account built-in function
+func NewUnGuardAccountFunc(args GuardAccountArgs) (*unGuardAccountFunc, error) {
+	base, err := newBaseGuardAccount(args)
 	if err != nil {
 		return nil, err
 	}
-	return &unfreezeAccountFunc{baseFreezeAccount: base}, nil
+	return &unGuardAccountFunc{baseGuardAccount: base}, nil
 }
 
 // ProcessBuiltinFunction will unset the frozen bit in
 // user's code metadata, if it has at least one enabled guardian
-func (ua *unfreezeAccountFunc) ProcessBuiltinFunction(
+func (ua *unGuardAccountFunc) ProcessBuiltinFunction(
 	acntSnd, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	ua.mutExecution.Lock()
 	defer ua.mutExecution.Unlock()
 
-	err := ua.checkFreezeAccountArgs(acntSnd, acntDst, vmInput)
+	err := ua.checkGuardAccountArgs(acntSnd, acntDst, vmInput)
 	if err != nil {
 		return nil, err
 	}
 
-	err = unfreezeAccount(acntSnd)
+	err = unGuardAccount(acntSnd)
 	if err != nil {
 		return nil, err
 	}
@@ -39,13 +39,13 @@ func (ua *unfreezeAccountFunc) ProcessBuiltinFunction(
 	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - ua.funcGasCost}, nil
 }
 
-func unfreezeAccount(account vmcommon.UserAccountHandler) error {
+func unGuardAccount(account vmcommon.UserAccountHandler) error {
 	codeMetaData := getCodeMetaData(account)
-	if !codeMetaData.Frozen {
-		return ErrSetUnfreezeAccount
+	if !codeMetaData.Guarded {
+		return ErrSetUnGuardAccount
 	}
 
-	codeMetaData.Frozen = false
+	codeMetaData.Guarded = false
 	account.SetCodeMetadata(codeMetaData.ToBytes())
 	return nil
 }

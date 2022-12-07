@@ -8,8 +8,8 @@ const (
 	MetadataUpgradeable = 1
 	// MetadataReadable is the bit for readable flag
 	MetadataReadable = 4
-	// MetadataFrozen is the bit for frozen account flag
-	MetadataFrozen = 8
+	// MetadataGuarded is the bit for guarded account flag
+	MetadataGuarded = 8
 )
 
 // Const group for the second byte of the metadata
@@ -26,7 +26,7 @@ type CodeMetadata struct {
 	PayableBySC bool
 	Upgradeable bool
 	Readable    bool
-	Frozen      bool
+	Guarded     bool
 }
 
 // CodeMetadataFromBytes creates a metadata object from bytes
@@ -38,7 +38,7 @@ func CodeMetadataFromBytes(bytes []byte) CodeMetadata {
 	return CodeMetadata{
 		Upgradeable: (bytes[0] & MetadataUpgradeable) != 0,
 		Readable:    (bytes[0] & MetadataReadable) != 0,
-		Frozen:      (bytes[0] & MetadataFrozen) != 0,
+		Guarded:     (bytes[0] & MetadataGuarded) != 0,
 		Payable:     (bytes[1] & MetadataPayable) != 0,
 		PayableBySC: (bytes[1] & MetadataPayableBySC) != 0,
 	}
@@ -54,8 +54,8 @@ func (metadata *CodeMetadata) ToBytes() []byte {
 	if metadata.Readable {
 		bytes[0] |= MetadataReadable
 	}
-	if metadata.Frozen {
-		bytes[0] |= MetadataFrozen
+	if metadata.Guarded {
+		bytes[0] |= MetadataGuarded
 	}
 	if metadata.Payable {
 		bytes[1] |= MetadataPayable

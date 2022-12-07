@@ -20,10 +20,10 @@ func TestCodeMetadata_FromBytes(t *testing.T) {
 	require.False(t, CodeMetadataFromBytes([]byte{0, 0}).Readable)
 	require.True(t, CodeMetadataFromBytes([]byte{0, 4}).PayableBySC)
 	require.False(t, CodeMetadataFromBytes([]byte{0, 4}).Payable)
-	require.True(t, CodeMetadataFromBytes([]byte{8, 0}).Frozen)
-	require.False(t, CodeMetadataFromBytes([]byte{0, 8}).Frozen)
-	require.False(t, CodeMetadataFromBytes([]byte{4, 0}).Frozen)
-	require.False(t, CodeMetadataFromBytes([]byte{1, 0}).Frozen)
+	require.True(t, CodeMetadataFromBytes([]byte{8, 0}).Guarded)
+	require.False(t, CodeMetadataFromBytes([]byte{0, 8}).Guarded)
+	require.False(t, CodeMetadataFromBytes([]byte{4, 0}).Guarded)
+	require.False(t, CodeMetadataFromBytes([]byte{1, 0}).Guarded)
 }
 
 func TestCodeMetadata_ToBytes(t *testing.T) {
@@ -33,5 +33,5 @@ func TestCodeMetadata_ToBytes(t *testing.T) {
 	require.Equal(t, byte(2), (&CodeMetadata{Payable: true}).ToBytes()[1])
 	require.Equal(t, byte(4), (&CodeMetadata{Readable: true}).ToBytes()[0])
 	require.Equal(t, byte(4), (&CodeMetadata{PayableBySC: true}).ToBytes()[1])
-	require.Equal(t, byte(8), (&CodeMetadata{Frozen: true}).ToBytes()[0])
+	require.Equal(t, byte(8), (&CodeMetadata{Guarded: true}).ToBytes()[0])
 }

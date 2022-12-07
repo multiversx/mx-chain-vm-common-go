@@ -11,16 +11,16 @@ import (
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
-// BaseAccountFreezerArgs is a struct placeholder for
-// all necessary args to create a newBaseAccountFreezer
-type BaseAccountFreezerArgs struct {
+// BaseAccountGuarderArgs is a struct placeholder for
+// all necessary args to create a newBaseAccountGuarder
+type BaseAccountGuarderArgs struct {
 	GuardedAccountHandler vmcommon.GuardedAccountHandler
 	Marshaller            marshal.Marshalizer
 	EnableEpochsHandler   vmcommon.EnableEpochsHandler
 	FuncGasCost           uint64
 }
 
-type baseAccountFreezer struct {
+type baseAccountGuarder struct {
 	baseActiveHandler
 	marshaller            marshal.Marshalizer
 	guardedAccountHandler vmcommon.GuardedAccountHandler
@@ -29,7 +29,7 @@ type baseAccountFreezer struct {
 	funcGasCost  uint64
 }
 
-func newBaseAccountFreezer(args BaseAccountFreezerArgs) (*baseAccountFreezer, error) {
+func newBaseAccountGuarder(args BaseAccountGuarderArgs) (*baseAccountGuarder, error) {
 	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
@@ -40,19 +40,19 @@ func newBaseAccountFreezer(args BaseAccountFreezerArgs) (*baseAccountFreezer, er
 		return nil, ErrNilGuardedAccountHandler
 	}
 
-	accFreezer :=  &baseAccountFreezer{
+	accGuarder :=  &baseAccountGuarder{
 		funcGasCost:           args.FuncGasCost,
 		marshaller:            args.Marshaller,
 		mutExecution:          sync.RWMutex{},
 		guardedAccountHandler: args.GuardedAccountHandler,
 	}
 
-	accFreezer.activeHandler = args.EnableEpochsHandler.IsFreezeAccountEnabled
+	accGuarder.activeHandler = args.EnableEpochsHandler.IsGuardAccountEnabled
 
-	return accFreezer, nil
+	return accGuarder, nil
 }
 
-func (baf *baseAccountFreezer) checkBaseAccountFreezerArgs(
+func (baf *baseAccountGuarder) checkBaseAccountGuarderArgs(
 	senderAccount,
 	receiverAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,

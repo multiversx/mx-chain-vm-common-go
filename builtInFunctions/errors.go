@@ -185,11 +185,11 @@ var ErrGuardianAlreadyExists = errors.New("a guardian with the same address alre
 // ErrNoGuardianEnabled signals that account has no guardian enabled
 var ErrNoGuardianEnabled = errors.New("account has no guardian enabled")
 
-// ErrSetFreezeAccount signals that an account is already frozen when trying to freeze it
-var ErrSetFreezeAccount = errors.New("cannot freeze account, it is already frozen")
+// ErrSetGuardAccountFlag signals that an account is already guarded when trying to guard it
+var ErrSetGuardAccountFlag = errors.New("cannot guard account, it is already guarded")
 
-// ErrSetUnfreezeAccount signals that an account is already unfrozen when trying to unfreeze it
-var ErrSetUnfreezeAccount = errors.New("cannot unfreeze account, it is not frozen")
+// ErrSetUnGuardAccount signals that an account is already unguarded when trying to un-guard it
+var ErrSetUnGuardAccount = errors.New("cannot un-guard account, it is not guarded")
 
 // ErrNilAccountHandler signals that a nil account handler has been provided
 var ErrNilAccountHandler = errors.New("nil account handler provided")
