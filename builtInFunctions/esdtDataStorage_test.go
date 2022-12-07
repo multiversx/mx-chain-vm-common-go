@@ -191,9 +191,9 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(t
 	customSystemAccount := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+				RetrieveValueCalled: func(key []byte) ([]byte, error) {
 					customLoadAccountCalled = true
-					return esdtMetaDataBytes, 0, nil
+					return esdtMetaDataBytes, nil
 				},
 			}
 		},
