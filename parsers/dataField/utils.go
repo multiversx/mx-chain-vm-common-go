@@ -13,7 +13,6 @@ import (
 const (
 	esdtIdentifierSeparator  = "-"
 	esdtRandomSequenceLength = 6
-	addressPrefix            = "erd"
 )
 
 func getAllBuiltInFunctions() []string {

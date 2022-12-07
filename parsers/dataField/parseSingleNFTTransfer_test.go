@@ -10,6 +10,7 @@ import (
 )
 
 var log = logger.GetOrCreate("parse-tests")
+var addressPrefix = "erd"
 
 var pubKeyConv, _ = pubkeyConverter.NewBech32PubkeyConverter(32, addressPrefix)
 
