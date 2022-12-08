@@ -115,6 +115,7 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestinationWithCustomSystemAccount(
 		isCustomSystemAccountSet: true,
 		customSystemAccount:      customSystemAccount,
 	}
+
 	return e.getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(accnt, esdtTokenKey, nonce, queryOpts)
 }
 
@@ -472,6 +473,10 @@ func (e *esdtDataStorage) getSystemAccount(options queryOptions) (vmcommon.UserA
 		return options.customSystemAccount, nil
 	}
 
+	return e.loadSystemAccount()
+}
+
+func (e *esdtDataStorage) loadSystemAccount() (vmcommon.UserAccountHandler, error) {
 	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
 	if err != nil {
 		return nil, err

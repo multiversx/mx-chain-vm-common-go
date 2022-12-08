@@ -165,7 +165,7 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetDataFromSystemAcc(t *tes
 	assert.Equal(t, esdtData, esdtDataGet)
 }
 
-func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(t *testing.T) {
+func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationWithCustomSystemAccount(t *testing.T) {
 	t.Parallel()
 
 	args := createMockArgsForNewESDTDataStorage()
@@ -191,12 +191,12 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(t
 	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
-	customLoadAccountCalled := false
+	retrieveValueFromCustomAccountCalled := false
 	customSystemAccount := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
-					customLoadAccountCalled = true
+					retrieveValueFromCustomAccountCalled = true
 					return esdtMetaDataBytes, 0, nil
 				},
 			}
@@ -206,7 +206,7 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationWithCustomAccountsAdapter(t
 	assert.Nil(t, err)
 	esdtData.TokenMetaData = metaData
 	assert.Equal(t, esdtData, esdtDataGet)
-	assert.True(t, customLoadAccountCalled)
+	assert.True(t, retrieveValueFromCustomAccountCalled)
 }
 
 func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationMarshalERR(t *testing.T) {
