@@ -190,33 +190,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.marshaller, true, false)
-	if err != nil {
-		return err
-	}
-	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTFreeze, newFunc)
-	if err != nil {
-		return err
-	}
-
-	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.marshaller, false, false)
-	if err != nil {
-		return err
-	}
-	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnFreeze, newFunc)
-	if err != nil {
-		return err
-	}
-
-	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.marshaller, false, true)
-	if err != nil {
-		return err
-	}
-	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTWipe, newFunc)
-	if err != nil {
-		return err
-	}
-
 	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, trueHandler)
 	if err != nil {
 		return err
@@ -288,6 +261,33 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTCreate, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.marshaller, true, false)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTFreeze, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.marshaller, false, false)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnFreeze, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.marshaller, false, true)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTWipe, newFunc)
 	if err != nil {
 		return err
 	}
