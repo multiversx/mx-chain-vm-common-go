@@ -196,3 +196,6 @@ var ErrNilAccountHandler = errors.New("nil account handler provided")
 
 // ErrNilGuardedAccountHandler signals that a nil guarded account handler was provided
 var ErrNilGuardedAccountHandler = errors.New("nil guarded account handler")
+
+// ErrInvalidServiceUID signals that an invalid service UID was provided
+var ErrInvalidServiceUID = errors.New("service UID is invalid")
