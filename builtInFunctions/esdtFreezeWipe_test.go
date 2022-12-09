@@ -15,7 +15,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	freeze, _ := NewESDTFreezeWipeFunc(marshaller, true, false)
+	freeze, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), marshaller, true, false)
 	_, err := freeze.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -74,7 +74,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	freeze, _ := NewESDTFreezeWipeFunc(marshaller, true, false)
+	freeze, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), marshaller, true, false)
 	_, err := freeze.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -104,7 +104,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	esdtUserData := ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.True(t, esdtUserData.Frozen)
 
-	unFreeze, _ := NewESDTFreezeWipeFunc(marshaller, false, false)
+	unFreeze, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), marshaller, false, false)
 	_, err = unFreeze.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Nil(t, err)
 
@@ -115,7 +115,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	assert.False(t, esdtUserData.Frozen)
 
 	// cannot wipe if account is not frozen
-	wipe, _ := NewESDTFreezeWipeFunc(marshaller, false, true)
+	wipe, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), marshaller, false, true)
 	_, err = wipe.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Equal(t, ErrCannotWipeAccountNotFrozen, err)
 
@@ -133,7 +133,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	err = acnt.AccountDataHandler().SaveKeyValue(esdtKey, esdtTokenBytes)
 	assert.NoError(t, err)
 
-	wipe, _ = NewESDTFreezeWipeFunc(marshaller, false, true)
+	wipe, _ = NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), marshaller, false, true)
 	vmOutput, err := wipe.ProcessBuiltinFunction(nil, acnt, input)
 	assert.NoError(t, err)
 
