@@ -11,16 +11,18 @@ import (
 
 type esdtFreezeWipe struct {
 	baseAlwaysActiveHandler
-	esdtStorageHandler vmcommon.ESDTNFTStorageHandler
-	marshaller         vmcommon.Marshalizer
-	keyPrefix          []byte
-	wipe               bool
-	freeze             bool
+	esdtStorageHandler  vmcommon.ESDTNFTStorageHandler
+	enableEpochsHandler vmcommon.EnableEpochsHandler
+	marshaller          vmcommon.Marshalizer
+	keyPrefix           []byte
+	wipe                bool
+	freeze              bool
 }
 
 // NewESDTFreezeWipeFunc returns the esdt freeze/un-freeze/wipe built-in function component
 func NewESDTFreezeWipeFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	marshaller vmcommon.Marshalizer,
 	freeze bool,
 	wipe bool,
@@ -31,13 +33,17 @@ func NewESDTFreezeWipeFunc(
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
 	}
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
+	}
 
 	e := &esdtFreezeWipe{
-		esdtStorageHandler: esdtStorageHandler,
-		marshaller:         marshaller,
-		keyPrefix:          []byte(baseESDTKeyPrefix),
-		freeze:             freeze,
-		wipe:               wipe,
+		esdtStorageHandler:  esdtStorageHandler,
+		enableEpochsHandler: enableEpochsHandler,
+		marshaller:          marshaller,
+		keyPrefix:           []byte(baseESDTKeyPrefix),
+		freeze:              freeze,
+		wipe:                wipe,
 	}
 
 	return e, nil
@@ -109,14 +115,22 @@ func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, t
 		return nil, err
 	}
 
-	tokenIDKey := append(e.keyPrefix, identifier...)
-	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(tokenIDKey, nonce, big.NewInt(0).Neg(tokenData.Value))
+	err = e.removeLiquidity(identifier, nonce, tokenData.Value)
 	if err != nil {
 		return nil, err
 	}
 
 	wipedAmount := vmcommon.ZeroValueIfNil(tokenData.Value)
 	return wipedAmount, nil
+}
+
+func (e *esdtFreezeWipe) removeLiquidity(tokenIdentifier []byte, nonce uint64, value *big.Int) error {
+	if !e.enableEpochsHandler.IsWipeSingleNFTLiquidityDecreaseEnabled() {
+		return nil
+	}
+
+	tokenIDKey := append(e.keyPrefix, tokenIdentifier...)
+	return e.esdtStorageHandler.AddToLiquiditySystemAcc(tokenIDKey, nonce, big.NewInt(0).Neg(value))
 }
 
 func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) (*big.Int, error) {
