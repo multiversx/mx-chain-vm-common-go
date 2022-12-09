@@ -15,60 +15,60 @@ func requireAccountFrozen(t *testing.T, account vmcommon.UserAccountHandler, fro
 	codeMetaDataBytes := account.GetCodeMetadata()
 	codeMetaData := vmcommon.CodeMetadataFromBytes(codeMetaDataBytes)
 
-	require.Equal(t, frozen, codeMetaData.Frozen)
+	require.Equal(t, frozen, codeMetaData.Guarded)
 }
 
-func TestNewFreezeAccountFuncAndNewUnfreezeAccountFunc(t *testing.T) {
+func TestNewGuardAccountFuncAndNewUnGuardAccountFunc(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		args        func() FreezeAccountArgs
+		args        func() GuardAccountArgs
 		expectedErr error
 	}{
 		{
-			args: func() FreezeAccountArgs {
-				args := createFreezeAccountArgs()
+			args: func() GuardAccountArgs {
+				args := createGuardAccountArgs()
 				args.Marshaller = nil
 				return args
 			},
 			expectedErr: ErrNilMarshalizer,
 		},
 		{
-			args: func() FreezeAccountArgs {
-				return createFreezeAccountArgs()
+			args: func() GuardAccountArgs {
+				return createGuardAccountArgs()
 			},
 			expectedErr: nil,
 		},
 		{
-			args: func() FreezeAccountArgs {
-				return createFreezeAccountArgs()
+			args: func() GuardAccountArgs {
+				return createGuardAccountArgs()
 			},
 			expectedErr: nil,
 		},
 	}
 
 	for _, test := range tests {
-		freezeAccountFunc, errFreeze := NewFreezeAccountFunc(test.args())
-		unFreezeAccountFunc, errUnfreeze := NewUnfreezeAccountFunc(test.args())
+		guardAccountFunc, errGuard := NewGuardAccountFunc(test.args())
+		unGuardAccountFunc, errUnGuard := NewUnGuardAccountFunc(test.args())
 		if test.expectedErr != nil {
-			require.Nil(t, freezeAccountFunc)
-			require.Nil(t, unFreezeAccountFunc)
-			require.Equal(t, test.expectedErr, errFreeze)
-			require.Equal(t, test.expectedErr, errUnfreeze)
+			require.Nil(t, guardAccountFunc)
+			require.Nil(t, unGuardAccountFunc)
+			require.Equal(t, test.expectedErr, errGuard)
+			require.Equal(t, test.expectedErr, errUnGuard)
 		} else {
-			require.Nil(t, errFreeze)
-			require.Nil(t, errUnfreeze)
-			require.NotNil(t, freezeAccountFunc)
-			require.NotNil(t, unFreezeAccountFunc)
-			require.NotEqual(t, freezeAccountFunc, unFreezeAccountFunc)
+			require.Nil(t, errGuard)
+			require.Nil(t, errUnGuard)
+			require.NotNil(t, guardAccountFunc)
+			require.NotNil(t, unGuardAccountFunc)
+			require.NotEqual(t, guardAccountFunc, unGuardAccountFunc)
 		}
 	}
 }
 
-func TestFreezeUnfreezeAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveFrozenBitSetExpectError(t *testing.T) {
+func TestGuardUnGuardAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveGuardedBitSetExpectError(t *testing.T) {
 	t.Parallel()
 
-	args := createFreezeAccountArgs()
+	args := createGuardAccountArgs()
 
 	dataTrie := &mock.DataTrieTrackerStub{
 		RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
@@ -87,7 +87,7 @@ func TestFreezeUnfreezeAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveFroz
 			wasAccountAltered.SetValue(true)
 		},
 		GetCodeMetaDataCalled: func() []byte {
-			codeMetaData := vmcommon.CodeMetadata{Frozen: accountFrozen}
+			codeMetaData := vmcommon.CodeMetadata{Guarded: accountFrozen}
 			return codeMetaData.ToBytes()
 		},
 	}
@@ -95,41 +95,41 @@ func TestFreezeUnfreezeAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveFroz
 	vmInput := getDefaultVmInput([][]byte{})
 	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
 		IsSetGuardianEnabledField:   true,
-		IsFreezeAccountEnabledField: true,
+		IsGuardAccountEnabledField: true,
 	}
-	freezeAccountFunc, _ := NewFreezeAccountFunc(args)
-	unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
+	guardAccountFunc, _ := NewGuardAccountFunc(args)
+	unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
 
-	t.Run("try to freeze frozen account, expected error", func(t *testing.T) {
+	t.Run("try to guard guarded account, expected error", func(t *testing.T) {
 		accountFrozen = true
-		output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
+		output, err := guardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, output)
-		require.Equal(t, ErrSetFreezeAccount, err)
+		require.Equal(t, ErrSetGuardAccountFlag, err)
 		require.False(t, wasAccountAltered.IsSet())
 	})
 
-	t.Run("try to unfreeze unfrozen account, expect error", func(t *testing.T) {
+	t.Run("try to un-guard un-guarded account, expect error", func(t *testing.T) {
 		accountFrozen = false
-		output, err := unfreezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
+		output, err := unGuardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, output)
-		require.Equal(t, ErrSetUnfreezeAccount, err)
+		require.Equal(t, ErrSetUnGuardAccount, err)
 		require.False(t, wasAccountAltered.IsSet())
 	})
 }
 
-func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
+func TestGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 	t.Parallel()
 
-	args := createFreezeAccountArgs()
+	args := createGuardAccountArgs()
 	vmInput := getDefaultVmInput([][]byte{})
 
 	t.Run("invalid args, expect error", func(t *testing.T) {
 		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-			IsFreezeAccountEnabledField: true,
-			IsSetGuardianEnabledField:   true,
+			IsGuardAccountEnabledField: true,
+			IsSetGuardianEnabledField:  true,
 		}
-		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
-		output, err := freezeAccountFunc.ProcessBuiltinFunction(nil, nil, vmInput)
+		guardAccountFunc, _ := NewGuardAccountFunc(args)
+		output, err := guardAccountFunc.ProcessBuiltinFunction(nil, nil, vmInput)
 		require.Nil(t, output)
 		require.Error(t, err)
 		require.True(t, strings.Contains(err.Error(), ErrNilUserAccount.Error()))
@@ -148,23 +148,23 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		}
 
 		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-			IsFreezeAccountEnabledField: true,
-			IsSetGuardianEnabledField:   true,
+			IsGuardAccountEnabledField: true,
+			IsSetGuardianEnabledField:  true,
 		}
-		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+		guardAccountFunc, _ := NewGuardAccountFunc(args)
 		address := generateRandomByteArray(pubKeyLen)
 		account := mock.NewUserAccount(address)
 		requireAccountFrozen(t, account, false)
 
 		vmInput.CallerAddr = account.Address
-		output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
+		output, err := guardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, output)
 		require.Equal(t, expectedErr, err)
 		requireAccountFrozen(t, account, false)
 		require.False(t, cleanCalled)
 	})
 
-	t.Run("freeze account should work", func(t *testing.T) {
+	t.Run("guard account should work", func(t *testing.T) {
 		cleanCalled := false
 		args.GuardedAccountHandler = &mock.GuardedAccountHandlerStub{
 			GetActiveGuardianCalled: func(handler vmcommon.UserAccountHandler) ([]byte, error) {
@@ -176,16 +176,16 @@ func TestFreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		}
 
 		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-			IsFreezeAccountEnabledField: true,
-			IsSetGuardianEnabledField:   true,
+			IsGuardAccountEnabledField: true,
+			IsSetGuardianEnabledField:  true,
 		}
-		freezeAccountFunc, _ := NewFreezeAccountFunc(args)
+		guardAccountFunc, _ := NewGuardAccountFunc(args)
 		address := generateRandomByteArray(pubKeyLen)
 		account := mock.NewUserAccount(address)
 		vmInput.CallerAddr = account.Address
 		requireAccountFrozen(t, account, false)
 
-		output, err := freezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
+		output, err := guardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, err)
 		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 		requireAccountFrozen(t, account, true)

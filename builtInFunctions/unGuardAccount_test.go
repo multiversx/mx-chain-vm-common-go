@@ -10,19 +10,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnfreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
+func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 	t.Parallel()
 
-	args := createFreezeAccountArgs()
+	args := createGuardAccountArgs()
 	vmInput := getDefaultVmInput([][]byte{})
 
 	t.Run("invalid args, expect error", func(t *testing.T) {
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsFreezeAccountEnabledField: true,
-			IsSetGuardianEnabledField:   true,
+			IsGuardAccountEnabledField: true,
+			IsSetGuardianEnabledField:  true,
 		}
-		unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
-		output, err := unfreezeAccountFunc.ProcessBuiltinFunction(nil, nil, vmInput)
+		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
+		output, err := unGuardAccountFunc.ProcessBuiltinFunction(nil, nil, vmInput)
 		require.Nil(t, output)
 		require.Error(t, err)
 		require.True(t, strings.Contains(err.Error(), ErrNilUserAccount.Error()))
@@ -36,44 +36,44 @@ func TestUnfreezeAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsFreezeAccountEnabledField: true,
-			IsSetGuardianEnabledField:   true,
+			IsGuardAccountEnabledField: true,
+			IsSetGuardianEnabledField:  true,
 		}
-		unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
+		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
 		address := generateRandomByteArray(pubKeyLen)
 		account := mockvm.NewUserAccount(address)
 		vmInput.CallerAddr = address
 
-		code := vmcommon.CodeMetadata{Frozen: true}
+		code := vmcommon.CodeMetadata{Guarded: true}
 		account.SetCodeMetadata(code.ToBytes())
 
-		output, err := unfreezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
+		output, err := unGuardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, output)
 		require.Equal(t, expectedErr, err)
 		requireAccountFrozen(t, account, true)
 	})
 
-	t.Run("unfreeze account should work", func(t *testing.T) {
+	t.Run("un-guard account should work", func(t *testing.T) {
 		args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
 			GetActiveGuardianCalled: func(handler vmcommon.UserAccountHandler) ([]byte, error) {
 				return []byte("active Guardian"), nil
 			},
 		}
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsFreezeAccountEnabledField: true,
-			IsSetGuardianEnabledField:   true,
+			IsGuardAccountEnabledField: true,
+			IsSetGuardianEnabledField:  true,
 		}
-		unfreezeAccountFunc, _ := NewUnfreezeAccountFunc(args)
+		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
 
 		address := generateRandomByteArray(pubKeyLen)
 		account := mockvm.NewUserAccount(address)
 		vmInput.CallerAddr = address
 
-		code := vmcommon.CodeMetadata{Frozen: true}
+		code := vmcommon.CodeMetadata{Guarded: true}
 		account.SetCodeMetadata(code.ToBytes())
 		requireAccountFrozen(t, account, true)
 
-		output, err := unfreezeAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
+		output, err := unGuardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, err)
 		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
 		requireAccountFrozen(t, account, false)

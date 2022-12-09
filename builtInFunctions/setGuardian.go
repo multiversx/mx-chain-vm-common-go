@@ -13,22 +13,22 @@ const noOfArgsSetGuardian = 1
 // SetGuardianArgs is a struct placeholder for all necessary args
 // to create a NewSetGuardianFunc
 type SetGuardianArgs struct {
-	BaseAccountFreezerArgs
+	BaseAccountGuarderArgs
 }
 
 type setGuardian struct {
 	baseActiveHandler
-	*baseAccountFreezer
+	*baseAccountGuarder
 }
 
 // NewSetGuardianFunc will instantiate a new set guardian built-in function
 func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
-	base, err := newBaseAccountFreezer(args.BaseAccountFreezerArgs)
+	base, err := newBaseAccountGuarder(args.BaseAccountGuarderArgs)
 	if err != nil {
 		return nil, err
 	}
 	setGuardianFunc := &setGuardian{
-		baseAccountFreezer: base,
+		baseAccountGuarder: base,
 	}
 	setGuardianFunc.activeHandler = args.EnableEpochsHandler.IsSetGuardianEnabled
 
@@ -43,7 +43,7 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	err := sg.checkBaseAccountFreezerArgs(acntSnd, acntDst, vmInput, noOfArgsSetGuardian)
+	err := sg.checkBaseAccountGuarderArgs(acntSnd, acntDst, vmInput, noOfArgsSetGuardian)
 	if err != nil {
 		return nil, err
 	}

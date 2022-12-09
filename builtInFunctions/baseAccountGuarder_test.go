@@ -12,47 +12,47 @@ import (
 
 var marshallerMock = &mockvm.MarshalizerMock{}
 
-func TestNewBaseAccountFreezer(t *testing.T) {
+func TestNewBaseAccountGuarder(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		args        func() BaseAccountFreezerArgs
+		args        func() BaseAccountGuarderArgs
 		expectedErr error
 	}{
 		{
-			args: func() BaseAccountFreezerArgs {
-				args := createBaseAccountFreezerArgs()
+			args: func() BaseAccountGuarderArgs {
+				args := createBaseAccountGuarderArgs()
 				args.Marshaller = nil
 				return args
 			},
 			expectedErr: ErrNilMarshalizer,
 		},
 		{
-			args: func() BaseAccountFreezerArgs {
-				args := createBaseAccountFreezerArgs()
+			args: func() BaseAccountGuarderArgs {
+				args := createBaseAccountGuarderArgs()
 				args.EnableEpochsHandler = nil
 				return args
 			},
 			expectedErr: ErrNilEnableEpochsHandler,
 		},
 		{
-			args: func() BaseAccountFreezerArgs {
-				args := createBaseAccountFreezerArgs()
+			args: func() BaseAccountGuarderArgs {
+				args := createBaseAccountGuarderArgs()
 				args.GuardedAccountHandler = nil
 				return args
 			},
 			expectedErr: ErrNilGuardedAccountHandler,
 		},
 		{
-			args: func() BaseAccountFreezerArgs {
-				return createBaseAccountFreezerArgs()
+			args: func() BaseAccountGuarderArgs {
+				return createBaseAccountGuarderArgs()
 			},
 			expectedErr: nil,
 		},
 	}
 
 	for _, test := range tests {
-		instance, err := newBaseAccountFreezer(test.args())
+		instance, err := newBaseAccountGuarder(test.args())
 		if test.expectedErr != nil {
 			require.Nil(t, instance)
 			require.Equal(t, test.expectedErr, err)
@@ -63,7 +63,7 @@ func TestNewBaseAccountFreezer(t *testing.T) {
 	}
 }
 
-func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
+func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 	t.Parallel()
 
 	address := generateRandomByteArray(pubKeyLen)
@@ -191,11 +191,11 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 		},
 	}
 
-	args := createBaseAccountFreezerArgs()
-	baseAccFreezer, _ := newBaseAccountFreezer(args)
+	args := createBaseAccountGuarderArgs()
+	baseAccGuarder, _ := newBaseAccountGuarder(args)
 
 	for _, test := range tests {
-		err := baseAccFreezer.checkBaseAccountFreezerArgs(test.senderAccount, test.receiverAccount, test.vmInput(), test.noOfArgs)
+		err := baseAccGuarder.checkBaseAccountGuarderArgs(test.senderAccount, test.receiverAccount, test.vmInput(), test.noOfArgs)
 		if test.expectedErr != nil {
 			require.Error(t, err)
 			require.True(t, strings.Contains(err.Error(), test.expectedErr.Error()))
@@ -205,11 +205,11 @@ func TestBaseAccountFreezer_CheckArgs(t *testing.T) {
 	}
 }
 
-func createBaseAccountFreezerArgs() BaseAccountFreezerArgs {
-	return BaseAccountFreezerArgs{
+func createBaseAccountGuarderArgs() BaseAccountGuarderArgs {
+	return BaseAccountGuarderArgs{
 		Marshaller: marshallerMock,
 		EnableEpochsHandler: &mockvm.EnableEpochsHandlerStub{
-			IsFreezeAccountEnabledField: false,
+			IsGuardAccountEnabledField: false,
 			IsSetGuardianEnabledField:   false,
 		},
 		FuncGasCost:           100000,

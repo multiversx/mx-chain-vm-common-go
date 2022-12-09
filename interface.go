@@ -362,7 +362,7 @@ type EnableEpochsHandler interface {
 	IsESDTNFTImprovementV1FlagEnabled() bool
 	IsFixOldTokenLiquidityEnabled() bool
 	IsRuntimeMemStoreLimitEnabled() bool
-	IsFreezeAccountEnabled() bool
+	IsGuardAccountEnabled() bool
 	IsSetGuardianEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32

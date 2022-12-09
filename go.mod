@@ -3,7 +3,7 @@ module github.com/ElrondNetwork/elrond-vm-common
 go 1.17
 
 require (
-	github.com/ElrondNetwork/elrond-go-core v1.1.27-0.20221128163152-4b8ad7af81f6
+	github.com/ElrondNetwork/elrond-go-core v1.1.27-0.20221207113027-6add1889c6e8
 	github.com/ElrondNetwork/elrond-go-logger v1.0.10
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/stretchr/testify v1.7.0
