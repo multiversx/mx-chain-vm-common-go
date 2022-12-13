@@ -360,6 +360,7 @@ type EnableEpochsHandler interface {
 	IsTransferToMetaFlagEnabled() bool
 	IsESDTNFTImprovementV1FlagEnabled() bool
 	IsFixOldTokenLiquidityEnabled() bool
+	IsDynamicGasCostForDataTrieStorageLoadEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32

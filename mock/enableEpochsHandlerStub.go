@@ -29,6 +29,7 @@ type EnableEpochsHandlerStub struct {
 	IsTransferToMetaFlagEnabledField                     bool
 	IsESDTNFTImprovementV1FlagEnabledField               bool
 	IsFixOldTokenLiquidityEnabledField                   bool
+	IsDynamicGasCostForDataTrieStorageLoadEnabledField   bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
 	FixOOGReturnCodeEnableEpochField                     uint32
 	RemoveNonUpdatedStorageEnableEpochField              uint32
@@ -226,6 +227,11 @@ func (stub *EnableEpochsHandlerStub) CheckExecuteReadOnlyEnableEpoch() uint32 {
 // StorageAPICostOptimizationEnableEpoch -
 func (stub *EnableEpochsHandlerStub) StorageAPICostOptimizationEnableEpoch() uint32 {
 	return stub.StorageAPICostOptimizationEnableEpochField
+}
+
+// IsDynamicGasCostForDataTrieStorageLoadEnabled -
+func (stub *EnableEpochsHandlerStub) IsDynamicGasCostForDataTrieStorageLoadEnabled() bool {
+	return stub.IsDynamicGasCostForDataTrieStorageLoadEnabledField
 }
 
 // IsInterfaceNil -
