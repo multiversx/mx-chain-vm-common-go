@@ -396,6 +396,6 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
-	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey)
+	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey, defaultQueryOptions())
 	require.Equal(t, metaData.URIs[0], URIToAdd)
 }

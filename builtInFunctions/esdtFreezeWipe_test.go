@@ -9,13 +9,14 @@ import (
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/ElrondNetwork/elrond-vm-common/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	freeze, _ := NewESDTFreezeWipeFunc(marshaller, true, false)
+	freeze, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), &mock.EnableEpochsHandlerStub{}, marshaller, true, false)
 	_, err := freeze.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -74,7 +75,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	freeze, _ := NewESDTFreezeWipeFunc(marshaller, true, false)
+	freeze, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), &mock.EnableEpochsHandlerStub{}, marshaller, true, false)
 	_, err := freeze.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -104,7 +105,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	esdtUserData := ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.True(t, esdtUserData.Frozen)
 
-	unFreeze, _ := NewESDTFreezeWipeFunc(marshaller, false, false)
+	unFreeze, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), &mock.EnableEpochsHandlerStub{}, marshaller, false, false)
 	_, err = unFreeze.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Nil(t, err)
 
@@ -115,7 +116,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	assert.False(t, esdtUserData.Frozen)
 
 	// cannot wipe if account is not frozen
-	wipe, _ := NewESDTFreezeWipeFunc(marshaller, false, true)
+	wipe, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), &mock.EnableEpochsHandlerStub{}, marshaller, false, true)
 	_, err = wipe.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Equal(t, ErrCannotWipeAccountNotFrozen, err)
 
@@ -133,7 +134,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	err = acnt.AccountDataHandler().SaveKeyValue(esdtKey, esdtTokenBytes)
 	assert.NoError(t, err)
 
-	wipe, _ = NewESDTFreezeWipeFunc(marshaller, false, true)
+	wipe, _ = NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), &mock.EnableEpochsHandlerStub{}, marshaller, false, true)
 	vmOutput, err := wipe.ProcessBuiltinFunction(nil, acnt, input)
 	assert.NoError(t, err)
 
@@ -141,4 +142,64 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	assert.Equal(t, 0, len(marshaledData))
 	assert.Len(t, vmOutput.Logs, 1)
 	assert.Equal(t, [][]byte{key, {}, wipedAmount.Bytes(), []byte("dst")}, vmOutput.Logs[0].Topics)
+}
+
+func TestEsdtFreezeWipe_WipeShouldDecreaseLiquidityIfFlagIsEnabled(t *testing.T) {
+	t.Parallel()
+
+	balance := big.NewInt(37)
+	addToLiquiditySystemAccCalled := false
+	esdtStorage := &mock.ESDTNFTStorageHandlerStub{
+		AddToLiquiditySystemAccCalled: func(_ []byte, _ uint64, transferValue *big.Int) error {
+			require.Equal(t, big.NewInt(0).Neg(balance), transferValue)
+			addToLiquiditySystemAccCalled = true
+			return nil
+		},
+	}
+
+	marshaller := &mock.MarshalizerMock{}
+	wipe, _ := NewESDTFreezeWipeFunc(esdtStorage, &mock.EnableEpochsHandlerStub{}, marshaller, false, true)
+
+	acnt := mock.NewUserAccount([]byte("dst"))
+	metaData := ESDTUserMetadata{Frozen: true}
+	esdtToken := &esdt.ESDigitalToken{
+		Value:      balance,
+		Properties: metaData.ToBytes(),
+	}
+	esdtTokenBytes, _ := marshaller.Marshal(esdtToken)
+
+	nonce := uint64(37)
+	key := append([]byte("MYSFT-0a0a0a"), big.NewInt(int64(nonce)).Bytes()...)
+	esdtKey := append(wipe.keyPrefix, key...)
+
+	err := acnt.AccountDataHandler().SaveKeyValue(esdtKey, esdtTokenBytes)
+	assert.NoError(t, err)
+
+	input := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue: big.NewInt(0),
+		},
+	}
+	input.Arguments = [][]byte{key}
+	input.CallerAddr = core.ESDTSCAddress
+	input.RecipientAddr = []byte("dst")
+
+	acntCopy := acnt.Clone()
+	_, err = wipe.ProcessBuiltinFunction(nil, acntCopy, input)
+	assert.NoError(t, err)
+
+	marshaledData, _, _ := acntCopy.AccountDataHandler().RetrieveValue(esdtKey)
+	assert.Equal(t, 0, len(marshaledData))
+	assert.False(t, addToLiquiditySystemAccCalled)
+
+	wipe.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsWipeSingleNFTLiquidityDecreaseEnabledField: true,
+	}
+
+	_, err = wipe.ProcessBuiltinFunction(nil, acnt, input)
+	assert.NoError(t, err)
+
+	marshaledData, _, _ = acnt.AccountDataHandler().RetrieveValue(esdtKey)
+	assert.Equal(t, 0, len(marshaledData))
+	assert.True(t, addToLiquiditySystemAccCalled)
 }
