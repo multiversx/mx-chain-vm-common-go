@@ -236,6 +236,7 @@ func (stub *EnableEpochsHandlerStub) StorageAPICostOptimizationEnableEpoch() uin
 	return stub.StorageAPICostOptimizationEnableEpochField
 }
 
+// IsMaxBlockchainHookCountersFlagEnabled -
 func (stub *EnableEpochsHandlerStub) IsMaxBlockchainHookCountersFlagEnabled() bool {
 	return stub.IsMaxBlockchainHookCountersFlagEnabledField
 }
