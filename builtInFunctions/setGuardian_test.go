@@ -68,7 +68,8 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 	account := mockvm.NewUserAccount(address)
 
 	guardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput([][]byte{guardianAddress})
+	serviceUID := []byte{1, 1, 1}
+	vmInput := getDefaultVmInput([][]byte{guardianAddress, serviceUID})
 	vmInput.CallerAddr = address
 
 	tests := []struct {
@@ -90,7 +91,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
-				input.Arguments = [][]byte{nil}
+				input.Arguments = [][]byte{nil, serviceUID}
 				return &input
 			},
 			senderAccount:   account,
@@ -100,7 +101,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
-				input.Arguments = [][]byte{address}
+				input.Arguments = [][]byte{address, serviceUID}
 				return &input
 			},
 			senderAccount:   account,
@@ -110,7 +111,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
-				input.Arguments = [][]byte{make([]byte, pubKeyLen)} // Empty SC Address
+				input.Arguments = [][]byte{make([]byte, pubKeyLen), serviceUID} // Empty SC Address
 				return &input
 			},
 			senderAccount:   account,
@@ -161,7 +162,8 @@ func TestSetGuardian_ProcessBuiltinFunctionAccountAccountHandlerSetError(t *test
 
 	args := createSetGuardianFuncMockArgs()
 	newGuardianAddress := generateRandomByteArray(pubKeyLen)
-	vmInput := getDefaultVmInput([][]byte{newGuardianAddress})
+	serviceUID := []byte{1, 1, 1}
+	vmInput := getDefaultVmInput([][]byte{newGuardianAddress, serviceUID})
 	expectedErr := errors.New("expected error")
 
 	address := generateRandomByteArray(pubKeyLen)
@@ -169,7 +171,7 @@ func TestSetGuardian_ProcessBuiltinFunctionAccountAccountHandlerSetError(t *test
 	vmInput.CallerAddr = address
 
 	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
-		SetGuardianCalled: func(uah vmcommon.UserAccountHandler, guardianAddress []byte, _ []byte) error {
+		SetGuardianCalled: func(_ vmcommon.UserAccountHandler, guardianAddress []byte, _ []byte, _ []byte) error {
 			return expectedErr
 		},
 	}
@@ -194,7 +196,7 @@ func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 		IsSetGuardianEnabledField:  true,
 	}
 	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
-		SetGuardianCalled: func(_ vmcommon.UserAccountHandler, _ []byte, _ []byte) error {
+		SetGuardianCalled: func(_ vmcommon.UserAccountHandler, _ []byte, _ []byte, _ []byte) error {
 			setGuardianCalled.SetValue(true)
 			return nil
 		},
@@ -202,7 +204,8 @@ func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 
 	setGuardianFunc, _ := NewSetGuardianFunc(args)
 
-	vmInput := getDefaultVmInput([][]byte{generateRandomByteArray(pubKeyLen)})
+	serviceUID := []byte{1, 1, 1}
+	vmInput := getDefaultVmInput([][]byte{generateRandomByteArray(pubKeyLen), serviceUID})
 	fmt.Println(userAddress)
 	fmt.Println(vmInput.CallerAddr)
 	output, err := setGuardianFunc.ProcessBuiltinFunction(account, account, vmInput)
