@@ -8,7 +8,8 @@ import (
 	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 )
 
-const noOfArgsSetGuardian = 1
+const noOfArgsSetGuardian = 2
+const serviceUIDMaxLen = 32
 
 // SetGuardianArgs is a struct placeholder for all necessary args
 // to create a NewSetGuardianFunc
@@ -53,7 +54,8 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	}
 
 	newGuardian := vmInput.Arguments[0]
-	err = sg.guardedAccountHandler.SetGuardian(acntSnd, newGuardian, vmInput.TxGuardian)
+	guardianServiceUID := vmInput.Arguments[1]
+	err = sg.guardedAccountHandler.SetGuardian(acntSnd, newGuardian, vmInput.TxGuardian, guardianServiceUID)
 	if err != nil {
 		return nil, err
 	}
@@ -67,11 +69,16 @@ func (sg *setGuardian) checkSetGuardianArgs(
 ) error {
 	senderAddr := sender.AddressBytes()
 	guardianAddr := vmInput.Arguments[0]
+	guardianServiceUID := vmInput.Arguments[1]
 
 	isGuardianAddrLenOk := len(vmInput.Arguments[0]) == len(senderAddr)
 	isGuardianAddrSC := core.IsSmartContractAddress(guardianAddr)
 	if !isGuardianAddrLenOk || isGuardianAddrSC {
 		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
+	}
+
+	if len(guardianServiceUID) > serviceUIDMaxLen {
+		return fmt.Errorf("%w for guardian service", ErrInvalidServiceUID)
 	}
 
 	if bytes.Equal(senderAddr, guardianAddr) {

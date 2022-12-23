@@ -382,7 +382,7 @@ type EnableEpochsHandler interface {
 // GuardedAccountHandler allows setting and getting the configured account guardian
 type GuardedAccountHandler interface {
 	GetActiveGuardian(handler UserAccountHandler) ([]byte, error)
-	SetGuardian(uah UserAccountHandler, guardianAddress []byte, txGuardianAddress []byte) error
+	SetGuardian(uah UserAccountHandler, guardianAddress []byte, txGuardianAddress []byte, guardianServiceUID []byte) error
 	CleanOtherThanActive(uah UserAccountHandler)
 	IsInterfaceNil() bool
 }
