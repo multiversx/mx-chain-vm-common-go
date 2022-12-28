@@ -344,7 +344,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	tokenKey := []byte(baseESDTKeyPrefix + token)
 	tokenKey = append(tokenKey, big.NewInt(1).Bytes()...)
 
-	esdtData, _, _ := esdtDataStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+	esdtData, _, _ := esdtDataStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey, defaultQueryOptions())
 	assert.Equal(t, tokenMetaData, esdtData.TokenMetaData)
 	assert.Equal(t, esdtData.Value, quantity)
 
@@ -429,7 +429,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 	tokenKey := []byte(baseESDTKeyPrefix + token)
 	tokenKey = append(tokenKey, big.NewInt(1).Bytes()...)
 
-	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey)
+	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey, defaultQueryOptions())
 	assert.Equal(t, tokenMetaData, metaData)
 }
 
