@@ -362,6 +362,7 @@ type EnableEpochsHandler interface {
 	IsESDTNFTImprovementV1FlagEnabled() bool
 	IsFixOldTokenLiquidityEnabled() bool
 	IsRuntimeMemStoreLimitEnabled() bool
+	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
 	IsDynamicGasCostForDataTrieStorageLoadEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
