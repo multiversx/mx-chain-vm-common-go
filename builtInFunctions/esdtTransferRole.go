@@ -8,7 +8,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 const transfer = "transfer"

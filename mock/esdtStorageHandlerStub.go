@@ -5,7 +5,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 // ESDTNFTStorageHandlerStub -

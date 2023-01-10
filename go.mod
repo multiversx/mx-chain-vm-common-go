@@ -1,4 +1,4 @@
-module github.com/multiversx/mx-chain-vm-common
+module github.com/multiversx/mx-chain-vm-common-go
 
 go 1.17
 

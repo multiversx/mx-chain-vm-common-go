@@ -1,6 +1,6 @@
 package builtInFunctions
 
-import vmcommon "github.com/multiversx/mx-chain-vm-common"
+import vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 
 // disabledPayableHandler is a disabled payableCheck handler that implements PayableChecker interface but it is disabled
 type disabledPayableHandler struct {

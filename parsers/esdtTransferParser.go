@@ -7,7 +7,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 // MinArgsForESDTTransfer defines the minimum arguments needed for an esdt transfer

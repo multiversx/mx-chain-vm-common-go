@@ -9,8 +9,8 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/core/sharding"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
-	"github.com/multiversx/mx-chain-vm-common/parsers"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/parsers"
 )
 
 const (

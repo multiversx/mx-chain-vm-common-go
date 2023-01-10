@@ -4,7 +4,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)

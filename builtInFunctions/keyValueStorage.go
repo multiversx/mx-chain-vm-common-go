@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-vm-common"
+	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type saveKeyValueStorage struct {

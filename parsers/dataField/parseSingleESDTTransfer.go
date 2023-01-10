@@ -2,7 +2,7 @@ package datafield
 
 import (
 	"github.com/multiversx/mx-chain-core-go/core"
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 func (odp *operationDataFieldParser) parseSingleESDTTransfer(args [][]byte, function string, sender, receiver []byte) *ResponseParseData {

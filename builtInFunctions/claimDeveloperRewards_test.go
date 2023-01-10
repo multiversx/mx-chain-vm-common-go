@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"testing"
 
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
-	"github.com/multiversx/mx-chain-vm-common/mock"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/require"
 )
 

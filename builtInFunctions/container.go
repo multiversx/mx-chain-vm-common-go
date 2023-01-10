@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
-	"github.com/multiversx/mx-chain-vm-common/container"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/container"
 )
 
 var _ vmcommon.BuiltInFunctionContainer = (*functionContainer)(nil)

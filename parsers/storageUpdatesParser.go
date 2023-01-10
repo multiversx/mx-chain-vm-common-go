@@ -3,7 +3,7 @@ package parsers
 import (
 	"encoding/hex"
 
-	"github.com/multiversx/mx-chain-vm-common"
+	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type storageUpdatesParser struct {

@@ -1,7 +1,7 @@
 package mock
 
 import (
-	vmcommon "github.com/multiversx/mx-chain-vm-common"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 // BuiltInFunctionStub -
