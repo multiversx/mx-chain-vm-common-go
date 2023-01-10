@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-vm-common"
 )
 
 // ErrOperationNotPermitted indicates an operation rejected due to insufficient

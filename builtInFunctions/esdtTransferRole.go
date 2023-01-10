@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"math/big"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	"github.com/ElrondNetwork/elrond-go-core/marshal"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/marshal"
+	vmcommon "github.com/multiversx/mx-chain-vm-common"
 )
 
 const transfer = "transfer"
 
-var transferAddressesKeyPrefix = []byte(core.ElrondProtectedKeyPrefix + transfer + core.ESDTKeyIdentifier)
+var transferAddressesKeyPrefix = []byte(core.ProtectedKeyPrefix + transfer + core.ESDTKeyIdentifier)
 
 type esdtTransferAddress struct {
 	baseActiveHandler

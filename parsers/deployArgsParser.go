@@ -1,7 +1,7 @@
 package parsers
 
 import (
-	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-vm-common"
 )
 
 type deployArgsParser struct {

@@ -3,9 +3,9 @@ package builtInFunctions
 import (
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-vm-common/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,13 +14,13 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 	fillGasMapInternal(gasMap, 1)
 
 	args := ArgsCreateBuiltInFunctionContainer{
-		GasMap:               gasMap,
-		MapDNSAddresses:      make(map[string]struct{}),
-		EnableUserNameChange: false,
-		Marshalizer:          &mock.MarshalizerMock{},
-		Accounts:             &mock.AccountsStub{},
-		ShardCoordinator:     mock.NewMultiShardsCoordinatorMock(1),
-		EnableEpochsHandler:  &mock.EnableEpochsHandlerStub{},
+		GasMap:                           gasMap,
+		MapDNSAddresses:                  make(map[string]struct{}),
+		EnableUserNameChange:             false,
+		Marshalizer:                      &mock.MarshalizerMock{},
+		Accounts:                         &mock.AccountsStub{},
+		ShardCoordinator:                 mock.NewMultiShardsCoordinatorMock(1),
+		EnableEpochsHandler:              &mock.EnableEpochsHandlerStub{},
 		MaxNumOfAddressesForTransferRole: 100,
 	}
 

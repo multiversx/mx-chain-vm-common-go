@@ -1,6 +1,6 @@
 package mock
 
-import vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+import vmcommon "github.com/multiversx/mx-chain-vm-common"
 
 // PayableHandlerStub -
 type PayableHandlerStub struct {
