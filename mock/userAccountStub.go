@@ -50,7 +50,7 @@ func (u *UserAccountStub) ClaimDeveloperRewards([]byte) (*big.Int, error) {
 }
 
 // AddToDeveloperReward -
-func (u *UserAccountStub) AddToDeveloperReward(*big.Int) {
+func (u *UserAccountStub) AddToDeveloperReward(_ *big.Int) {
 
 }
 
@@ -122,7 +122,7 @@ func (u *UserAccountStub) GetRootHash() []byte {
 	return nil
 }
 
-// DataTrieTracker -
+// AccountDataHandler -
 func (u *UserAccountStub) AccountDataHandler() vmcommon.AccountDataHandler {
 	if u.AccountDataHandlerCalled != nil {
 		return u.AccountDataHandlerCalled()
