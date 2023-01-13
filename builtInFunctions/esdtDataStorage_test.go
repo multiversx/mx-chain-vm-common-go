@@ -320,6 +320,91 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 	assert.Equal(t, esdtData, esdtDataGet)
 }
 
+func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsSaveToSystemAccountFlagEnabledField: true,
+		IsSendAlwaysFlagEnabledField:          true,
+		IsAlwaysSaveTokenMetaDataEnabledField: true,
+	}
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	nonce := uint64(10)
+
+	t.Run("new token should not rewrite metadata", func(t *testing.T) {
+		newToken := &esdt.ESDigitalToken{
+			Value: big.NewInt(10),
+		}
+		tokenIdentifier := "newTkn"
+		key := baseESDTKeyPrefix + tokenIdentifier
+		tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+
+		_ = saveESDTData(userAcc, newToken, tokenKey, args.Marshalizer)
+
+		systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
+		metaData := &esdt.MetaData{
+			Name: []byte("test"),
+		}
+		esdtDataOnSystemAcc := &esdt.ESDigitalToken{
+			TokenMetaData: metaData,
+			Reserved:      []byte{1},
+		}
+		esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+		_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+		newMetaData := &esdt.MetaData{Name: []byte("newName")}
+		transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
+		_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, false, false)
+		assert.Nil(t, err)
+
+		esdtDataGet, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
+		assert.Nil(t, err)
+
+		expectedESDTData := &esdt.ESDigitalToken{
+			Value:         big.NewInt(100),
+			TokenMetaData: metaData,
+		}
+		assert.Equal(t, expectedESDTData, esdtDataGet)
+	})
+	t.Run("old token should rewrite metadata", func(t *testing.T) {
+		newToken := &esdt.ESDigitalToken{
+			Value: big.NewInt(10),
+		}
+		tokenIdentifier := "newTkn"
+		key := baseESDTKeyPrefix + tokenIdentifier
+		tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+
+		_ = saveESDTData(userAcc, newToken, tokenKey, args.Marshalizer)
+
+		systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
+		metaData := &esdt.MetaData{
+			Name: []byte("test"),
+		}
+		esdtDataOnSystemAcc := &esdt.ESDigitalToken{
+			TokenMetaData: metaData,
+		}
+		esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+		_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+		newMetaData := &esdt.MetaData{Name: []byte("newName")}
+		transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
+		_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, false, false)
+		assert.Nil(t, err)
+
+		esdtDataGet, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
+		assert.Nil(t, err)
+
+		expectedESDTData := &esdt.ESDigitalToken{
+			Value:         big.NewInt(100),
+			TokenMetaData: newMetaData,
+		}
+		assert.Equal(t, expectedESDTData, esdtDataGet)
+	})
+}
+
 func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
 	t.Parallel()
 

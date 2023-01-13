@@ -319,7 +319,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtTokenKey []byte,
 	nonce uint64,
 	esdtData *esdt.ESDigitalToken,
-	mustUpdate bool,
+	mustUpdateAllFields bool,
 	isReturnWithError bool,
 ) ([]byte, error) {
 	err := e.checkFrozenPauseProperties(acnt, esdtTokenKey, nonce, esdtData, isReturnWithError)
@@ -330,7 +330,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
 	if e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
-		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdate)
+		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
 		if err != nil {
 			return nil, err
 		}
@@ -341,9 +341,9 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	}
 
 	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
-		marshaledData, err := e.marshaller.Marshal(esdtData)
-		if err != nil {
-			return nil, err
+		marshaledData, errMarshal := e.marshaller.Marshal(esdtData)
+		if errMarshal != nil {
+			return nil, errMarshal
 		}
 
 		return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
@@ -368,7 +368,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	esdtNFTTokenKey []byte,
 	nonce uint64,
 	esdtData *esdt.ESDigitalToken,
-	mustUpdate bool,
+	mustUpdateAllFields bool,
 ) error {
 	if nonce == 0 {
 		return nil
@@ -383,7 +383,16 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	}
 
 	currentSaveData, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
-	if !mustUpdate && len(currentSaveData) > 0 {
+	if err != nil {
+		return err
+	}
+
+	err = e.saveMetadataIfRequired(esdtNFTTokenKey, systemAcc, currentSaveData, esdtData)
+	if err != nil {
+		return err
+	}
+
+	if !mustUpdateAllFields && len(currentSaveData) > 0 {
 		return nil
 	}
 
@@ -415,6 +424,38 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	}
 
 	return e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
+}
+
+func (e *esdtDataStorage) saveMetadataIfRequired(
+	esdtNFTTokenKey []byte,
+	systemAcc vmcommon.UserAccountHandler,
+	currentSaveData []byte,
+	esdtData *esdt.ESDigitalToken,
+) error {
+	if !e.enableEpochsHandler.IsAlwaysSaveTokenMetaDataEnabled() {
+		return nil
+	}
+	if len(currentSaveData) == 0 {
+		// optimization: do not try to write here the token metadata, it will be written automatically by the next step
+		return nil
+	}
+
+	esdtDataOnSystemAcc := &esdt.ESDigitalToken{}
+	err := e.marshaller.Unmarshal(esdtDataOnSystemAcc, currentSaveData)
+	if err != nil {
+		return err
+	}
+	if len(esdtDataOnSystemAcc.Reserved) > 0 {
+		return nil
+	}
+
+	esdtDataOnSystemAcc.TokenMetaData = esdtData.TokenMetaData
+	marshaledData, err := e.marshaller.Marshal(esdtDataOnSystemAcc)
+	if err != nil {
+		return err
+	}
+
+	return systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
 }
 
 func (e *esdtDataStorage) setReservedToNilForOldToken(
