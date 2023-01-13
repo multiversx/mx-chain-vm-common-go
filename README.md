@@ -4,8 +4,8 @@
 
 <br>
 
-[![](https://img.shields.io/badge/made%20by-MultiversX-blue.svg?style=flat-square)](http://multiversx.com/)
-[![](https://img.shields.io/badge/project-MultiversX%20Testnet-blue.svg?style=flat-square)](http://multiversx.com/)
+[![](https://img.shields.io/badge/made%20by-MultiversX-blue.svg?style=flat-square)](https://multiversx.com/)
+[![](https://img.shields.io/badge/project-MultiversX%20Testnet-blue.svg?style=flat-square)](https://multiversx.com/)
 
 # mx-chain-vm-common-go
 Common structs between VM and node
