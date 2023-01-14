@@ -335,6 +335,8 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 	nonce := uint64(10)
 
 	t.Run("new token should not rewrite metadata", func(t *testing.T) {
+		t.Parallel()
+
 		newToken := &esdt.ESDigitalToken{
 			Value: big.NewInt(10),
 		}
@@ -370,6 +372,8 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 		assert.Equal(t, expectedESDTData, esdtDataGet)
 	})
 	t.Run("old token should rewrite metadata", func(t *testing.T) {
+		t.Parallel()
+
 		newToken := &esdt.ESDigitalToken{
 			Value: big.NewInt(10),
 		}
