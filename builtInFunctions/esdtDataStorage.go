@@ -382,11 +382,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		return err
 	}
 
-	currentSaveData, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
-	if err != nil {
-		return err
-	}
-
+	currentSaveData, _, _ := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	err = e.saveMetadataIfRequired(esdtNFTTokenKey, systemAcc, currentSaveData, esdtData)
 	if err != nil {
 		return err
