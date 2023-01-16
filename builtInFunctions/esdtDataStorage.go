@@ -435,6 +435,10 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 	if !e.enableEpochsHandler.IsAlwaysSaveTokenMetaDataEnabled() {
 		return nil
 	}
+	if !e.enableEpochsHandler.IsSendAlwaysFlagEnabled() {
+		// do not re-write the metadata if it is not sent, as it will cause data loss
+		return nil
+	}
 	if len(currentSaveData) == 0 {
 		// optimization: do not try to write here the token metadata, it will be written automatically by the next step
 		return nil
