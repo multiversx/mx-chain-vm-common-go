@@ -374,6 +374,8 @@ type EnableEpochsHandler interface {
 	IsESDTNFTImprovementV1FlagEnabled() bool
 	IsFixOldTokenLiquidityEnabled() bool
 	IsRuntimeMemStoreLimitEnabled() bool
+	IsMaxBlockchainHookCountersFlagEnabled() bool
+	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32
