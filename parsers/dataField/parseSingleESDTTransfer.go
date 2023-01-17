@@ -1,8 +1,8 @@
 package datafield
 
 import (
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/core"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 func (odp *operationDataFieldParser) parseSingleESDTTransfer(args [][]byte, function string, sender, receiver []byte) *ResponseParseData {
