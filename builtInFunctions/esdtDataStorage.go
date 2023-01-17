@@ -450,12 +450,7 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 	}
 
 	esdtDataOnSystemAcc.TokenMetaData = esdtData.TokenMetaData
-	marshaledData, err := e.marshaller.Marshal(esdtDataOnSystemAcc)
-	if err != nil {
-		return err
-	}
-
-	return systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
+	return e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
 }
 
 func (e *esdtDataStorage) setReservedToNilForOldToken(
