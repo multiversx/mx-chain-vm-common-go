@@ -3,9 +3,9 @@ package vmcommon
 import (
 	"math/big"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/closing"
-	"github.com/ElrondNetwork/elrond-go-core/data"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/core/closing"
+	"github.com/multiversx/mx-chain-core-go/data"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
 )
 
 // FunctionNames (alias) is a map of function names
@@ -303,6 +303,7 @@ type ESDTNFTStorageHandler interface {
 	SaveESDTNFTToken(senderAddress []byte, acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, isCreation bool, isReturnWithError bool) ([]byte, error)
 	GetESDTNFTTokenOnSender(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
+	GetESDTNFTTokenOnDestinationWithCustomSystemAccount(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, systemAccount UserAccountHandler) (*esdt.ESDigitalToken, bool, error)
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
 	AddToLiquiditySystemAcc(esdtTokenKey []byte, nonce uint64, transferValue *big.Int) error
@@ -375,6 +376,9 @@ type EnableEpochsHandler interface {
 	IsTransferToMetaFlagEnabled() bool
 	IsESDTNFTImprovementV1FlagEnabled() bool
 	IsFixOldTokenLiquidityEnabled() bool
+	IsRuntimeMemStoreLimitEnabled() bool
+	IsMaxBlockchainHookCountersFlagEnabled() bool
+	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32

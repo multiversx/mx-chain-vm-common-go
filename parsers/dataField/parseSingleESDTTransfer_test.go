@@ -16,7 +16,7 @@ func TestParseESDTTransfer(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte("ESDTTransfer@1234@011")
-		res := parser.Parse(dataField, sender, receiver)
+		res := parser.Parse(dataField, sender, receiver, 3)
 		require.Equal(t, &ResponseParseData{
 			Operation: operationTransfer,
 		}, res)
@@ -26,7 +26,7 @@ func TestParseESDTTransfer(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte("ESDTTransfer@1234")
-		res := parser.Parse(dataField, sender, receiver)
+		res := parser.Parse(dataField, sender, receiver, 3)
 		require.Equal(t, &ResponseParseData{
 			Operation: "ESDTTransfer",
 		}, res)
@@ -36,7 +36,7 @@ func TestParseESDTTransfer(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte("ESDTTransfer@544f4b454e@")
-		res := parser.Parse(dataField, sender, receiver)
+		res := parser.Parse(dataField, sender, receiver, 3)
 		require.Equal(t, &ResponseParseData{
 			Operation:  "ESDTTransfer",
 			Tokens:     []string{"TOKEN"},
@@ -48,7 +48,7 @@ func TestParseESDTTransfer(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte("ESDTTransfer@544f4b454e@01@63616c6c4d65")
-		res := parser.Parse(dataField, sender, receiverSC)
+		res := parser.Parse(dataField, sender, receiverSC, 3)
 		require.Equal(t, &ResponseParseData{
 			Operation:  "ESDTTransfer",
 			Function:   "callMe",
@@ -59,7 +59,7 @@ func TestParseESDTTransfer(t *testing.T) {
 
 	t.Run("TransferNonAsciiStringToken", func(t *testing.T) {
 		dataField := []byte("ESDTTransfer@055de6a779bbac0000@01")
-		res := parser.Parse(dataField, sender, receiverSC)
+		res := parser.Parse(dataField, sender, receiverSC, 3)
 		require.Equal(t, &ResponseParseData{
 			Operation: "ESDTTransfer",
 		}, res)

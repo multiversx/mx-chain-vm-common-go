@@ -1,13 +1,11 @@
 package datafield
 
 import (
-	"github.com/ElrondNetwork/elrond-go-core/marshal"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 )
 
 // ArgsOperationDataFieldParser holds all the components required to create a new instance of data field parser
 type ArgsOperationDataFieldParser struct {
-	AddressLength    int
-	Marshalizer      marshal.Marshalizer
-	ShardCoordinator vmcommon.Coordinator
+	AddressLength int
+	Marshalizer   marshal.Marshalizer
 }
