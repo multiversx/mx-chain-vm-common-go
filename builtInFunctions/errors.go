@@ -166,3 +166,12 @@ var ErrNilEnableEpochsHandler = errors.New("nil enable epochs handler")
 
 // ErrNilActiveHandler signals that a nil active handler has been provided
 var ErrNilActiveHandler = errors.New("nil active handler")
+
+// ErrCannotMigrateNilUserName signals that a nil username is migrated
+var ErrCannotMigrateNilUserName = errors.New("cannot migrate nil username")
+
+// ErrWrongUserNameSplit signals that user name split is wrong
+var ErrWrongUserNameSplit = errors.New("wrong user name split")
+
+// ErrUserNamePrefixNotEqual signals that user name prefix is not equal
+var ErrUserNamePrefixNotEqual = errors.New("user name prefix is not equal")

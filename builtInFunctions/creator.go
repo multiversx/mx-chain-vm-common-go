@@ -129,11 +129,20 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewSaveUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.enableUserNameChange)
+	newFunc, err = NewSaveUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses)
 	if err != nil {
 		return err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionSetUserName, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewMigrateUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add("migrateUserName", newFunc)
 	if err != nil {
 		return err
 	}

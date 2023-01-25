@@ -18,7 +18,6 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	coa := saveUserName{
 		gasCost:         1,
 		mapDnsAddresses: mapDnsAddresses,
-		enableChange:    false,
 	}
 
 	addr := []byte("addr")
