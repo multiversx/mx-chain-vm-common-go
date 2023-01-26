@@ -12,6 +12,8 @@ var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 var trueHandler = func() bool { return true }
 var falseHandler = func() bool { return false }
 
+const migrateUserNameFuncName = "migrateUserName"
+
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
 	GasMap                           map[string]map[string]uint64
@@ -142,7 +144,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	if err != nil {
 		return err
 	}
-	err = b.builtInFunctions.Add("migrateUserName", newFunc)
+	err = b.builtInFunctions.Add(migrateUserNameFuncName, newFunc)
 	if err != nil {
 		return err
 	}
