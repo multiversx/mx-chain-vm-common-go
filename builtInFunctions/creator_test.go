@@ -70,6 +70,8 @@ func fillGasMapBuiltInCosts(value uint64) map[string]uint64 {
 	gasMap["ESDTNFTAddUri"] = value
 	gasMap["ESDTNFTUpdateAttributes"] = value
 	gasMap["ESDTNFTMultiTransfer"] = value
+	gasMap["TrieLoad"] = value
+	gasMap["TrieStore"] = value
 
 	return gasMap
 }
@@ -128,7 +130,7 @@ func TestCreateBuiltInContainter_Create(t *testing.T) {
 
 	err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, f.BuiltInFunctionContainer().Len(), 31)
+	assert.Equal(t, f.BuiltInFunctionContainer().Len(), 32)
 
 	err = f.SetPayableHandler(nil)
 	assert.NotNil(t, err)

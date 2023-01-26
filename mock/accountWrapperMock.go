@@ -3,6 +3,7 @@ package mock
 import (
 	"math/big"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -39,6 +40,17 @@ func (awm *AccountWrapMock) RetrieveValue(key []byte) ([]byte, uint32, error) {
 // SaveKeyValue -
 func (awm *AccountWrapMock) SaveKeyValue(key []byte, value []byte) error {
 	awm.storage[string(key)] = value
+	return nil
+}
+
+// SaveTrieData -
+func (awm *AccountWrapMock) SaveTrieData(data core.TrieData) error {
+	awm.storage[string(data.Key)] = data.Value
+	return nil
+}
+
+// CollectLeavesForMigration -
+func (awm *AccountWrapMock) CollectLeavesForMigration(_ core.TrieNodeVersion, _ core.TrieNodeVersion, _ vmcommon.DataTrieMigrator) error {
 	return nil
 }
 

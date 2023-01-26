@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -231,6 +232,17 @@ func (a *Account) RetrieveValue(key []byte) ([]byte, uint32, error) {
 // SaveKeyValue -
 func (a *Account) SaveKeyValue(key []byte, value []byte) error {
 	a.Storage[string(key)] = value
+	return nil
+}
+
+// SaveTrieData -
+func (a *Account) SaveTrieData(data core.TrieData) error {
+	a.Storage[string(data.Key)] = data.Value
+	return nil
+}
+
+// CollectLeavesForMigration -
+func (a *Account) CollectLeavesForMigration(_ core.TrieNodeVersion, _ core.TrieNodeVersion, _ vmcommon.DataTrieMigrator) error {
 	return nil
 }
 
