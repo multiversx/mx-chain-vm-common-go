@@ -107,6 +107,9 @@ type BlockchainHook interface {
 	// RevertToSnapshot reverts snaphots up to the specified one
 	RevertToSnapshot(snapshot int) error
 
+	// ExecuteSmartContractCallOnOtherVM runs contract on another VM
+	ExecuteSmartContractCallOnOtherVM(input *ContractCallInput) (*VMOutput, error)
+
 	// IsInterfaceNil returns true if there is no value under the interface
 	IsInterfaceNil() bool
 }
