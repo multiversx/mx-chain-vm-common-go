@@ -39,7 +39,7 @@ func NewMigrateUserNameFunc(
 	for key := range mapDnsAddresses {
 		m.mapDnsAddresses[key] = struct{}{}
 	}
-	m.baseActiveHandler.activeHandler = enableEpochsHandler.IsMigrateUsernameEnabled
+	m.activeHandler = enableEpochsHandler.IsMigrateUsernameEnabled
 
 	return m, nil
 }
