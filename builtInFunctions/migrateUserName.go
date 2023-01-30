@@ -13,13 +13,27 @@ const userNameSep = "."
 
 type migrateUserName struct {
 	baseActiveHandler
+	delete          bool
 	gasCost         uint64
 	mapDnsAddresses map[string]struct{}
-	enableChange    bool
 	mutExecution    sync.RWMutex
 }
 
-// NewMigrateUserNameFunc returns a username built in function implementation
+// NewDeleteUserNameFunc returns a delete username built in function implementation
+func NewDeleteUserNameFunc(
+	gasCost uint64,
+	mapDnsAddresses map[string]struct{},
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
+) (*migrateUserName, error) {
+	m, err := NewMigrateUserNameFunc(gasCost, mapDnsAddresses, enableEpochsHandler)
+	if err != nil {
+		return nil, err
+	}
+	m.delete = true
+	return m, nil
+}
+
+// NewMigrateUserNameFunc returns a migrate username built in function implementation
 func NewMigrateUserNameFunc(
 	gasCost uint64,
 	mapDnsAddresses map[string]struct{},
@@ -83,6 +97,9 @@ func (m *migrateUserName) ProcessBuiltinFunction(
 	}
 
 	acntDst.SetUserName(vmInput.Arguments[0])
+	if m.delete {
+		acntDst.SetUserName(nil)
+	}
 
 	return &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided - m.gasCost, ReturnCode: vmcommon.Ok}, nil
 }

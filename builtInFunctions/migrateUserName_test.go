@@ -27,6 +27,25 @@ func TestNewMigrateUserNameFunc(t *testing.T) {
 	require.Equal(t, m.gasCost, uint64(10))
 }
 
+func TestNewDeleteUserNameFunc(t *testing.T) {
+	m, err := NewDeleteUserNameFunc(0, nil, nil)
+	require.Equal(t, err, ErrNilDnsAddresses)
+
+	m, err = NewDeleteUserNameFunc(0, make(map[string]struct{}), nil)
+	require.Equal(t, err, ErrNilEnableEpochsHandler)
+
+	dnsAddr := []byte("DNS")
+	mapDnsAddresses := make(map[string]struct{})
+	mapDnsAddresses[string(dnsAddr)] = struct{}{}
+	m, err = NewDeleteUserNameFunc(0, mapDnsAddresses, &mock.EnableEpochsHandlerStub{})
+	require.Nil(t, err)
+	require.False(t, m.IsInterfaceNil())
+
+	m.SetNewGasConfig(nil)
+	m.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{SaveUserName: 10}})
+	require.Equal(t, m.gasCost, uint64(10))
+}
+
 func TestMigrateUserName_ProcessBuiltinFunction(t *testing.T) {
 	t.Parallel()
 
@@ -90,4 +109,9 @@ func TestMigrateUserName_ProcessBuiltinFunction(t *testing.T) {
 	_, err = m.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, acc.Username, vmInput.Arguments[0])
+
+	m.delete = true
+	_, err = m.ProcessBuiltinFunction(nil, acc, vmInput)
+	require.Nil(t, err)
+	require.Equal(t, len(acc.Username), 0)
 }
