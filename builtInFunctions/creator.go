@@ -13,6 +13,7 @@ var trueHandler = func() bool { return true }
 var falseHandler = func() bool { return false }
 
 const migrateUserNameFuncName = "migrateUserName"
+const deleteUserNameFuncName = "deleteUserName"
 
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
@@ -145,6 +146,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 	err = b.builtInFunctions.Add(migrateUserNameFuncName, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewDeleteUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(deleteUserNameFuncName, newFunc)
 	if err != nil {
 		return err
 	}
