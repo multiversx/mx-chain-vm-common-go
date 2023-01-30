@@ -300,7 +300,7 @@ type ESDTTransferParser interface {
 
 // ESDTNFTStorageHandler will handle the storage for the nft metadata
 type ESDTNFTStorageHandler interface {
-	SaveESDTNFTToken(senderAddress []byte, acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, isCreation bool, isReturnWithError bool) ([]byte, error)
+	SaveESDTNFTToken(senderAddress []byte, acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error)
 	GetESDTNFTTokenOnSender(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	GetESDTNFTTokenOnDestinationWithCustomSystemAccount(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, systemAccount UserAccountHandler) (*esdt.ESDigitalToken, bool, error)
@@ -379,6 +379,7 @@ type EnableEpochsHandler interface {
 	IsRuntimeMemStoreLimitEnabled() bool
 	IsMaxBlockchainHookCountersFlagEnabled() bool
 	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
+	IsAlwaysSaveTokenMetaDataEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32
