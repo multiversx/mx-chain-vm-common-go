@@ -174,8 +174,7 @@ type UserAccountHandler interface {
 type AccountDataHandler interface {
 	RetrieveValue(key []byte) ([]byte, uint32, error)
 	SaveKeyValue(key []byte, value []byte) error
-	SaveTrieData(data core.TrieData) error
-	CollectLeavesForMigration(oldVersion core.TrieNodeVersion, newVersion core.TrieNodeVersion, trieMigrator DataTrieMigrator) error
+	MigrateDataTrieLeaves(oldVersion core.TrieNodeVersion, newVersion core.TrieNodeVersion, trieMigrator DataTrieMigrator) error
 	IsInterfaceNil() bool
 }
 
@@ -388,4 +387,5 @@ type EnableEpochsHandler interface {
 type DataTrieMigrator interface {
 	ConsumeStorageLoadGas() bool
 	AddLeafToMigrationQueue(leafData core.TrieData, newLeafVersion core.TrieNodeVersion) (bool, error)
+	GetLeavesToBeMigrated() []core.TrieData
 }

@@ -43,14 +43,8 @@ func (awm *AccountWrapMock) SaveKeyValue(key []byte, value []byte) error {
 	return nil
 }
 
-// SaveTrieData -
-func (awm *AccountWrapMock) SaveTrieData(data core.TrieData) error {
-	awm.storage[string(data.Key)] = data.Value
-	return nil
-}
-
-// CollectLeavesForMigration -
-func (awm *AccountWrapMock) CollectLeavesForMigration(_ core.TrieNodeVersion, _ core.TrieNodeVersion, _ vmcommon.DataTrieMigrator) error {
+// MigrateDataTrieLeaves -
+func (awm *AccountWrapMock) MigrateDataTrieLeaves(oldVersion core.TrieNodeVersion, newVersion core.TrieNodeVersion, trieMigrator vmcommon.DataTrieMigrator) error {
 	return nil
 }
 

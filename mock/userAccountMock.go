@@ -235,14 +235,8 @@ func (a *Account) SaveKeyValue(key []byte, value []byte) error {
 	return nil
 }
 
-// SaveTrieData -
-func (a *Account) SaveTrieData(data core.TrieData) error {
-	a.Storage[string(data.Key)] = data.Value
-	return nil
-}
-
-// CollectLeavesForMigration -
-func (a *Account) CollectLeavesForMigration(_ core.TrieNodeVersion, _ core.TrieNodeVersion, _ vmcommon.DataTrieMigrator) error {
+// MigrateDataTrieLeaves -
+func (a *Account) MigrateDataTrieLeaves(_ core.TrieNodeVersion, _ core.TrieNodeVersion, _ vmcommon.DataTrieMigrator) error {
 	return nil
 }
 

@@ -58,12 +58,7 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(_, acntDst vmcommon.UserAccou
 	oldVersion := core.TrieNodeVersion(firstArgument[0])
 	newVersion := core.TrieNodeVersion(secondArgument[0])
 
-	err = acntDst.AccountDataHandler().CollectLeavesForMigration(oldVersion, newVersion, dtm)
-	if err != nil {
-		return nil, err
-	}
-
-	err = dtm.MigrateCollectedLeaves(acntDst)
+	err = acntDst.AccountDataHandler().MigrateDataTrieLeaves(oldVersion, newVersion, dtm)
 	if err != nil {
 		return nil, err
 	}

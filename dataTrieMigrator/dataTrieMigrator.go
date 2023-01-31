@@ -60,17 +60,9 @@ func (dtm *dataTrieMigrator) prepareDataForMigrationToAutoBalance(leafData core.
 	dtm.leavesToBeMigrated = append(dtm.leavesToBeMigrated, leafData)
 }
 
-// MigrateCollectedLeaves will migrate the collected leaves to the specified version in the given account's data trie.
-func (dtm *dataTrieMigrator) MigrateCollectedLeaves(acntDst vmcommon.UserAccountHandler) error {
-	for _, data := range dtm.leavesToBeMigrated {
-		err := acntDst.AccountDataHandler().SaveTrieData(data)
-		if err != nil {
-			return err
-		}
-	}
-
-	dtm.leavesToBeMigrated = make([]core.TrieData, 0)
-	return nil
+// GetLeavesToBeMigrated returns the list of leaves to be migrated
+func (dtm *dataTrieMigrator) GetLeavesToBeMigrated() []core.TrieData {
+	return dtm.leavesToBeMigrated
 }
 
 // GetGasRemaining returns the remaining gas
