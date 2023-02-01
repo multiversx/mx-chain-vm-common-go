@@ -388,4 +388,5 @@ type DataTrieMigrator interface {
 	ConsumeStorageLoadGas() bool
 	AddLeafToMigrationQueue(leafData core.TrieData, newLeafVersion core.TrieNodeVersion) (bool, error)
 	GetLeavesToBeMigrated() []core.TrieData
+	IsInterfaceNil() bool
 }

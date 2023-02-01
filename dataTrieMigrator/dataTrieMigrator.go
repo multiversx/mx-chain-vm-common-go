@@ -69,3 +69,8 @@ func (dtm *dataTrieMigrator) GetLeavesToBeMigrated() []core.TrieData {
 func (dtm *dataTrieMigrator) GetGasRemaining() uint64 {
 	return dtm.gasRemaining
 }
+
+// IsInterfaceNil returns nil if there is no value under the interface
+func (dtm *dataTrieMigrator) IsInterfaceNil() bool {
+	return dtm == nil
+}
