@@ -14,6 +14,7 @@ import (
 type saveUserName struct {
 	baseAlwaysActiveHandler
 	gasCost         uint64
+	isChangeEnabled func() bool
 	mapDnsAddresses map[string]struct{}
 	mutExecution    sync.RWMutex
 }
@@ -22,13 +23,18 @@ type saveUserName struct {
 func NewSaveUserNameFunc(
 	gasCost uint64,
 	mapDnsAddresses map[string]struct{},
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*saveUserName, error) {
 	if mapDnsAddresses == nil {
 		return nil, ErrNilDnsAddresses
 	}
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
+	}
 
 	s := &saveUserName{
-		gasCost: gasCost,
+		gasCost:         gasCost,
+		isChangeEnabled: enableEpochsHandler.IsMigrateUsernameEnabled,
 	}
 	s.mapDnsAddresses = make(map[string]struct{}, len(mapDnsAddresses))
 	for key := range mapDnsAddresses {
@@ -112,7 +118,7 @@ func (s *saveUserName) ProcessBuiltinFunction(
 	}
 
 	currentUserName := acntDst.GetUserName()
-	if len(currentUserName) > 0 {
+	if !s.isChangeEnabled() && len(currentUserName) > 0 {
 		return nil, ErrUserNameChangeIsDisabled
 	}
 

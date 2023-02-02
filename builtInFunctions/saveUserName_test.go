@@ -9,6 +9,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewSaveUserNameFunc(t *testing.T) {
+	m, err := NewSaveUserNameFunc(0, nil, nil)
+	require.Equal(t, err, ErrNilDnsAddresses)
+
+	m, err = NewSaveUserNameFunc(0, make(map[string]struct{}), nil)
+	require.Equal(t, err, ErrNilEnableEpochsHandler)
+
+	dnsAddr := []byte("DNS")
+	mapDnsAddresses := make(map[string]struct{})
+	mapDnsAddresses[string(dnsAddr)] = struct{}{}
+	m, err = NewSaveUserNameFunc(0, mapDnsAddresses, &mock.EnableEpochsHandlerStub{})
+	require.Nil(t, err)
+	require.False(t, m.IsInterfaceNil())
+
+	m.SetNewGasConfig(nil)
+	m.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{SaveUserName: 10}})
+	require.Equal(t, m.gasCost, uint64(10))
+}
+
 func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	t.Parallel()
 
@@ -18,6 +37,9 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	coa := saveUserName{
 		gasCost:         1,
 		mapDnsAddresses: mapDnsAddresses,
+		isChangeEnabled: func() bool {
+			return false
+		},
 	}
 
 	addr := []byte("addr")
@@ -49,4 +71,11 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 
 	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Equal(t, ErrUserNameChangeIsDisabled, err)
+
+	coa.isChangeEnabled = func() bool {
+		return true
+	}
+
+	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
+	require.Nil(t, err)
 }
