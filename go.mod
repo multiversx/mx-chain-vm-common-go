@@ -1,11 +1,11 @@
-module github.com/ElrondNetwork/elrond-vm-common
+module github.com/multiversx/mx-chain-vm-common-go
 
 go 1.17
 
 require (
-	github.com/ElrondNetwork/elrond-go-core v1.1.27-0.20221219143439-1bc10dae0ea9
-	github.com/ElrondNetwork/elrond-go-logger v1.0.10
 	github.com/mitchellh/mapstructure v1.4.1
+	github.com/multiversx/mx-chain-core-go v1.1.30
+	github.com/multiversx/mx-chain-logger-go v1.0.11
 	github.com/stretchr/testify v1.7.0
 )
 
@@ -23,4 +23,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
 
-replace github.com/gogo/protobuf => github.com/ElrondNetwork/protobuf v1.3.2
+replace github.com/gogo/protobuf => github.com/multiversx/protobuf v1.3.2

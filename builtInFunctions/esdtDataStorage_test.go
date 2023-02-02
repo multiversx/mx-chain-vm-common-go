@@ -7,11 +7,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	"github.com/ElrondNetwork/elrond-go-core/data/smartContractResult"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/data/smartContractResult"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -318,6 +318,152 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 	esdtData.TokenMetaData = metaData
 	esdtData.Value = big.NewInt(100)
 	assert.Equal(t, esdtData, esdtDataGet)
+}
+
+func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsSaveToSystemAccountFlagEnabledField: true,
+		IsSendAlwaysFlagEnabledField:          true,
+		IsAlwaysSaveTokenMetaDataEnabledField: true,
+	}
+	dataStorage, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	nonce := uint64(10)
+
+	t.Run("new token should not rewrite metadata", func(t *testing.T) {
+		newToken := &esdt.ESDigitalToken{
+			Value: big.NewInt(10),
+		}
+		tokenIdentifier := "newTkn"
+		key := baseESDTKeyPrefix + tokenIdentifier
+		tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+
+		_ = saveESDTData(userAcc, newToken, tokenKey, args.Marshalizer)
+
+		systemAcc, _ := dataStorage.getSystemAccount(defaultQueryOptions())
+		metaData := &esdt.MetaData{
+			Name: []byte("test"),
+		}
+		esdtDataOnSystemAcc := &esdt.ESDigitalToken{
+			TokenMetaData: metaData,
+			Reserved:      []byte{1},
+		}
+		esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+		_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+		newMetaData := &esdt.MetaData{Name: []byte("newName")}
+		transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
+		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, false, false)
+		assert.Nil(t, err)
+
+		esdtDataGet, _, err := dataStorage.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
+		assert.Nil(t, err)
+
+		expectedESDTData := &esdt.ESDigitalToken{
+			Value:         big.NewInt(100),
+			TokenMetaData: metaData,
+		}
+		assert.Equal(t, expectedESDTData, esdtDataGet)
+	})
+	t.Run("old token should rewrite metadata", func(t *testing.T) {
+		newToken := &esdt.ESDigitalToken{
+			Value: big.NewInt(10),
+		}
+		tokenIdentifier := "newTkn"
+		key := baseESDTKeyPrefix + tokenIdentifier
+		tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+
+		_ = saveESDTData(userAcc, newToken, tokenKey, args.Marshalizer)
+
+		systemAcc, _ := dataStorage.getSystemAccount(defaultQueryOptions())
+		metaData := &esdt.MetaData{
+			Name: []byte("test"),
+		}
+		esdtDataOnSystemAcc := &esdt.ESDigitalToken{
+			TokenMetaData: metaData,
+		}
+		esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+		_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+		newMetaData := &esdt.MetaData{Name: []byte("newName")}
+		transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
+		esdtDataGet := setAndGetStoredToken(t, dataStorage, userAcc, []byte(key), nonce, transferESDTData)
+
+		expectedESDTData := &esdt.ESDigitalToken{
+			Value:         big.NewInt(100),
+			TokenMetaData: newMetaData,
+		}
+		assert.Equal(t, expectedESDTData, esdtDataGet)
+	})
+	t.Run("old token should not rewrite metadata if the flags are not set", func(t *testing.T) {
+		localArgs := createMockArgsForNewESDTDataStorage()
+		localEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsSaveToSystemAccountFlagEnabledField: true,
+			IsSendAlwaysFlagEnabledField:          true,
+			IsAlwaysSaveTokenMetaDataEnabledField: true,
+		}
+		localArgs.EnableEpochsHandler = localEpochsHandler
+		localDataStorage, _ := NewESDTDataStorage(localArgs)
+
+		newToken := &esdt.ESDigitalToken{
+			Value: big.NewInt(10),
+		}
+		tokenIdentifier := "newTkn"
+		key := baseESDTKeyPrefix + tokenIdentifier
+		tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+
+		_ = saveESDTData(userAcc, newToken, tokenKey, localArgs.Marshalizer)
+
+		systemAcc, _ := localDataStorage.getSystemAccount(defaultQueryOptions())
+		metaData := &esdt.MetaData{
+			Name: []byte("test"),
+		}
+		esdtDataOnSystemAcc := &esdt.ESDigitalToken{
+			TokenMetaData: metaData,
+		}
+		esdtMetaDataBytes, _ := localArgs.Marshalizer.Marshal(esdtDataOnSystemAcc)
+		_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+		newMetaData := &esdt.MetaData{Name: []byte("newName")}
+		transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
+		expectedESDTData := &esdt.ESDigitalToken{
+			Value:         big.NewInt(100),
+			TokenMetaData: metaData,
+		}
+
+		localEpochsHandler.IsAlwaysSaveTokenMetaDataEnabledField = false
+		localEpochsHandler.IsSendAlwaysFlagEnabledField = true
+
+		esdtDataGet := setAndGetStoredToken(t, localDataStorage, userAcc, []byte(key), nonce, transferESDTData)
+		assert.Equal(t, expectedESDTData, esdtDataGet)
+
+		localEpochsHandler.IsAlwaysSaveTokenMetaDataEnabledField = true
+		localEpochsHandler.IsSendAlwaysFlagEnabledField = false
+
+		esdtDataGet = setAndGetStoredToken(t, localDataStorage, userAcc, []byte(key), nonce, transferESDTData)
+		assert.Equal(t, expectedESDTData, esdtDataGet)
+	})
+}
+
+func setAndGetStoredToken(
+	tb testing.TB,
+	esdtDataStorage *esdtDataStorage,
+	userAcc vmcommon.UserAccountHandler,
+	key []byte,
+	nonce uint64,
+	transferESDTData *esdt.ESDigitalToken,
+) *esdt.ESDigitalToken {
+	_, err := esdtDataStorage.SaveESDTNFTToken([]byte("address"), userAcc, key, nonce, transferESDTData, false, false)
+	assert.Nil(tb, err)
+
+	esdtDataGet, _, err := esdtDataStorage.GetESDTNFTTokenOnDestination(userAcc, key, nonce)
+	assert.Nil(tb, err)
+
+	return esdtDataGet
 }
 
 func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
