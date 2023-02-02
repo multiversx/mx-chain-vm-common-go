@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/marshal"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/marshal"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 // BaseAccountGuarderArgs is a struct placeholder for
@@ -40,7 +40,7 @@ func newBaseAccountGuarder(args BaseAccountGuarderArgs) (*baseAccountGuarder, er
 		return nil, ErrNilGuardedAccountHandler
 	}
 
-	accGuarder :=  &baseAccountGuarder{
+	accGuarder := &baseAccountGuarder{
 		funcGasCost:           args.FuncGasCost,
 		marshaller:            args.Marshaller,
 		mutExecution:          sync.RWMutex{},

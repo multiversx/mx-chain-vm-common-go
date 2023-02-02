@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
-	mockvm "github.com/ElrondNetwork/elrond-vm-common/mock"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	mockvm "github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/require"
 )
 

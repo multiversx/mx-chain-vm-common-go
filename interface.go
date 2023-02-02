@@ -111,7 +111,7 @@ type BlockchainHook interface {
 	IsInterfaceNil() bool
 }
 
-// VMExecutionHandler interface for any Elrond VM endpoint
+// VMExecutionHandler interface for any MultiversX VM endpoint
 type VMExecutionHandler interface {
 	closing.Closer
 
