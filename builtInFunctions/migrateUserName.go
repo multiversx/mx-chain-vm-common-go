@@ -4,7 +4,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
@@ -83,7 +82,16 @@ func (m *migrateUserName) ProcessBuiltinFunction(
 	}
 
 	if check.IfNil(acntDst) {
-		return createCrossShardUserNameCall(vmInput, core.BuiltInFunctionSetUserName)
+		return createCrossShardUserNameCall(vmInput, vmInput.Function)
+	}
+
+	vmOutput := &vmcommon.VMOutput{
+		GasRemaining: vmInput.GasProvided - m.gasCost,
+		ReturnCode:   vmcommon.Ok,
+	}
+	if m.delete {
+		acntDst.SetUserName(nil)
+		return vmOutput, nil
 	}
 
 	currentUserName := acntDst.GetUserName()
@@ -97,11 +105,8 @@ func (m *migrateUserName) ProcessBuiltinFunction(
 	}
 
 	acntDst.SetUserName(vmInput.Arguments[0])
-	if m.delete {
-		acntDst.SetUserName(nil)
-	}
 
-	return &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided - m.gasCost, ReturnCode: vmcommon.Ok}, nil
+	return vmOutput, nil
 }
 
 func checkUsernamesSamePrefix(oldUserName string, newUserName string) error {
