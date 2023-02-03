@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core/atomic"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,7 +94,7 @@ func TestGuardUnGuardAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveGuarde
 
 	vmInput := getDefaultVmInput([][]byte{})
 	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsSetGuardianEnabledField:   true,
+		IsSetGuardianEnabledField:  true,
 		IsGuardAccountEnabledField: true,
 	}
 	guardAccountFunc, _ := NewGuardAccountFunc(args)
