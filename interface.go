@@ -358,7 +358,6 @@ type EnableEpochsHandler interface {
 	IsSendAlwaysFlagEnabled() bool
 	IsValueLengthCheckFlagEnabled() bool
 	IsCheckTransferFlagEnabled() bool
-	IsTransferToMetaFlagEnabled() bool
 	IsESDTNFTImprovementV1FlagEnabled() bool
 	IsFixOldTokenLiquidityEnabled() bool
 	IsRuntimeMemStoreLimitEnabled() bool

@@ -65,7 +65,6 @@ func TestESDTTransfer_ProcessBuiltInFunctionErrors(t *testing.T) {
 
 	shardC := &mock.ShardCoordinatorStub{}
 	transferFunc, _ := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, shardC, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
@@ -117,7 +116,6 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 		},
 	}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, esdtRoleHandler, enableEpochsHandler)
@@ -159,7 +157,6 @@ func TestESDTTransfer_ProcessBuiltInFunctionSenderInShard(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
@@ -192,7 +189,6 @@ func TestESDTTransfer_ProcessBuiltInFunctionDestInShard(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
@@ -225,7 +221,6 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	accountStub := &mock.AccountsStub{}
 	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshaller, true, core.BuiltInFunctionESDTPause, trueHandler)
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
@@ -312,7 +307,6 @@ func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
 	}
 	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, trueHandler)
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, rolesHandler, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
@@ -390,7 +384,6 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})

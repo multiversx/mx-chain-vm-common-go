@@ -29,7 +29,6 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
 		&mock.EnableEpochsHandlerStub{
-			IsTransferToMetaFlagEnabledField:                     false,
 			IsSaveToSystemAccountFlagEnabledField:                true,
 			IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 		},
@@ -89,7 +88,6 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 
 func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler) *esdtNFTTransfer {
 	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:        true,
 		IsCheckTransferFlagEnabledField:         true,
 		IsCheckFrozenCollectionFlagEnabledField: true,
 	})
@@ -894,7 +892,6 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 
 	globalSettings := &mock.GlobalSettingsHandlerStub{}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:        true,
 		IsCheckTransferFlagEnabledField:         true,
 		IsCheckFrozenCollectionFlagEnabledField: true,
 	}
