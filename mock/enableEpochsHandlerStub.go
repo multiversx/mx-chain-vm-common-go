@@ -26,7 +26,6 @@ type EnableEpochsHandlerStub struct {
 	IsSendAlwaysFlagEnabledField                         bool
 	IsValueLengthCheckFlagEnabledField                   bool
 	IsCheckTransferFlagEnabledField                      bool
-	IsTransferToMetaFlagEnabledField                     bool
 	IsESDTNFTImprovementV1FlagEnabledField               bool
 	IsFixOldTokenLiquidityEnabledField                   bool
 	IsRuntimeMemStoreLimitEnabledField                   bool
@@ -165,11 +164,6 @@ func (stub *EnableEpochsHandlerStub) IsValueLengthCheckFlagEnabled() bool {
 // IsCheckTransferFlagEnabled -
 func (stub *EnableEpochsHandlerStub) IsCheckTransferFlagEnabled() bool {
 	return stub.IsCheckTransferFlagEnabledField
-}
-
-// IsTransferToMetaFlagEnabled -
-func (stub *EnableEpochsHandlerStub) IsTransferToMetaFlagEnabled() bool {
-	return stub.IsTransferToMetaFlagEnabledField
 }
 
 // IsESDTNFTImprovementV1FlagEnabled -

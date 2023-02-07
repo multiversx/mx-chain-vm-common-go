@@ -20,7 +20,6 @@ import (
 func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 		IsESDTNFTImprovementV1FlagEnabledField:               true,
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	}
 
@@ -76,7 +75,6 @@ func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uin
 
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 		IsESDTNFTImprovementV1FlagEnabledField:               true,
-		IsTransferToMetaFlagEnabledField:                     false,
 		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
 	}
 	multiTransfer, _ := NewESDTNFTMultiTransferFunc(

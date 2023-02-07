@@ -204,9 +204,8 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsTransferToMetaFlagEnabled()
-	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
-	if isInvalidTransferToMeta {
+	isTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId
+	if isTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
 	if vmInput.GasProvided < e.funcGasCost {
