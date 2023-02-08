@@ -49,7 +49,11 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(_, acntDst vmcommon.UserAccou
 	}
 
 	mdt.mutExecution.RLock()
-	dtm := dataTrieMigrator.NewDataTrieMigrator(vmInput.GasProvided, mdt.builtInCost)
+	dtm, err := dataTrieMigrator.NewDataTrieMigrator(vmInput.GasProvided, mdt.builtInCost)
+	if err != nil {
+		mdt.mutExecution.RUnlock()
+		return nil, err
+	}
 	mdt.mutExecution.RUnlock()
 
 	firstArgument := vmInput.Arguments[0]
