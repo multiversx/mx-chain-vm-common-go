@@ -73,6 +73,9 @@ type OutputAccount struct {
 
 	// BytesDeletedFromStorage for this output account
 	BytesDeletedFromStorage uint64
+
+	// BytesConsumedByTxAsNetworking for this output account
+	BytesConsumedByTxAsNetworking uint64
 }
 
 // OutputTransfer contains the fields needed to create transfers to another shard
