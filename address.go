@@ -3,7 +3,7 @@ package vmcommon
 import (
 	"bytes"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/multiversx/mx-chain-core-go/core"
 )
 
 // SystemAccountAddress is the hard-coded address in which we save global settings on all shards
@@ -90,11 +90,23 @@ func IsSmartContractOnMetachain(identifier []byte, rcvAddress []byte) bool {
 
 // IsAllowedToSaveUnderKey returns if saving key-value in data tries under given key is allowed
 func IsAllowedToSaveUnderKey(key []byte) bool {
-	prefixLen := len(core.ElrondProtectedKeyPrefix)
+	prefixLen := len(core.ProtectedKeyPrefix)
 	if len(key) < prefixLen {
 		return true
 	}
 
 	trimmedKey := key[:prefixLen]
-	return !bytes.Equal(trimmedKey, []byte(core.ElrondProtectedKeyPrefix))
+	return !bytes.Equal(trimmedKey, []byte(core.ProtectedKeyPrefix))
+}
+
+// ParseVMTypeFromContractAddress obtains the VMType from the contract address
+// TODO maybe move to elgond-go-core
+func ParseVMTypeFromContractAddress(contractAddress []byte) ([]byte, error) {
+	if len(contractAddress) < NumInitCharactersForScAddress {
+		return nil, ErrInvalidVMType
+	}
+
+	startIndex := NumInitCharactersForScAddress - VMTypeLen
+	endIndex := NumInitCharactersForScAddress
+	return contractAddress[startIndex:endIndex], nil
 }

@@ -3,10 +3,11 @@ package datafield
 import (
 	"bytes"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/sharding"
 )
 
-func (odp *operationDataFieldParser) parseSingleESDTNFTTransfer(args [][]byte, function string, sender, receiver []byte) *ResponseParseData {
+func (odp *operationDataFieldParser) parseSingleESDTNFTTransfer(args [][]byte, function string, sender, receiver []byte, numOfShards uint32) *ResponseParseData {
 	responseParse, parsedESDTTransfers, ok := odp.extractESDTData(args, function, sender, receiver)
 	if !ok {
 		return responseParse
@@ -26,11 +27,16 @@ func (odp *operationDataFieldParser) parseSingleESDTNFTTransfer(args [][]byte, f
 	}
 
 	esdtNFTTransfer := parsedESDTTransfers.ESDTTransfers[0]
-	receiverShardID := odp.shardCoordinator.ComputeId(rcvAddr)
+	receiverShardID := sharding.ComputeShardID(rcvAddr, numOfShards)
 	token := computeTokenIdentifier(string(esdtNFTTransfer.ESDTTokenName), esdtNFTTransfer.ESDTTokenNonce)
 
 	responseParse.Tokens = append(responseParse.Tokens, token)
 	responseParse.ESDTValues = append(responseParse.ESDTValues, esdtNFTTransfer.ESDTValue.String())
+
+	if len(rcvAddr) != len(sender) {
+		return responseParse
+	}
+
 	responseParse.Receivers = append(responseParse.Receivers, rcvAddr)
 	responseParse.ReceiversShardID = append(responseParse.ReceiversShardID, receiverShardID)
 

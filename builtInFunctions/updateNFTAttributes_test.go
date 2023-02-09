@@ -5,16 +5,14 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var enableEpochsHandler = &mock.EnableEpochsHandlerStub{}
 
 func TestNewESDTNFTUpdateAttributesFunc(t *testing.T) {
 	t.Parallel()
@@ -281,7 +279,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionMetaDataMissing(t *testin
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
 	esdtDataBytes, _ := marshaller.Marshal(esdtData)
-	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
+	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 	output, err := e.ProcessBuiltinFunction(
 		userAcc,
 		nil,
@@ -309,6 +307,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionShouldErrOnSaveBecauseTok
 			return true
 		},
 	}
+	var enableEpochsHandler = &mock.EnableEpochsHandlerStub{}
 	e, _ := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, enableEpochsHandler), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
 		IsESDTNFTImprovementV1FlagEnabledField: true,
 	})
@@ -321,7 +320,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionShouldErrOnSaveBecauseTok
 		Value: big.NewInt(10),
 	}
 	esdtDataBytes, _ := marshaller.Marshal(esdtData)
-	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ElrondProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
+	_ = userAcc.AccountDataHandler().SaveKeyValue([]byte(core.ProtectedKeyPrefix+core.ESDTKeyIdentifier+"arg0"+"arg1"), esdtDataBytes)
 
 	output, err := e.ProcessBuiltinFunction(
 		userAcc,
@@ -392,10 +391,10 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionShouldWork(t *testing.T) 
 	require.NoError(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 
-	res, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	res, _, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
-	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey)
+	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey, defaultQueryOptions())
 	require.Equal(t, metaData.Attributes, newAttributes)
 }

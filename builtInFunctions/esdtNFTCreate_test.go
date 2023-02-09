@@ -6,12 +6,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	"github.com/ElrondNetwork/elrond-go-core/data/vm"
-	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/data/vm"
+	"github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -344,9 +344,14 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	tokenKey := []byte(baseESDTKeyPrefix + token)
 	tokenKey = append(tokenKey, big.NewInt(1).Bytes()...)
 
-	esdtData, _, _ := esdtDataStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey)
+	esdtData, _, _ := esdtDataStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey, defaultQueryOptions())
 	assert.Equal(t, tokenMetaData, esdtData.TokenMetaData)
 	assert.Equal(t, esdtData.Value, quantity)
+
+	esdtDataBytes := vmOutput.Logs[0].Topics[3]
+	var esdtDataFromLog esdt.ESDigitalToken
+	_ = nftCreate.marshaller.Unmarshal(&esdtDataFromLog, esdtDataBytes)
+	require.Equal(t, esdtData.TokenMetaData, esdtDataFromLog.TokenMetaData)
 }
 
 func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
@@ -424,20 +429,20 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 	tokenKey := []byte(baseESDTKeyPrefix + token)
 	tokenKey = append(tokenKey, big.NewInt(1).Bytes()...)
 
-	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey)
+	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey, defaultQueryOptions())
 	assert.Equal(t, tokenMetaData, metaData)
 }
 
 func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
 	nonceKey := getNonceKey(tokenID)
-	latestNonceBytes, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(nonceKey)
+	latestNonceBytes, _, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(nonceKey)
 	require.Nil(t, err)
 	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
 
 	createdTokenID := []byte(baseESDTKeyPrefix)
 	createdTokenID = append(createdTokenID, tokenID...)
 	tokenKey := computeESDTNFTTokenKey(createdTokenID, nonce)
-	data, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(tokenKey)
+	data, _, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(tokenKey)
 	require.Nil(t, err)
 
 	esdtData := &esdt.ESDigitalToken{}

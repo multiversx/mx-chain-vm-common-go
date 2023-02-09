@@ -6,14 +6,18 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	"github.com/ElrondNetwork/elrond-go-core/data/vm"
-	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/data/vm"
+	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
-var noncePrefix = []byte(core.ElrondProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
+var (
+	log         = logger.GetOrCreate("builtInFunctions")
+	noncePrefix = []byte(core.ProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
+)
 
 type esdtNFTCreate struct {
 	baseAlwaysActiveHandler
@@ -192,8 +196,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		},
 	}
 
-	var esdtDataBytes []byte
-	esdtDataBytes, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -220,6 +223,11 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		ReturnData:   [][]byte{big.NewInt(0).SetUint64(nextNonce).Bytes()},
 	}
 
+	esdtDataBytes, err := e.marshaller.Marshal(esdtData)
+	if err != nil {
+		log.Warn("esdtNFTCreate.ProcessBuiltinFunction: cannot marshall esdt data for log", "error", err)
+	}
+
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), vmInput.Arguments[0], nextNonce, quantity, vmInput.CallerAddr, esdtDataBytes)
 
 	return vmOutput, nil
@@ -241,7 +249,7 @@ func (e *esdtNFTCreate) getAccount(address []byte) (vmcommon.UserAccountHandler,
 
 func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, error) {
 	nonceKey := getNonceKey(tokenID)
-	nonceData, err := acnt.AccountDataHandler().RetrieveValue(nonceKey)
+	nonceData, _, err := acnt.AccountDataHandler().RetrieveValue(nonceKey)
 	if err != nil {
 		return 0, err
 	}

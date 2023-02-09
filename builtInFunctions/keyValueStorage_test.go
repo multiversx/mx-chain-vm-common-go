@@ -6,10 +6,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -90,14 +90,14 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 
 	_, err = skv.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Nil(t, err)
-	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
+	retrievedValue, _, _ := acc.AccountDataHandler().RetrieveValue(key)
 	require.True(t, bytes.Equal(retrievedValue, value))
 
 	vmInput.CallerAddr = []byte("other")
 	_, err = skv.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.True(t, errors.Is(err, ErrOperationNotPermitted))
 
-	key = []byte(core.ElrondProtectedKeyPrefix + "is the king")
+	key = []byte(core.ProtectedKeyPrefix + "is the king")
 	value = []byte("value")
 	vmInput.Arguments = [][]byte{key, value}
 
@@ -137,7 +137,7 @@ func TestSaveKeyValueStorage_ProcessBuiltinFunctionNilAccountSender(t *testing.T
 
 	_, err := skv.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, err)
-	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
+	retrievedValue, _, _ := acc.AccountDataHandler().RetrieveValue(key)
 	require.True(t, bytes.Equal(retrievedValue, value))
 }
 
@@ -178,9 +178,9 @@ func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 
 	_, err = skv.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Nil(t, err)
-	retrievedValue, _ := acc.AccountDataHandler().RetrieveValue(key)
+	retrievedValue, _, _ := acc.AccountDataHandler().RetrieveValue(key)
 	require.True(t, bytes.Equal(retrievedValue, value))
-	retrievedValue, _ = acc.AccountDataHandler().RetrieveValue(key2)
+	retrievedValue, _, _ = acc.AccountDataHandler().RetrieveValue(key2)
 	require.True(t, bytes.Equal(retrievedValue, value2))
 
 	vmInput.GasProvided = 1

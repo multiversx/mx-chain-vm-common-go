@@ -3,10 +3,10 @@ package builtInFunctions
 import (
 	"bytes"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/marshal"
-	"github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/marshal"
+	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type esdtGlobalSettings struct {
@@ -206,7 +206,7 @@ func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobal
 		return nil, err
 	}
 
-	val, _ := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	val, _, _ := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	return &esdtMetaData, nil
 }

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"math/big"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 const numArgsPerAdd = 3
@@ -259,7 +259,7 @@ func (e *esdtDeleteMetaData) getESDTDigitalTokenDataFromSystemAccount(
 	systemAcc vmcommon.UserAccountHandler,
 	esdtNFTTokenKey []byte,
 ) (*esdt.ESDigitalToken, error) {
-	marshaledData, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	marshaledData, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return nil, nil
 	}
