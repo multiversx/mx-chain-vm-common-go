@@ -1,8 +1,11 @@
 package datafield
 
-import "github.com/ElrondNetwork/elrond-go-core/core"
+import (
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/sharding"
+)
 
-func (odp *operationDataFieldParser) parseMultiESDTNFTTransfer(args [][]byte, function string, sender, receiver []byte) *ResponseParseData {
+func (odp *operationDataFieldParser) parseMultiESDTNFTTransfer(args [][]byte, function string, sender, receiver []byte, numOfShards uint32) *ResponseParseData {
 	responseParse, parsedESDTTransfers, ok := odp.extractESDTData(args, function, sender, receiver)
 	if !ok {
 		return responseParse
@@ -11,7 +14,7 @@ func (odp *operationDataFieldParser) parseMultiESDTNFTTransfer(args [][]byte, fu
 		responseParse.Function = parsedESDTTransfers.CallFunction
 	}
 
-	receiverShardID := odp.shardCoordinator.ComputeId(parsedESDTTransfers.RcvAddr)
+	receiverShardID := sharding.ComputeShardID(parsedESDTTransfers.RcvAddr, numOfShards)
 	for _, esdtTransferData := range parsedESDTTransfers.ESDTTransfers {
 		if !isASCIIString(string(esdtTransferData.ESDTTokenName)) {
 			return &ResponseParseData{

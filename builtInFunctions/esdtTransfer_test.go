@@ -5,28 +5,69 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	"github.com/ElrondNetwork/elrond-go-core/data/vm"
-	"github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/data/vm"
+	"github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewESDTTransferFunc(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil marshaller should error", func(t *testing.T) {
+		t.Parallel()
+
+		transferFunc, err := NewESDTTransferFunc(10, nil, nil, nil, nil, nil)
+		assert.Equal(t, ErrNilMarshalizer, err)
+		assert.True(t, check.IfNil(transferFunc))
+	})
+	t.Run("nil global settings handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		transferFunc, err := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, nil, nil, nil, nil)
+		assert.Equal(t, ErrNilGlobalSettingsHandler, err)
+		assert.True(t, check.IfNil(transferFunc))
+	})
+	t.Run("nil shard coordinator should error", func(t *testing.T) {
+		t.Parallel()
+
+		transferFunc, err := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil, nil, nil)
+		assert.Equal(t, ErrNilShardCoordinator, err)
+		assert.True(t, check.IfNil(transferFunc))
+	})
+	t.Run("nil roles handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		transferFunc, err := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, nil, nil)
+		assert.Equal(t, ErrNilRolesHandler, err)
+		assert.True(t, check.IfNil(transferFunc))
+	})
+	t.Run("nil enable epochs handler should error", func(t *testing.T) {
+		t.Parallel()
+
+		transferFunc, err := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, nil)
+		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+		assert.True(t, check.IfNil(transferFunc))
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		transferFunc, err := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		assert.Nil(t, err)
+		assert.False(t, check.IfNil(transferFunc))
+	})
+}
 func TestESDTTransfer_ProcessBuiltInFunctionErrors(t *testing.T) {
 	t.Parallel()
 
 	shardC := &mock.ShardCoordinatorStub{}
-	transferFunc, _ := NewESDTTransferFunc(
-		10,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		shardC,
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		&mock.EpochNotifierStub{},
-	)
+	transferFunc, _ := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, shardC, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 	_, err := transferFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
@@ -75,16 +116,11 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 			return nil
 		},
 	}
-	transferFunc, _ := NewESDTTransferFunc(
-		10,
-		marshaller,
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.ShardCoordinatorStub{},
-		esdtRoleHandler,
-		1000,
-		0,
-		&mock.EpochNotifierStub{},
-	)
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	}
+	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, esdtRoleHandler, enableEpochsHandler)
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -109,11 +145,11 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 
 	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
 	assert.Nil(t, err)
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 
-	marshaledData, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(10)) == 0)
 }
@@ -122,16 +158,10 @@ func TestESDTTransfer_ProcessBuiltInFunctionSenderInShard(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	transferFunc, _ := NewESDTTransferFunc(
-		10,
-		marshaller,
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.ShardCoordinatorStub{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		&mock.EpochNotifierStub{},
-	)
+	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -152,7 +182,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionSenderInShard(t *testing.T) {
 
 	_, err := transferFunc.ProcessBuiltinFunction(accSnd, nil, input)
 	assert.Nil(t, err)
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 }
@@ -161,16 +191,10 @@ func TestESDTTransfer_ProcessBuiltInFunctionDestInShard(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	transferFunc, _ := NewESDTTransferFunc(
-		10,
-		marshaller,
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.ShardCoordinatorStub{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		&mock.EpochNotifierStub{},
-	)
+	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -188,7 +212,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionDestInShard(t *testing.T) {
 	assert.Nil(t, err)
 	esdtKey := append(transferFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{}
-	marshaledData, _ := accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ := accDst.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(10)) == 0)
 	assert.Equal(t, uint64(0), vmOutput.GasRemaining)
@@ -199,17 +223,11 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	accountStub := &mock.AccountsStub{}
-	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshaller, true, core.BuiltInFunctionESDTPause, 0, &mock.EpochNotifierStub{})
-	transferFunc, _ := NewESDTTransferFunc(
-		10,
-		marshaller,
-		esdtGlobalSettingsFunc,
-		&mock.ShardCoordinatorStub{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		&mock.EpochNotifierStub{},
-	)
+	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshaller, true, core.BuiltInFunctionESDTPause, trueHandler)
+	transferFunc, _ := NewESDTTransferFunc(10, marshaller, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -246,7 +264,7 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	_, err = transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
 	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
 
-	marshaledData, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(100)) == 0)
 
@@ -292,17 +310,11 @@ func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
 			return nil
 		},
 	}
-	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, 0, &mock.EpochNotifierStub{})
-	transferFunc, _ := NewESDTTransferFunc(
-		10,
-		marshaller,
-		esdtGlobalSettingsFunc,
-		&mock.ShardCoordinatorStub{},
-		rolesHandler,
-		1000,
-		0,
-		&mock.EpochNotifierStub{},
-	)
+	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, trueHandler)
+	transferFunc, _ := NewESDTTransferFunc(10, marshaller, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, rolesHandler, &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -377,16 +389,10 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	transferFunc, _ := NewESDTTransferFunc(
-		10,
-		marshaller,
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.ShardCoordinatorStub{},
-		&mock.ESDTRoleHandlerStub{},
-		1000,
-		0,
-		&mock.EpochNotifierStub{},
-	)
+	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	input := &vmcommon.ContractCallInput{
@@ -410,7 +416,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	vmOutput, err := transferFunc.ProcessBuiltinFunction(nil, accDst, input)
 	assert.Nil(t, err)
 
-	marshaledData, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accDst.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(10)) == 0)
 
@@ -420,48 +426,7 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	assert.Nil(t, err)
 	vmOutput.GasRemaining = input.GasProvided - transferFunc.funcGasCost
 
-	marshaledData, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
+	marshaledData, _, _ = accSnd.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
-}
-
-func TestESDTTransfer_EpochChange(t *testing.T) {
-	t.Parallel()
-
-	var functionHandler vmcommon.EpochSubscriberHandler
-	notifier := &mock.EpochNotifierStub{
-		RegisterNotifyHandlerCalled: func(handler vmcommon.EpochSubscriberHandler) {
-			functionHandler = handler
-		},
-	}
-	transferFunc, _ := NewESDTTransferFunc(
-		10,
-		&mock.MarshalizerMock{},
-		&mock.GlobalSettingsHandlerStub{},
-		&mock.ShardCoordinatorStub{},
-		&mock.ESDTRoleHandlerStub{},
-		1,
-		2,
-		notifier,
-	)
-
-	functionHandler.EpochConfirmed(0, 0)
-	assert.False(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(1, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.False(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(2, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(3, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
-
-	functionHandler.EpochConfirmed(4, 0)
-	assert.True(t, transferFunc.flagTransferToMeta.IsSet())
-	assert.True(t, transferFunc.flagCheckCorrectTokenID.IsSet())
 }

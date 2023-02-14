@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type changeOwnerAddress struct {
-	baseAlwaysActive
+	baseAlwaysActiveHandler
 	gasCost      uint64
 	mutExecution sync.RWMutex
 }

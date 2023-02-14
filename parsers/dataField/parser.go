@@ -5,11 +5,12 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data/transaction"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/parsers"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/core/sharding"
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/parsers"
 )
 
 const (
@@ -35,15 +36,11 @@ type operationDataFieldParser struct {
 
 	addressLength      int
 	argsParser         vmcommon.CallArgsParser
-	shardCoordinator   vmcommon.Coordinator
 	esdtTransferParser vmcommon.ESDTTransferParser
 }
 
 // NewOperationDataFieldParser will return a new instance of operationDataFieldParser
 func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operationDataFieldParser, error) {
-	if check.IfNil(args.ShardCoordinator) {
-		return nil, core.ErrNilShardCoordinator
-	}
 	if check.IfNil(args.Marshalizer) {
 		return nil, core.ErrNilMarshalizer
 	}
@@ -59,7 +56,6 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 
 	return &operationDataFieldParser{
 		argsParser:           argsParser,
-		shardCoordinator:     args.ShardCoordinator,
 		esdtTransferParser:   esdtTransferParser,
 		addressLength:        args.AddressLength,
 		builtInFunctionsList: getAllBuiltInFunctions(),
@@ -67,11 +63,11 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 }
 
 // Parse will parse the provided data field
-func (odp *operationDataFieldParser) Parse(dataField []byte, sender, receiver []byte) *ResponseParseData {
-	return odp.parse(dataField, sender, receiver, false)
+func (odp *operationDataFieldParser) Parse(dataField []byte, sender, receiver []byte, numOfShards uint32) *ResponseParseData {
+	return odp.parse(dataField, sender, receiver, false, numOfShards)
 }
 
-func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []byte, ignoreRelayed bool) *ResponseParseData {
+func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []byte, ignoreRelayed bool, numOfShards uint32) *ResponseParseData {
 	responseParse := &ResponseParseData{
 		Operation: operationTransfer,
 	}
@@ -91,9 +87,9 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 	case core.BuiltInFunctionESDTTransfer:
 		return odp.parseSingleESDTTransfer(args, function, sender, receiver)
 	case core.BuiltInFunctionESDTNFTTransfer:
-		return odp.parseSingleESDTNFTTransfer(args, function, sender, receiver)
+		return odp.parseSingleESDTNFTTransfer(args, function, sender, receiver, numOfShards)
 	case core.BuiltInFunctionMultiESDTNFTTransfer:
-		return odp.parseMultiESDTNFTTransfer(args, function, sender, receiver)
+		return odp.parseMultiESDTNFTTransfer(args, function, sender, receiver, numOfShards)
 	case core.BuiltInFunctionESDTLocalBurn, core.BuiltInFunctionESDTLocalMint:
 		return parseQuantityOperationESDT(args, function)
 	case core.BuiltInFunctionESDTWipe, core.BuiltInFunctionESDTFreeze, core.BuiltInFunctionESDTUnFreeze:
@@ -104,7 +100,7 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 		if ignoreRelayed {
 			return NewResponseParseDataAsRelayed()
 		}
-		return odp.parseRelayed(function, args, receiver)
+		return odp.parseRelayed(function, args, receiver, numOfShards)
 	}
 
 	isBuiltInFunc := isBuiltInFunction(odp.builtInFunctionsList, function)
@@ -119,7 +115,7 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 	return responseParse
 }
 
-func (odp *operationDataFieldParser) parseRelayed(function string, args [][]byte, receiver []byte) *ResponseParseData {
+func (odp *operationDataFieldParser) parseRelayed(function string, args [][]byte, receiver []byte, numOfShards uint32) *ResponseParseData {
 	if len(args) == 0 {
 		return &ResponseParseData{
 			IsRelayed: true,
@@ -133,7 +129,7 @@ func (odp *operationDataFieldParser) parseRelayed(function string, args [][]byte
 		}
 	}
 
-	res := odp.parse(tx.Data, tx.SndAddr, tx.RcvAddr, true)
+	res := odp.parse(tx.Data, tx.SndAddr, tx.RcvAddr, true, numOfShards)
 	if res.IsRelayed {
 		return &ResponseParseData{
 			IsRelayed: true,
@@ -141,7 +137,7 @@ func (odp *operationDataFieldParser) parseRelayed(function string, args [][]byte
 	}
 
 	receivers := [][]byte{tx.RcvAddr}
-	receiversShardID := []uint32{odp.shardCoordinator.ComputeId(tx.RcvAddr)}
+	receiversShardID := []uint32{sharding.ComputeShardID(tx.RcvAddr, numOfShards)}
 	if res.Operation == core.BuiltInFunctionMultiESDTNFTTransfer || res.Operation == core.BuiltInFunctionESDTNFTTransfer {
 		receivers = res.Receivers
 		receiversShardID = res.ReceiversShardID

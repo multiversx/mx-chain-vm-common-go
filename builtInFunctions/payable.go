@@ -2,51 +2,39 @@ package builtInFunctions
 
 import (
 	"bytes"
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data/vm"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/vm"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type payableCheck struct {
-	checkFunctionArgumentsEnableEpoch uint32
-	flagCheckFunctionArgument         atomic.Flag
-
-	fixAsyncCallbackCheckEnableEpoch uint32
-	flagAsyncCallbackCheck           atomic.Flag
-
-	payableHandler vmcommon.PayableHandler
+	payableHandler      vmcommon.PayableHandler
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 // NewPayableCheckFunc returns a new component which checks if destination is payableCheck when needed
 func NewPayableCheckFunc(
 	payable vmcommon.PayableHandler,
-	checkFunctionArgumentsEnableEpoch uint32,
-	fixAsyncCallbackCheckEnableEpoch uint32,
-	epochNotifier vmcommon.EpochNotifier,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*payableCheck, error) {
-	if check.IfNil(epochNotifier) {
-		return nil, ErrNilEpochHandler
-	}
 	if check.IfNil(payable) {
 		return nil, ErrNilPayableHandler
 	}
-
-	p := &payableCheck{
-		payableHandler:                    payable,
-		checkFunctionArgumentsEnableEpoch: checkFunctionArgumentsEnableEpoch,
-		fixAsyncCallbackCheckEnableEpoch:  fixAsyncCallbackCheckEnableEpoch,
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
-	epochNotifier.RegisterNotifyHandler(p)
-
-	return p, nil
+	return &payableCheck{
+		payableHandler:      payable,
+		enableEpochsHandler: enableEpochsHandler,
+	}, nil
 }
 
 func (p *payableCheck) mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int) bool {
 	typeToVerify := vm.AsynchronousCall
-	if p.flagAsyncCallbackCheck.IsSet() {
+	if p.enableEpochsHandler.IsFixAsyncCallbackCheckFlagEnabled() {
 		typeToVerify = vm.AsynchronousCallBack
 		if vmInput.ReturnCallAfterError {
 			return false
@@ -59,7 +47,7 @@ func (p *payableCheck) mustVerifyPayable(vmInput *vmcommon.ContractCallInput, mi
 		return false
 	}
 	if len(vmInput.Arguments) > minLenArguments {
-		if p.flagCheckFunctionArgument.IsSet() {
+		if p.enableEpochsHandler.IsCheckFunctionArgumentFlagEnabled() {
 			if len(vmInput.Arguments[minLenArguments]) > 0 {
 				return false
 			}
@@ -99,22 +87,13 @@ func (p *payableCheck) DetermineIsSCCallAfter(vmInput *vmcommon.ContractCallInpu
 	if !vmcommon.IsSmartContractAddress(destAddress) {
 		return false
 	}
-	if p.flagCheckFunctionArgument.IsSet() {
+	if p.enableEpochsHandler.IsCheckFunctionArgumentFlagEnabled() {
 		if len(vmInput.Arguments[minLenArguments]) == 0 {
 			return false
 		}
 	}
 
 	return true
-}
-
-// EpochConfirmed is called whenever a new epoch is confirmed
-func (p *payableCheck) EpochConfirmed(epoch uint32, _ uint64) {
-	p.flagCheckFunctionArgument.SetValue(epoch >= p.checkFunctionArgumentsEnableEpoch)
-	log.Debug("ESDTPayable func check function argument", "enabled", p.flagCheckFunctionArgument.IsSet())
-	p.flagAsyncCallbackCheck.SetValue(epoch >= p.fixAsyncCallbackCheckEnableEpoch)
-	log.Debug("ESDTPayable fix asyncCallBack check", "enabled", p.flagAsyncCallbackCheck.IsSet())
-
 }
 
 // IsInterfaceNil returns true if underlying object is nil

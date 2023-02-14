@@ -5,34 +5,37 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewESDTTransferRoleAddressFunc(t *testing.T) {
-	_, err := NewESDTTransferRoleAddressFunc(nil, &mock.MarshalizerMock{}, 0, &mock.EpochNotifierStub{}, 10, true)
+	_, err := NewESDTTransferRoleAddressFunc(nil, &mock.MarshalizerMock{}, 10, true, &mock.EnableEpochsHandlerStub{
+		IsSendAlwaysFlagEnabledField: true,
+	})
 	assert.Equal(t, err, ErrNilAccountsAdapter)
 
-	_, err = NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, nil, 0, &mock.EpochNotifierStub{}, 10, true)
+	_, err = NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, nil, 10, true, &mock.EnableEpochsHandlerStub{
+		IsSendAlwaysFlagEnabledField: true,
+	})
 	assert.Equal(t, err, ErrNilMarshalizer)
 
-	_, err = NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, 0, nil, 10, true)
-	assert.Equal(t, err, ErrNilEpochHandler)
-
-	e, err := NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, 0, &mock.EpochNotifierStub{}, 0, true)
+	e, err := NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, 0, true, &mock.EnableEpochsHandlerStub{
+		IsSendAlwaysFlagEnabledField: true,
+	})
 	assert.Equal(t, err, ErrInvalidMaxNumAddresses)
+
+	_, err = NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, 10, true, nil)
+	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 	assert.True(t, check.IfNil(e))
 
-	e, err = NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, 0, &mock.EpochNotifierStub{}, 10, true)
+	e, err = NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, 10, true, &mock.EnableEpochsHandlerStub{
+		IsSendAlwaysFlagEnabledField: true,
+	})
 	assert.Nil(t, err)
-	assert.Equal(t, e.function, vmcommon.BuiltInFunctionESDTTransferRoleAddAddress)
-
-	e, err = NewESDTTransferRoleAddressFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, 0, &mock.EpochNotifierStub{}, 10, false)
-	assert.Nil(t, err)
-	assert.Equal(t, e.function, vmcommon.BuiltInFunctionESDTTransferRoleDeleteAddress)
 
 	e.SetNewGasConfig(nil)
 	assert.False(t, e.IsInterfaceNil())
@@ -41,9 +44,10 @@ func TestNewESDTTransferRoleAddressFunc(t *testing.T) {
 func TestESDTTransferRoleProcessBuiltInFunction_Errors(t *testing.T) {
 	accounts := &mock.AccountsStub{}
 	marshaller := &mock.MarshalizerMock{}
-	e, err := NewESDTTransferRoleAddressFunc(accounts, marshaller, 0, &mock.EpochNotifierStub{}, 10, true)
+	e, err := NewESDTTransferRoleAddressFunc(accounts, marshaller, 10, true, &mock.EnableEpochsHandlerStub{
+		IsSendAlwaysFlagEnabledField: true,
+	})
 	assert.Nil(t, err)
-	assert.Equal(t, e.function, vmcommon.BuiltInFunctionESDTTransferRoleAddAddress)
 
 	_, err = e.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
@@ -99,9 +103,10 @@ func TestESDTTransferRoleProcessBuiltInFunction_Errors(t *testing.T) {
 func TestESDTTransferRoleProcessBuiltInFunction_AddNewAddresses(t *testing.T) {
 	accounts := &mock.AccountsStub{}
 	marshaller := &mock.MarshalizerMock{}
-	e, err := NewESDTTransferRoleAddressFunc(accounts, marshaller, 0, &mock.EpochNotifierStub{}, 10, true)
+	e, err := NewESDTTransferRoleAddressFunc(accounts, marshaller, 10, true, &mock.EnableEpochsHandlerStub{
+		IsSendAlwaysFlagEnabledField: true,
+	})
 	assert.Nil(t, err)
-	assert.Equal(t, e.function, vmcommon.BuiltInFunctionESDTTransferRoleAddAddress)
 
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -144,9 +149,11 @@ func TestESDTTransferRoleProcessBuiltInFunction_AddNewAddresses(t *testing.T) {
 func TestESDTTransferRoleIsSenderOrDestinationWithTransferRole(t *testing.T) {
 	accounts := &mock.AccountsStub{}
 	marshaller := &mock.MarshalizerMock{}
-	e, err := NewESDTTransferRoleAddressFunc(accounts, marshaller, 0, &mock.EpochNotifierStub{}, 10, true)
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsSendAlwaysFlagEnabledField: true,
+	}
+	e, err := NewESDTTransferRoleAddressFunc(accounts, marshaller, 10, true, enableEpochsHandler)
 	assert.Nil(t, err)
-	assert.Equal(t, e.function, vmcommon.BuiltInFunctionESDTTransferRoleAddAddress)
 
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -171,7 +178,7 @@ func TestESDTTransferRoleIsSenderOrDestinationWithTransferRole(t *testing.T) {
 	addresses, _, _ := getESDTRolesForAcnt(e.marshaller, systemAcc, append(transferAddressesKeyPrefix, vmInput.Arguments[0]...))
 	assert.Equal(t, len(addresses.Roles), 3)
 
-	globalSettings, _ := NewESDTGlobalSettingsFunc(accounts, marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, 0, &mock.EpochNotifierStub{})
+	globalSettings, _ := NewESDTGlobalSettingsFunc(accounts, marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, enableEpochsHandler.IsSendAlwaysFlagEnabled)
 	assert.False(t, globalSettings.IsSenderOrDestinationWithTransferRole(nil, nil, nil))
 	assert.False(t, globalSettings.IsSenderOrDestinationWithTransferRole(vmInput.Arguments[1], []byte("random"), []byte("random")))
 	assert.False(t, globalSettings.IsSenderOrDestinationWithTransferRole(vmInput.Arguments[1], vmInput.Arguments[2], []byte("random")))

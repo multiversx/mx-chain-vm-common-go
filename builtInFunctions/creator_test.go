@@ -3,9 +3,9 @@ package builtInFunctions
 import (
 	"testing"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-vm-common/mock"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +20,7 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 		Marshalizer:                      &mock.MarshalizerMock{},
 		Accounts:                         &mock.AccountsStub{},
 		ShardCoordinator:                 mock.NewMultiShardsCoordinatorMock(1),
-		EpochNotifier:                    &mock.EpochNotifierStub{},
+		EnableEpochsHandler:              &mock.EnableEpochsHandlerStub{},
 		MaxNumOfAddressesForTransferRole: 100,
 	}
 
@@ -88,9 +88,9 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilShardCoordinator)
 
 	args = createMockArguments()
-	args.EpochNotifier = nil
+	args.EnableEpochsHandler = nil
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, ErrNilEpochHandler)
+	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 
 	args = createMockArguments()
 	args.Marshalizer = nil

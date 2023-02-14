@@ -4,34 +4,33 @@ import (
 	"bytes"
 	"math/big"
 
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/atomic"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	"github.com/ElrondNetwork/elrond-go-core/data/esdt"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 const numArgsPerAdd = 3
 
 type esdtDeleteMetaData struct {
-	*baseEnabled
+	baseActiveHandler
 	allowedAddress []byte
 	delete         bool
 	accounts       vmcommon.AccountsAdapter
 	keyPrefix      []byte
 	marshaller     vmcommon.Marshalizer
 	funcGasCost    uint64
+	function       string
 }
 
 // ArgsNewESDTDeleteMetadata defines the argument list for new esdt delete metadata built in function
 type ArgsNewESDTDeleteMetadata struct {
-	FuncGasCost     uint64
-	Marshalizer     vmcommon.Marshalizer
-	Accounts        vmcommon.AccountsAdapter
-	ActivationEpoch uint32
-	EpochNotifier   vmcommon.EpochNotifier
-	AllowedAddress  []byte
-	Delete          bool
+	FuncGasCost         uint64
+	Marshalizer         vmcommon.Marshalizer
+	Accounts            vmcommon.AccountsAdapter
+	AllowedAddress      []byte
+	Delete              bool
+	EnableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 // NewESDTDeleteMetadataFunc returns the esdt metadata deletion built-in function component
@@ -44,8 +43,8 @@ func NewESDTDeleteMetadataFunc(
 	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
-	if check.IfNil(args.EpochNotifier) {
-		return nil, ErrNilEpochHandler
+	if check.IfNil(args.EnableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtDeleteMetaData{
@@ -55,15 +54,10 @@ func NewESDTDeleteMetadataFunc(
 		accounts:       args.Accounts,
 		allowedAddress: args.AllowedAddress,
 		delete:         args.Delete,
+		function:       core.BuiltInFunctionMultiESDTNFTTransfer,
 	}
 
-	e.baseEnabled = &baseEnabled{
-		function:        core.BuiltInFunctionMultiESDTNFTTransfer,
-		activationEpoch: args.ActivationEpoch,
-		flagActivated:   atomic.Flag{},
-	}
-
-	args.EpochNotifier.RegisterNotifyHandler(e)
+	e.baseActiveHandler.activeHandler = args.EnableEpochsHandler.IsSendAlwaysFlagEnabled
 
 	return e, nil
 }
@@ -265,7 +259,7 @@ func (e *esdtDeleteMetaData) getESDTDigitalTokenDataFromSystemAccount(
 	systemAcc vmcommon.UserAccountHandler,
 	esdtNFTTokenKey []byte,
 ) (*esdt.ESDigitalToken, error) {
-	marshaledData, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	marshaledData, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
 	if err != nil || len(marshaledData) == 0 {
 		return nil, nil
 	}
