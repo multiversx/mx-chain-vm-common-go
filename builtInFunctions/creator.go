@@ -1,10 +1,10 @@
 package builtInFunctions
 
 import (
-	"github.com/ElrondNetwork/elrond-go-core/core"
-	"github.com/ElrondNetwork/elrond-go-core/core/check"
-	vmcommon "github.com/ElrondNetwork/elrond-vm-common"
 	"github.com/mitchellh/mapstructure"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
@@ -190,33 +190,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTFreezeWipeFunc(b.marshaller, true, false)
-	if err != nil {
-		return err
-	}
-	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTFreeze, newFunc)
-	if err != nil {
-		return err
-	}
-
-	newFunc, err = NewESDTFreezeWipeFunc(b.marshaller, false, false)
-	if err != nil {
-		return err
-	}
-	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnFreeze, newFunc)
-	if err != nil {
-		return err
-	}
-
-	newFunc, err = NewESDTFreezeWipeFunc(b.marshaller, false, true)
-	if err != nil {
-		return err
-	}
-	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTWipe, newFunc)
-	if err != nil {
-		return err
-	}
-
 	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, trueHandler)
 	if err != nil {
 		return err
@@ -288,6 +261,33 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTCreate, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.enableEpochsHandler, b.marshaller, true, false)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTFreeze, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.enableEpochsHandler, b.marshaller, false, false)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTUnFreeze, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTFreezeWipeFunc(b.esdtStorageHandler, b.enableEpochsHandler, b.marshaller, false, true)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTWipe, newFunc)
 	if err != nil {
 		return err
 	}

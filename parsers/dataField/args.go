@@ -1,7 +1,7 @@
 package datafield
 
 import (
-	"github.com/ElrondNetwork/elrond-go-core/marshal"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 )
 
 // ArgsOperationDataFieldParser holds all the components required to create a new instance of data field parser
