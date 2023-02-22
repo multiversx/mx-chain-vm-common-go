@@ -68,6 +68,9 @@ type VMInput struct {
 
 	// ReturnCallAfterError
 	ReturnCallAfterError bool
+
+	// OriginalCallerAddr is the public key of the wallet originally initiating the transaction
+	OriginalCallerAddr []byte
 }
 
 type AsyncArguments struct {
