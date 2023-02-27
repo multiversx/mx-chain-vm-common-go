@@ -367,6 +367,7 @@ type EnableEpochsHandler interface {
 	IsMaxBlockchainHookCountersFlagEnabled() bool
 	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
 	IsAlwaysSaveTokenMetaDataEnabled() bool
+	IsRuntimeCodeSizeFixEnabled() bool
 	IsAutoBalanceDataTriesEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
