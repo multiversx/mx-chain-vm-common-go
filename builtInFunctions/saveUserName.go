@@ -44,7 +44,7 @@ func NewSaveUserNameFunc(
 	}
 
 	s.mapDnsV2Addresses = make(map[string]struct{}, len(mapDnsV2Addresses))
-	for key := range mapDnsAddresses {
+	for key := range mapDnsV2Addresses {
 		s.mapDnsV2Addresses[key] = struct{}{}
 	}
 

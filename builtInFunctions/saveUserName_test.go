@@ -22,9 +22,11 @@ func TestNewSaveUserNameFunc(t *testing.T) {
 	dnsAddr := []byte("DNS")
 	mapDnsAddresses := make(map[string]struct{})
 	mapDnsAddresses[string(dnsAddr)] = struct{}{}
-	m, err = NewSaveUserNameFunc(0, mapDnsAddresses, mapDnsAddresses, &mock.EnableEpochsHandlerStub{})
+	m, err = NewSaveUserNameFunc(0, mapDnsAddresses, make(map[string]struct{}), &mock.EnableEpochsHandlerStub{})
 	require.Nil(t, err)
 	require.False(t, m.IsInterfaceNil())
+	require.Equal(t, len(m.mapDnsAddresses), 1)
+	require.Equal(t, len(m.mapDnsV2Addresses), 0)
 
 	m.SetNewGasConfig(nil)
 	m.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{SaveUserName: 10}})
