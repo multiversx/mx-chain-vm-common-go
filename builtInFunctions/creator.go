@@ -18,6 +18,7 @@ const deleteUserNameFuncName = "deleteUserName"
 type ArgsCreateBuiltInFunctionContainer struct {
 	GasMap                           map[string]map[string]uint64
 	MapDNSAddresses                  map[string]struct{}
+	MapDNSV2Addresses                map[string]struct{}
 	EnableUserNameChange             bool
 	Marshalizer                      vmcommon.Marshalizer
 	Accounts                         vmcommon.AccountsAdapter
@@ -29,6 +30,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 
 type builtInFuncCreator struct {
 	mapDNSAddresses                  map[string]struct{}
+	mapDNSV2Addresses                map[string]struct{}
 	enableUserNameChange             bool
 	marshaller                       vmcommon.Marshalizer
 	accounts                         vmcommon.AccountsAdapter
@@ -53,6 +55,9 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if args.MapDNSAddresses == nil {
 		return nil, ErrNilDnsAddresses
 	}
+	if args.MapDNSV2Addresses == nil {
+		return nil, ErrNilDnsAddresses
+	}
 	if check.IfNil(args.ShardCoordinator) {
 		return nil, ErrNilShardCoordinator
 	}
@@ -62,6 +67,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 
 	b := &builtInFuncCreator{
 		mapDNSAddresses:                  args.MapDNSAddresses,
+		mapDNSV2Addresses:                args.MapDNSV2Addresses,
 		enableUserNameChange:             args.EnableUserNameChange,
 		marshaller:                       args.Marshalizer,
 		accounts:                         args.Accounts,
@@ -131,7 +137,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewSaveUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.enableEpochsHandler)
+	newFunc, err = NewSaveUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.mapDNSV2Addresses, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -140,7 +146,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewDeleteUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.enableEpochsHandler)
+	newFunc, err = NewDeleteUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSV2Addresses, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}

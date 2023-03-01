@@ -13,19 +13,21 @@ import (
 
 type saveUserName struct {
 	baseAlwaysActiveHandler
-	gasCost         uint64
-	isChangeEnabled func() bool
-	mapDnsAddresses map[string]struct{}
-	mutExecution    sync.RWMutex
+	gasCost           uint64
+	isChangeEnabled   func() bool
+	mapDnsAddresses   map[string]struct{}
+	mapDnsV2Addresses map[string]struct{}
+	mutExecution      sync.RWMutex
 }
 
 // NewSaveUserNameFunc returns a username built in function implementation
 func NewSaveUserNameFunc(
 	gasCost uint64,
 	mapDnsAddresses map[string]struct{},
+	mapDnsV2Addresses map[string]struct{},
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*saveUserName, error) {
-	if mapDnsAddresses == nil {
+	if mapDnsAddresses == nil || mapDnsV2Addresses == nil {
 		return nil, ErrNilDnsAddresses
 	}
 	if check.IfNil(enableEpochsHandler) {
@@ -39,6 +41,11 @@ func NewSaveUserNameFunc(
 	s.mapDnsAddresses = make(map[string]struct{}, len(mapDnsAddresses))
 	for key := range mapDnsAddresses {
 		s.mapDnsAddresses[key] = struct{}{}
+	}
+
+	s.mapDnsV2Addresses = make(map[string]struct{}, len(mapDnsV2Addresses))
+	for key := range mapDnsAddresses {
+		s.mapDnsV2Addresses[key] = struct{}{}
 	}
 
 	return s, nil
@@ -59,7 +66,8 @@ func inputCheckForUserNameCall(
 	vmInput *vmcommon.ContractCallInput,
 	mapDnsAddresses map[string]struct{},
 	gasCost uint64,
-	numArgs int) error {
+	numArgs int,
+) error {
 	if vmInput == nil {
 		return ErrNilVmInput
 	}
@@ -112,7 +120,12 @@ func (s *saveUserName) ProcessBuiltinFunction(
 	s.mutExecution.RLock()
 	defer s.mutExecution.RUnlock()
 
-	err := inputCheckForUserNameCall(vmInput, s.mapDnsAddresses, s.gasCost, 1)
+	addressesToCheck := s.mapDnsV2Addresses
+	if !s.isChangeEnabled() {
+		addressesToCheck = s.mapDnsAddresses
+	}
+
+	err := inputCheckForUserNameCall(vmInput, addressesToCheck, s.gasCost, 1)
 	if err != nil {
 		return nil, err
 	}

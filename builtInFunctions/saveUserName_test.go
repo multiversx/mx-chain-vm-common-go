@@ -10,16 +10,19 @@ import (
 )
 
 func TestNewSaveUserNameFunc(t *testing.T) {
-	m, err := NewSaveUserNameFunc(0, nil, nil)
+	m, err := NewSaveUserNameFunc(0, nil, nil, nil)
 	require.Equal(t, err, ErrNilDnsAddresses)
 
-	m, err = NewSaveUserNameFunc(0, make(map[string]struct{}), nil)
+	m, err = NewSaveUserNameFunc(0, make(map[string]struct{}), nil, nil)
+	require.Equal(t, err, ErrNilDnsAddresses)
+
+	m, err = NewSaveUserNameFunc(0, make(map[string]struct{}), make(map[string]struct{}), nil)
 	require.Equal(t, err, ErrNilEnableEpochsHandler)
 
 	dnsAddr := []byte("DNS")
 	mapDnsAddresses := make(map[string]struct{})
 	mapDnsAddresses[string(dnsAddr)] = struct{}{}
-	m, err = NewSaveUserNameFunc(0, mapDnsAddresses, &mock.EnableEpochsHandlerStub{})
+	m, err = NewSaveUserNameFunc(0, mapDnsAddresses, mapDnsAddresses, &mock.EnableEpochsHandlerStub{})
 	require.Nil(t, err)
 	require.False(t, m.IsInterfaceNil())
 
@@ -35,8 +38,9 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	mapDnsAddresses := make(map[string]struct{})
 	mapDnsAddresses[string(dnsAddr)] = struct{}{}
 	coa := saveUserName{
-		gasCost:         1,
-		mapDnsAddresses: mapDnsAddresses,
+		gasCost:           1,
+		mapDnsAddresses:   mapDnsAddresses,
+		mapDnsV2Addresses: make(map[string]struct{}),
 		isChangeEnabled: func() bool {
 			return false
 		},
@@ -68,6 +72,7 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 
 	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, err)
+	require.Equal(t, acc.GetUserName(), vmInput.Arguments[0])
 
 	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Equal(t, ErrUserNameChangeIsDisabled, err)
@@ -77,5 +82,12 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	}
 
 	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
+	require.Equal(t, err, ErrCallerIsNotTheDNSAddress)
+
+	dnsAddrV2 := []byte("dnsV2")
+	coa.mapDnsV2Addresses[string(dnsAddrV2)] = struct{}{}
+	vmInput.CallerAddr = dnsAddrV2
+	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, err)
+	require.Equal(t, acc.GetUserName(), vmInput.Arguments[0])
 }
