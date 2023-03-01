@@ -89,6 +89,7 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	dnsAddrV2 := []byte("dnsV2")
 	coa.mapDnsV2Addresses[string(dnsAddrV2)] = struct{}{}
 	vmInput.CallerAddr = dnsAddrV2
+	vmInput.Arguments[0] = []byte("abcdabcd")
 	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, acc.GetUserName(), vmInput.Arguments[0])
