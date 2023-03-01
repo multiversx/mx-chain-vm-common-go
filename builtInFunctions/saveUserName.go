@@ -34,7 +34,7 @@ func NewSaveUserNameFunc(
 
 	s := &saveUserName{
 		gasCost:         gasCost,
-		isChangeEnabled: enableEpochsHandler.IsMigrateUsernameEnabled,
+		isChangeEnabled: enableEpochsHandler.IsChangeUsernameEnabled,
 	}
 	s.mapDnsAddresses = make(map[string]struct{}, len(mapDnsAddresses))
 	for key := range mapDnsAddresses {
@@ -58,7 +58,8 @@ func (s *saveUserName) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 func inputCheckForUserNameCall(
 	vmInput *vmcommon.ContractCallInput,
 	mapDnsAddresses map[string]struct{},
-	gasCost uint64) error {
+	gasCost uint64,
+	numArgs int) error {
 	if vmInput == nil {
 		return ErrNilVmInput
 	}
@@ -72,7 +73,7 @@ func inputCheckForUserNameCall(
 	if !ok {
 		return ErrCallerIsNotTheDNSAddress
 	}
-	if len(vmInput.Arguments) != 1 {
+	if len(vmInput.Arguments) != numArgs {
 		return ErrInvalidArguments
 	}
 	return nil
@@ -84,7 +85,10 @@ func createCrossShardUserNameCall(
 ) (*vmcommon.VMOutput, error) {
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 	vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
-	setUserNameTxData := builtInFuncName + "@" + hex.EncodeToString(vmInput.Arguments[0])
+	setUserNameTxData := builtInFuncName
+	for _, arg := range vmInput.Arguments {
+		setUserNameTxData += "@" + hex.EncodeToString(arg)
+	}
 	outTransfer := vmcommon.OutputTransfer{
 		Value:         big.NewInt(0),
 		GasLimit:      vmInput.GasProvided,
@@ -108,7 +112,7 @@ func (s *saveUserName) ProcessBuiltinFunction(
 	s.mutExecution.RLock()
 	defer s.mutExecution.RUnlock()
 
-	err := inputCheckForUserNameCall(vmInput, s.mapDnsAddresses, s.gasCost)
+	err := inputCheckForUserNameCall(vmInput, s.mapDnsAddresses, s.gasCost, 1)
 	if err != nil {
 		return nil, err
 	}

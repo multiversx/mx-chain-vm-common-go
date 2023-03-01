@@ -12,7 +12,6 @@ var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 var trueHandler = func() bool { return true }
 var falseHandler = func() bool { return false }
 
-const migrateUserNameFuncName = "migrateUserName"
 const deleteUserNameFuncName = "deleteUserName"
 
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
@@ -137,15 +136,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionSetUserName, newFunc)
-	if err != nil {
-		return err
-	}
-
-	newFunc, err = NewMigrateUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.enableEpochsHandler)
-	if err != nil {
-		return err
-	}
-	err = b.builtInFunctions.Add(migrateUserNameFuncName, newFunc)
 	if err != nil {
 		return err
 	}

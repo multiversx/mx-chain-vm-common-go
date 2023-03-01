@@ -366,7 +366,7 @@ type EnableEpochsHandler interface {
 	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
 	IsAlwaysSaveTokenMetaDataEnabled() bool
 	IsRuntimeCodeSizeFixEnabled() bool
-	IsMigrateUsernameEnabled() bool
+	IsChangeUsernameEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32
