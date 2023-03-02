@@ -15,7 +15,7 @@ func TestNewDataTrieMigrator(t *testing.T) {
 	t.Run("gas provided is not enough", func(t *testing.T) {
 		t.Parallel()
 
-		dtm, err := NewDataTrieMigrator(5, vmcommon.BuiltInCost{TrieLoadPerLeaf: 10})
+		dtm, err := NewDataTrieMigrator(5, vmcommon.BuiltInCost{TrieLoadPerNode: 10})
 		assert.True(t, strings.Contains(err.Error(), "not enough gas"))
 		assert.True(t, dtm.IsInterfaceNil())
 	})
@@ -23,7 +23,7 @@ func TestNewDataTrieMigrator(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		dtm, err := NewDataTrieMigrator(10, vmcommon.BuiltInCost{TrieLoadPerLeaf: 5})
+		dtm, err := NewDataTrieMigrator(10, vmcommon.BuiltInCost{TrieLoadPerNode: 5})
 		assert.Nil(t, err)
 		assert.False(t, dtm.IsInterfaceNil())
 	})
@@ -32,7 +32,7 @@ func TestNewDataTrieMigrator(t *testing.T) {
 func TestConsumeStorageLoadGas(t *testing.T) {
 	t.Parallel()
 
-	dtm, _ := NewDataTrieMigrator(15, vmcommon.BuiltInCost{TrieLoadPerLeaf: 6})
+	dtm, _ := NewDataTrieMigrator(15, vmcommon.BuiltInCost{TrieLoadPerNode: 6})
 	assert.True(t, dtm.ConsumeStorageLoadGas())
 	assert.Equal(t, uint64(9), dtm.gasRemaining)
 	assert.False(t, dtm.ConsumeStorageLoadGas())
@@ -47,7 +47,7 @@ func TestAddLeafToMigrationQueue(t *testing.T) {
 	t.Run("migrate to NotSpecified", func(t *testing.T) {
 		t.Parallel()
 
-		dtm, _ := NewDataTrieMigrator(15, vmcommon.BuiltInCost{TrieStorePerLeaf: 5})
+		dtm, _ := NewDataTrieMigrator(15, vmcommon.BuiltInCost{TrieStorePerNode: 5})
 
 		leafData := core.TrieData{
 			Key:     []byte("key"),
@@ -63,7 +63,7 @@ func TestAddLeafToMigrationQueue(t *testing.T) {
 	t.Run("migrate to AutoBalanceEnabled", func(t *testing.T) {
 		t.Parallel()
 
-		dtm, _ := NewDataTrieMigrator(15, vmcommon.BuiltInCost{TrieStorePerLeaf: 5})
+		dtm, _ := NewDataTrieMigrator(15, vmcommon.BuiltInCost{TrieStorePerNode: 5})
 
 		leafData := core.TrieData{
 			Key:     []byte("key"),
@@ -79,7 +79,7 @@ func TestAddLeafToMigrationQueue(t *testing.T) {
 	t.Run("migrate consumes gas", func(t *testing.T) {
 		t.Parallel()
 
-		dtm, _ := NewDataTrieMigrator(11, vmcommon.BuiltInCost{TrieStorePerLeaf: 5})
+		dtm, _ := NewDataTrieMigrator(11, vmcommon.BuiltInCost{TrieStorePerNode: 5})
 
 		leafData := core.TrieData{
 			Key:     []byte("key"),
@@ -106,7 +106,7 @@ func TestAddLeafToMigrationQueue(t *testing.T) {
 func TestGetLeavesToBeMigrated(t *testing.T) {
 	t.Parallel()
 
-	dtm, _ := NewDataTrieMigrator(11, vmcommon.BuiltInCost{TrieStorePerLeaf: 5})
+	dtm, _ := NewDataTrieMigrator(11, vmcommon.BuiltInCost{TrieStorePerNode: 5})
 	expectedLeaves := []core.TrieData{
 		{
 			Key:     []byte("key1"),
@@ -133,7 +133,7 @@ func TestGetLeavesToBeMigrated(t *testing.T) {
 func TestGetGasRemaining(t *testing.T) {
 	t.Parallel()
 
-	dtm, _ := NewDataTrieMigrator(11, vmcommon.BuiltInCost{TrieStorePerLeaf: 5})
+	dtm, _ := NewDataTrieMigrator(11, vmcommon.BuiltInCost{TrieStorePerNode: 5})
 	assert.Equal(t, uint64(11), dtm.GetGasRemaining())
 	dtm.gasRemaining = 5
 	assert.Equal(t, uint64(5), dtm.GetGasRemaining())

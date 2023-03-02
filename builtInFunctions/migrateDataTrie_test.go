@@ -157,7 +157,7 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 
-		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerLeaf: 110}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerNode: 110}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), input)
 		assert.Nil(t, vmOutput)
 		assert.True(t, strings.Contains(err.Error(), "not enough gas"))
@@ -184,7 +184,7 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 
-		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerLeaf: 50}, &mock.EnableEpochsHandlerStub{}, accStub)
+		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerNode: 50}, &mock.EnableEpochsHandlerStub{}, accStub)
 		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount(destAddr), input)
 		assert.Nil(t, err)
 		assert.True(t, saveAccountsCalled)
@@ -196,7 +196,7 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 func TestMigrateDataTrie_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerLeaf: 50}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
-	mdtf.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{TrieLoadPerLeaf: 100}})
-	assert.Equal(t, uint64(100), mdtf.builtInCost.TrieLoadPerLeaf)
+	mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerNode: 50}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+	mdtf.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{TrieLoadPerNode: 100}})
+	assert.Equal(t, uint64(100), mdtf.builtInCost.TrieLoadPerNode)
 }

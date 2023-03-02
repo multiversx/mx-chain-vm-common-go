@@ -17,14 +17,14 @@ type dataTrieMigrator struct {
 
 // NewDataTrieMigrator creates a new dataTrieMigrator component
 func NewDataTrieMigrator(gasProvided uint64, builtInCost vmcommon.BuiltInCost) (*dataTrieMigrator, error) {
-	if gasProvided < builtInCost.TrieLoadPerLeaf {
-		return nil, fmt.Errorf("not enough gas, gas provided: %d, trie load cost: %d", gasProvided, builtInCost.TrieLoadPerLeaf)
+	if gasProvided < builtInCost.TrieLoadPerNode {
+		return nil, fmt.Errorf("not enough gas, gas provided: %d, trie load cost: %d", gasProvided, builtInCost.TrieLoadPerNode)
 	}
 
 	return &dataTrieMigrator{
 		gasRemaining:    gasProvided,
-		trieLoadCost:    builtInCost.TrieLoadPerLeaf,
-		trieMigrateCost: builtInCost.TrieStorePerLeaf,
+		trieLoadCost:    builtInCost.TrieLoadPerNode,
+		trieMigrateCost: builtInCost.TrieStorePerNode,
 
 		leavesToBeMigrated: make([]core.TrieData, 0),
 	}, nil
