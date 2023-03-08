@@ -62,6 +62,11 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	_, err := coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Equal(t, ErrInvalidArguments, err)
 
+	vmInput.GasProvided = 0
+	_, err = coa.ProcessBuiltinFunction(acc, acc, vmInput)
+	require.Equal(t, ErrNotEnoughGas, err)
+
+	vmInput.GasProvided = 50
 	newUserName := []byte("afafafafafafafafafafafafafafafaf")
 	vmInput.Arguments = [][]byte{newUserName}
 
@@ -90,7 +95,14 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	coa.mapDnsV2Addresses[string(dnsAddrV2)] = struct{}{}
 	vmInput.CallerAddr = dnsAddrV2
 	vmInput.Arguments[0] = []byte("abcdabcd")
-	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
+	vmOutput, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, acc.GetUserName(), vmInput.Arguments[0])
+	require.Equal(t, vmOutput.GasRemaining, vmInput.GasProvided)
+
+	vmOutput, err = coa.ProcessBuiltinFunction(acc, acc, vmInput)
+	require.Nil(t, err)
+	require.Equal(t, acc.GetUserName(), vmInput.Arguments[0])
+	require.Equal(t, vmOutput.GasRemaining, vmInput.GasProvided-coa.gasCost)
+
 }

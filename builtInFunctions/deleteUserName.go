@@ -52,26 +52,32 @@ func (d *deleteUserName) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 
 // ProcessBuiltinFunction sets the username to the account if it is allowed
 func (d *deleteUserName) ProcessBuiltinFunction(
-	_, acntDst vmcommon.UserAccountHandler,
+	acntSnd, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	d.mutExecution.RLock()
 	defer d.mutExecution.RUnlock()
 
-	err := inputCheckForUserNameCall(vmInput, d.mapDnsAddresses, d.gasCost, 0)
+	err := inputCheckForUserNameCall(acntSnd, vmInput, d.mapDnsAddresses, d.gasCost, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	if check.IfNil(acntDst) {
-		return createCrossShardUserNameCall(vmInput, vmInput.Function)
+		return createCrossShardUserNameCall(vmInput, vmInput.Function, vmInput.GasProvided-d.gasCost)
 	}
 
+	acntDst.SetUserName(nil)
+
+	gasRemaining := vmInput.GasProvided
+	if !check.IfNil(acntSnd) {
+		gasRemaining = vmInput.GasProvided - d.gasCost
+	}
 	vmOutput := &vmcommon.VMOutput{
-		GasRemaining: vmInput.GasProvided - d.gasCost,
+		GasRemaining: gasRemaining,
 		ReturnCode:   vmcommon.Ok,
 	}
-	acntDst.SetUserName(nil)
+
 	return vmOutput, nil
 }
 
