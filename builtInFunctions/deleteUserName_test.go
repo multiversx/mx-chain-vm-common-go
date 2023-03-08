@@ -50,7 +50,7 @@ func TestDeleteUserName_ProcessBuiltinFunction(t *testing.T) {
 		},
 	}
 
-	_, err := d.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err := d.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Equal(t, ErrNotEnoughGas, err)
 
 	_, err = d.ProcessBuiltinFunction(nil, acc, nil)
@@ -75,11 +75,18 @@ func TestDeleteUserName_ProcessBuiltinFunction(t *testing.T) {
 	require.Equal(t, err, ErrInvalidArguments)
 
 	vmInput.Arguments = make([][]byte, 0)
-	_, err = d.ProcessBuiltinFunction(nil, acc, vmInput)
+	_, err = d.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, len(acc.Username), 0)
 
-	vmOutput, err := d.ProcessBuiltinFunction(nil, nil, vmInput)
+	vmOutput, err := d.ProcessBuiltinFunction(acc, nil, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, len(vmOutput.OutputAccounts), 1)
+	require.Equal(t, vmOutput.OutputAccounts[string(vmInput.RecipientAddr)].OutputTransfers[0].GasLimit, vmInput.GasProvided-d.gasCost)
+
+	vmInput.GasProvided = 0
+	_, err = d.ProcessBuiltinFunction(nil, acc, vmInput)
+	require.Nil(t, err)
+	require.Equal(t, len(acc.Username), 0)
+	require.Equal(t, vmOutput.GasRemaining, vmInput.GasProvided)
 }

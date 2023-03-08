@@ -63,6 +63,7 @@ func (s *saveUserName) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 }
 
 func inputCheckForUserNameCall(
+	acntSnd vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 	mapDnsAddresses map[string]struct{},
 	gasCost uint64,
@@ -74,7 +75,7 @@ func inputCheckForUserNameCall(
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return ErrBuiltInFunctionCalledWithValue
 	}
-	if vmInput.GasProvided < gasCost {
+	if !check.IfNil(acntSnd) && vmInput.GasProvided < gasCost {
 		return ErrNotEnoughGas
 	}
 	_, ok := mapDnsAddresses[string(vmInput.CallerAddr)]
@@ -90,6 +91,7 @@ func inputCheckForUserNameCall(
 func createCrossShardUserNameCall(
 	vmInput *vmcommon.ContractCallInput,
 	builtInFuncName string,
+	gasLimit uint64,
 ) (*vmcommon.VMOutput, error) {
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 	vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
@@ -99,12 +101,13 @@ func createCrossShardUserNameCall(
 	}
 	outTransfer := vmcommon.OutputTransfer{
 		Value:         big.NewInt(0),
-		GasLimit:      vmInput.GasProvided,
+		GasLimit:      gasLimit,
 		GasLocked:     vmInput.GasLocked,
 		Data:          []byte(setUserNameTxData),
 		CallType:      vm.AsynchronousCall,
 		SenderAddress: vmInput.CallerAddr,
 	}
+
 	vmOutput.OutputAccounts[string(vmInput.RecipientAddr)] = &vmcommon.OutputAccount{
 		Address:         vmInput.RecipientAddr,
 		OutputTransfers: []vmcommon.OutputTransfer{outTransfer},
@@ -114,7 +117,7 @@ func createCrossShardUserNameCall(
 
 // ProcessBuiltinFunction sets the username to the account if it is allowed
 func (s *saveUserName) ProcessBuiltinFunction(
-	_, acntDst vmcommon.UserAccountHandler,
+	acntSnd, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	s.mutExecution.RLock()
@@ -125,13 +128,18 @@ func (s *saveUserName) ProcessBuiltinFunction(
 		addressesToCheck = s.mapDnsAddresses
 	}
 
-	err := inputCheckForUserNameCall(vmInput, addressesToCheck, s.gasCost, 1)
+	err := inputCheckForUserNameCall(acntSnd, vmInput, addressesToCheck, s.gasCost, 1)
 	if err != nil {
 		return nil, err
 	}
 
 	if check.IfNil(acntDst) {
-		return createCrossShardUserNameCall(vmInput, core.BuiltInFunctionSetUserName)
+		gasLimit := vmInput.GasProvided
+		if s.isChangeEnabled() {
+			gasLimit = vmInput.GasProvided - s.gasCost
+		}
+
+		return createCrossShardUserNameCall(vmInput, core.BuiltInFunctionSetUserName, gasLimit)
 	}
 
 	currentUserName := acntDst.GetUserName()
@@ -141,7 +149,11 @@ func (s *saveUserName) ProcessBuiltinFunction(
 
 	acntDst.SetUserName(vmInput.Arguments[0])
 
-	return &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided - s.gasCost, ReturnCode: vmcommon.Ok}, nil
+	gasRemaining := vmInput.GasProvided - s.gasCost
+	if s.isChangeEnabled() && check.IfNil(acntSnd) {
+		gasRemaining = vmInput.GasProvided
+	}
+	return &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}, nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil
