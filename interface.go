@@ -381,7 +381,6 @@ type EnableEpochsHandler interface {
 	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
 	IsAlwaysSaveTokenMetaDataEnabled() bool
 	IsRuntimeCodeSizeFixEnabled() bool
-	IsDynamicGasCostForDataTrieStorageLoadEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32
