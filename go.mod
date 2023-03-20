@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/mitchellh/mapstructure v1.4.1
-	github.com/multiversx/mx-chain-core-go v1.1.36-0.20230308081722-5262fb09cb9a
+	github.com/multiversx/mx-chain-core-go v1.2.0
 	github.com/multiversx/mx-chain-logger-go v1.0.11
 	github.com/stretchr/testify v1.7.0
 )
