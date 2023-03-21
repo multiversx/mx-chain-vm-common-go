@@ -72,58 +72,48 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 	guardianAddress := generateRandomByteArray(pubKeyLen)
 	vmInput := getDefaultVmInput([][]byte{guardianAddress})
 	vmInput.CallerAddr = address
+	vmInput.RecipientAddr = account.Address
 
 	tests := []struct {
-		vmInput         func() *vmcommon.ContractCallInput
-		senderAccount   vmcommon.UserAccountHandler
-		receiverAccount vmcommon.UserAccountHandler
-		expectedErr     error
-		noOfArgs        uint32
+		vmInput       func() *vmcommon.ContractCallInput
+		senderAccount vmcommon.UserAccountHandler
+		expectedErr   error
+		noOfArgs      uint32
 	}{
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
 				return vmInput
 			},
-			senderAccount:   nil,
-			receiverAccount: account,
-			expectedErr:     ErrNilUserAccount,
-			noOfArgs:        1,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount:   account,
-			receiverAccount: nil,
-			expectedErr:     ErrNilUserAccount,
-			noOfArgs:        1,
+			senderAccount: nil,
+			expectedErr:   ErrNilUserAccount,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
 				return nil
 			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrNilVmInput,
-			noOfArgs:        1,
+			senderAccount: account,
+			expectedErr:   ErrNilVmInput,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
 				return vmInput
 			},
-			senderAccount:   mockvm.NewUserAccount([]byte("userAddress2")),
-			receiverAccount: account,
-			expectedErr:     ErrOperationNotPermitted,
-			noOfArgs:        1,
+			senderAccount: mockvm.NewUserAccount([]byte("userAddress2")),
+			expectedErr:   ErrOperationNotPermitted,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
+				input := *vmInput
+				input.CallerAddr = []byte("userAddress2")
+				input.RecipientAddr = mockvm.NewUserAccount([]byte("userAddress2")).Address
+				return &input
 			},
-			senderAccount:   account,
-			receiverAccount: mockvm.NewUserAccount([]byte("userAddress2")),
-			expectedErr:     ErrOperationNotPermitted,
-			noOfArgs:        1,
+			senderAccount: account,
+			expectedErr:   ErrOperationNotPermitted,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -131,10 +121,9 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 				input.CallerAddr = []byte("userAddress2")
 				return &input
 			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrOperationNotPermitted,
-			noOfArgs:        1,
+			senderAccount: account,
+			expectedErr:   ErrOperationNotPermitted,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -142,10 +131,9 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 				input.CallValue = nil
 				return &input
 			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrNilValue,
-			noOfArgs:        1,
+			senderAccount: account,
+			expectedErr:   ErrNilValue,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -153,10 +141,9 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 				input.CallValue = big.NewInt(1)
 				return &input
 			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrBuiltInFunctionCalledWithValue,
-			noOfArgs:        1,
+			senderAccount: account,
+			expectedErr:   ErrBuiltInFunctionCalledWithValue,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -164,10 +151,9 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 				input.Arguments = [][]byte{guardianAddress, guardianAddress}
 				return &input
 			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrInvalidNumberOfArguments,
-			noOfArgs:        1,
+			senderAccount: account,
+			expectedErr:   ErrInvalidNumberOfArguments,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
@@ -175,19 +161,17 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 				input.GasProvided = 0
 				return &input
 			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     ErrNotEnoughGas,
-			noOfArgs:        1,
+			senderAccount: account,
+			expectedErr:   ErrNotEnoughGas,
+			noOfArgs:      1,
 		},
 		{
 			vmInput: func() *vmcommon.ContractCallInput {
 				return vmInput
 			},
-			senderAccount:   account,
-			receiverAccount: account,
-			expectedErr:     nil,
-			noOfArgs:        1,
+			senderAccount: account,
+			expectedErr:   nil,
+			noOfArgs:      1,
 		},
 	}
 
@@ -195,7 +179,7 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 	baseAccGuarder, _ := newBaseAccountGuarder(args)
 
 	for _, test := range tests {
-		err := baseAccGuarder.checkBaseAccountGuarderArgs(test.senderAccount, test.receiverAccount, test.vmInput(), test.noOfArgs)
+		err := baseAccGuarder.checkBaseAccountGuarderArgs(test.senderAccount, test.vmInput(), test.noOfArgs)
 		if test.expectedErr != nil {
 			require.Error(t, err)
 			require.True(t, strings.Contains(err.Error(), test.expectedErr.Error()))

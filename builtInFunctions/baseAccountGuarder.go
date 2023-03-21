@@ -53,23 +53,19 @@ func newBaseAccountGuarder(args BaseAccountGuarderArgs) (*baseAccountGuarder, er
 }
 
 func (baf *baseAccountGuarder) checkBaseAccountGuarderArgs(
-	senderAccount,
-	receiverAccount vmcommon.UserAccountHandler,
+	senderAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 	expectedNoOfArgs uint32,
 ) error {
 	if check.IfNil(senderAccount) {
 		return fmt.Errorf("%w for sender", ErrNilUserAccount)
 	}
-	if check.IfNil(receiverAccount) {
-		return fmt.Errorf("%w for receiver", ErrNilUserAccount)
-	}
 	if vmInput == nil {
 		return ErrNilVmInput
 	}
 
 	senderIsNotCaller := !bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)
-	senderIsNotReceiver := !bytes.Equal(senderAccount.AddressBytes(), receiverAccount.AddressBytes())
+	senderIsNotReceiver := !bytes.Equal(vmInput.CallerAddr, vmInput.RecipientAddr)
 	if senderIsNotCaller || senderIsNotReceiver {
 		return ErrOperationNotPermitted
 	}

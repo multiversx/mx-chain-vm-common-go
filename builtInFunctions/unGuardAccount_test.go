@@ -43,6 +43,7 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		address := generateRandomByteArray(pubKeyLen)
 		account := mockvm.NewUserAccount(address)
 		vmInput.CallerAddr = address
+		vmInput.RecipientAddr = address
 
 		code := vmcommon.CodeMetadata{Guarded: true}
 		account.SetCodeMetadata(code.ToBytes())
@@ -68,6 +69,7 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		address := generateRandomByteArray(pubKeyLen)
 		account := mockvm.NewUserAccount(address)
 		vmInput.CallerAddr = address
+		vmInput.RecipientAddr = address
 
 		code := vmcommon.CodeMetadata{Guarded: true}
 		account.SetCodeMetadata(code.ToBytes())

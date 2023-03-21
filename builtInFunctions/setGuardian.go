@@ -38,13 +38,13 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 
 // ProcessBuiltinFunction will process the set guardian built-in function call
 func (sg *setGuardian) ProcessBuiltinFunction(
-	acntSnd, acntDst vmcommon.UserAccountHandler,
+	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	err := sg.checkBaseAccountGuarderArgs(acntSnd, acntDst, vmInput, noOfArgsSetGuardian)
+	err := sg.checkBaseAccountGuarderArgs(acntSnd, vmInput, noOfArgsSetGuardian)
 	if err != nil {
 		return nil, err
 	}
