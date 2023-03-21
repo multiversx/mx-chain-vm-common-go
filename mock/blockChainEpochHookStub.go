@@ -13,6 +13,7 @@ func (b *BlockChainEpochHookStub) CurrentEpoch() uint32 {
 	return 0
 }
 
+// IsInterfaceNil -
 func (b *BlockChainEpochHookStub) IsInterfaceNil() bool {
 	return b == nil
 }

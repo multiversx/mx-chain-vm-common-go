@@ -50,10 +50,12 @@ type EnableEpochsHandlerStub struct {
 	StorageAPICostOptimizationEnableEpochField           uint32
 }
 
+// IsGuardAccountEnabled -
 func (stub *EnableEpochsHandlerStub) IsGuardAccountEnabled() bool {
 	return stub.IsGuardAccountEnabledField
 }
 
+// IsSetGuardianEnabled -
 func (stub *EnableEpochsHandlerStub) IsSetGuardianEnabled() bool {
 	return stub.IsSetGuardianEnabledField
 }
