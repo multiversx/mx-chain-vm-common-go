@@ -157,6 +157,7 @@ func TestGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		requireAccountFrozen(t, account, false)
 
 		vmInput.CallerAddr = account.Address
+		vmInput.RecipientAddr = account.Address
 		output, err := guardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, output)
 		require.Equal(t, expectedErr, err)
@@ -183,6 +184,7 @@ func TestGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		address := generateRandomByteArray(pubKeyLen)
 		account := mock.NewUserAccount(address)
 		vmInput.CallerAddr = account.Address
+		vmInput.RecipientAddr = account.Address
 		requireAccountFrozen(t, account, false)
 
 		output, err := guardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)

@@ -18,13 +18,13 @@ func NewGuardAccountFunc(args GuardAccountArgs) (*guardAccountFunc, error) {
 // ProcessBuiltinFunction will set the frozen bit in
 // user's code metadata, if it has at least one enabled guardian
 func (fa *guardAccountFunc) ProcessBuiltinFunction(
-	acntSnd, acntDst vmcommon.UserAccountHandler,
+	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	fa.mutExecution.Lock()
 	defer fa.mutExecution.Unlock()
 
-	err := fa.checkGuardAccountArgs(acntSnd, acntDst, vmInput)
+	err := fa.checkGuardAccountArgs(acntSnd, vmInput)
 	if err != nil {
 		return nil, err
 	}

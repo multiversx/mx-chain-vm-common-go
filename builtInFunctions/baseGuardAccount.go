@@ -28,10 +28,10 @@ func newBaseGuardAccount(args GuardAccountArgs) (*baseGuardAccount, error) {
 }
 
 func (bfa *baseGuardAccount) checkGuardAccountArgs(
-	acntSnd, acntDst vmcommon.UserAccountHandler,
+	acntSnd vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) error {
-	err := bfa.checkBaseAccountGuarderArgs(acntSnd, acntDst, vmInput, noOfArgsGuardAccount)
+	err := bfa.checkBaseAccountGuarderArgs(acntSnd, vmInput, noOfArgsGuardAccount)
 	if err != nil {
 		return err
 	}

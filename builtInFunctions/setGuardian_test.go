@@ -71,6 +71,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 	serviceUID := []byte{1, 1, 1}
 	vmInput := getDefaultVmInput([][]byte{guardianAddress, serviceUID})
 	vmInput.CallerAddr = address
+	vmInput.RecipientAddr = address
 
 	tests := []struct {
 		vmInput         func() *vmcommon.ContractCallInput
@@ -169,6 +170,7 @@ func TestSetGuardian_ProcessBuiltinFunctionAccountAccountHandlerSetError(t *test
 	address := generateRandomByteArray(pubKeyLen)
 	account := mockvm.NewUserAccount(address)
 	vmInput.CallerAddr = address
+	vmInput.RecipientAddr = address
 
 	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
 		SetGuardianCalled: func(_ vmcommon.UserAccountHandler, guardianAddress []byte, _ []byte, _ []byte) error {
@@ -234,5 +236,6 @@ func getDefaultVmInput(args [][]byte) *vmcommon.ContractCallInput {
 			CallValue:   big.NewInt(0),
 			GasProvided: 500000,
 		},
+		RecipientAddr: userAddress,
 	}
 }
