@@ -43,24 +43,17 @@ func NewMigrateDataTrieFunc(
 // ProcessBuiltinFunction will migrate as many leaves as possible from the old version to the new version.
 // This will stop when it runs out of gas.
 func (mdt *migrateDataTrie) ProcessBuiltinFunction(_, acntDst vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkArgumentsForMigrateDataTrie(acntDst, vmInput)
+	trieLoadPerNode, trieStorePerNode := mdt.getGasCostForDataTrieLoadAndStore()
+
+	err := checkArgumentsForMigrateDataTrie(acntDst, vmInput, trieLoadPerNode, trieStorePerNode)
 	if err != nil {
 		return nil, err
 	}
 
-	mdt.mutExecution.RLock()
-	dtm, err := dataTrieMigrator.NewDataTrieMigrator(vmInput.GasProvided, mdt.builtInCost)
-	if err != nil {
-		mdt.mutExecution.RUnlock()
-		return nil, err
-	}
-	mdt.mutExecution.RUnlock()
+	dtm := dataTrieMigrator.NewDataTrieMigrator(vmInput.GasProvided, trieLoadPerNode, trieStorePerNode)
 
-	firstArgument := vmInput.Arguments[0]
-	secondArgument := vmInput.Arguments[1]
-
-	oldVersion := core.TrieNodeVersion(firstArgument[0])
-	newVersion := core.TrieNodeVersion(secondArgument[0])
+	oldVersion := core.NotSpecified
+	newVersion := core.AutoBalanceEnabled
 
 	err = acntDst.AccountDataHandler().MigrateDataTrieLeaves(oldVersion, newVersion, dtm)
 	if err != nil {
@@ -91,24 +84,30 @@ func (mdt *migrateDataTrie) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	mdt.mutExecution.Unlock()
 }
 
+func (mdt *migrateDataTrie) getGasCostForDataTrieLoadAndStore() (uint64, uint64) {
+	mdt.mutExecution.RLock()
+	builtInCost := mdt.builtInCost
+	mdt.mutExecution.RUnlock()
+
+	return builtInCost.TrieLoadPerNode, builtInCost.TrieStorePerNode
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (mdt *migrateDataTrie) IsInterfaceNil() bool {
 	return mdt == nil
 }
 
-func checkArgumentsForMigrateDataTrie(acntDst vmcommon.UserAccountHandler, input *vmcommon.ContractCallInput) error {
+func checkArgumentsForMigrateDataTrie(
+	acntDst vmcommon.UserAccountHandler,
+	input *vmcommon.ContractCallInput,
+	trieLoadPerNode uint64,
+	trieStorePerNode uint64,
+) error {
 	if input == nil {
 		return ErrNilVmInput
 	}
-	if len(input.Arguments) != 2 {
-		return ErrInvalidArguments
-	}
-	// oldVersion and newVersion must be contained in an uint8 type, so they must be 1 byte long
-	if len(input.Arguments[0]) != 1 {
-		return fmt.Errorf("%w old version must be 1 byte long", ErrInvalidArguments)
-	}
-	if len(input.Arguments[1]) != 1 {
-		return fmt.Errorf("%w new version must be 1 byte long", ErrInvalidArguments)
+	if input.GasProvided < trieLoadPerNode+trieStorePerNode {
+		return fmt.Errorf("not enough gas, gas provided: %d, trie load cost: %d, trie store cost: %d", input.GasProvided, trieLoadPerNode, trieStorePerNode)
 	}
 	if input.CallValue.Cmp(zero) != 0 {
 		return ErrBuiltInFunctionCalledWithValue

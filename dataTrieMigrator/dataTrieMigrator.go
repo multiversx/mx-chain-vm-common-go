@@ -1,33 +1,24 @@
 package dataTrieMigrator
 
 import (
-	"fmt"
-
 	"github.com/multiversx/mx-chain-core-go/core"
-	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type dataTrieMigrator struct {
-	gasRemaining    uint64
-	trieLoadCost    uint64
-	trieMigrateCost uint64
-
+	gasRemaining       uint64
+	trieLoadCost       uint64
+	trieMigrateCost    uint64
 	leavesToBeMigrated []core.TrieData
 }
 
 // NewDataTrieMigrator creates a new dataTrieMigrator component
-func NewDataTrieMigrator(gasProvided uint64, builtInCost vmcommon.BuiltInCost) (*dataTrieMigrator, error) {
-	if gasProvided < builtInCost.TrieLoadPerNode {
-		return nil, fmt.Errorf("not enough gas, gas provided: %d, trie load cost: %d", gasProvided, builtInCost.TrieLoadPerNode)
-	}
-
+func NewDataTrieMigrator(gasProvided uint64, trieLoadPerNode uint64, trieStorePerNode uint64) *dataTrieMigrator {
 	return &dataTrieMigrator{
-		gasRemaining:    gasProvided,
-		trieLoadCost:    builtInCost.TrieLoadPerNode,
-		trieMigrateCost: builtInCost.TrieStorePerNode,
-
+		gasRemaining:       gasProvided,
+		trieLoadCost:       trieLoadPerNode,
+		trieMigrateCost:    trieStorePerNode,
 		leavesToBeMigrated: make([]core.TrieData, 0),
-	}, nil
+	}
 }
 
 // ConsumeStorageLoadGas consumes gas for loading a trie node. It returns true if there is enough

@@ -3,12 +3,14 @@ package builtInFunctions
 import (
 	"math/big"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewMigrateDataTrieFunc(t *testing.T) {
@@ -58,60 +60,23 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		assert.Equal(t, ErrNilVmInput, err)
 	})
 
-	t.Run("invalid arguments", func(t *testing.T) {
-		t.Parallel()
-
-		input1 := &vmcommon.ContractCallInput{
-			VMInput: vmcommon.VMInput{
-				Arguments: [][]byte{[]byte("arg1")},
-			},
-		}
-		input2 := &vmcommon.ContractCallInput{
-			VMInput: vmcommon.VMInput{
-				Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3")},
-			},
-		}
-
-		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
-		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), input1)
-		assert.Nil(t, vmOutput)
-		assert.Equal(t, ErrInvalidArguments, err)
-
-		vmOutput, err = mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), input2)
-		assert.Nil(t, vmOutput)
-		assert.Equal(t, ErrInvalidArguments, err)
-	})
-
-	t.Run("invalid old version", func(t *testing.T) {
+	t.Run("not enough gas provided for at least one migration", func(t *testing.T) {
 		t.Parallel()
 
 		input := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
-				Arguments: [][]byte{[]byte("arg1"), {2}},
+				GasProvided: 100,
 			},
 		}
-
-		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
-		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), input)
-		assert.Nil(t, vmOutput)
-		assert.True(t, strings.Contains(err.Error(), ErrInvalidArguments.Error()))
-		assert.True(t, strings.Contains(err.Error(), "old version"))
-	})
-
-	t.Run("invalid new version", func(t *testing.T) {
-		t.Parallel()
-
-		input := &vmcommon.ContractCallInput{
-			VMInput: vmcommon.VMInput{
-				Arguments: [][]byte{{1}, []byte("arg2")},
-			},
+		builtInCost := vmcommon.BuiltInCost{
+			TrieLoadPerNode:  40,
+			TrieStorePerNode: 61,
 		}
 
-		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		mdtf, _ := NewMigrateDataTrieFunc(builtInCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), input)
 		assert.Nil(t, vmOutput)
-		assert.True(t, strings.Contains(err.Error(), ErrInvalidArguments.Error()))
-		assert.True(t, strings.Contains(err.Error(), "new version"))
+		assert.True(t, strings.Contains(err.Error(), "not enough gas"))
 	})
 
 	t.Run("invalid call value", func(t *testing.T) {
@@ -119,7 +84,6 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 
 		input := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
-				Arguments: [][]byte{{1}, {2}},
 				CallValue: big.NewInt(1),
 			},
 		}
@@ -135,7 +99,6 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 
 		input := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
-				Arguments: [][]byte{{1}, {2}},
 				CallValue: big.NewInt(0),
 			},
 		}
@@ -146,30 +109,12 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		assert.Equal(t, ErrNilSCDestAccount, err)
 	})
 
-	t.Run("dataTrieMigrator err", func(t *testing.T) {
-		t.Parallel()
-
-		input := &vmcommon.ContractCallInput{
-			VMInput: vmcommon.VMInput{
-				Arguments:   [][]byte{{1}, {2}},
-				CallValue:   big.NewInt(0),
-				GasProvided: 100,
-			},
-		}
-
-		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerNode: 110}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
-		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), input)
-		assert.Nil(t, vmOutput)
-		assert.True(t, strings.Contains(err.Error(), "not enough gas"))
-	})
-
 	t.Run("saves dest account", func(t *testing.T) {
 		t.Parallel()
 
 		gasProvided := uint64(100)
 		input := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
-				Arguments:   [][]byte{{1}, {2}},
 				CallValue:   big.NewInt(0),
 				GasProvided: gasProvided,
 			},
@@ -199,4 +144,43 @@ func TestMigrateDataTrie_SetNewGasConfig(t *testing.T) {
 	mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerNode: 50}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 	mdtf.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{TrieLoadPerNode: 100}})
 	assert.Equal(t, uint64(100), mdtf.builtInCost.TrieLoadPerNode)
+}
+
+func TestMigrateDataTrie_Concurrency(t *testing.T) {
+	t.Parallel()
+
+	input := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			GasProvided: 10000,
+		},
+	}
+
+	mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+	numOperations := 1000
+
+	wg := sync.WaitGroup{}
+	wg.Add(numOperations)
+	for i := 0; i < numOperations; i++ {
+		go func(index int) {
+			defer func() {
+				wg.Done()
+			}()
+
+			switch index % 2 {
+			case 0:
+				_, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), input)
+				require.Nil(t, err)
+			case 1:
+				newGasCost := &vmcommon.GasCost{
+					BuiltInCost: vmcommon.BuiltInCost{
+						TrieLoadPerNode: uint64(index),
+					},
+				}
+				mdtf.SetNewGasConfig(newGasCost)
+			}
+		}(i)
+	}
+
+	wg.Wait()
 }
