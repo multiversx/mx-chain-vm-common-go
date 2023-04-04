@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/atomic"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
@@ -189,7 +190,11 @@ func TestGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 
 		output, err := guardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, err)
-		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
+		entry := &vmcommon.LogEntry{
+			Address:    address,
+			Identifier: []byte(core.BuiltInFunctionGuardAccount),
+		}
+		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost, entry)
 		requireAccountFrozen(t, account, true)
 		require.True(t, cleanCalled)
 	})

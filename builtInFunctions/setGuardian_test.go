@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/atomic"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	mockvm "github.com/multiversx/mx-chain-vm-common-go/mock"
@@ -18,10 +19,11 @@ const pubKeyLen = 32
 
 var userAddress = generateRandomByteArray(pubKeyLen)
 
-func requireVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64) {
+func requireVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64, entry *vmcommon.LogEntry) {
 	expectedOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: gasProvided - gasCost,
+		Logs:         []*vmcommon.LogEntry{entry},
 	}
 	require.Equal(t, expectedOutput, output)
 }
@@ -214,6 +216,13 @@ func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 	require.True(t, setGuardianCalled.IsSet())
+	require.Equal(t, []*vmcommon.LogEntry{
+		{
+			Address:    userAddress,
+			Identifier: []byte(core.BuiltInFunctionSetGuardian),
+			Topics:     [][]byte{vmInput.Arguments[0], serviceUID},
+		},
+	}, output.Logs)
 }
 
 func generateRandomByteArray(size uint32) []byte {
