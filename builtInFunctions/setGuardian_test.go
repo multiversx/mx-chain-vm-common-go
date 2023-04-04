@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/atomic"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	mockvm "github.com/multiversx/mx-chain-vm-common-go/mock"
@@ -215,6 +216,12 @@ func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, vmcommon.Ok, output.ReturnCode)
 	require.True(t, setGuardianCalled.IsSet())
+	require.Equal(t, []*vmcommon.LogEntry{
+		{
+			Identifier: []byte(core.BuiltInFunctionSetGuardian),
+			Topics:     [][]byte{vmInput.Arguments[0], serviceUID},
+		},
+	}, output.Logs)
 }
 
 func generateRandomByteArray(size uint32) []byte {
