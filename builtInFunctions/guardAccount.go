@@ -1,6 +1,9 @@
 package builtInFunctions
 
-import vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+import (
+	"github.com/multiversx/mx-chain-core-go/core"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+)
 
 type guardAccountFunc struct {
 	*baseGuardAccount
@@ -36,7 +39,15 @@ func (fa *guardAccountFunc) ProcessBuiltinFunction(
 
 	fa.guardedAccountHandler.CleanOtherThanActive(acntSnd)
 
-	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - fa.funcGasCost}, nil
+	entry := &vmcommon.LogEntry{
+		Identifier: []byte(core.BuiltInFunctionGuardAccount),
+	}
+
+	return &vmcommon.VMOutput{
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: vmInput.GasProvided - fa.funcGasCost,
+		Logs:         []*vmcommon.LogEntry{entry},
+	}, nil
 }
 
 func guardAccount(account vmcommon.UserAccountHandler) error {

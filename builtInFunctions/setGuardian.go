@@ -60,7 +60,16 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - sg.funcGasCost}, nil
+	entry := &vmcommon.LogEntry{
+		Identifier: []byte(core.BuiltInFunctionSetGuardian),
+		Topics:     [][]byte{newGuardian, guardianServiceUID},
+	}
+
+	return &vmcommon.VMOutput{
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: vmInput.GasProvided - sg.funcGasCost,
+		Logs:         []*vmcommon.LogEntry{entry},
+	}, nil
 }
 
 func (sg *setGuardian) checkSetGuardianArgs(

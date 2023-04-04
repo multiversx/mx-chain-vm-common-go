@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	mockvm "github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/require"
@@ -77,7 +78,11 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 
 		output, err := unGuardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, err)
-		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost)
+
+		entry := &vmcommon.LogEntry{
+			Identifier: []byte(core.BuiltInFunctionUnGuardAccount),
+		}
+		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost, entry)
 		requireAccountFrozen(t, account, false)
 	})
 }

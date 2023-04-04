@@ -18,10 +18,11 @@ const pubKeyLen = 32
 
 var userAddress = generateRandomByteArray(pubKeyLen)
 
-func requireVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64) {
+func requireVMOutputOk(t *testing.T, output *vmcommon.VMOutput, gasProvided, gasCost uint64, entry *vmcommon.LogEntry) {
 	expectedOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: gasProvided - gasCost,
+		Logs:         []*vmcommon.LogEntry{entry},
 	}
 	require.Equal(t, expectedOutput, output)
 }
