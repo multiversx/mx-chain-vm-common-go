@@ -38,6 +38,7 @@ func (ua *unGuardAccountFunc) ProcessBuiltinFunction(
 	}
 
 	entry := &vmcommon.LogEntry{
+		Address:    acntSnd.AddressBytes(),
 		Identifier: []byte(core.BuiltInFunctionUnGuardAccount),
 	}
 

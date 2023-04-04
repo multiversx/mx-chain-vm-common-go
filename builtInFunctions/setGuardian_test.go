@@ -218,6 +218,7 @@ func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 	require.True(t, setGuardianCalled.IsSet())
 	require.Equal(t, []*vmcommon.LogEntry{
 		{
+			Address:    userAddress,
 			Identifier: []byte(core.BuiltInFunctionSetGuardian),
 			Topics:     [][]byte{vmInput.Arguments[0], serviceUID},
 		},

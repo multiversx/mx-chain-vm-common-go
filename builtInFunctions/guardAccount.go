@@ -40,6 +40,7 @@ func (fa *guardAccountFunc) ProcessBuiltinFunction(
 	fa.guardedAccountHandler.CleanOtherThanActive(acntSnd)
 
 	entry := &vmcommon.LogEntry{
+		Address:    acntSnd.AddressBytes(),
 		Identifier: []byte(core.BuiltInFunctionGuardAccount),
 	}
 

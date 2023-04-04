@@ -191,6 +191,7 @@ func TestGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		output, err := guardAccountFunc.ProcessBuiltinFunction(account, account, vmInput)
 		require.Nil(t, err)
 		entry := &vmcommon.LogEntry{
+			Address:    address,
 			Identifier: []byte(core.BuiltInFunctionGuardAccount),
 		}
 		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost, entry)

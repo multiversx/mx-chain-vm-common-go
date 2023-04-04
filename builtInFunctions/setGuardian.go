@@ -61,6 +61,7 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	}
 
 	entry := &vmcommon.LogEntry{
+		Address:    acntSnd.AddressBytes(),
 		Identifier: []byte(core.BuiltInFunctionSetGuardian),
 		Topics:     [][]byte{newGuardian, guardianServiceUID},
 	}

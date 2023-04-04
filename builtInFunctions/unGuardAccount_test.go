@@ -80,6 +80,7 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		require.Nil(t, err)
 
 		entry := &vmcommon.LogEntry{
+			Address:    address,
 			Identifier: []byte(core.BuiltInFunctionUnGuardAccount),
 		}
 		requireVMOutputOk(t, output, vmInput.GasProvided, args.FuncGasCost, entry)
