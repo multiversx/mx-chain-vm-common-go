@@ -193,8 +193,7 @@ func createBaseAccountGuarderArgs() BaseAccountGuarderArgs {
 	return BaseAccountGuarderArgs{
 		Marshaller: marshallerMock,
 		EnableEpochsHandler: &mockvm.EnableEpochsHandlerStub{
-			IsGuardAccountEnabledField: false,
-			IsSetGuardianEnabledField:  false,
+			IsSetGuardianEnabledField: false,
 		},
 		FuncGasCost:           100000,
 		GuardedAccountHandler: &mockvm.GuardedAccountHandlerStub{},
