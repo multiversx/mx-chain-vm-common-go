@@ -7,17 +7,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func getDefaultArgs() ArgsNewDataTrieMigrator {
+	return ArgsNewDataTrieMigrator{
+		GasProvided: 15,
+		DataTrieGasCost: DataTrieGasCost{
+			TrieLoadPerNode:  2,
+			TrieStorePerNode: 5,
+		},
+	}
+}
+
 func TestNewDataTrieMigrator(t *testing.T) {
 	t.Parallel()
 
-	dtm := NewDataTrieMigrator(10, 5, 7)
+	dtm := NewDataTrieMigrator(getDefaultArgs())
 	assert.False(t, dtm.IsInterfaceNil())
 }
 
 func TestConsumeStorageLoadGas(t *testing.T) {
 	t.Parallel()
 
-	dtm := NewDataTrieMigrator(15, 6, 10)
+	args := getDefaultArgs()
+	args.TrieLoadPerNode = 6
+	dtm := NewDataTrieMigrator(args)
 	assert.True(t, dtm.ConsumeStorageLoadGas())
 	assert.Equal(t, uint64(9), dtm.gasRemaining)
 	assert.False(t, dtm.ConsumeStorageLoadGas())
@@ -32,7 +44,8 @@ func TestAddLeafToMigrationQueue(t *testing.T) {
 	t.Run("migrate to NotSpecified", func(t *testing.T) {
 		t.Parallel()
 
-		dtm := NewDataTrieMigrator(15, 2, 5)
+		args := getDefaultArgs()
+		dtm := NewDataTrieMigrator(args)
 
 		leafData := core.TrieData{
 			Key:     []byte("key"),
@@ -48,7 +61,8 @@ func TestAddLeafToMigrationQueue(t *testing.T) {
 	t.Run("migrate to AutoBalanceEnabled", func(t *testing.T) {
 		t.Parallel()
 
-		dtm := NewDataTrieMigrator(15, 2, 5)
+		args := getDefaultArgs()
+		dtm := NewDataTrieMigrator(args)
 
 		leafData := core.TrieData{
 			Key:     []byte("key"),
@@ -64,7 +78,9 @@ func TestAddLeafToMigrationQueue(t *testing.T) {
 	t.Run("migrate consumes gas", func(t *testing.T) {
 		t.Parallel()
 
-		dtm := NewDataTrieMigrator(11, 2, 5)
+		args := getDefaultArgs()
+		args.GasProvided = 11
+		dtm := NewDataTrieMigrator(args)
 
 		leafData := core.TrieData{
 			Key:     []byte("key"),
@@ -91,7 +107,9 @@ func TestAddLeafToMigrationQueue(t *testing.T) {
 func TestGetLeavesToBeMigrated(t *testing.T) {
 	t.Parallel()
 
-	dtm := NewDataTrieMigrator(11, 2, 5)
+	args := getDefaultArgs()
+	args.GasProvided = 11
+	dtm := NewDataTrieMigrator(args)
 	expectedLeaves := []core.TrieData{
 		{
 			Key:     []byte("key1"),
@@ -118,7 +136,9 @@ func TestGetLeavesToBeMigrated(t *testing.T) {
 func TestGetGasRemaining(t *testing.T) {
 	t.Parallel()
 
-	dtm := NewDataTrieMigrator(11, 2, 5)
+	args := getDefaultArgs()
+	args.GasProvided = 11
+	dtm := NewDataTrieMigrator(args)
 	assert.Equal(t, uint64(11), dtm.GetGasRemaining())
 	dtm.gasRemaining = 5
 	assert.Equal(t, uint64(5), dtm.GetGasRemaining())

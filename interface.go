@@ -174,7 +174,7 @@ type UserAccountHandler interface {
 type AccountDataHandler interface {
 	RetrieveValue(key []byte) ([]byte, uint32, error)
 	SaveKeyValue(key []byte, value []byte) error
-	MigrateDataTrieLeaves(oldVersion core.TrieNodeVersion, newVersion core.TrieNodeVersion, trieMigrator DataTrieMigrator) error
+	MigrateDataTrieLeaves(args ArgsMigrateDataTrieLeaves) error
 	IsInterfaceNil() bool
 }
 

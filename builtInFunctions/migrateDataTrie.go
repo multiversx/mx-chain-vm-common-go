@@ -43,19 +43,25 @@ func NewMigrateDataTrieFunc(
 // ProcessBuiltinFunction will migrate as many leaves as possible from the old version to the new version.
 // This will stop when it runs out of gas.
 func (mdt *migrateDataTrie) ProcessBuiltinFunction(_, acntDst vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	trieLoadPerNode, trieStorePerNode := mdt.getGasCostForDataTrieLoadAndStore()
+	dataTrieGasCost := mdt.getGasCostForDataTrieLoadAndStore()
 
-	err := checkArgumentsForMigrateDataTrie(acntDst, vmInput, trieLoadPerNode, trieStorePerNode)
+	err := checkArgumentsForMigrateDataTrie(acntDst, vmInput, dataTrieGasCost)
 	if err != nil {
 		return nil, err
 	}
 
-	dtm := dataTrieMigrator.NewDataTrieMigrator(vmInput.GasProvided, trieLoadPerNode, trieStorePerNode)
+	argsDataTrieMigrator := dataTrieMigrator.ArgsNewDataTrieMigrator{
+		GasProvided:     vmInput.GasProvided,
+		DataTrieGasCost: dataTrieGasCost,
+	}
+	dtm := dataTrieMigrator.NewDataTrieMigrator(argsDataTrieMigrator)
 
-	oldVersion := core.NotSpecified
-	newVersion := core.AutoBalanceEnabled
-
-	err = acntDst.AccountDataHandler().MigrateDataTrieLeaves(oldVersion, newVersion, dtm)
+	argsMigrateDataTrie := vmcommon.ArgsMigrateDataTrieLeaves{
+		OldVersion:   core.NotSpecified,
+		NewVersion:   core.AutoBalanceEnabled,
+		TrieMigrator: dtm,
+	}
+	err = acntDst.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
 	if err != nil {
 		return nil, err
 	}
@@ -84,12 +90,16 @@ func (mdt *migrateDataTrie) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	mdt.mutExecution.Unlock()
 }
 
-func (mdt *migrateDataTrie) getGasCostForDataTrieLoadAndStore() (uint64, uint64) {
+func (mdt *migrateDataTrie) getGasCostForDataTrieLoadAndStore() dataTrieMigrator.DataTrieGasCost {
 	mdt.mutExecution.RLock()
 	builtInCost := mdt.builtInCost
 	mdt.mutExecution.RUnlock()
 
-	return builtInCost.TrieLoadPerNode, builtInCost.TrieStorePerNode
+	dataTrieGasCost := dataTrieMigrator.DataTrieGasCost{
+		TrieLoadPerNode:  builtInCost.TrieLoadPerNode,
+		TrieStorePerNode: builtInCost.TrieStorePerNode,
+	}
+	return dataTrieGasCost
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
@@ -100,14 +110,13 @@ func (mdt *migrateDataTrie) IsInterfaceNil() bool {
 func checkArgumentsForMigrateDataTrie(
 	acntDst vmcommon.UserAccountHandler,
 	input *vmcommon.ContractCallInput,
-	trieLoadPerNode uint64,
-	trieStorePerNode uint64,
+	cost dataTrieMigrator.DataTrieGasCost,
 ) error {
 	if input == nil {
 		return ErrNilVmInput
 	}
-	if input.GasProvided < trieLoadPerNode+trieStorePerNode {
-		return fmt.Errorf("not enough gas, gas provided: %d, trie load cost: %d, trie store cost: %d", input.GasProvided, trieLoadPerNode, trieStorePerNode)
+	if input.GasProvided < cost.TrieLoadPerNode+cost.TrieStorePerNode {
+		return fmt.Errorf("not enough gas, gas provided: %d, trie load cost: %d, trie store cost: %d", input.GasProvided, cost.TrieLoadPerNode, cost.TrieStorePerNode)
 	}
 	if input.CallValue.Cmp(zero) != 0 {
 		return ErrBuiltInFunctionCalledWithValue

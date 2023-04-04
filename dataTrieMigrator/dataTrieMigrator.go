@@ -4,6 +4,18 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 )
 
+// ArgsNewDataTrieMigrator is the arguments structure for the new dataTrieMigrator component
+type ArgsNewDataTrieMigrator struct {
+	GasProvided uint64
+	DataTrieGasCost
+}
+
+// DataTrieGasCost contains the gas costs for the data trie load and store operations
+type DataTrieGasCost struct {
+	TrieLoadPerNode  uint64
+	TrieStorePerNode uint64
+}
+
 type dataTrieMigrator struct {
 	gasRemaining       uint64
 	trieLoadCost       uint64
@@ -12,11 +24,11 @@ type dataTrieMigrator struct {
 }
 
 // NewDataTrieMigrator creates a new dataTrieMigrator component
-func NewDataTrieMigrator(gasProvided uint64, trieLoadPerNode uint64, trieStorePerNode uint64) *dataTrieMigrator {
+func NewDataTrieMigrator(args ArgsNewDataTrieMigrator) *dataTrieMigrator {
 	return &dataTrieMigrator{
-		gasRemaining:       gasProvided,
-		trieLoadCost:       trieLoadPerNode,
-		trieMigrateCost:    trieStorePerNode,
+		gasRemaining:       args.GasProvided,
+		trieLoadCost:       args.TrieLoadPerNode,
+		trieMigrateCost:    args.TrieStorePerNode,
 		leavesToBeMigrated: make([]core.TrieData, 0),
 	}
 }
