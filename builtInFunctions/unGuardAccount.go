@@ -1,6 +1,9 @@
 package builtInFunctions
 
-import vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+import (
+	"github.com/multiversx/mx-chain-core-go/core"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+)
 
 type unGuardAccountFunc struct {
 	*baseGuardAccount
@@ -34,7 +37,16 @@ func (ua *unGuardAccountFunc) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: vmInput.GasProvided - ua.funcGasCost}, nil
+	entry := &vmcommon.LogEntry{
+		Address:    acntSnd.AddressBytes(),
+		Identifier: []byte(core.BuiltInFunctionUnGuardAccount),
+	}
+
+	return &vmcommon.VMOutput{
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: vmInput.GasProvided - ua.funcGasCost,
+		Logs:         []*vmcommon.LogEntry{entry},
+	}, nil
 }
 
 func unGuardAccount(account vmcommon.UserAccountHandler) error {
