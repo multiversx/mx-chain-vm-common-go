@@ -19,8 +19,7 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 
 	t.Run("invalid args, expect error", func(t *testing.T) {
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsGuardAccountEnabledField: true,
-			IsSetGuardianEnabledField:  true,
+			IsSetGuardianEnabledField: true,
 		}
 		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
 		output, err := unGuardAccountFunc.ProcessBuiltinFunction(nil, nil, vmInput)
@@ -37,8 +36,7 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsGuardAccountEnabledField: true,
-			IsSetGuardianEnabledField:  true,
+			IsSetGuardianEnabledField: true,
 		}
 		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
 		address := generateRandomByteArray(pubKeyLen)
@@ -62,8 +60,7 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsGuardAccountEnabledField: true,
-			IsSetGuardianEnabledField:  true,
+			IsSetGuardianEnabledField: true,
 		}
 		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
 
