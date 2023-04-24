@@ -28,6 +28,8 @@ type BuiltInCost struct {
 	ESDTNFTMultiTransfer     uint64
 	ESDTNFTAddURI            uint64
 	ESDTNFTUpdateAttributes  uint64
+	SetGuardian              uint64
+	GuardAccount             uint64
 	TrieLoadPerNode          uint64
 	TrieStorePerNode         uint64
 }

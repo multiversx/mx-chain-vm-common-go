@@ -21,6 +21,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	Accounts                         vmcommon.AccountsAdapter
 	ShardCoordinator                 vmcommon.Coordinator
 	EnableEpochsHandler              vmcommon.EnableEpochsHandler
+	GuardedAccountHandler            vmcommon.GuardedAccountHandler
 	MaxNumOfAddressesForTransferRole uint32
 	ConfigAddress                    []byte
 }
@@ -36,6 +37,7 @@ type builtInFuncCreator struct {
 	esdtStorageHandler               vmcommon.ESDTNFTStorageHandler
 	esdtGlobalSettingsHandler        vmcommon.ESDTGlobalSettingsHandler
 	enableEpochsHandler              vmcommon.EnableEpochsHandler
+	guardedAccountHandler            vmcommon.GuardedAccountHandler
 	maxNumOfAddressesForTransferRole uint32
 	configAddress                    []byte
 }
@@ -57,6 +59,9 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
+	if check.IfNil(args.GuardedAccountHandler) {
+		return nil, ErrNilGuardedAccountHandler
+	}
 
 	b := &builtInFuncCreator{
 		mapDNSAddresses:                  args.MapDNSAddresses,
@@ -65,6 +70,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		accounts:                         args.Accounts,
 		shardCoordinator:                 args.ShardCoordinator,
 		enableEpochsHandler:              args.EnableEpochsHandler,
+		guardedAccountHandler:            args.GuardedAccountHandler,
 		maxNumOfAddressesForTransferRole: args.MaxNumOfAddressesForTransferRole,
 		configAddress:                    args.ConfigAddress,
 	}
@@ -434,6 +440,37 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	argsSetGuardian := SetGuardianArgs{
+		BaseAccountGuarderArgs: b.createBaseAccountGuarderArgs(b.gasConfig.BuiltInCost.SetGuardian),
+	}
+	newFunc, err = NewSetGuardianFunc(argsSetGuardian)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionSetGuardian, newFunc)
+	if err != nil {
+		return err
+	}
+
+	argsGuardAccount := b.createGuardAccountArgs()
+	newFunc, err = NewGuardAccountFunc(argsGuardAccount)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionGuardAccount, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewUnGuardAccountFunc(argsGuardAccount)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionUnGuardAccount, newFunc)
+	if err != nil {
+		return err
+	}
+
 	newFunc, err = NewMigrateDataTrieFunc(b.gasConfig.BuiltInCost, b.enableEpochsHandler, b.accounts)
 	if err != nil {
 		return err
@@ -444,6 +481,21 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	return nil
+}
+
+func (b *builtInFuncCreator) createBaseAccountGuarderArgs(funcGasCost uint64) BaseAccountGuarderArgs {
+	return BaseAccountGuarderArgs{
+		Marshaller:            b.marshaller,
+		FuncGasCost:           funcGasCost,
+		GuardedAccountHandler: b.guardedAccountHandler,
+		EnableEpochsHandler:   b.enableEpochsHandler,
+	}
+}
+
+func (b *builtInFuncCreator) createGuardAccountArgs() GuardAccountArgs {
+	return GuardAccountArgs{
+		BaseAccountGuarderArgs: b.createBaseAccountGuarderArgs(b.gasConfig.BuiltInCost.GuardAccount),
+	}
 }
 
 func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, error) {
