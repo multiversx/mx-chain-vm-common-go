@@ -69,6 +69,9 @@ type VMInput struct {
 	// ReturnCallAfterError
 	ReturnCallAfterError bool
 
+	// GuardianSigned specifies whether the transaction was signed by the guardian
+	TxGuardian []byte
+
 	// OriginalCallerAddr is the public key of the wallet originally initiating the transaction
 	OriginalCallerAddr []byte
 }

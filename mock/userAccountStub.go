@@ -8,8 +8,11 @@ import (
 
 // UserAccountStub -
 type UserAccountStub struct {
+	Address                  []byte
 	AddToBalanceCalled       func(value *big.Int) error
 	AccountDataHandlerCalled func() vmcommon.AccountDataHandler
+	SetCodeMetaDataCalled    func(codeMetaData []byte)
+	GetCodeMetaDataCalled    func() []byte
 }
 
 // HasNewCode -
@@ -76,7 +79,7 @@ func (u *UserAccountStub) GetOwnerAddress() []byte {
 
 // AddressBytes -
 func (u *UserAccountStub) AddressBytes() []byte {
-	return nil
+	return u.Address
 }
 
 //IncreaseNonce -
@@ -94,11 +97,17 @@ func (u *UserAccountStub) SetCode(_ []byte) {
 }
 
 // SetCodeMetadata -
-func (u *UserAccountStub) SetCodeMetadata(_ []byte) {
+func (u *UserAccountStub) SetCodeMetadata(codeMetaData []byte) {
+	if u.SetCodeMetaDataCalled != nil {
+		u.SetCodeMetaDataCalled(codeMetaData)
+	}
 }
 
 // GetCodeMetadata -
 func (u *UserAccountStub) GetCodeMetadata() []byte {
+	if u.GetCodeMetaDataCalled != nil {
+		return u.GetCodeMetaDataCalled()
+	}
 	return nil
 }
 

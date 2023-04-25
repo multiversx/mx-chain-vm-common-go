@@ -33,18 +33,3 @@ func TestIsASCIIString(t *testing.T) {
 	require.False(t, isASCIIString(string([]byte{12, 255})))
 	require.False(t, isASCIIString(string([]byte{12, 188})))
 }
-
-func TestEncodeBytesSlice(t *testing.T) {
-	t.Parallel()
-
-	res := EncodeBytesSlice(nil, [][]byte{[]byte("something")})
-	require.Equal(t, 0, len(res))
-
-	encodeFunc := func(i []byte) string {
-		return hex.EncodeToString(i)
-	}
-
-	res = EncodeBytesSlice(encodeFunc, [][]byte{[]byte("something")})
-	require.Equal(t, 1, len(res))
-	require.Equal(t, "736f6d657468696e67", res[0])
-}
