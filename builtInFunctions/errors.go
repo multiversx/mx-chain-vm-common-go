@@ -166,3 +166,36 @@ var ErrNilEnableEpochsHandler = errors.New("nil enable epochs handler")
 
 // ErrNilActiveHandler signals that a nil active handler has been provided
 var ErrNilActiveHandler = errors.New("nil active handler")
+
+// ErrInvalidNumberOfArguments signals that an invalid number of arguments has been provided
+var ErrInvalidNumberOfArguments = errors.New("invalid number of arguments")
+
+// ErrInvalidAddress signals that an invalid address has been provided
+var ErrInvalidAddress = errors.New("invalid address")
+
+// ErrCannotSetOwnAddressAsGuardian signals that an owner cannot set its own address as guardian
+var ErrCannotSetOwnAddressAsGuardian = errors.New("cannot set own address as guardian")
+
+// ErrOwnerAlreadyHasOneGuardianPending signals that an owner already has one guardian pending
+var ErrOwnerAlreadyHasOneGuardianPending = errors.New("owner already has one guardian pending")
+
+// ErrGuardianAlreadyExists signals that a guardian with the same address already exists
+var ErrGuardianAlreadyExists = errors.New("a guardian with the same address already exists")
+
+// ErrNoGuardianEnabled signals that account has no guardian enabled
+var ErrNoGuardianEnabled = errors.New("account has no guardian enabled")
+
+// ErrSetGuardAccountFlag signals that an account is already guarded when trying to guard it
+var ErrSetGuardAccountFlag = errors.New("cannot guard account, it is already guarded")
+
+// ErrSetUnGuardAccount signals that an account is already unguarded when trying to un-guard it
+var ErrSetUnGuardAccount = errors.New("cannot un-guard account, it is not guarded")
+
+// ErrNilAccountHandler signals that a nil account handler has been provided
+var ErrNilAccountHandler = errors.New("nil account handler provided")
+
+// ErrNilGuardedAccountHandler signals that a nil guarded account handler was provided
+var ErrNilGuardedAccountHandler = errors.New("nil guarded account handler")
+
+// ErrInvalidServiceUID signals that an invalid service UID was provided
+var ErrInvalidServiceUID = errors.New("service UID is invalid")
