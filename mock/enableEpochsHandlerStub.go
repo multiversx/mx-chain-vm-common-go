@@ -35,6 +35,7 @@ type EnableEpochsHandlerStub struct {
 	IsWipeSingleNFTLiquidityDecreaseEnabledField         bool
 	IsAlwaysSaveTokenMetaDataEnabledField                bool
 	IsChangeUsernameEnabledEpochField                    bool
+	IsSetGuardianEnabledField                            bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
 	FixOOGReturnCodeEnableEpochField                     uint32
 	RemoveNonUpdatedStorageEnableEpochField              uint32
@@ -47,6 +48,11 @@ type EnableEpochsHandlerStub struct {
 	RefactorContextEnableEpochField                      uint32
 	CheckExecuteReadOnlyEnableEpochField                 uint32
 	StorageAPICostOptimizationEnableEpochField           uint32
+}
+
+// IsSetGuardianEnabled -
+func (stub *EnableEpochsHandlerStub) IsSetGuardianEnabled() bool {
+	return stub.IsSetGuardianEnabledField
 }
 
 // IsGlobalMintBurnFlagEnabled -

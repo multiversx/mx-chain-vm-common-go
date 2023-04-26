@@ -22,6 +22,7 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 		Accounts:                         &mock.AccountsStub{},
 		ShardCoordinator:                 mock.NewMultiShardsCoordinatorMock(1),
 		EnableEpochsHandler:              &mock.EnableEpochsHandlerStub{},
+		GuardedAccountHandler:            &mock.GuardedAccountHandlerStub{},
 		MaxNumOfAddressesForTransferRole: 100,
 	}
 
@@ -71,6 +72,9 @@ func fillGasMapBuiltInCosts(value uint64) map[string]uint64 {
 	gasMap["ESDTNFTAddUri"] = value
 	gasMap["ESDTNFTUpdateAttributes"] = value
 	gasMap["ESDTNFTMultiTransfer"] = value
+	gasMap["SetGuardian"] = value
+	gasMap["GuardAccount"] = value
+	gasMap["UnGuardAccount"] = value
 
 	return gasMap
 }
@@ -104,12 +108,17 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilAccountsAdapter)
 
 	args = createMockArguments()
+	args.GuardedAccountHandler = nil
+	f, err = NewBuiltInFunctionsCreator(args)
+	assert.Equal(t, err, ErrNilGuardedAccountHandler)
+
+	args = createMockArguments()
 	f, err = NewBuiltInFunctionsCreator(args)
 	assert.Nil(t, err)
 	assert.False(t, f.IsInterfaceNil())
 }
 
-func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
+func TestCreateBuiltInContainer_GasScheduleChange(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
@@ -123,13 +132,13 @@ func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
 	assert.Equal(t, f.gasConfig.BuiltInCost.ClaimDeveloperRewards, uint64(5))
 }
 
-func TestCreateBuiltInContainter_Create(t *testing.T) {
+func TestCreateBuiltInContainer_Create(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
 	err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, f.BuiltInFunctionContainer().Len(), 32)
+	assert.Equal(t, 35, f.BuiltInFunctionContainer().Len())
 
 	err = f.SetPayableHandler(nil)
 	assert.NotNil(t, err)

@@ -111,7 +111,7 @@ type BlockchainHook interface {
 	IsInterfaceNil() bool
 }
 
-// VMExecutionHandler interface for any Elrond VM endpoint
+// VMExecutionHandler interface for any MultiversX VM endpoint
 type VMExecutionHandler interface {
 	closing.Closer
 
@@ -154,6 +154,7 @@ type CryptoHook interface {
 // like balance, developer rewards, owner
 type UserAccountHandler interface {
 	GetCodeMetadata() []byte
+	SetCodeMetadata(codeMetadata []byte)
 	GetCodeHash() []byte
 	GetRootHash() []byte
 	AccountDataHandler() AccountDataHandler
@@ -367,6 +368,7 @@ type EnableEpochsHandler interface {
 	IsAlwaysSaveTokenMetaDataEnabled() bool
 	IsRuntimeCodeSizeFixEnabled() bool
 	IsChangeUsernameEnabled() bool
+	IsSetGuardianEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32
@@ -379,5 +381,13 @@ type EnableEpochsHandler interface {
 	CheckExecuteReadOnlyEnableEpoch() uint32
 	StorageAPICostOptimizationEnableEpoch() uint32
 
+	IsInterfaceNil() bool
+}
+
+// GuardedAccountHandler allows setting and getting the configured account guardian
+type GuardedAccountHandler interface {
+	GetActiveGuardian(handler UserAccountHandler) ([]byte, error)
+	SetGuardian(uah UserAccountHandler, guardianAddress []byte, txGuardianAddress []byte, guardianServiceUID []byte) error
+	CleanOtherThanActive(uah UserAccountHandler)
 	IsInterfaceNil() bool
 }

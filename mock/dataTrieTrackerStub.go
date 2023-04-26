@@ -10,22 +10,33 @@ type DataTrieTrackerStub struct {
 
 // ClearDataCaches -
 func (dtts *DataTrieTrackerStub) ClearDataCaches() {
-	dtts.ClearDataCachesCalled()
+	if dtts.ClearDataCachesCalled != nil {
+		dtts.ClearDataCachesCalled()
+	}
 }
 
 // DirtyData -
 func (dtts *DataTrieTrackerStub) DirtyData() map[string][]byte {
-	return dtts.DirtyDataCalled()
+	if dtts.DirtyDataCalled != nil {
+		return dtts.DirtyDataCalled()
+	}
+	return nil
 }
 
 // RetrieveValue -
 func (dtts *DataTrieTrackerStub) RetrieveValue(key []byte) ([]byte, uint32, error) {
-	return dtts.RetrieveValueCalled(key)
+	if dtts.RetrieveValueCalled != nil {
+		return dtts.RetrieveValueCalled(key)
+	}
+	return nil, 0, nil
 }
 
 // SaveKeyValue -
 func (dtts *DataTrieTrackerStub) SaveKeyValue(key []byte, value []byte) error {
-	return dtts.SaveKeyValueCalled(key, value)
+	if dtts.SaveKeyValueCalled != nil {
+		return dtts.SaveKeyValueCalled(key, value)
+	}
+	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
