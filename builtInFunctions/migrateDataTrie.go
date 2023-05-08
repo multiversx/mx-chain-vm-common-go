@@ -121,8 +121,11 @@ func checkArgumentsForMigrateDataTrie(
 	if input.CallValue.Cmp(zero) != 0 {
 		return ErrBuiltInFunctionCalledWithValue
 	}
+	if len(input.Arguments) != 0 {
+		return fmt.Errorf("no arguments must be given to migrate data trie: %w", ErrInvalidNumberOfArguments)
+	}
 	if check.IfNil(acntDst) {
-		return ErrNilSCDestAccount
+		return fmt.Errorf("destination account must be in the same shard as the sender: %w", ErrNilSCDestAccount)
 	}
 
 	return nil

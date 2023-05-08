@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"errors"
 	"math/big"
 	"strings"
 	"sync"
@@ -106,7 +107,7 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), nil, input)
 		assert.Nil(t, vmOutput)
-		assert.Equal(t, ErrNilSCDestAccount, err)
+		assert.True(t, errors.Is(err, ErrNilSCDestAccount))
 	})
 
 	t.Run("saves dest account", func(t *testing.T) {
