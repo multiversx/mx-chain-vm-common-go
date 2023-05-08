@@ -10,7 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 var zero = big.NewInt(0)
@@ -156,7 +156,13 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 				vmInput.CallType,
 				vmOutput)
 
-			addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, acntDst.AddressBytes())
+			addESDTEntryForTransferInVMOutput(
+				vmInput, vmOutput,
+				[]byte(core.BuiltInFunctionESDTTransfer),
+				acntDst.AddressBytes(),
+				tokenID,
+				0,
+				value)
 			return vmOutput, nil
 		}
 
@@ -165,7 +171,13 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput.GasRemaining = vmInput.GasProvided
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, acntDst.AddressBytes())
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionESDTTransfer),
+			acntDst.AddressBytes(),
+			tokenID,
+			0,
+			value)
 		return vmOutput, nil
 	}
 
@@ -181,7 +193,13 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, vmInput.RecipientAddr)
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
+		[]byte(core.BuiltInFunctionESDTTransfer),
+		vmInput.RecipientAddr,
+		tokenID,
+		0,
+		value)
 	return vmOutput, nil
 }
 

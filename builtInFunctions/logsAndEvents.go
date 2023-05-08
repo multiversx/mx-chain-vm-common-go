@@ -14,6 +14,30 @@ const (
 	esdtRandomSequenceLength = 6
 )
 
+func addESDTEntryForTransferInVMOutput(
+	vmInput *vmcommon.ContractCallInput,
+	vmOutput *vmcommon.VMOutput,
+	identifier []byte,
+	destination []byte,
+	tokenID []byte,
+	nonce uint64,
+	value *big.Int) {
+	nonceBig := big.NewInt(0).SetUint64(nonce)
+
+	logEntry := &vmcommon.LogEntry{
+		Identifier: identifier,
+		Address:    destination,
+		Topics:     [][]byte{vmInput.CallerAddr, tokenID, nonceBig.Bytes(), value.Bytes()},
+		Data:       vmcommon.FormatLogDataForCall("", vmInput.Function, vmInput.Arguments),
+	}
+
+	if vmOutput.Logs == nil {
+		vmOutput.Logs = make([]*vmcommon.LogEntry, 0, 1)
+	}
+
+	vmOutput.Logs = append(vmOutput.Logs, logEntry)
+}
+
 func addESDTEntryInVMOutput(vmOutput *vmcommon.VMOutput, identifier []byte, tokenID []byte, nonce uint64, value *big.Int, args ...[]byte) {
 	entry := newEntryForESDT(identifier, tokenID, nonce, value, args...)
 

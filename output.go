@@ -103,7 +103,7 @@ type LogEntry struct {
 	Identifier []byte
 	Address    []byte
 	Topics     [][]byte
-	Data       []byte
+	Data       [][]byte
 }
 
 // VMOutput is the return data and final account state after a SC execution.
@@ -232,6 +232,21 @@ func (o *OutputAccount) MergeStorageUpdates(outAcc *OutputAccount) {
 	for key, update := range outAcc.StorageUpdates {
 		o.StorageUpdates[key] = update
 	}
+}
+
+func (logEntry *LogEntry) GetFirstDataItem() []byte {
+	if len(logEntry.Data) == 0 {
+		return nil
+	}
+	return logEntry.Data[0]
+}
+
+func FormatLogDataForCall(callType string, functionName string, functionArgs [][]byte) [][]byte {
+	data := make([][]byte, 0)
+	data = append(data, []byte(callType))
+	data = append(data, []byte(functionName))
+	data = append(data, functionArgs...)
+	return data
 }
 
 // MaxLengthForValueToOptTransfer defines the maximum length for value to optimize cross shard transfer

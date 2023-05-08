@@ -10,7 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type esdtNFTMultiTransfer struct {
@@ -204,7 +204,13 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionMultiESDTNFTTransfer), tokenID, nonce, value, vmInput.CallerAddr, acntDst.AddressBytes())
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+			acntDst.AddressBytes(),
+			tokenID,
+			nonce,
+			value)
 	}
 
 	// no need to consume gas on destination - sender already paid for it
@@ -301,7 +307,13 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionMultiESDTNFTTransfer), listTransferData[i].ESDTTokenName, listTransferData[i].ESDTTokenNonce, listTransferData[i].ESDTValue, vmInput.CallerAddr, dstAddress)
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+			dstAddress,
+			listTransferData[i].ESDTTokenName,
+			listTransferData[i].ESDTTokenNonce,
+			listTransferData[i].ESDTValue)
 	}
 
 	if !check.IfNil(acntDst) {
