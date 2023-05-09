@@ -21,7 +21,8 @@ func addESDTEntryForTransferInVMOutput(
 	destination []byte,
 	tokenID []byte,
 	nonce uint64,
-	value *big.Int) {
+	value *big.Int,
+) {
 	nonceBig := big.NewInt(0).SetUint64(nonce)
 
 	logEntry := &vmcommon.LogEntry{

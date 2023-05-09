@@ -234,13 +234,15 @@ func (o *OutputAccount) MergeStorageUpdates(outAcc *OutputAccount) {
 	}
 }
 
+// GetFirstDataItem returns the first item from the Data field of a LogEntry
 func (logEntry *LogEntry) GetFirstDataItem() []byte {
 	if len(logEntry.Data) == 0 {
-		return nil
+		return []byte{}
 	}
 	return logEntry.Data[0]
 }
 
+// FormatLogDataForCall prepares Data field for a LogEntry
 func FormatLogDataForCall(callType string, functionName string, functionArgs [][]byte) [][]byte {
 	data := make([][]byte, 0)
 	data = append(data, []byte(callType))
