@@ -80,7 +80,7 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 	}
 	outputAcc := &vmcommon.OutputAccount{
 		Address:         vmInput.CallerAddr,
-		BalanceDelta:    big.NewInt(0).Set(value),
+		BalanceDelta:    big.NewInt(0),
 		OutputTransfers: []vmcommon.OutputTransfer{outTransfer},
 	}
 

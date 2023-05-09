@@ -265,11 +265,6 @@ func (stub *EnableEpochsHandlerStub) IsAlwaysSaveTokenMetaDataEnabled() bool {
 	return stub.IsAlwaysSaveTokenMetaDataEnabledField
 }
 
-// IsDynamicGasCostForDataTrieStorageLoadEnabled -
-func (stub *EnableEpochsHandlerStub) IsDynamicGasCostForDataTrieStorageLoadEnabled() bool {
-	return stub.IsDynamicGasCostForDataTrieStorageLoadEnabledField
-}
-
 // IsInterfaceNil -
 func (stub *EnableEpochsHandlerStub) IsInterfaceNil() bool {
 	return stub == nil

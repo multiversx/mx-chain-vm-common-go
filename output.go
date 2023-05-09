@@ -73,6 +73,9 @@ type OutputAccount struct {
 
 	// BytesDeletedFromStorage for this output account
 	BytesDeletedFromStorage uint64
+
+	// BytesConsumedByTxAsNetworking for this output account
+	BytesConsumedByTxAsNetworking uint64
 }
 
 // OutputTransfer contains the fields needed to create transfers to another shard
@@ -83,6 +86,8 @@ type OutputTransfer struct {
 	GasLimit uint64
 	// GasLocked holds the amount of gas to be kept aside for the eventual callback execution
 	GasLocked uint64
+	// AsyncData to be used in cross call
+	AsyncData []byte
 	// Data to be used in cross call
 	Data []byte
 	// CallType is set if it is a smart contract invocation

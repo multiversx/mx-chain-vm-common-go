@@ -107,6 +107,9 @@ type BlockchainHook interface {
 	// RevertToSnapshot reverts snaphots up to the specified one
 	RevertToSnapshot(snapshot int) error
 
+	// ExecuteSmartContractCallOnOtherVM runs contract on another VM
+	ExecuteSmartContractCallOnOtherVM(input *ContractCallInput) (*VMOutput, error)
+
 	// IsInterfaceNil returns true if there is no value under the interface
 	IsInterfaceNil() bool
 }
@@ -275,6 +278,18 @@ type EpochSubscriberHandler interface {
 // EpochNotifier can notify upon an epoch change and provide the current epoch
 type EpochNotifier interface {
 	RegisterNotifyHandler(handler EpochSubscriberHandler)
+	IsInterfaceNil() bool
+}
+
+// RoundSubscriberHandler defines the behavior of a component that can be notified if a new epoch was confirmed
+type RoundSubscriberHandler interface {
+	RoundConfirmed(round uint64, timestamp uint64)
+	IsInterfaceNil() bool
+}
+
+// RoundNotifier can notify upon an epoch change and provide the current epoch
+type RoundNotifier interface {
+	RegisterNotifyHandler(handler RoundSubscriberHandler)
 	IsInterfaceNil() bool
 }
 
