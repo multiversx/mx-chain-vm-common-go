@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
@@ -174,6 +175,37 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
 	assert.Equal(t, err, testErr)
+}
+
+func TestEsdtDeleteMetaData_ProcessBuiltinFunctionGetNodeFromDbErr(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDelete()
+	args.Delete = false
+	args.Accounts = &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return &mock.AccountWrapMock{
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					return nil, 0, core.NewGetNodeFromDBErrWithKey([]byte("key"), errors.New("error"), "")
+				},
+			}, nil
+		},
+	}
+	esdtMetadata := &esdt.MetaData{Name: []byte("something"), Nonce: 1}
+	marshalledData, _ := args.Marshalizer.Marshal(esdtMetadata)
+	e, _ := NewESDTDeleteMetadataFunc(args)
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:  big.NewInt(0),
+			CallerAddr: e.allowedAddress,
+			Arguments:  [][]byte{[]byte("TOKEN-ababab"), {1}, marshalledData},
+		},
+		RecipientAddr: e.allowedAddress,
+	}
+
+	output, err := e.ProcessBuiltinFunction(nil, nil, vmInput)
+	assert.Nil(t, output)
+	assert.True(t, core.IsGetNodeFromDBError(err))
 }
 
 func TestEsdtDeleteMetaData_ProcessBuiltinFunctionAdd(t *testing.T) {
