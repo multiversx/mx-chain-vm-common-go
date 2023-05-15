@@ -368,6 +368,7 @@ type EnableEpochsHandler interface {
 	IsAlwaysSaveTokenMetaDataEnabled() bool
 	IsRuntimeCodeSizeFixEnabled() bool
 	IsSetGuardianEnabled() bool
+	IsConsistentTokensValuesLengthCheckEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32

@@ -2,6 +2,7 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -16,6 +17,7 @@ type esdtLocalBurn struct {
 	marshaller            vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -26,6 +28,7 @@ func NewESDTLocalBurnFunc(
 	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtLocalBurn, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
@@ -36,6 +39,9 @@ func NewESDTLocalBurnFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
+	}
 
 	e := &esdtLocalBurn{
 		keyPrefix:             []byte(baseESDTKeyPrefix),
@@ -43,6 +49,7 @@ func NewESDTLocalBurnFunc(
 		globalSettingsHandler: globalSettingsHandler,
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
+		enableEpochsHandler:   enableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
 	}
 
@@ -79,6 +86,11 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	if e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+		if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
+			return nil, fmt.Errorf("%w: max length for esdt local burn value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+		}
+	}
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[1])
 	esdtTokenKey := append(e.keyPrefix, tokenID...)
 	err = addToESDTBalance(acntSnd, esdtTokenKey, big.NewInt(0).Neg(value), e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)

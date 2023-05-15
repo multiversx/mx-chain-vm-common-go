@@ -214,7 +214,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshaller, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshaller, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshaller, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshaller, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}

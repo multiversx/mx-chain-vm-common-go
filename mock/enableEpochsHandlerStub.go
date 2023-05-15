@@ -35,6 +35,7 @@ type EnableEpochsHandlerStub struct {
 	IsWipeSingleNFTLiquidityDecreaseEnabledField         bool
 	IsAlwaysSaveTokenMetaDataEnabledField                bool
 	IsSetGuardianEnabledField                            bool
+	IsConsistentTokensValuesLengthCheckEnabledField      bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
 	FixOOGReturnCodeEnableEpochField                     uint32
 	RemoveNonUpdatedStorageEnableEpochField              uint32
@@ -192,6 +193,11 @@ func (stub *EnableEpochsHandlerStub) IsRuntimeMemStoreLimitEnabled() bool {
 // IsRuntimeCodeSizeFixEnabled -
 func (stub *EnableEpochsHandlerStub) IsRuntimeCodeSizeFixEnabled() bool {
 	return stub.IsRuntimeCodeSizeFixEnabledField
+}
+
+// IsConsistentTokensValuesLengthCheckEnabled -
+func (stub *EnableEpochsHandlerStub) IsConsistentTokensValuesLengthCheckEnabled() bool {
+	return stub.IsConsistentTokensValuesLengthCheckEnabledField
 }
 
 // MultiESDTTransferAsyncCallBackEnableEpoch -
