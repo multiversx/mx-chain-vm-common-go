@@ -153,7 +153,14 @@ func (s *saveUserName) ProcessBuiltinFunction(
 	if s.isChangeEnabled() && check.IfNil(acntSnd) {
 		gasRemaining = vmInput.GasProvided
 	}
-	return &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}, nil
+
+	vmOutput := &vmcommon.VMOutput{
+		GasRemaining: gasRemaining,
+		ReturnCode:   vmcommon.Ok,
+	}
+	addLogEntryForUserNameChange(vmInput, vmOutput, currentUserName)
+
+	return vmOutput, nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil

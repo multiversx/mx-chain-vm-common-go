@@ -67,6 +67,7 @@ func (d *deleteUserName) ProcessBuiltinFunction(
 		return createCrossShardUserNameCall(vmInput, vmInput.Function, vmInput.GasProvided-d.gasCost)
 	}
 
+	oldUserName := acntDst.GetUserName()
 	acntDst.SetUserName(nil)
 
 	gasRemaining := vmInput.GasProvided
@@ -77,8 +78,25 @@ func (d *deleteUserName) ProcessBuiltinFunction(
 		GasRemaining: gasRemaining,
 		ReturnCode:   vmcommon.Ok,
 	}
+	addLogEntryForUserNameChange(vmInput, vmOutput, oldUserName)
 
 	return vmOutput, nil
+}
+
+func addLogEntryForUserNameChange(
+	vmInput *vmcommon.ContractCallInput,
+	vmOutput *vmcommon.VMOutput,
+	oldUserName []byte,
+) *vmcommon.LogEntry {
+	logEntry := &vmcommon.LogEntry{
+		Identifier: []byte(vmInput.Function),
+		Address:    vmInput.RecipientAddr,
+		Topics:     [][]byte{oldUserName},
+		Data:       nil,
+	}
+	vmOutput.Logs = make([]*vmcommon.LogEntry, 1)
+	vmOutput.Logs[0] = logEntry
+	return logEntry
 }
 
 // IsInterfaceNil returns true if underlying object in nil
