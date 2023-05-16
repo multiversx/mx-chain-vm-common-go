@@ -12,7 +12,7 @@ var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 var trueHandler = func() bool { return true }
 var falseHandler = func() bool { return false }
 
-const deleteUserNameFuncName = "DeleteUserName" // must be uppercase
+const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are upper case
 
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
