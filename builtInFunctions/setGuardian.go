@@ -60,13 +60,13 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 
 	newGuardian := vmInput.Arguments[0]
 	guardianServiceUID := vmInput.Arguments[1]
-	funcCallGasProvided := vmInput.GasProvided
+	gasProvidedForCall := vmInput.GasProvided
 
-	err := sg.CheckSetGuardianIsExecutable(
+	err := sg.CheckIsExecutable(
 		senderAddr,
-		vmInput.RecipientAddr,
 		vmInput.CallValue,
-		funcCallGasProvided,
+		vmInput.RecipientAddr,
+		gasProvidedForCall,
 		vmInput.Arguments,
 	)
 	if err != nil {
@@ -91,12 +91,12 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	}, nil
 }
 
-// CheckSetGuardianIsExecutable will check if the set guardian built-in function can be executed
-func (sg *setGuardian) CheckSetGuardianIsExecutable(
+// CheckIsExecutable will check if the set guardian built-in function can be executed
+func (sg *setGuardian) CheckIsExecutable(
 	senderAddr []byte,
-	receiverAddr []byte,
 	value *big.Int,
-	funcCallGasProvided uint64,
+	receiverAddr []byte,
+	gasProvidedForCall uint64,
 	arguments [][]byte,
 ) error {
 
@@ -104,7 +104,7 @@ func (sg *setGuardian) CheckSetGuardianIsExecutable(
 		senderAddr,
 		receiverAddr,
 		value,
-		funcCallGasProvided,
+		gasProvidedForCall,
 		arguments,
 		noOfArgsSetGuardian,
 	)
