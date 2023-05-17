@@ -3,8 +3,10 @@ package builtInFunctions
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 
 	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -41,20 +43,36 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
+	if check.IfNil(acntSnd) {
+		return nil, fmt.Errorf("%w for sender", ErrNilUserAccount)
+	}
+	if vmInput == nil {
+		return nil, ErrNilVmInput
+	}
+
+	senderAddr := acntSnd.AddressBytes()
+	senderIsNotCaller := !bytes.Equal(senderAddr, vmInput.CallerAddr)
+	if senderIsNotCaller {
+		return nil, ErrOperationNotPermitted
+	}
 	sg.mutExecution.RLock()
 	defer sg.mutExecution.RUnlock()
 
-	err := sg.checkBaseAccountGuarderArgs(acntSnd, vmInput, noOfArgsSetGuardian)
-	if err != nil {
-		return nil, err
-	}
-	err = sg.checkSetGuardianArgs(acntSnd, vmInput)
+	newGuardian := vmInput.Arguments[0]
+	guardianServiceUID := vmInput.Arguments[1]
+	funcCallGasProvided := vmInput.GasProvided
+
+	err := sg.CheckSetGuardianIsExecutable(
+		senderAddr,
+		vmInput.RecipientAddr,
+		vmInput.CallValue,
+		funcCallGasProvided,
+		vmInput.Arguments,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	newGuardian := vmInput.Arguments[0]
-	guardianServiceUID := vmInput.Arguments[1]
 	err = sg.guardedAccountHandler.SetGuardian(acntSnd, newGuardian, vmInput.TxGuardian, guardianServiceUID)
 	if err != nil {
 		return nil, err
@@ -73,15 +91,39 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	}, nil
 }
 
-func (sg *setGuardian) checkSetGuardianArgs(
-	sender vmcommon.UserAccountHandler,
-	vmInput *vmcommon.ContractCallInput,
+// CheckSetGuardianIsExecutable will check if the set guardian built-in function can be executed
+func (sg *setGuardian) CheckSetGuardianIsExecutable(
+	senderAddr []byte,
+	receiverAddr []byte,
+	value *big.Int,
+	funcCallGasProvided uint64,
+	arguments [][]byte,
 ) error {
-	senderAddr := sender.AddressBytes()
-	guardianAddr := vmInput.Arguments[0]
-	guardianServiceUID := vmInput.Arguments[1]
 
-	isGuardianAddrLenOk := len(vmInput.Arguments[0]) == len(senderAddr)
+	err := sg.checkBaseAccountGuarderArgs(
+		senderAddr,
+		receiverAddr,
+		value,
+		funcCallGasProvided,
+		arguments,
+		noOfArgsSetGuardian,
+	)
+	if err != nil {
+		return err
+	}
+
+	return sg.checkSetGuardianArgs(senderAddr, arguments)
+}
+
+func (sg *setGuardian) checkSetGuardianArgs(
+	senderAddr []byte,
+	arguments [][]byte,
+) error {
+
+	guardianAddr := arguments[0]
+	guardianServiceUID := arguments[1]
+
+	isGuardianAddrLenOk := len(arguments[0]) == len(senderAddr)
 	isGuardianAddrSC := core.IsSmartContractAddress(guardianAddr)
 	if !isGuardianAddrLenOk || isGuardianAddrSC {
 		return fmt.Errorf("%w for guardian", ErrInvalidAddress)
