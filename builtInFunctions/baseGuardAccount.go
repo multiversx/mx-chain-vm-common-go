@@ -1,6 +1,12 @@
 package builtInFunctions
 
-import vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+)
 
 const noOfArgsGuardAccount = 0
 
@@ -31,7 +37,25 @@ func (bfa *baseGuardAccount) checkGuardAccountArgs(
 	acntSnd vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) error {
-	err := bfa.checkBaseAccountGuarderArgs(acntSnd, vmInput, noOfArgsGuardAccount)
+	if check.IfNil(acntSnd) {
+		return fmt.Errorf("%w for sender", ErrNilUserAccount)
+	}
+	if vmInput == nil {
+		return ErrNilVmInput
+	}
+
+	senderAddr := acntSnd.AddressBytes()
+	senderIsNotCaller := !bytes.Equal(senderAddr, vmInput.CallerAddr)
+	if senderIsNotCaller {
+		return ErrOperationNotPermitted
+	}
+	err := bfa.checkBaseAccountGuarderArgs(
+		senderAddr,
+		vmInput.RecipientAddr,
+		vmInput.CallValue,
+		vmInput.GasProvided,
+		vmInput.Arguments,
+		noOfArgsGuardAccount)
 	if err != nil {
 		return err
 	}
