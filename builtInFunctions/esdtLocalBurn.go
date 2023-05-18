@@ -87,6 +87,7 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 	}
 
 	if e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+		// TODO: core.MaxLenForESDTIssueMint should be renamed to something more general, such as MaxLenForESDTValues
 		if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
 			return nil, fmt.Errorf("%w: max length for esdt local burn value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}

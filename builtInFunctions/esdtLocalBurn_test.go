@@ -146,12 +146,6 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 					serializedEsdtData, err := marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
-				SaveKeyValueCalled: func(key []byte, value []byte) error {
-					esdtData := &esdt.ESDigitalToken{}
-					_ = marshaller.Unmarshal(esdtData, value)
-					//require.Equal(t, big.NewInt(101), esdtData.Value)
-					return nil
-				},
 			}
 		},
 	}
