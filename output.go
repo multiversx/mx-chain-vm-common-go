@@ -80,6 +80,8 @@ type OutputAccount struct {
 
 // OutputTransfer contains the fields needed to create transfers to another shard
 type OutputTransfer struct {
+	// Index of the transfer
+	Index uint32
 	// Value to be transferred
 	Value *big.Int
 	// GasLimit to used for the call
