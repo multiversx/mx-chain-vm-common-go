@@ -186,6 +186,19 @@ func (vmOutput *VMOutput) GetFirstReturnData(asType vm.ReturnDataKind) (interfac
 	return nil, fmt.Errorf("can't interpret return data")
 }
 
+// GetMaxOutputTransferIndex returns the maximum output transfer index
+func (vmOutput *VMOutput) GetNextAvailableOutputTransferIndex() uint32 {
+	maxTransferIndex := -1
+	for _, account := range vmOutput.OutputAccounts {
+		for _, transfer := range account.OutputTransfers {
+			if int(transfer.Index) > maxTransferIndex {
+				maxTransferIndex = int(transfer.Index)
+			}
+		}
+	}
+	return uint32(maxTransferIndex + 1)
+}
+
 // MergeOutputAccounts merges the given account into the current one
 func (o *OutputAccount) MergeOutputAccounts(outAcc *OutputAccount) {
 	if len(outAcc.Address) != 0 {
