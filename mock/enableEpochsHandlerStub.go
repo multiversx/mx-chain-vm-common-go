@@ -34,6 +34,7 @@ type EnableEpochsHandlerStub struct {
 	IsMaxBlockchainHookCountersFlagEnabledField          bool
 	IsWipeSingleNFTLiquidityDecreaseEnabledField         bool
 	IsAlwaysSaveTokenMetaDataEnabledField                bool
+	IsChangeUsernameEnabledEpochField                    bool
 	IsSetGuardianEnabledField                            bool
 	IsAutoBalanceDataTriesEnabledField                   bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
@@ -263,6 +264,11 @@ func (stub *EnableEpochsHandlerStub) IsWipeSingleNFTLiquidityDecreaseEnabled() b
 // IsAlwaysSaveTokenMetaDataEnabled -
 func (stub *EnableEpochsHandlerStub) IsAlwaysSaveTokenMetaDataEnabled() bool {
 	return stub.IsAlwaysSaveTokenMetaDataEnabledField
+}
+
+// IsChangeUsernameEnabled -
+func (stub *EnableEpochsHandlerStub) IsChangeUsernameEnabled() bool {
+	return stub.IsChangeUsernameEnabledEpochField
 }
 
 // IsAutoBalanceDataTriesEnabled -

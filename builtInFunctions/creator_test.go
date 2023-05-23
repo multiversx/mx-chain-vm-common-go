@@ -16,6 +16,7 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 	args := ArgsCreateBuiltInFunctionContainer{
 		GasMap:                           gasMap,
 		MapDNSAddresses:                  make(map[string]struct{}),
+		MapDNSV2Addresses:                make(map[string]struct{}),
 		EnableUserNameChange:             false,
 		Marshalizer:                      &mock.MarshalizerMock{},
 		Accounts:                         &mock.AccountsStub{},
