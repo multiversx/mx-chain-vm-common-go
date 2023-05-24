@@ -405,3 +405,7 @@ type GuardedAccountHandler interface {
 	CleanOtherThanActive(uah UserAccountHandler)
 	IsInterfaceNil() bool
 }
+
+type NextOutputTransferIndexProvider interface {
+	NextOutputTransferIndex() uint32
+}

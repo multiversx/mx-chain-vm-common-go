@@ -199,6 +199,16 @@ func (vmOutput *VMOutput) GetNextAvailableOutputTransferIndex() uint32 {
 	return uint32(maxTransferIndex + 1)
 }
 
+// ReindexTransfers from VMOutput
+func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferIndexProvider) {
+	for _, account := range vmOutput.OutputAccounts {
+		for transferIdx, transfer := range account.OutputTransfers {
+			nextIndex := nextIndexProvider.NextOutputTransferIndex()
+			account.OutputTransfers[transferIdx].Index = transfer.Index + nextIndex
+		}
+	}
+}
+
 // MergeOutputAccounts merges the given account into the current one
 func (o *OutputAccount) MergeOutputAccounts(outAcc *OutputAccount) {
 	if len(outAcc.Address) != 0 {
