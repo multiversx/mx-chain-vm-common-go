@@ -408,4 +408,6 @@ type GuardedAccountHandler interface {
 
 type NextOutputTransferIndexProvider interface {
 	NextOutputTransferIndex() uint32
+	GetCrtTransferIndex() uint32
+	IsInterfaceNil() bool
 }

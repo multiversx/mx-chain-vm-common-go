@@ -188,25 +188,53 @@ func (vmOutput *VMOutput) GetFirstReturnData(asType vm.ReturnDataKind) (interfac
 
 // GetMaxOutputTransferIndex returns the maximum output transfer index
 func (vmOutput *VMOutput) GetNextAvailableOutputTransferIndex() uint32 {
-	maxTransferIndex := -1
+	maxTransferIndex := uint32(0)
+	noTransferFound := true
 	for _, account := range vmOutput.OutputAccounts {
 		for _, transfer := range account.OutputTransfers {
-			if int(transfer.Index) > maxTransferIndex {
-				maxTransferIndex = int(transfer.Index)
+			noTransferFound = false
+			if transfer.Index > maxTransferIndex {
+				maxTransferIndex = transfer.Index
 			}
 		}
 	}
-	return uint32(maxTransferIndex + 1)
+
+	if noTransferFound {
+		return 0
+	}
+
+	return maxTransferIndex + 1
 }
 
 // ReindexTransfers from VMOutput
-func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferIndexProvider) {
+func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferIndexProvider) error {
+
+	if nextIndexProvider == nil {
+		return ErrNilTransferIndexer
+	}
+
+	firstAccountWithTransfers := true
+	for _, account := range vmOutput.OutputAccounts {
+		if len(account.OutputTransfers) != 0 {
+			if firstAccountWithTransfers {
+				firstAccountWithTransfers = false
+				continue
+			}
+
+			// this is not the first account with transfers and the others were not indexed
+			if nextIndexProvider.GetCrtTransferIndex() == 0 {
+				return ErrTransfersNotIndexed
+			}
+		}
+	}
 	for _, account := range vmOutput.OutputAccounts {
 		for transferIdx, transfer := range account.OutputTransfers {
 			nextIndex := nextIndexProvider.NextOutputTransferIndex()
 			account.OutputTransfers[transferIdx].Index = transfer.Index + nextIndex
 		}
 	}
+
+	return nil
 }
 
 // MergeOutputAccounts merges the given account into the current one
