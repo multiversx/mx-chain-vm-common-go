@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
@@ -71,7 +72,10 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 			return nil, fmt.Errorf("%w it is not allowed to save under key %s", ErrOperationNotPermitted, key)
 		}
 
-		oldValue, _, _ := acntDest.AccountDataHandler().RetrieveValue(key)
+		oldValue, _, err := acntDest.AccountDataHandler().RetrieveValue(key)
+		if core.IsGetNodeFromDBError(err) {
+			return nil, err
+		}
 		if bytes.Equal(oldValue, value) {
 			continue
 		}
