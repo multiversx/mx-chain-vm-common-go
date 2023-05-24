@@ -310,6 +310,9 @@ func getESDTDataFromKey(
 ) (*esdt.ESDigitalToken, error) {
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
 	marshaledData, _, err := userAcnt.AccountDataHandler().RetrieveValue(key)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, nil
 	}
