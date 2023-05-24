@@ -20,6 +20,7 @@ type AccountWrapMock struct {
 	SetNonceWithJournalCalled    func(nonce uint64) error    `json:"-"`
 	SetCodeHashWithJournalCalled func(codeHash []byte) error `json:"-"`
 	SetCodeWithJournalCalled     func(codeHash []byte) error `json:"-"`
+	RetrieveValueCalled          func(key []byte) ([]byte, uint32, error)
 }
 
 // ClearDataCaches -
@@ -33,6 +34,10 @@ func (awm *AccountWrapMock) DirtyData() map[string][]byte {
 
 // RetrieveValue -
 func (awm *AccountWrapMock) RetrieveValue(key []byte) ([]byte, uint32, error) {
+	if awm.RetrieveValueCalled != nil {
+		return awm.RetrieveValueCalled(key)
+	}
+
 	return awm.storage[string(key)], 0, nil
 }
 

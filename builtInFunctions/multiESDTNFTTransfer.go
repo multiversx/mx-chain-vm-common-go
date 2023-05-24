@@ -300,6 +300,9 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			dstAddress,
 			listTransferData[i],
 			vmInput.ReturnCallAfterError)
+		if core.IsGetNodeFromDBError(err) {
+			return nil, err
+		}
 		if err != nil {
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}

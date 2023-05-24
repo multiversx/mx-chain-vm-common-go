@@ -133,6 +133,22 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationNoDataInSystemAcc(t *testin
 	assert.Equal(t, esdtData, esdtDataGet)
 }
 
+func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetNodeFromDbErr(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	userAcc.RetrieveValueCalled = func(key []byte) ([]byte, uint32, error) {
+		return nil, 0, core.NewGetNodeFromDBErrWithKey(key, errors.New("error"), "")
+	}
+
+	esdtDataGet, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte("key"), 1)
+	assert.Nil(t, esdtDataGet)
+	assert.True(t, core.IsGetNodeFromDBError(err))
+}
+
 func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetDataFromSystemAcc(t *testing.T) {
 	t.Parallel()
 
@@ -280,6 +296,53 @@ func TestESDTDataStorage_saveDataToSystemAccNotNFTOrMetaData(t *testing.T) {
 
 	err = e.saveESDTMetaDataToSystemAccount(nil, 0, []byte("TCK"), 1, &esdt.ESDigitalToken{}, true)
 	assert.Nil(t, err)
+}
+
+func TestESDTDataStorage_saveESDTMetaDataToSystemAccountGetNodeFromDbErrForSystemAcc(t *testing.T) {
+	t.Parallel()
+
+	systemAcc := mock.NewAccountWrapMock([]byte("system acc address"))
+	systemAcc.RetrieveValueCalled = func(key []byte) ([]byte, uint32, error) {
+		return nil, 0, core.NewGetNodeFromDBErrWithKey(key, errors.New("error"), "")
+	}
+
+	args := createMockArgsForNewESDTDataStorage()
+	args.Accounts = &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return systemAcc, nil
+		},
+	}
+	e, _ := NewESDTDataStorage(args)
+
+	esdtData := &esdt.ESDigitalToken{
+		TokenMetaData: &esdt.MetaData{},
+	}
+
+	err := e.saveESDTMetaDataToSystemAccount(nil, 0, []byte("TCK"), 1, esdtData, true)
+	assert.True(t, core.IsGetNodeFromDBError(err))
+}
+
+func TestESDTDataStorage_saveESDTMetaDataToSystemAccountGetNodeFromDbErrForUserAcc(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFixOldTokenLiquidityEnabledField: true,
+		IsSendAlwaysFlagEnabledField:       true,
+	}
+	e, _ := NewESDTDataStorage(args)
+
+	esdtData := &esdt.ESDigitalToken{
+		TokenMetaData: &esdt.MetaData{},
+	}
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	userAcc.RetrieveValueCalled = func(key []byte) ([]byte, uint32, error) {
+		return nil, 0, core.NewGetNodeFromDBErrWithKey(key, errors.New("error"), "")
+	}
+
+	err := e.saveESDTMetaDataToSystemAccount(userAcc, 0, []byte("TCK"), 1, esdtData, true)
+	assert.True(t, core.IsGetNodeFromDBError(err))
 }
 
 func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
@@ -654,6 +717,27 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 	assert.Equal(t, esdtData.TokenMetaData, esdtGetData.TokenMetaData)
 }
 
+func TestEsdtDataStorage_getESDTDigitalTokenDataFromSystemAccountGetNodeFromDbErr(t *testing.T) {
+	t.Parallel()
+
+	systemAcc := mock.NewAccountWrapMock([]byte("system acc address"))
+	systemAcc.RetrieveValueCalled = func(key []byte) ([]byte, uint32, error) {
+		return nil, 0, core.NewGetNodeFromDBErrWithKey(key, errors.New("error"), "")
+	}
+
+	args := createMockArgsForNewESDTDataStorage()
+	args.Accounts = &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return systemAcc, nil
+		},
+	}
+	e, _ := NewESDTDataStorage(args)
+
+	esdtDataGet, _, err := e.getESDTDigitalTokenDataFromSystemAccount([]byte("tokenKey"), defaultQueryOptions())
+	assert.Nil(t, esdtDataGet)
+	assert.True(t, core.IsGetNodeFromDBError(err))
+}
+
 func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *testing.T) {
 	t.Parallel()
 
@@ -764,6 +848,36 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Equal(t, err, ErrESDTIsFrozenForAccount)
+}
+
+func TestGetEsdtDataFromKey(t *testing.T) {
+	t.Parallel()
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	userAcc.RetrieveValueCalled = func(key []byte) ([]byte, uint32, error) {
+		return nil, 0, core.NewGetNodeFromDBErrWithKey(key, errors.New("error"), "")
+	}
+	tokenData, err := getESDTDataFromKey(userAcc, []byte("esdtTokenKey"), &mock.MarshalizerMock{})
+	assert.Nil(t, tokenData)
+	assert.True(t, core.IsGetNodeFromDBError(err))
+}
+
+func TestEsdtDataStorage_checkCollectionFrozenGetNodeFromDbErr(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDataStorage()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsCheckFrozenCollectionFlagEnabledField: true,
+	}
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	userAcc.RetrieveValueCalled = func(key []byte) ([]byte, uint32, error) {
+		return nil, 0, core.NewGetNodeFromDBErrWithKey(key, errors.New("error"), "")
+	}
+
+	err := e.checkCollectionIsFrozenForAccount(userAcc, []byte("key"), 1, false)
+	assert.True(t, core.IsGetNodeFromDBError(err))
 }
 
 func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
