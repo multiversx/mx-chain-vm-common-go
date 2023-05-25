@@ -224,6 +224,9 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
+	if len(vmInput.Arguments[2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+		return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+	}
 	quantityToTransfer := big.NewInt(0).SetBytes(vmInput.Arguments[2])
 	if esdtData.Value.Cmp(quantityToTransfer) < 0 {
 		return nil, ErrInvalidNFTQuantity
