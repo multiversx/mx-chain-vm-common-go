@@ -208,6 +208,7 @@ func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferI
 		return ErrNilTransferIndexer
 	}
 
+	reindexed := false
 	crtIndex := nextIndexProvider.GetCrtTransferIndex() - 1
 	for _, account := range vmOutput.OutputAccounts {
 		for transferIdx, transfer := range account.OutputTransfers {
@@ -215,9 +216,12 @@ func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferI
 				return ErrTransfersNotIndexed
 			}
 			account.OutputTransfers[transferIdx].Index = transfer.Index + crtIndex
+			reindexed = true
 		}
 	}
-	nextIndexProvider.SetCrtTransferIndex(vmOutput.GetNextAvailableOutputTransferIndex())
+	if reindexed {
+		nextIndexProvider.SetCrtTransferIndex(vmOutput.GetNextAvailableOutputTransferIndex())
+	}
 
 	return nil
 }
