@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
 )
 
@@ -189,18 +190,12 @@ func (vmOutput *VMOutput) GetFirstReturnData(asType vm.ReturnDataKind) (interfac
 // GetMaxOutputTransferIndex returns the maximum output transfer index
 func (vmOutput *VMOutput) GetNextAvailableOutputTransferIndex() uint32 {
 	maxTransferIndex := uint32(0)
-	noTransferFound := true
 	for _, account := range vmOutput.OutputAccounts {
 		for _, transfer := range account.OutputTransfers {
-			noTransferFound = false
 			if transfer.Index > maxTransferIndex {
 				maxTransferIndex = transfer.Index
 			}
 		}
-	}
-
-	if noTransferFound {
-		return 0
 	}
 
 	return maxTransferIndex + 1
@@ -209,30 +204,20 @@ func (vmOutput *VMOutput) GetNextAvailableOutputTransferIndex() uint32 {
 // ReindexTransfers from VMOutput
 func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferIndexProvider) error {
 
-	if nextIndexProvider == nil {
+	if check.IfNil(nextIndexProvider) {
 		return ErrNilTransferIndexer
 	}
 
-	firstAccountWithTransfers := true
-	for _, account := range vmOutput.OutputAccounts {
-		if len(account.OutputTransfers) != 0 {
-			if firstAccountWithTransfers {
-				firstAccountWithTransfers = false
-				continue
-			}
-
-			// this is not the first account with transfers and the others were not indexed
-			if nextIndexProvider.GetCrtTransferIndex() == 0 {
-				return ErrTransfersNotIndexed
-			}
-		}
-	}
+	crtIndex := nextIndexProvider.GetCrtTransferIndex() - 1
 	for _, account := range vmOutput.OutputAccounts {
 		for transferIdx, transfer := range account.OutputTransfers {
-			nextIndex := nextIndexProvider.NextOutputTransferIndex()
-			account.OutputTransfers[transferIdx].Index = transfer.Index + nextIndex
+			if transfer.Index == 0 {
+				return ErrTransfersNotIndexed
+			}
+			account.OutputTransfers[transferIdx].Index = transfer.Index + crtIndex
 		}
 	}
+	nextIndexProvider.SetCrtTransferIndex(vmOutput.GetNextAvailableOutputTransferIndex())
 
 	return nil
 }

@@ -406,8 +406,10 @@ type GuardedAccountHandler interface {
 	IsInterfaceNil() bool
 }
 
+// NextOutputTransferIndexProvider interface abstracts a type that manages a transfer index counter
 type NextOutputTransferIndexProvider interface {
 	NextOutputTransferIndex() uint32
 	GetCrtTransferIndex() uint32
+	SetCrtTransferIndex(index uint32)
 	IsInterfaceNil() bool
 }
