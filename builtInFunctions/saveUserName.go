@@ -8,7 +8,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type saveUserName struct {
@@ -83,6 +83,7 @@ func (s *saveUserName) ProcessBuiltinFunction(
 		vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
 		setUserNameTxData := core.BuiltInFunctionSetUserName + "@" + hex.EncodeToString(vmInput.Arguments[0])
 		outTransfer := vmcommon.OutputTransfer{
+			Index:         1,
 			Value:         big.NewInt(0),
 			GasLimit:      vmInput.GasProvided,
 			GasLocked:     vmInput.GasLocked,
