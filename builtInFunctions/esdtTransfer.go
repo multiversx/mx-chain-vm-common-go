@@ -148,6 +148,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			}
 
 			addOutputTransferToVMOutput(
+				1,
 				vmInput.CallerAddr,
 				string(vmInput.Arguments[core.MinLenArgumentsESDTTransfer]),
 				callArgs,
@@ -184,6 +185,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	// cross-shard ESDT transfer call through a smart contract
 	if vmcommon.IsSmartContractAddress(vmInput.CallerAddr) {
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			core.BuiltInFunctionESDTTransfer,
 			vmInput.Arguments,
@@ -204,6 +206,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 }
 
 func addOutputTransferToVMOutput(
+	index uint32,
 	senderAddress []byte,
 	function string,
 	arguments [][]byte,
@@ -217,6 +220,7 @@ func addOutputTransferToVMOutput(
 		esdtTransferTxData += "@" + hex.EncodeToString(arg)
 	}
 	outTransfer := vmcommon.OutputTransfer{
+		Index:         index,
 		Value:         big.NewInt(0),
 		GasLimit:      vmOutput.GasRemaining,
 		GasLocked:     gasLocked,

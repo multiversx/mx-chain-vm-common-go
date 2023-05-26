@@ -221,6 +221,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
@@ -474,6 +475,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 			vmOutput.GasRemaining = 0
 		}
 		addNFTTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionMultiESDTNFTTransfer,
@@ -494,6 +496,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,

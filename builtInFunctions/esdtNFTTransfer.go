@@ -179,6 +179,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer]),
 			callArgs,
@@ -355,6 +356,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 			vmOutput.GasRemaining = 0
 		}
 		addNFTTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionESDTNFTTransfer,
@@ -375,6 +377,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer]),
 			callArgs,
@@ -424,6 +427,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 }
 
 func addNFTTransferToVMOutput(
+	index uint32,
 	senderAddress []byte,
 	recipient []byte,
 	funcToCall string,
@@ -438,6 +442,7 @@ func addNFTTransferToVMOutput(
 		nftTransferTxData += "@" + hex.EncodeToString(arg)
 	}
 	outTransfer := vmcommon.OutputTransfer{
+		Index:         index,
 		Value:         big.NewInt(0),
 		GasLimit:      gasLimit,
 		GasLocked:     gasLocked,
