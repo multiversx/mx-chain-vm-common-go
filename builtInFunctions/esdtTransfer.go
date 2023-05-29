@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -96,6 +97,11 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, ErrInvalidRcvAddr
 	}
 
+	if e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+		if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
+			return nil, fmt.Errorf("%w: max length for esdt transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+		}
+	}
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[1])
 	if value.Cmp(zero) <= 0 {
 		return nil, ErrNegativeValue
