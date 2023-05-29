@@ -109,34 +109,6 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		assert.Nil(t, vmOutput)
 		assert.True(t, errors.Is(err, ErrNilSCDestAccount))
 	})
-
-	t.Run("saves dest account", func(t *testing.T) {
-		t.Parallel()
-
-		gasProvided := uint64(100)
-		input := &vmcommon.ContractCallInput{
-			VMInput: vmcommon.VMInput{
-				CallValue:   big.NewInt(0),
-				GasProvided: gasProvided,
-			},
-		}
-		saveAccountsCalled := false
-		destAddr := []byte("dest")
-		accStub := &mock.AccountsStub{
-			SaveAccountCalled: func(account vmcommon.AccountHandler) error {
-				assert.Equal(t, destAddr, account.AddressBytes())
-				saveAccountsCalled = true
-				return nil
-			},
-		}
-
-		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{TrieLoadPerNode: 50}, &mock.EnableEpochsHandlerStub{}, accStub)
-		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount(destAddr), input)
-		assert.Nil(t, err)
-		assert.True(t, saveAccountsCalled)
-		assert.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
-		assert.Equal(t, gasProvided, vmOutput.GasRemaining)
-	})
 }
 
 func TestMigrateDataTrie_SetNewGasConfig(t *testing.T) {

@@ -66,11 +66,6 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(_, acntDst vmcommon.UserAccou
 		return nil, err
 	}
 
-	err = mdt.accounts.SaveAccount(acntDst)
-	if err != nil {
-		return nil, err
-	}
-
 	vmOutput := &vmcommon.VMOutput{
 		GasRemaining: dtm.GetGasRemaining(),
 		ReturnCode:   vmcommon.Ok,
