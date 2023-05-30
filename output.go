@@ -284,6 +284,14 @@ func (logEntry *LogEntry) GetFirstDataItem() []byte {
 	return logEntry.Data[0]
 }
 
+// GetTailDataItems returns the tail of the Data field of a LogEntry
+func (logEntry *LogEntry) GetTailDataItems() [][]byte {
+	if len(logEntry.Data) == 0 || len(logEntry.Data) == 1 {
+		return [][]byte{}
+	}
+	return logEntry.Data[1:]
+}
+
 // FormatLogDataForCall prepares Data field for a LogEntry
 func FormatLogDataForCall(callType string, functionName string, functionArgs [][]byte) [][]byte {
 	data := make([][]byte, 0)
