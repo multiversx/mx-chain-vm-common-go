@@ -47,6 +47,11 @@ func (awm *AccountWrapMock) SaveKeyValue(key []byte, value []byte) error {
 	return nil
 }
 
+// MigrateDataTrieLeaves -
+func (awm *AccountWrapMock) MigrateDataTrieLeaves(_ vmcommon.ArgsMigrateDataTrieLeaves) error {
+	return nil
+}
+
 // NewAccountWrapMock -
 func NewAccountWrapMock(adr []byte) *AccountWrapMock {
 	return &AccountWrapMock{

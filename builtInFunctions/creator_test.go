@@ -75,6 +75,8 @@ func fillGasMapBuiltInCosts(value uint64) map[string]uint64 {
 	gasMap["SetGuardian"] = value
 	gasMap["GuardAccount"] = value
 	gasMap["UnGuardAccount"] = value
+	gasMap["TrieLoadPerNode"] = value
+	gasMap["TrieStorePerNode"] = value
 
 	return gasMap
 }
@@ -138,7 +140,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 
 	err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, 35, f.BuiltInFunctionContainer().Len())
+	assert.Equal(t, 36, f.BuiltInFunctionContainer().Len())
 
 	err = f.SetPayableHandler(nil)
 	assert.NotNil(t, err)

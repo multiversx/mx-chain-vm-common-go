@@ -3,6 +3,7 @@ package vmcommon
 import (
 	"math/big"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/closing"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
@@ -174,6 +175,7 @@ type UserAccountHandler interface {
 type AccountDataHandler interface {
 	RetrieveValue(key []byte) ([]byte, uint32, error)
 	SaveKeyValue(key []byte, value []byte) error
+	MigrateDataTrieLeaves(args ArgsMigrateDataTrieLeaves) error
 	IsInterfaceNil() bool
 }
 
@@ -370,6 +372,7 @@ type EnableEpochsHandler interface {
 	IsChangeUsernameEnabled() bool
 	IsSetGuardianEnabled() bool
 	IsConsistentTokensValuesLengthCheckEnabled() bool
+	IsAutoBalanceDataTriesEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32
@@ -390,5 +393,13 @@ type GuardedAccountHandler interface {
 	GetActiveGuardian(handler UserAccountHandler) ([]byte, error)
 	SetGuardian(uah UserAccountHandler, guardianAddress []byte, txGuardianAddress []byte, guardianServiceUID []byte) error
 	CleanOtherThanActive(uah UserAccountHandler)
+	IsInterfaceNil() bool
+}
+
+// DataTrieMigrator is the interface that defines the methods needed for migrating data trie leaves
+type DataTrieMigrator interface {
+	ConsumeStorageLoadGas() bool
+	AddLeafToMigrationQueue(leafData core.TrieData, newLeafVersion core.TrieNodeVersion) (bool, error)
+	GetLeavesToBeMigrated() []core.TrieData
 	IsInterfaceNil() bool
 }
