@@ -76,12 +76,14 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 	vmInput.RecipientAddr = address
 
 	tests := []struct {
+		testname        string
 		vmInput         func() *vmcommon.ContractCallInput
 		senderAccount   vmcommon.UserAccountHandler
 		receiverAccount vmcommon.UserAccountHandler
 		expectedErr     error
 	}{
 		{
+			testname: "builtin function called with value should error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.CallValue = big.NewInt(1)
@@ -92,6 +94,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			expectedErr:     ErrBuiltInFunctionCalledWithValue,
 		},
 		{
+			testname: "nil guardian address should error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.Arguments = [][]byte{nil, serviceUID}
@@ -102,6 +105,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			expectedErr:     ErrInvalidAddress,
 		},
 		{
+			testname: "builtin sender address as guardian should error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.Arguments = [][]byte{address, serviceUID}
@@ -112,6 +116,7 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			expectedErr:     ErrCannotSetOwnAddressAsGuardian,
 		},
 		{
+			testname: "empty sc address as guardian should error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.Arguments = [][]byte{make([]byte, pubKeyLen), serviceUID} // Empty SC Address
@@ -121,7 +126,36 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			receiverAccount: account,
 			expectedErr:     ErrInvalidAddress,
 		},
+
 		{
+			testname: "nil account should error",
+			vmInput: func() *vmcommon.ContractCallInput {
+				return vmInput
+			},
+			senderAccount:   nil,
+			receiverAccount: account,
+			expectedErr:     ErrNilUserAccount,
+		},
+		{
+			testname: "nil vm input should error",
+			vmInput: func() *vmcommon.ContractCallInput {
+				return nil
+			},
+			senderAccount:   account,
+			receiverAccount: account,
+			expectedErr:     ErrNilVmInput,
+		},
+		{
+			testname: "sender different to caller should error",
+			vmInput: func() *vmcommon.ContractCallInput {
+				return vmInput
+			},
+			senderAccount:   mockvm.NewUserAccount([]byte("userAddress2")),
+			receiverAccount: account,
+			expectedErr:     ErrOperationNotPermitted,
+		},
+		{
+			testname: "OK",
 			vmInput: func() *vmcommon.ContractCallInput {
 				return vmInput
 			},
