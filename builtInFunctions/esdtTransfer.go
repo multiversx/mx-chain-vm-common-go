@@ -161,9 +161,12 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 				vmInput, vmOutput,
 				[]byte(core.BuiltInFunctionESDTTransfer),
 				acntDst.AddressBytes(),
-				tokenID,
-				0,
-				value)
+				[]*TopicTokenData{{
+					tokenID,
+					0,
+					value,
+				}},
+			)
 			return vmOutput, nil
 		}
 
@@ -176,9 +179,11 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmInput, vmOutput,
 			[]byte(core.BuiltInFunctionESDTTransfer),
 			acntDst.AddressBytes(),
-			tokenID,
-			0,
-			value)
+			[]*TopicTokenData{{
+				tokenID,
+				0,
+				value,
+			}})
 		return vmOutput, nil
 	}
 
@@ -199,9 +204,11 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		vmInput, vmOutput,
 		[]byte(core.BuiltInFunctionESDTTransfer),
 		vmInput.RecipientAddr,
-		tokenID,
-		0,
-		value)
+		[]*TopicTokenData{{
+			tokenID,
+			0,
+			value,
+		}})
 	return vmOutput, nil
 }
 

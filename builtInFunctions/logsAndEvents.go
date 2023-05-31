@@ -14,21 +14,31 @@ const (
 	esdtRandomSequenceLength = 6
 )
 
+type TopicTokenData struct {
+	TokenID []byte
+	Nonce   uint64
+	Value   *big.Int
+}
+
 func addESDTEntryForTransferInVMOutput(
 	vmInput *vmcommon.ContractCallInput,
 	vmOutput *vmcommon.VMOutput,
 	identifier []byte,
 	destination []byte,
-	tokenID []byte,
-	nonce uint64,
-	value *big.Int,
+	topicTokenData []*TopicTokenData,
 ) {
-	nonceBig := big.NewInt(0).SetUint64(nonce)
+
+	topicTokenBytes := make([][]byte, 0)
+	for _, tokenData := range topicTokenData {
+		nonceBig := big.NewInt(0).SetUint64(tokenData.Nonce)
+		topicTokenBytes = append(topicTokenBytes, tokenData.TokenID, nonceBig.Bytes(), tokenData.Value.Bytes())
+	}
+	topicTokenBytes = append(topicTokenBytes, destination)
 
 	logEntry := &vmcommon.LogEntry{
 		Identifier: identifier,
-		Address:    destination,
-		Topics:     [][]byte{vmInput.CallerAddr, tokenID, nonceBig.Bytes(), value.Bytes()},
+		Address:    vmInput.CallerAddr,
+		Topics:     topicTokenBytes,
 		Data:       vmcommon.FormatLogDataForCall("", vmInput.Function, vmInput.Arguments),
 	}
 

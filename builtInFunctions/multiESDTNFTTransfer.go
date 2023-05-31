@@ -162,6 +162,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	topicTokenData := make([]*TopicTokenData, 0)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
 		tokenID := vmInput.Arguments[tokenStartIndex]
@@ -204,14 +205,20 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		addESDTEntryForTransferInVMOutput(
-			vmInput, vmOutput,
-			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
-			acntDst.AddressBytes(),
-			tokenID,
-			nonce,
-			value)
+		topicTokenData = append(topicTokenData,
+			&TopicTokenData{
+				tokenID,
+				nonce,
+				value,
+			})
 	}
+
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
+		[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+		acntDst.AddressBytes(),
+		topicTokenData,
+	)
 
 	// no need to consume gas on destination - sender already paid for it
 	if len(vmInput.Arguments) > int(minNumOfArguments) && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
@@ -286,6 +293,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	listEsdtData := make([]*esdt.ESDigitalToken, numOfTransfers)
 	listTransferData := make([]*vmcommon.ESDTTransfer, numOfTransfers)
 
+	topicTokenData := make([]*TopicTokenData, 0)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
 		listTransferData[i] = &vmcommon.ESDTTransfer{
@@ -308,14 +316,20 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}
 
-		addESDTEntryForTransferInVMOutput(
-			vmInput, vmOutput,
-			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
-			dstAddress,
-			listTransferData[i].ESDTTokenName,
-			listTransferData[i].ESDTTokenNonce,
-			listTransferData[i].ESDTValue)
+		topicTokenData = append(topicTokenData,
+			&TopicTokenData{
+				listTransferData[i].ESDTTokenName,
+				listTransferData[i].ESDTTokenNonce,
+				listTransferData[i].ESDTValue,
+			})
 	}
+
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
+		[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+		dstAddress,
+		topicTokenData,
+	)
 
 	if !check.IfNil(acntDst) {
 		err = e.accounts.SaveAccount(acntDst)
