@@ -14,6 +14,7 @@ const (
 	esdtRandomSequenceLength = 6
 )
 
+// TopicTokenData groups data that will end up in Topics section of LogEntry
 type TopicTokenData struct {
 	TokenID []byte
 	Nonce   uint64
