@@ -12,10 +12,13 @@ var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 var trueHandler = func() bool { return true }
 var falseHandler = func() bool { return false }
 
+const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are upper case
+
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
 	GasMap                           map[string]map[string]uint64
 	MapDNSAddresses                  map[string]struct{}
+	MapDNSV2Addresses                map[string]struct{}
 	EnableUserNameChange             bool
 	Marshalizer                      vmcommon.Marshalizer
 	Accounts                         vmcommon.AccountsAdapter
@@ -28,6 +31,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 
 type builtInFuncCreator struct {
 	mapDNSAddresses                  map[string]struct{}
+	mapDNSV2Addresses                map[string]struct{}
 	enableUserNameChange             bool
 	marshaller                       vmcommon.Marshalizer
 	accounts                         vmcommon.AccountsAdapter
@@ -53,6 +57,9 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if args.MapDNSAddresses == nil {
 		return nil, ErrNilDnsAddresses
 	}
+	if args.MapDNSV2Addresses == nil {
+		return nil, ErrNilDnsAddresses
+	}
 	if check.IfNil(args.ShardCoordinator) {
 		return nil, ErrNilShardCoordinator
 	}
@@ -65,6 +72,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 
 	b := &builtInFuncCreator{
 		mapDNSAddresses:                  args.MapDNSAddresses,
+		mapDNSV2Addresses:                args.MapDNSV2Addresses,
 		enableUserNameChange:             args.EnableUserNameChange,
 		marshaller:                       args.Marshalizer,
 		accounts:                         args.Accounts,
@@ -135,11 +143,20 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewSaveUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.enableUserNameChange)
+	newFunc, err = NewSaveUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.mapDNSV2Addresses, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionSetUserName, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewDeleteUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSV2Addresses, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(deleteUserNameFuncName, newFunc)
 	if err != nil {
 		return err
 	}
@@ -214,7 +231,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshaller, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshaller, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -223,7 +240,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshaller, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshaller, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -467,6 +484,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionUnGuardAccount, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewMigrateDataTrieFunc(b.gasConfig.BuiltInCost, b.enableEpochsHandler, b.accounts)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionMigrateDataTrie, newFunc)
 	if err != nil {
 		return err
 	}
