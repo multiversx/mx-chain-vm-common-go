@@ -42,6 +42,7 @@ func getAllBuiltInFunctions() []string {
 		core.BuiltInFunctionESDTNFTAddURI,
 		core.BuiltInFunctionESDTNFTUpdateAttributes,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
+		core.BuiltInFunctionMigrateDataTrie,
 		core.ESDTRoleLocalMint,
 		core.ESDTRoleLocalBurn,
 		core.ESDTRoleNFTCreate,

@@ -53,32 +53,27 @@ func newBaseAccountGuarder(args BaseAccountGuarderArgs) (*baseAccountGuarder, er
 }
 
 func (baf *baseAccountGuarder) checkBaseAccountGuarderArgs(
-	senderAccount vmcommon.UserAccountHandler,
-	vmInput *vmcommon.ContractCallInput,
+	senderAddr []byte,
+	receiverAddr []byte,
+	value *big.Int,
+	funcCallGasProvided uint64,
+	arguments [][]byte,
 	expectedNoOfArgs uint32,
 ) error {
-	if check.IfNil(senderAccount) {
-		return fmt.Errorf("%w for sender", ErrNilUserAccount)
-	}
-	if vmInput == nil {
-		return ErrNilVmInput
-	}
-
-	senderIsNotCaller := !bytes.Equal(senderAccount.AddressBytes(), vmInput.CallerAddr)
-	senderIsNotReceiver := !bytes.Equal(vmInput.CallerAddr, vmInput.RecipientAddr)
-	if senderIsNotCaller || senderIsNotReceiver {
+	senderIsNotReceiver := !bytes.Equal(senderAddr, receiverAddr)
+	if senderIsNotReceiver {
 		return ErrOperationNotPermitted
 	}
-	if vmInput.CallValue == nil {
+	if value == nil {
 		return ErrNilValue
 	}
-	if !isZero(vmInput.CallValue) {
+	if !isZero(value) {
 		return ErrBuiltInFunctionCalledWithValue
 	}
-	if len(vmInput.Arguments) != int(expectedNoOfArgs) {
-		return fmt.Errorf("%w, expected %d, got %d ", ErrInvalidNumberOfArguments, expectedNoOfArgs, len(vmInput.Arguments))
+	if len(arguments) != int(expectedNoOfArgs) {
+		return fmt.Errorf("%w, expected %d, got %d ", ErrInvalidNumberOfArguments, expectedNoOfArgs, len(arguments))
 	}
-	if vmInput.GasProvided < baf.funcGasCost {
+	if funcCallGasProvided < baf.funcGasCost {
 		return ErrNotEnoughGas
 	}
 

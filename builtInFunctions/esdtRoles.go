@@ -136,6 +136,9 @@ func getESDTRolesForAcnt(
 	}
 
 	marshaledData, _, err := acnt.AccountDataHandler().RetrieveValue(key)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, false, err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return roles, true, nil
 	}
