@@ -969,10 +969,6 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testi
 	require.Nil(t, err)
 	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
 
-	// reload destination, should have received tokens
-	destination, err = multiTransfer.accounts.LoadAccount(destinationAddress)
-	require.Nil(t, err)
-
 	testNFTTokenShouldExist(t, multiTransfer.marshaller, destination, token1, token1Nonce, quantity1)
 	testNFTTokenShouldExist(t, multiTransfer.marshaller, destination, token2, token2Nonce, quantity2)
 
