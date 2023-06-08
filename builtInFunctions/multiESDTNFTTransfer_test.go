@@ -872,6 +872,67 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	require.Equal(t, "sending value to non payable contract", err.Error())
 }
 
+func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testing.T) {
+	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	payableChecker, _ := NewPayableCheckFunc(
+		&mock.PayableHandlerStub{
+			IsPayableCalled: func(address []byte) (bool, error) {
+				return true, nil
+			},
+		}, &mock.EnableEpochsHandlerStub{
+			IsFixAsyncCallbackCheckFlagEnabledField: true,
+			IsCheckFunctionArgumentFlagEnabledField: true,
+		})
+
+	_ = multiTransfer.SetPayableChecker(payableChecker)
+
+	senderAddress := core.ESDTSCAddress
+
+	destinationAddress := bytes.Repeat([]byte{0}, 32)
+	destinationAddress[25] = 1
+	destination, err := multiTransfer.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+
+	token1 := []byte("token1")
+	token2 := []byte("token2")
+
+	token1Nonce := uint64(1)
+	nonce1Bytes := big.NewInt(int64(token1Nonce)).Bytes()
+
+	token2Nonce := uint64(0)
+	nonce2Bytes := big.NewInt(int64(token2Nonce)).Bytes()
+
+	quantity1 := big.NewInt(1)
+	quantity2 := big.NewInt(3)
+
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{big.NewInt(2).Bytes(), token1, nonce1Bytes, quantity1.Bytes(), token2, nonce2Bytes, quantity2.Bytes()},
+			GasProvided: 0,
+		},
+		RecipientAddr: destinationAddress,
+	}
+
+	// Invalid call, sender should be nil
+	sender, err := multiTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+	vmOutput, err := multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	require.Equal(t, ErrInvalidRcvAddr, err)
+
+	vmOutput, err = multiTransfer.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
+	require.Nil(t, err)
+	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
+
+	// reload destination, should have received tokens
+	destination, err = multiTransfer.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, destination, token1, token1Nonce, quantity1)
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, destination, token2, token2Nonce, quantity2)
+}
+
 func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	t.Parallel()
 
