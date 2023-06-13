@@ -51,6 +51,9 @@ func getAllBuiltInFunctions() []string {
 		core.ESDTRoleNFTAddURI,
 		core.ESDTRoleNFTUpdateAttributes,
 		core.ESDTRoleTransfer,
+		core.BuiltInFunctionSetGuardian,
+		core.BuiltInFunctionUnGuardAccount,
+		core.BuiltInFunctionGuardAccount,
 	}
 }
 
