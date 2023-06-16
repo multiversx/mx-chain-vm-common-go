@@ -35,7 +35,10 @@ type EnableEpochsHandlerStub struct {
 	IsWipeSingleNFTLiquidityDecreaseEnabledField         bool
 	IsAlwaysSaveTokenMetaDataEnabledField                bool
 	IsDynamicGasCostForDataTrieStorageLoadEnabledField   bool
+	IsChangeUsernameEnabledEpochField                    bool
 	IsSetGuardianEnabledField                            bool
+	IsConsistentTokensValuesLengthCheckEnabledField      bool
+	IsAutoBalanceDataTriesEnabledField                   bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
 	FixOOGReturnCodeEnableEpochField                     uint32
 	RemoveNonUpdatedStorageEnableEpochField              uint32
@@ -195,6 +198,11 @@ func (stub *EnableEpochsHandlerStub) IsRuntimeCodeSizeFixEnabled() bool {
 	return stub.IsRuntimeCodeSizeFixEnabledField
 }
 
+// IsConsistentTokensValuesLengthCheckEnabled -
+func (stub *EnableEpochsHandlerStub) IsConsistentTokensValuesLengthCheckEnabled() bool {
+	return stub.IsConsistentTokensValuesLengthCheckEnabledField
+}
+
 // MultiESDTTransferAsyncCallBackEnableEpoch -
 func (stub *EnableEpochsHandlerStub) MultiESDTTransferAsyncCallBackEnableEpoch() uint32 {
 	return stub.MultiESDTTransferAsyncCallBackEnableEpochField
@@ -263,6 +271,21 @@ func (stub *EnableEpochsHandlerStub) IsWipeSingleNFTLiquidityDecreaseEnabled() b
 // IsAlwaysSaveTokenMetaDataEnabled -
 func (stub *EnableEpochsHandlerStub) IsAlwaysSaveTokenMetaDataEnabled() bool {
 	return stub.IsAlwaysSaveTokenMetaDataEnabledField
+}
+
+// IsDynamicGasCostForDataTrieStorageLoadEnabled -
+func (stub *EnableEpochsHandlerStub) IsDynamicGasCostForDataTrieStorageLoadEnabled() bool {
+	return stub.IsDynamicGasCostForDataTrieStorageLoadEnabledField
+}
+
+// IsChangeUsernameEnabled -
+func (stub *EnableEpochsHandlerStub) IsChangeUsernameEnabled() bool {
+	return stub.IsChangeUsernameEnabledEpochField
+}
+
+// IsAutoBalanceDataTriesEnabled -
+func (stub *EnableEpochsHandlerStub) IsAutoBalanceDataTriesEnabled() bool {
+	return stub.IsAutoBalanceDataTriesEnabledField
 }
 
 // IsInterfaceNil -

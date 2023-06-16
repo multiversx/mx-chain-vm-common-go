@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
 )
 
@@ -80,6 +81,8 @@ type OutputAccount struct {
 
 // OutputTransfer contains the fields needed to create transfers to another shard
 type OutputTransfer struct {
+	// Index of the transfer
+	Index uint32
 	// Value to be transferred
 	Value *big.Int
 	// GasLimit to used for the call
@@ -182,6 +185,45 @@ func (vmOutput *VMOutput) GetFirstReturnData(asType vm.ReturnDataKind) (interfac
 	}
 
 	return nil, fmt.Errorf("can't interpret return data")
+}
+
+// GetMaxOutputTransferIndex returns the maximum output transfer index
+func (vmOutput *VMOutput) GetNextAvailableOutputTransferIndex() uint32 {
+	maxTransferIndex := uint32(0)
+	for _, account := range vmOutput.OutputAccounts {
+		for _, transfer := range account.OutputTransfers {
+			if transfer.Index > maxTransferIndex {
+				maxTransferIndex = transfer.Index
+			}
+		}
+	}
+
+	return maxTransferIndex + 1
+}
+
+// ReindexTransfers from VMOutput
+func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferIndexProvider) error {
+
+	if check.IfNil(nextIndexProvider) {
+		return ErrNilTransferIndexer
+	}
+
+	reindexed := false
+	crtIndex := nextIndexProvider.GetCrtTransferIndex() - 1
+	for _, account := range vmOutput.OutputAccounts {
+		for transferIdx, transfer := range account.OutputTransfers {
+			if transfer.Index == 0 {
+				return ErrTransfersNotIndexed
+			}
+			account.OutputTransfers[transferIdx].Index = transfer.Index + crtIndex
+			reindexed = true
+		}
+	}
+	if reindexed {
+		nextIndexProvider.SetCrtTransferIndex(vmOutput.GetNextAvailableOutputTransferIndex())
+	}
+
+	return nil
 }
 
 // MergeOutputAccounts merges the given account into the current one

@@ -1,11 +1,16 @@
 package mock
 
+import (
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+)
+
 // DataTrieTrackerStub -
 type DataTrieTrackerStub struct {
-	ClearDataCachesCalled func()
-	DirtyDataCalled       func() map[string][]byte
-	RetrieveValueCalled   func(key []byte) ([]byte, uint32, error)
-	SaveKeyValueCalled    func(key []byte, value []byte) error
+	ClearDataCachesCalled       func()
+	DirtyDataCalled             func() map[string][]byte
+	RetrieveValueCalled         func(key []byte) ([]byte, uint32, error)
+	SaveKeyValueCalled          func(key []byte, value []byte) error
+	MigrateDataTrieLeavesCalled func(args vmcommon.ArgsMigrateDataTrieLeaves) error
 }
 
 // ClearDataCaches -
@@ -37,6 +42,11 @@ func (dtts *DataTrieTrackerStub) SaveKeyValue(key []byte, value []byte) error {
 		return dtts.SaveKeyValueCalled(key, value)
 	}
 	return nil
+}
+
+// MigrateDataTrieLeaves -
+func (dtts *DataTrieTrackerStub) MigrateDataTrieLeaves(args vmcommon.ArgsMigrateDataTrieLeaves) error {
+	return dtts.MigrateDataTrieLeavesCalled(args)
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
