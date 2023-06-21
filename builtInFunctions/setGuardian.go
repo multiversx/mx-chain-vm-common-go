@@ -49,6 +49,9 @@ func (sg *setGuardian) ProcessBuiltinFunction(
 	if vmInput == nil {
 		return nil, ErrNilVmInput
 	}
+	if len(vmInput.Arguments) != noOfArgsSetGuardian {
+		return nil, fmt.Errorf("%w, expected %d, got %d ", ErrInvalidNumberOfArguments, noOfArgsSetGuardian, len(vmInput.Arguments))
+	}
 
 	senderAddr := acntSnd.AddressBytes()
 	senderIsNotCaller := !bytes.Equal(senderAddr, vmInput.CallerAddr)
