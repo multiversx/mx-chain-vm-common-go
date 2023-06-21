@@ -15,6 +15,7 @@ const (
 	esdtRandomSequenceLength = 6
 )
 
+// TODO refactor this part to use the built-in container for the list of all the built-in functions
 func getAllBuiltInFunctions() []string {
 	return []string{
 		core.BuiltInFunctionClaimDeveloperRewards,
@@ -52,6 +53,9 @@ func getAllBuiltInFunctions() []string {
 		core.ESDTRoleNFTAddURI,
 		core.ESDTRoleNFTUpdateAttributes,
 		core.ESDTRoleTransfer,
+		core.BuiltInFunctionSetGuardian,
+		core.BuiltInFunctionUnGuardAccount,
+		core.BuiltInFunctionGuardAccount,
 	}
 }
 
