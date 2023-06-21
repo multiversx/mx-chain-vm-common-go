@@ -146,6 +146,28 @@ func TestSetGuardian_ProcessBuiltinFunctionCheckArguments(t *testing.T) {
 			expectedErr:     ErrNilVmInput,
 		},
 		{
+			testname: "nil vm input arguments should error",
+			vmInput: func() *vmcommon.ContractCallInput {
+				input := *vmInput
+				input.Arguments = nil
+				return &input
+			},
+			senderAccount:   account,
+			receiverAccount: account,
+			expectedErr:     ErrInvalidNumberOfArguments,
+		},
+		{
+			testname: "one input arguments should error",
+			vmInput: func() *vmcommon.ContractCallInput {
+				input := *vmInput
+				input.Arguments = [][]byte{guardianAddress}
+				return &input
+			},
+			senderAccount:   account,
+			receiverAccount: account,
+			expectedErr:     ErrInvalidNumberOfArguments,
+		},
+		{
 			testname: "sender different to caller should error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				return vmInput
