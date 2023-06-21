@@ -384,6 +384,7 @@ type EnableEpochsHandler interface {
 	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
 	IsAlwaysSaveTokenMetaDataEnabled() bool
 	IsRuntimeCodeSizeFixEnabled() bool
+	IsDynamicGasCostForDataTrieStorageLoadEnabled() bool
 	IsChangeUsernameEnabled() bool
 	IsSetGuardianEnabled() bool
 	IsConsistentTokensValuesLengthCheckEnabled() bool
