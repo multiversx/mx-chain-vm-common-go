@@ -199,3 +199,12 @@ var ErrNilGuardedAccountHandler = errors.New("nil guarded account handler")
 
 // ErrInvalidServiceUID signals that an invalid service UID was provided
 var ErrInvalidServiceUID = errors.New("service UID is invalid")
+
+// ErrCannotMigrateNilUserName signals that a nil username is migrated
+var ErrCannotMigrateNilUserName = errors.New("cannot migrate nil username")
+
+// ErrWrongUserNameSplit signals that user name split is wrong
+var ErrWrongUserNameSplit = errors.New("wrong user name split")
+
+// ErrUserNamePrefixNotEqual signals that user name prefix is not equal
+var ErrUserNamePrefixNotEqual = errors.New("user name prefix is not equal")

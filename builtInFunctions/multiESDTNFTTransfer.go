@@ -284,6 +284,9 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
+		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+			return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+		}
 		listTransferData[i] = &vmcommon.ESDTTransfer{
 			ESDTValue:      big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2]),
 			ESDTTokenName:  vmInput.Arguments[tokenStartIndex],
@@ -300,6 +303,9 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			dstAddress,
 			listTransferData[i],
 			vmInput.ReturnCallAfterError)
+		if core.IsGetNodeFromDBError(err) {
+			return nil, err
+		}
 		if err != nil {
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}
