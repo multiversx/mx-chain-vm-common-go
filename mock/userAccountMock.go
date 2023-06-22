@@ -234,6 +234,11 @@ func (a *Account) SaveKeyValue(key []byte, value []byte) error {
 	return nil
 }
 
+// MigrateDataTrieLeaves -
+func (a *Account) MigrateDataTrieLeaves(args vmcommon.ArgsMigrateDataTrieLeaves) error {
+	return nil
+}
+
 // ClearDataCaches -
 func (a *Account) ClearDataCaches() {
 }

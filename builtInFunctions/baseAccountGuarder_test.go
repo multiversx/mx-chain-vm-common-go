@@ -75,28 +75,14 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 	vmInput.RecipientAddr = account.Address
 
 	tests := []struct {
+		testname      string
 		vmInput       func() *vmcommon.ContractCallInput
 		senderAccount vmcommon.UserAccountHandler
 		expectedErr   error
 		noOfArgs      uint32
 	}{
 		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return vmInput
-			},
-			senderAccount: nil,
-			expectedErr:   ErrNilUserAccount,
-			noOfArgs:      1,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				return nil
-			},
-			senderAccount: account,
-			expectedErr:   ErrNilVmInput,
-			noOfArgs:      1,
-		},
-		{
+			testname: "operation not permitted for different sender and caller",
 			vmInput: func() *vmcommon.ContractCallInput {
 				return vmInput
 			},
@@ -105,27 +91,7 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 			noOfArgs:      1,
 		},
 		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.CallerAddr = []byte("userAddress2")
-				input.RecipientAddr = mockvm.NewUserAccount([]byte("userAddress2")).Address
-				return &input
-			},
-			senderAccount: account,
-			expectedErr:   ErrOperationNotPermitted,
-			noOfArgs:      1,
-		},
-		{
-			vmInput: func() *vmcommon.ContractCallInput {
-				input := *vmInput
-				input.CallerAddr = []byte("userAddress2")
-				return &input
-			},
-			senderAccount: account,
-			expectedErr:   ErrOperationNotPermitted,
-			noOfArgs:      1,
-		},
-		{
+			testname: "nil transfer value should return error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.CallValue = nil
@@ -136,6 +102,7 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 			noOfArgs:      1,
 		},
 		{
+			testname: "non zero transfer value should return error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.CallValue = big.NewInt(1)
@@ -146,6 +113,7 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 			noOfArgs:      1,
 		},
 		{
+			testname: "invalid number of arguments should return error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.Arguments = [][]byte{guardianAddress, guardianAddress}
@@ -156,6 +124,7 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 			noOfArgs:      1,
 		},
 		{
+			testname: "not enough gas should return error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				input := *vmInput
 				input.GasProvided = 0
@@ -166,6 +135,7 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 			noOfArgs:      1,
 		},
 		{
+			testname: "valid arguments should return no error",
 			vmInput: func() *vmcommon.ContractCallInput {
 				return vmInput
 			},
@@ -179,7 +149,13 @@ func TestBaseAccountGuarder_CheckArgs(t *testing.T) {
 	baseAccGuarder, _ := newBaseAccountGuarder(args)
 
 	for _, test := range tests {
-		err := baseAccGuarder.checkBaseAccountGuarderArgs(test.senderAccount, test.vmInput(), test.noOfArgs)
+		err := baseAccGuarder.checkBaseAccountGuarderArgs(
+			test.senderAccount.AddressBytes(),
+			test.vmInput().RecipientAddr,
+			test.vmInput().CallValue,
+			test.vmInput().GasProvided,
+			test.vmInput().Arguments,
+			test.noOfArgs)
 		if test.expectedErr != nil {
 			require.Error(t, err)
 			require.True(t, strings.Contains(err.Error(), test.expectedErr.Error()))

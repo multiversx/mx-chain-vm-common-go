@@ -206,7 +206,10 @@ func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobal
 		return nil, err
 	}
 
-	val, _, _ := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	val, _, err := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, err
+	}
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	return &esdtMetaData, nil
 }

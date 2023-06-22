@@ -334,3 +334,41 @@ func TestParseSCDeploy(t *testing.T) {
 		}, res)
 	})
 }
+
+func TestGuardians(t *testing.T) {
+	arguments := createMockArgumentsOperationParser()
+	parser, _ := NewOperationDataFieldParser(arguments)
+
+	t.Run("SetGuardian", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte("SetGuardian")
+
+		res := parser.Parse(dataField, sender, sender, 3)
+		require.Equal(t, &ResponseParseData{
+			Operation: core.BuiltInFunctionSetGuardian,
+		}, res)
+	})
+
+	t.Run("GuardAccount", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte("GuardAccount")
+
+		res := parser.Parse(dataField, sender, sender, 3)
+		require.Equal(t, &ResponseParseData{
+			Operation: core.BuiltInFunctionGuardAccount,
+		}, res)
+	})
+
+	t.Run("UnGuardAccount", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte("UnGuardAccount")
+
+		res := parser.Parse(dataField, sender, sender, 3)
+		require.Equal(t, &ResponseParseData{
+			Operation: core.BuiltInFunctionUnGuardAccount,
+		}, res)
+	})
+}

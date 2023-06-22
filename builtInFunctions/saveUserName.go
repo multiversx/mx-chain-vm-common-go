@@ -13,29 +13,39 @@ import (
 
 type saveUserName struct {
 	baseAlwaysActiveHandler
-	gasCost         uint64
-	mapDnsAddresses map[string]struct{}
-	enableChange    bool
-	mutExecution    sync.RWMutex
+	gasCost           uint64
+	isChangeEnabled   func() bool
+	mapDnsAddresses   map[string]struct{}
+	mapDnsV2Addresses map[string]struct{}
+	mutExecution      sync.RWMutex
 }
 
 // NewSaveUserNameFunc returns a username built in function implementation
 func NewSaveUserNameFunc(
 	gasCost uint64,
 	mapDnsAddresses map[string]struct{},
-	enableChange bool,
+	mapDnsV2Addresses map[string]struct{},
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*saveUserName, error) {
-	if mapDnsAddresses == nil {
+	if mapDnsAddresses == nil || mapDnsV2Addresses == nil {
 		return nil, ErrNilDnsAddresses
+	}
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
 	}
 
 	s := &saveUserName{
-		gasCost:      gasCost,
-		enableChange: enableChange,
+		gasCost:         gasCost,
+		isChangeEnabled: enableEpochsHandler.IsChangeUsernameEnabled,
 	}
 	s.mapDnsAddresses = make(map[string]struct{}, len(mapDnsAddresses))
 	for key := range mapDnsAddresses {
 		s.mapDnsAddresses[key] = struct{}{}
+	}
+
+	s.mapDnsV2Addresses = make(map[string]struct{}, len(mapDnsV2Addresses))
+	for key := range mapDnsV2Addresses {
+		s.mapDnsV2Addresses[key] = struct{}{}
 	}
 
 	return s, nil
@@ -52,59 +62,105 @@ func (s *saveUserName) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	s.mutExecution.Unlock()
 }
 
+func inputCheckForUserNameCall(
+	acntSnd vmcommon.UserAccountHandler,
+	vmInput *vmcommon.ContractCallInput,
+	mapDnsAddresses map[string]struct{},
+	gasCost uint64,
+	numArgs int,
+) error {
+	if vmInput == nil {
+		return ErrNilVmInput
+	}
+	if vmInput.CallValue.Cmp(zero) != 0 {
+		return ErrBuiltInFunctionCalledWithValue
+	}
+	if !check.IfNil(acntSnd) && vmInput.GasProvided < gasCost {
+		return ErrNotEnoughGas
+	}
+	_, ok := mapDnsAddresses[string(vmInput.CallerAddr)]
+	if !ok {
+		return ErrCallerIsNotTheDNSAddress
+	}
+	if len(vmInput.Arguments) != numArgs {
+		return ErrInvalidArguments
+	}
+	return nil
+}
+
+func createCrossShardUserNameCall(
+	vmInput *vmcommon.ContractCallInput,
+	builtInFuncName string,
+	gasLimit uint64,
+) (*vmcommon.VMOutput, error) {
+	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
+	vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
+	setUserNameTxData := builtInFuncName
+	for _, arg := range vmInput.Arguments {
+		setUserNameTxData += "@" + hex.EncodeToString(arg)
+	}
+	outTransfer := vmcommon.OutputTransfer{
+		Value:         big.NewInt(0),
+		GasLimit:      gasLimit,
+		GasLocked:     vmInput.GasLocked,
+		Data:          []byte(setUserNameTxData),
+		CallType:      vm.AsynchronousCall,
+		SenderAddress: vmInput.CallerAddr,
+	}
+
+	vmOutput.OutputAccounts[string(vmInput.RecipientAddr)] = &vmcommon.OutputAccount{
+		Address:         vmInput.RecipientAddr,
+		OutputTransfers: []vmcommon.OutputTransfer{outTransfer},
+	}
+	return vmOutput, nil
+}
+
 // ProcessBuiltinFunction sets the username to the account if it is allowed
 func (s *saveUserName) ProcessBuiltinFunction(
-	_, acntDst vmcommon.UserAccountHandler,
+	acntSnd, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	s.mutExecution.RLock()
 	defer s.mutExecution.RUnlock()
 
-	if vmInput == nil {
-		return nil, ErrNilVmInput
+	addressesToCheck := s.mapDnsV2Addresses
+	if !s.isChangeEnabled() {
+		addressesToCheck = s.mapDnsAddresses
 	}
-	if vmInput.CallValue.Cmp(zero) != 0 {
-		return nil, ErrBuiltInFunctionCalledWithValue
-	}
-	if vmInput.GasProvided < s.gasCost {
-		return nil, ErrNotEnoughGas
-	}
-	_, ok := s.mapDnsAddresses[string(vmInput.CallerAddr)]
-	if !ok {
-		return nil, ErrCallerIsNotTheDNSAddress
-	}
-	if len(vmInput.Arguments) != 1 {
-		return nil, ErrInvalidArguments
+
+	err := inputCheckForUserNameCall(acntSnd, vmInput, addressesToCheck, s.gasCost, 1)
+	if err != nil {
+		return nil, err
 	}
 
 	if check.IfNil(acntDst) {
-		// cross-shard call, in sender shard only the gas is taken out
-		vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
-		vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
-		setUserNameTxData := core.BuiltInFunctionSetUserName + "@" + hex.EncodeToString(vmInput.Arguments[0])
-		outTransfer := vmcommon.OutputTransfer{
-			Value:         big.NewInt(0),
-			GasLimit:      vmInput.GasProvided,
-			GasLocked:     vmInput.GasLocked,
-			Data:          []byte(setUserNameTxData),
-			CallType:      vm.AsynchronousCall,
-			SenderAddress: vmInput.CallerAddr,
+		gasLimit := vmInput.GasProvided
+		if s.isChangeEnabled() {
+			gasLimit = vmInput.GasProvided - s.gasCost
 		}
-		vmOutput.OutputAccounts[string(vmInput.RecipientAddr)] = &vmcommon.OutputAccount{
-			Address:         vmInput.RecipientAddr,
-			OutputTransfers: []vmcommon.OutputTransfer{outTransfer},
-		}
-		return vmOutput, nil
+
+		return createCrossShardUserNameCall(vmInput, core.BuiltInFunctionSetUserName, gasLimit)
 	}
 
 	currentUserName := acntDst.GetUserName()
-	if !s.enableChange && len(currentUserName) > 0 {
+	if !s.isChangeEnabled() && len(currentUserName) > 0 {
 		return nil, ErrUserNameChangeIsDisabled
 	}
 
 	acntDst.SetUserName(vmInput.Arguments[0])
 
-	return &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided - s.gasCost, ReturnCode: vmcommon.Ok}, nil
+	gasRemaining := vmInput.GasProvided - s.gasCost
+	if s.isChangeEnabled() && check.IfNil(acntSnd) {
+		gasRemaining = vmInput.GasProvided
+	}
+
+	vmOutput := &vmcommon.VMOutput{
+		GasRemaining: gasRemaining,
+		ReturnCode:   vmcommon.Ok,
+	}
+	addLogEntryForUserNameChange(vmInput, vmOutput, currentUserName)
+
+	return vmOutput, nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil
