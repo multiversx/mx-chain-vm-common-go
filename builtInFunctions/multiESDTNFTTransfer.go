@@ -10,7 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type esdtNFTMultiTransfer struct {
@@ -215,6 +215,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
@@ -468,6 +469,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 			vmOutput.GasRemaining = 0
 		}
 		addNFTTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionMultiESDTNFTTransfer,
@@ -488,6 +490,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,

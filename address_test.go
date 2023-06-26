@@ -75,3 +75,21 @@ func TestIsSmartContractOnMetachain_ShouldReturnTrue(t *testing.T) {
 	scAddress, _ := hex.DecodeString("000000000000000000000000000000000000000000000000000000b51e0eb3a1")
 	assert.True(t, IsSmartContractOnMetachain(identifier, scAddress))
 }
+
+func Test_ParseVMTypeFromContractAddress_Ok(t *testing.T) {
+	t.Parallel()
+
+	identifier, _ := hex.DecodeString("0a0b")
+	scAddress, _ := hex.DecodeString("00000000000000000a0b5fed9c659422cd8429ce92f8973bba2a9fb51e0eb3a1")
+	vmType, _ := ParseVMTypeFromContractAddress(scAddress)
+	assert.Equal(t, identifier, vmType)
+}
+
+func Test_ParseVMTypeFromContractAddress_Invalid(t *testing.T) {
+	t.Parallel()
+
+	scAddress, _ := hex.DecodeString("12345")
+	vmType, err := ParseVMTypeFromContractAddress(scAddress)
+	assert.Nil(t, vmType)
+	assert.Equal(t, ErrInvalidVMType, err)
+}
