@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"errors"
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -18,34 +19,41 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		argsFunc func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler)
+		argsFunc func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler)
 		exError  error
 	}{
 		{
 			name: "NilMarshalizer",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
-				return 0, nil, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
+				return 0, nil, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
 			},
 			exError: ErrNilMarshalizer,
 		},
 		{
 			name: "NilGlobalSettingsHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
-				return 0, &mock.MarshalizerMock{}, nil, &mock.ESDTRoleHandlerStub{}
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
+				return 0, &mock.MarshalizerMock{}, nil, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
 			},
 			exError: ErrNilGlobalSettingsHandler,
 		},
 		{
 			name: "NilRolesHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
-				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
+				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil, &mock.EnableEpochsHandlerStub{}
 			},
 			exError: ErrNilRolesHandler,
 		},
 		{
+			name: "NilEnableEpochsHandler",
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
+				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, nil
+			},
+			exError: ErrNilEnableEpochsHandler,
+		},
+		{
 			name: "Ok",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler) {
-				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}
+			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
+				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
 			},
 			exError: nil,
 		},
@@ -62,7 +70,7 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 func TestEsdtLocalMint_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
 
 	esdtLocalMintF.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{
 		ESDTLocalMint: 500},
@@ -74,7 +82,7 @@ func TestEsdtLocalMint_SetNewGasConfig(t *testing.T) {
 func TestEsdtLocalMint_ProcessBuiltinFunction_CalledWithValueShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{})
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
 
 	_, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -92,7 +100,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CheckAllowToExecuteShouldErr(t *te
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return localErr
 		},
-	})
+	}, &mock.EnableEpochsHandlerStub{})
 
 	_, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -110,7 +118,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t 
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return nil
 		},
-	})
+	}, &mock.EnableEpochsHandlerStub{})
 
 	localErr := errors.New("local err")
 	_, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.UserAccountStub{
@@ -133,6 +141,62 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t 
 	require.Equal(t, localErr, err)
 }
 
+func TestEsdtLocalMint_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &mock.MarshalizerMock{}
+	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			assert.Equal(t, core.ESDTRoleLocalMint, string(action))
+			return nil
+		},
+	}
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, &mock.EnableEpochsHandlerStub{})
+
+	sndAccount := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
+					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					return serializedEsdtData, 0, err
+				},
+				SaveKeyValueCalled: func(key []byte, value []byte) error {
+					esdtData := &esdt.ESDigitalToken{}
+					_ = marshaller.Unmarshal(esdtData, value)
+					//require.Equal(t, big.NewInt(101), esdtData.Value)
+					return nil
+				},
+			}
+		},
+	}
+	bigValueStr := "1" + strings.Repeat("0", 1000)
+	bigValue, _ := big.NewInt(0).SetString(bigValueStr, 10)
+	vmOutput, err := esdtLocalMintF.ProcessBuiltinFunction(sndAccount, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{[]byte("arg1"), bigValue.Bytes()},
+			GasProvided: 500,
+		},
+	})
+	require.Equal(t, "invalid arguments to process built-in function max length for esdt issue is 100", err.Error())
+	require.Empty(t, vmOutput)
+
+	// try again with the flag enabled
+	esdtLocalMintF.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsConsistentTokensValuesLengthCheckEnabledField: true,
+	}
+	vmOutput, err = esdtLocalMintF.ProcessBuiltinFunction(sndAccount, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{[]byte("arg1"), bigValue.Bytes()},
+			GasProvided: 500,
+		},
+	})
+	require.Equal(t, "invalid arguments to process built-in function: max length for esdt local mint value is 100", err.Error())
+	require.Empty(t, vmOutput)
+}
+
 func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	t.Parallel()
 
@@ -143,7 +207,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 			return nil
 		},
 	}
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler)
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, &mock.EnableEpochsHandlerStub{})
 
 	sndAccout := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {

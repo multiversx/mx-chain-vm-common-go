@@ -10,7 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type esdtNFTMultiTransfer struct {
@@ -215,6 +215,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
@@ -281,6 +282,9 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
+		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+			return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+		}
 		listTransferData[i] = &vmcommon.ESDTTransfer{
 			ESDTValue:      big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2]),
 			ESDTTokenName:  vmInput.Arguments[tokenStartIndex],
@@ -297,6 +301,9 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			dstAddress,
 			listTransferData[i],
 			vmInput.ReturnCallAfterError)
+		if core.IsGetNodeFromDBError(err) {
+			return nil, err
+		}
 		if err != nil {
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}
@@ -462,6 +469,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 			vmOutput.GasRemaining = 0
 		}
 		addNFTTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionMultiESDTNFTTransfer,
@@ -482,6 +490,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
