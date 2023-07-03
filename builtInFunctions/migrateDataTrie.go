@@ -42,7 +42,10 @@ func NewMigrateDataTrieFunc(
 
 // ProcessBuiltinFunction will migrate as many leaves as possible from the old version to the new version.
 // This will stop when it runs out of gas.
-func (mdt *migrateDataTrie) ProcessBuiltinFunction(_, acntDst vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
+func (mdt *migrateDataTrie) ProcessBuiltinFunction(
+	_, acntDst vmcommon.UserAccountHandler,
+	vmInput *vmcommon.ContractCallInput,
+) (*vmcommon.VMOutput, error) {
 	dataTrieGasCost := mdt.getGasCostForDataTrieLoadAndStore()
 
 	err := checkArgumentsForMigrateDataTrie(acntDst, vmInput, dataTrieGasCost)

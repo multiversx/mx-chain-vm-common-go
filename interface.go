@@ -108,6 +108,9 @@ type BlockchainHook interface {
 	// RevertToSnapshot reverts snaphots up to the specified one
 	RevertToSnapshot(snapshot int) error
 
+	// ExecuteSmartContractCallOnOtherVM runs contract on another VM
+	ExecuteSmartContractCallOnOtherVM(input *ContractCallInput) (*VMOutput, error)
+
 	// IsInterfaceNil returns true if there is no value under the interface
 	IsInterfaceNil() bool
 }
@@ -280,6 +283,18 @@ type EpochNotifier interface {
 	IsInterfaceNil() bool
 }
 
+// RoundSubscriberHandler defines the behavior of a component that can be notified if a new epoch was confirmed
+type RoundSubscriberHandler interface {
+	RoundConfirmed(round uint64, timestamp uint64)
+	IsInterfaceNil() bool
+}
+
+// RoundNotifier can notify upon an epoch change and provide the current epoch
+type RoundNotifier interface {
+	RegisterNotifyHandler(handler RoundSubscriberHandler)
+	IsInterfaceNil() bool
+}
+
 // ESDTTransferParser can parse single and multi ESDT / NFT transfers
 type ESDTTransferParser interface {
 	ParseESDTTransfers(sndAddr []byte, rcvAddr []byte, function string, args [][]byte) (*ParsedESDTTransfers, error)
@@ -401,5 +416,13 @@ type DataTrieMigrator interface {
 	ConsumeStorageLoadGas() bool
 	AddLeafToMigrationQueue(leafData core.TrieData, newLeafVersion core.TrieNodeVersion) (bool, error)
 	GetLeavesToBeMigrated() []core.TrieData
+	IsInterfaceNil() bool
+}
+
+// NextOutputTransferIndexProvider interface abstracts a type that manages a transfer index counter
+type NextOutputTransferIndexProvider interface {
+	NextOutputTransferIndex() uint32
+	GetCrtTransferIndex() uint32
+	SetCrtTransferIndex(index uint32)
 	IsInterfaceNil() bool
 }
