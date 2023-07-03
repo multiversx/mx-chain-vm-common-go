@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -103,6 +104,43 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 
 	_, err = skv.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.True(t, errors.Is(err, ErrOperationNotPermitted))
+}
+
+func TestSaveKeyValue_ProcessBuiltinFunctionGetNodeFromDbKey(t *testing.T) {
+	t.Parallel()
+
+	funcGasCost := uint64(1)
+	gasConfig := vmcommon.BaseOperationCost{
+		StorePerByte:      1,
+		ReleasePerByte:    1,
+		DataCopyPerByte:   1,
+		PersistPerByte:    1,
+		CompilePerByte:    1,
+		AoTPreparePerByte: 1,
+	}
+
+	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
+	addr := []byte("addr")
+	acc := &mock.AccountWrapMock{
+		RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+			return nil, 0, core.NewGetNodeFromDBErrWithKey([]byte("key"), errors.New("error"), "")
+		},
+	}
+
+	key := []byte("key")
+	value := []byte("value")
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallerAddr:  addr,
+			GasProvided: 50,
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{key, value},
+		},
+		RecipientAddr: addr,
+	}
+
+	_, err := skv.ProcessBuiltinFunction(acc, acc, vmInput)
+	assert.True(t, core.IsGetNodeFromDBError(err))
 }
 
 func TestSaveKeyValueStorage_ProcessBuiltinFunctionNilAccountSender(t *testing.T) {
