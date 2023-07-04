@@ -8,7 +8,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type saveUserName struct {
@@ -100,6 +100,7 @@ func createCrossShardUserNameCall(
 		setUserNameTxData += "@" + hex.EncodeToString(arg)
 	}
 	outTransfer := vmcommon.OutputTransfer{
+		Index:         1,
 		Value:         big.NewInt(0),
 		GasLimit:      gasLimit,
 		GasLocked:     vmInput.GasLocked,
