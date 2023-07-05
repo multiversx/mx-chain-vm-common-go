@@ -36,6 +36,7 @@ type EnableEpochsHandlerStub struct {
 	IsAlwaysSaveTokenMetaDataEnabledField                bool
 	IsChangeUsernameEnabledEpochField                    bool
 	IsSetGuardianEnabledField                            bool
+	IsScToScEventLogEnabledField                         bool
 	IsConsistentTokensValuesLengthCheckEnabledField      bool
 	IsAutoBalanceDataTriesEnabledField                   bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
@@ -55,6 +56,11 @@ type EnableEpochsHandlerStub struct {
 // IsSetGuardianEnabled -
 func (stub *EnableEpochsHandlerStub) IsSetGuardianEnabled() bool {
 	return stub.IsSetGuardianEnabledField
+}
+
+// IsScToScEventLogEnabled -
+func (stub *EnableEpochsHandlerStub) IsScToScEventLogEnabled() bool {
+	return stub.IsScToScEventLogEnabledField
 }
 
 // IsGlobalMintBurnFlagEnabled -

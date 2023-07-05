@@ -205,20 +205,32 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		topicTokenData = append(topicTokenData,
-			&TopicTokenData{
+		if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+			topicTokenData = append(topicTokenData,
+				&TopicTokenData{
+					tokenID,
+					nonce,
+					value,
+				})
+		} else {
+			addESDTEntryInVMOutput(vmOutput,
+				[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
 				tokenID,
 				nonce,
 				value,
-			})
+				vmInput.CallerAddr,
+				acntDst.AddressBytes())
+		}
 	}
 
-	addESDTEntryForTransferInVMOutput(
-		vmInput, vmOutput,
-		[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
-		acntDst.AddressBytes(),
-		topicTokenData,
-	)
+	if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+			acntDst.AddressBytes(),
+			topicTokenData,
+		)
+	}
 
 	// no need to consume gas on destination - sender already paid for it
 	if len(vmInput.Arguments) > int(minNumOfArguments) && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
@@ -322,20 +334,32 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}
 
-		topicTokenData = append(topicTokenData,
-			&TopicTokenData{
+		if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+			topicTokenData = append(topicTokenData,
+				&TopicTokenData{
+					listTransferData[i].ESDTTokenName,
+					listTransferData[i].ESDTTokenNonce,
+					listTransferData[i].ESDTValue,
+				})
+		} else {
+			addESDTEntryInVMOutput(vmOutput,
+				[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
 				listTransferData[i].ESDTTokenName,
 				listTransferData[i].ESDTTokenNonce,
 				listTransferData[i].ESDTValue,
-			})
+				vmInput.CallerAddr,
+				dstAddress)
+		}
 	}
 
-	addESDTEntryForTransferInVMOutput(
-		vmInput, vmOutput,
-		[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
-		dstAddress,
-		topicTokenData,
-	)
+	if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+			dstAddress,
+			topicTokenData,
+		)
+	}
 
 	if !check.IfNil(acntDst) {
 		err = e.accounts.SaveAccount(acntDst)

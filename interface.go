@@ -386,6 +386,7 @@ type EnableEpochsHandler interface {
 	IsRuntimeCodeSizeFixEnabled() bool
 	IsChangeUsernameEnabled() bool
 	IsSetGuardianEnabled() bool
+	IsScToScEventLogEnabled() bool
 	IsConsistentTokensValuesLengthCheckEnabled() bool
 	IsAutoBalanceDataTriesEnabled() bool
 
