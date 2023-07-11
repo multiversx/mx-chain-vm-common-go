@@ -352,53 +352,27 @@ type AcceptPayableChecker interface {
 
 // EnableEpochsHandler is used to verify which flags are set in the current epoch based on EnableEpochs config
 type EnableEpochsHandler interface {
-	IsGlobalMintBurnFlagEnabled() bool
-	IsESDTTransferRoleFlagEnabled() bool
-	IsBuiltInFunctionsFlagEnabled() bool
-	IsCheckCorrectTokenIDForTransferRoleFlagEnabled() bool
-	IsMultiESDTTransferFixOnCallBackFlagEnabled() bool
-	IsFixOOGReturnCodeFlagEnabled() bool
-	IsRemoveNonUpdatedStorageFlagEnabled() bool
-	IsCreateNFTThroughExecByCallerFlagEnabled() bool
-	IsStorageAPICostOptimizationFlagEnabled() bool
-	IsFailExecutionOnEveryAPIErrorFlagEnabled() bool
-	IsManagedCryptoAPIsFlagEnabled() bool
-	IsSCDeployFlagEnabled() bool
-	IsAheadOfTimeGasUsageFlagEnabled() bool
-	IsRepairCallbackFlagEnabled() bool
-	IsDisableExecByCallerFlagEnabled() bool
-	IsRefactorContextFlagEnabled() bool
-	IsCheckFunctionArgumentFlagEnabled() bool
-	IsCheckExecuteOnReadOnlyFlagEnabled() bool
-	IsFixAsyncCallbackCheckFlagEnabled() bool
-	IsSaveToSystemAccountFlagEnabled() bool
-	IsCheckFrozenCollectionFlagEnabled() bool
-	IsSendAlwaysFlagEnabled() bool
-	IsValueLengthCheckFlagEnabled() bool
-	IsCheckTransferFlagEnabled() bool
-	IsTransferToMetaFlagEnabled() bool
-	IsESDTNFTImprovementV1FlagEnabled() bool
-	IsFixOldTokenLiquidityEnabled() bool
-	IsRuntimeMemStoreLimitEnabled() bool
-	IsMaxBlockchainHookCountersFlagEnabled() bool
-	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
-	IsAlwaysSaveTokenMetaDataEnabled() bool
-	IsRuntimeCodeSizeFixEnabled() bool
-	IsChangeUsernameEnabled() bool
-	IsSetGuardianEnabled() bool
-	IsConsistentTokensValuesLengthCheckEnabled() bool
-	IsAutoBalanceDataTriesEnabled() bool
+	IsGlobalMintBurnFlagEnabledInEpoch(epoch uint32) bool
+	IsESDTTransferRoleFlagEnabledInEpoch(epoch uint32) bool
+	IsCheckCorrectTokenIDForTransferRoleFlagEnabledInEpoch(epoch uint32) bool
+	IsCheckFunctionArgumentFlagEnabledInEpoch(epoch uint32) bool
+	IsFixAsyncCallbackCheckFlagEnabledInEpoch(epoch uint32) bool
+	IsSaveToSystemAccountFlagEnabledInEpoch(epoch uint32) bool
+	IsCheckFrozenCollectionFlagEnabledInEpoch(epoch uint32) bool
+	IsSendAlwaysFlagEnabledInEpoch(epoch uint32) bool
+	IsValueLengthCheckFlagEnabledInEpoch(epoch uint32) bool
+	IsCheckTransferFlagEnabledInEpoch(epoch uint32) bool
+	IsTransferToMetaFlagEnabledInEpoch(epoch uint32) bool
+	IsESDTNFTImprovementV1FlagEnabledInEpoch(epoch uint32) bool
+	IsFixOldTokenLiquidityEnabledInEpoch(epoch uint32) bool
+	IsWipeSingleNFTLiquidityDecreaseEnabledInEpoch(epoch uint32) bool
+	IsAlwaysSaveTokenMetaDataEnabledInEpoch(epoch uint32) bool
+	IsChangeUsernameEnabledInEpoch(epoch uint32) bool
+	IsSetGuardianEnabledInEpoch(epoch uint32) bool
+	IsConsistentTokensValuesLengthCheckEnabledInEpoch(epoch uint32) bool
+	IsAutoBalanceDataTriesEnabledInEpoch(epoch uint32) bool
 
-	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
-	FixOOGReturnCodeEnableEpoch() uint32
-	RemoveNonUpdatedStorageEnableEpoch() uint32
-	CreateNFTThroughExecByCallerEnableEpoch() uint32
-	FixFailExecutionOnErrorEnableEpoch() uint32
-	ManagedCryptoAPIEnableEpoch() uint32
-	DisableExecByCallerEnableEpoch() uint32
-	RefactorContextEnableEpoch() uint32
-	CheckExecuteReadOnlyEnableEpoch() uint32
-	StorageAPICostOptimizationEnableEpoch() uint32
+	GetCurrentEpoch() uint32
 
 	IsInterfaceNil() bool
 }

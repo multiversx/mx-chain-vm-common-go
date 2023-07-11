@@ -43,9 +43,10 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 		gasCost:           1,
 		mapDnsAddresses:   mapDnsAddresses,
 		mapDnsV2Addresses: make(map[string]struct{}),
-		isChangeEnabled: func() bool {
+		isChangeEnabled: func(_ uint32) bool {
 			return false
 		},
+		currentEpochHandler: epochZeroHandler,
 	}
 
 	addr := []byte("addr")
@@ -84,7 +85,7 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Equal(t, ErrUserNameChangeIsDisabled, err)
 
-	coa.isChangeEnabled = func() bool {
+	coa.isChangeEnabled = func(_ uint32) bool {
 		return true
 	}
 

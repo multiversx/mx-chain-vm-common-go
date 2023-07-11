@@ -47,7 +47,8 @@ func newBaseAccountGuarder(args BaseAccountGuarderArgs) (*baseAccountGuarder, er
 		guardedAccountHandler: args.GuardedAccountHandler,
 	}
 
-	accGuarder.activeHandler = args.EnableEpochsHandler.IsSetGuardianEnabled
+	accGuarder.activeHandler = args.EnableEpochsHandler.IsSetGuardianEnabledInEpoch
+	accGuarder.currentEpochHandler = args.EnableEpochsHandler.GetCurrentEpoch
 
 	return accGuarder, nil
 }

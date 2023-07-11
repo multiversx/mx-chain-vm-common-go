@@ -80,7 +80,8 @@ func NewESDTNFTMultiTransferFunc(
 		enableEpochsHandler:   enableEpochsHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = e.enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled
+	e.baseActiveHandler.activeHandler = e.enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabledInEpoch
+	e.baseActiveHandler.currentEpochHandler = e.enableEpochsHandler.GetCurrentEpoch
 
 	return e, nil
 }
@@ -239,7 +240,9 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsTransferToMetaFlagEnabled()
+
+	currentEpoch := e.enableEpochsHandler.GetCurrentEpoch()
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsTransferToMetaFlagEnabledInEpoch(currentEpoch)
 	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
@@ -282,7 +285,8 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
-		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+		isConsistenTokensValuesLenghtCheckEnabled := e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabledInEpoch(currentEpoch)
+		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && isConsistenTokensValuesLenghtCheckEnabled {
 			return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}
 		listTransferData[i] = &vmcommon.ESDTTransfer{
@@ -356,7 +360,8 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	esdtData.Value.Set(transferData.ESDTValue)
 
 	tokenID := esdtTokenKey
-	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabled() {
+	currentEpoch := e.enableEpochsHandler.GetCurrentEpoch()
+	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabledInEpoch(currentEpoch) {
 		tokenID = transferData.ESDTTokenName
 	}
 

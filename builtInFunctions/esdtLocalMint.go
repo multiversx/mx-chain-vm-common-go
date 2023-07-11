@@ -86,7 +86,8 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 	}
 
 	if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
-		if e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+		currentEpoch := e.enableEpochsHandler.GetCurrentEpoch()
+		if e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabledInEpoch(currentEpoch) {
 			return nil, fmt.Errorf("%w: max length for esdt local mint value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}
 		// backward compatibility - return old error

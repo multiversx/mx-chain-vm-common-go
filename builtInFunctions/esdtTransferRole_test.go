@@ -191,7 +191,7 @@ func TestESDTTransferRoleIsSenderOrDestinationWithTransferRole(t *testing.T) {
 	addresses, _, _ := getESDTRolesForAcnt(e.marshaller, systemAcc, append(transferAddressesKeyPrefix, vmInput.Arguments[0]...))
 	assert.Equal(t, len(addresses.Roles), 3)
 
-	globalSettings, _ := NewESDTGlobalSettingsFunc(accounts, marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, enableEpochsHandler.IsSendAlwaysFlagEnabled)
+	globalSettings, _ := NewESDTGlobalSettingsFunc(accounts, marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, enableEpochsHandler.IsSendAlwaysFlagEnabledInEpoch, enableEpochsHandler.GetCurrentEpoch)
 	assert.False(t, globalSettings.IsSenderOrDestinationWithTransferRole(nil, nil, nil))
 	assert.False(t, globalSettings.IsSenderOrDestinationWithTransferRole(vmInput.Arguments[1], []byte("random"), []byte("random")))
 	assert.False(t, globalSettings.IsSenderOrDestinationWithTransferRole(vmInput.Arguments[1], vmInput.Arguments[2], []byte("random")))

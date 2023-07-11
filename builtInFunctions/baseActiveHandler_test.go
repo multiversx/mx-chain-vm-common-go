@@ -12,23 +12,26 @@ func TestBaseActiveHandler_IsActive(t *testing.T) {
 	t.Parallel()
 
 	handler := &baseActiveHandler{
-		activeHandler: trueHandler,
+		activeHandler:       trueHandler,
+		currentEpochHandler: epochZeroHandler,
 	}
 	assert.False(t, check.IfNil(handler))
 	assert.True(t, handler.IsActive())
 
 	handler = &baseActiveHandler{
-		activeHandler: falseHandler,
+		activeHandler:       falseHandler,
+		currentEpochHandler: epochZeroHandler,
 	}
 	assert.False(t, handler.IsActive())
 
 	enableEpochsHandler := mock.EnableEpochsHandlerStub{}
 	handler = &baseActiveHandler{
-		activeHandler: enableEpochsHandler.IsSCDeployFlagEnabled,
+		activeHandler:       enableEpochsHandler.IsSetGuardianEnabledInEpoch,
+		currentEpochHandler: epochZeroHandler,
 	}
 	assert.False(t, handler.IsActive())
 
-	enableEpochsHandler.IsSCDeployFlagEnabledField = true
+	enableEpochsHandler.IsSetGuardianEnabledField = true
 	assert.True(t, handler.IsActive())
 }
 

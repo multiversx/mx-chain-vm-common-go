@@ -43,7 +43,8 @@ func NewESDTBurnFunc(
 		globalSettingsHandler: globalSettingsHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsGlobalMintBurnFlagEnabled
+	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsGlobalMintBurnFlagEnabledInEpoch
+	e.baseActiveHandler.currentEpochHandler = enableEpochsHandler.GetCurrentEpoch
 
 	return e, nil
 }

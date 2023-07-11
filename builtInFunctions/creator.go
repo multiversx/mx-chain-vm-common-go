@@ -9,8 +9,9 @@ import (
 
 var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 
-var trueHandler = func() bool { return true }
-var falseHandler = func() bool { return false }
+var trueHandler = func(_ uint32) bool { return true }
+var falseHandler = func(_ uint32) bool { return false }
+var epochZeroHandler = func() uint32 { return 0 }
 
 const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are upper case
 
@@ -170,7 +171,14 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTPause, trueHandler)
+	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		true,
+		core.BuiltInFunctionESDTPause,
+		trueHandler,
+		epochZeroHandler,
+	)
 	if err != nil {
 		return err
 	}
@@ -213,7 +221,14 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, trueHandler)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		false,
+		core.BuiltInFunctionESDTUnPause,
+		trueHandler,
+		epochZeroHandler,
+	)
 	if err != nil {
 		return err
 	}
@@ -376,7 +391,14 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		true,
+		core.BuiltInFunctionESDTSetLimitedTransfer,
+		b.enableEpochsHandler.IsESDTTransferRoleFlagEnabledInEpoch,
+		b.enableEpochsHandler.GetCurrentEpoch,
+	)
 	if err != nil {
 		return err
 	}
@@ -385,7 +407,14 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		false,
+		core.BuiltInFunctionESDTUnSetLimitedTransfer,
+		b.enableEpochsHandler.IsESDTTransferRoleFlagEnabledInEpoch,
+		b.enableEpochsHandler.GetCurrentEpoch,
+	)
 	if err != nil {
 		return err
 	}
@@ -421,7 +450,14 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		true,
+		vmcommon.BuiltInFunctionESDTSetBurnRoleForAll,
+		b.enableEpochsHandler.IsSendAlwaysFlagEnabledInEpoch,
+		b.enableEpochsHandler.GetCurrentEpoch,
+	)
 	if err != nil {
 		return err
 	}
@@ -430,7 +466,14 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		false,
+		vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll,
+		b.enableEpochsHandler.IsSendAlwaysFlagEnabledInEpoch,
+		b.enableEpochsHandler.GetCurrentEpoch,
+	)
 	if err != nil {
 		return err
 	}
