@@ -74,7 +74,6 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 		Identifier: []byte(vmInput.Function),
 		Address:    vmInput.RecipientAddr,
 		Topics:     [][]byte{vmInput.Arguments[0]},
-		Data:       nil,
 	}
 	vmOutput.Logs = make([]*vmcommon.LogEntry, 0, 1)
 	vmOutput.Logs = append(vmOutput.Logs, logEntry)
