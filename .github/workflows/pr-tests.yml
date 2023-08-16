@@ -2,7 +2,7 @@ name: Tests
 
 on:
   pull_request:
-    branches: [ main, rc/*, feat/* ]
+    branches: [ master, rc/*, feat/* ]
     types: [ opened, ready_for_review ]
   push:
   workflow_dispatch:
