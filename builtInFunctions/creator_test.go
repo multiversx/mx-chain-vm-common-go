@@ -100,6 +100,15 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 
 	args = createMockArguments()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagDefinedCalled: func(flag core.EnableEpochFlag) bool {
+			return false
+		},
+	}
+	_, err = NewBuiltInFunctionsCreator(args)
+	assert.Equal(t, err, core.ErrInvalidEnableEpochsHandler)
+
+	args = createMockArguments()
 	args.Marshalizer = nil
 	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilMarshalizer)

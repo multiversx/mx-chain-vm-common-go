@@ -352,6 +352,7 @@ type AcceptPayableChecker interface {
 
 // EnableEpochsHandler is used to verify which flags are set in the current epoch based on EnableEpochs config
 type EnableEpochsHandler interface {
+	IsFlagDefined(flag core.EnableEpochFlag) bool
 	IsFlagEnabledInCurrentEpoch(flag core.EnableEpochFlag) bool
 	IsInterfaceNil() bool
 }

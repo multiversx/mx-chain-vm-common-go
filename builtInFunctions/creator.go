@@ -67,6 +67,10 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
+	err := core.CheckHandlerCompatibility(args.EnableEpochsHandler)
+	if err != nil {
+		return nil, err
+	}
 	if check.IfNil(args.GuardedAccountHandler) {
 		return nil, ErrNilGuardedAccountHandler
 	}
@@ -84,7 +88,6 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		configAddress:                    args.ConfigAddress,
 	}
 
-	var err error
 	b.gasConfig, err = createGasConfig(args.GasMap)
 	if err != nil {
 		return nil, err
