@@ -60,7 +60,9 @@ func TestESDTNFTAddUri_SetNewGasConfig_NilGasCost(t *testing.T) {
 
 	defaultGasCost := uint64(10)
 	e, _ := NewESDTNFTAddUriFunc(defaultGasCost, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	})
 
 	e.SetNewGasConfig(nil)
@@ -73,7 +75,9 @@ func TestESDTNFTAddUri_SetNewGasConfig_ShouldWork(t *testing.T) {
 	defaultGasCost := uint64(10)
 	newGasCost := uint64(37)
 	e, _ := NewESDTNFTAddUriFunc(defaultGasCost, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	})
 
 	e.SetNewGasConfig(
@@ -91,7 +95,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionErrorOnCheckInput(t *testing.T) {
 	t.Parallel()
 
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	})
 
 	// nil vm input
@@ -194,7 +200,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionInvalidNumberOfArguments(t *testing
 	t.Parallel()
 
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
@@ -223,7 +231,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *testi
 		},
 	}
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, rolesHandler, &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
@@ -247,7 +257,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.T) {
 	t.Parallel()
 
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
@@ -273,7 +285,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
@@ -308,7 +322,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused
 		},
 	}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	}
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, enableEpochsHandler), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
 
@@ -359,7 +375,9 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		},
 	}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsESDTNFTImprovementV1FlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ESDTNFTImprovementV1Flag
+		},
 	}
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, enableEpochsHandler)
 

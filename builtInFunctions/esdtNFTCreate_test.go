@@ -26,7 +26,9 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 		createNewESDTDataStorageHandler(),
 		&mock.AccountsStub{},
 		&mock.EnableEpochsHandlerStub{
-			IsValueLengthCheckFlagEnabledField: true,
+			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == core.ValueLengthCheckFlag
+			},
 		},
 	)
 
@@ -146,7 +148,9 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 		createNewESDTDataStorageHandler(),
 		&mock.AccountsStub{},
 		&mock.EnableEpochsHandlerStub{
-			IsValueLengthCheckFlagEnabledField: true,
+			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == core.ValueLengthCheckFlag
+			},
 		},
 	)
 	assert.False(t, check.IfNil(nftCreate))
@@ -244,7 +248,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		&mock.EnableEpochsHandlerStub{
-			IsValueLengthCheckFlagEnabledField: true,
+			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == core.ValueLengthCheckFlag
+			},
 		},
 	)
 	sender := mock.NewAccountWrapMock([]byte("address"))
@@ -286,7 +292,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		&mock.EnableEpochsHandlerStub{
-			IsValueLengthCheckFlagEnabledField: true,
+			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == core.ValueLengthCheckFlag
+			},
 		},
 	)
 	address := bytes.Repeat([]byte{1}, 32)
@@ -359,9 +367,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 
 	accounts := createAccountsAdapterWithMap()
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField:      true,
-		IsSaveToSystemAccountFlagEnabledField:   true,
-		IsCheckFrozenCollectionFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag || flag == core.SaveToSystemAccountFlag || flag == core.CheckFrozenCollectionFlag
+		},
 	}
 	esdtDataStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
 	nftCreate, _ := NewESDTNFTCreateFunc(

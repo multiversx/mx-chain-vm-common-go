@@ -125,8 +125,7 @@ func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, t
 }
 
 func (e *esdtFreezeWipe) removeLiquidity(tokenIdentifier []byte, nonce uint64, value *big.Int) error {
-	currentEpoch := e.enableEpochsHandler.GetCurrentEpoch()
-	if !e.enableEpochsHandler.IsWipeSingleNFTLiquidityDecreaseEnabledInEpoch(currentEpoch) {
+	if !e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.WipeSingleNFTLiquidityDecreaseFlag) {
 		return nil
 	}
 

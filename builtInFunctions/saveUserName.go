@@ -14,8 +14,7 @@ import (
 type saveUserName struct {
 	baseAlwaysActiveHandler
 	gasCost             uint64
-	isChangeEnabled     func(epoch uint32) bool
-	currentEpochHandler func() uint32
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 	mapDnsAddresses     map[string]struct{}
 	mapDnsV2Addresses   map[string]struct{}
 	mutExecution        sync.RWMutex
@@ -37,8 +36,7 @@ func NewSaveUserNameFunc(
 
 	s := &saveUserName{
 		gasCost:             gasCost,
-		isChangeEnabled:     enableEpochsHandler.IsChangeUsernameEnabledInEpoch,
-		currentEpochHandler: enableEpochsHandler.GetCurrentEpoch,
+		enableEpochsHandler: enableEpochsHandler,
 	}
 	s.mapDnsAddresses = make(map[string]struct{}, len(mapDnsAddresses))
 	for key := range mapDnsAddresses {
@@ -127,7 +125,7 @@ func (s *saveUserName) ProcessBuiltinFunction(
 	defer s.mutExecution.RUnlock()
 
 	addressesToCheck := s.mapDnsV2Addresses
-	if !s.isChangeEnabled(s.currentEpochHandler()) {
+	if !s.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ChangeUsernameFlag) {
 		addressesToCheck = s.mapDnsAddresses
 	}
 
@@ -138,7 +136,7 @@ func (s *saveUserName) ProcessBuiltinFunction(
 
 	if check.IfNil(acntDst) {
 		gasLimit := vmInput.GasProvided
-		if s.isChangeEnabled(s.currentEpochHandler()) {
+		if s.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ChangeUsernameFlag) {
 			gasLimit = vmInput.GasProvided - s.gasCost
 		}
 
@@ -146,14 +144,14 @@ func (s *saveUserName) ProcessBuiltinFunction(
 	}
 
 	currentUserName := acntDst.GetUserName()
-	if !s.isChangeEnabled(s.currentEpochHandler()) && len(currentUserName) > 0 {
+	if !s.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ChangeUsernameFlag) && len(currentUserName) > 0 {
 		return nil, ErrUserNameChangeIsDisabled
 	}
 
 	acntDst.SetUserName(vmInput.Arguments[0])
 
 	gasRemaining := vmInput.GasProvided - s.gasCost
-	if s.isChangeEnabled(s.currentEpochHandler()) && check.IfNil(acntSnd) {
+	if s.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ChangeUsernameFlag) && check.IfNil(acntSnd) {
 		gasRemaining = vmInput.GasProvided
 	}
 

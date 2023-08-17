@@ -193,7 +193,9 @@ func TestEsdtFreezeWipe_WipeShouldDecreaseLiquidityIfFlagIsEnabled(t *testing.T)
 	assert.False(t, addToLiquiditySystemAccCalled)
 
 	wipe.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsWipeSingleNFTLiquidityDecreaseEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.WipeSingleNFTLiquidityDecreaseFlag
+		},
 	}
 
 	_, err = wipe.ProcessBuiltinFunction(nil, acnt, input)

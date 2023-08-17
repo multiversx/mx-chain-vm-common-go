@@ -19,7 +19,9 @@ func TestNewESDTBurnFunc(t *testing.T) {
 		t.Parallel()
 
 		burnFunc, err := NewESDTBurnFunc(10, nil, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{
-			IsGlobalMintBurnFlagEnabledField: true,
+			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == core.GlobalMintBurnFlag
+			},
 		})
 		assert.Equal(t, ErrNilMarshalizer, err)
 		assert.True(t, check.IfNil(burnFunc))
@@ -35,7 +37,9 @@ func TestNewESDTBurnFunc(t *testing.T) {
 		t.Parallel()
 
 		burnFunc, err := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{
-			IsGlobalMintBurnFlagEnabledField: true,
+			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == core.GlobalMintBurnFlag
+			},
 		})
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(burnFunc))
@@ -47,7 +51,9 @@ func TestESDTBurn_ProcessBuiltInFunctionErrors(t *testing.T) {
 
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
 	burnFunc, _ := NewESDTBurnFunc(10, &mock.MarshalizerMock{}, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
-		IsGlobalMintBurnFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.GlobalMintBurnFlag
+		},
 	})
 	_, err := burnFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
@@ -95,7 +101,9 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	marshaller := &mock.MarshalizerMock{}
 	globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
 	burnFunc, _ := NewESDTBurnFunc(10, marshaller, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
-		IsGlobalMintBurnFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.GlobalMintBurnFlag
+		},
 	})
 
 	input := &vmcommon.ContractCallInput{

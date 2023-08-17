@@ -167,9 +167,6 @@ var ErrNilEnableEpochsHandler = errors.New("nil enable epochs handler")
 // ErrNilActiveHandler signals that a nil active handler has been provided
 var ErrNilActiveHandler = errors.New("nil active handler")
 
-// ErrNilCurrentEpochHandler signals that a nil current epoch handler has been provided
-var ErrNilCurrentEpochHandler = errors.New("nil current epoch handler")
-
 // ErrInvalidNumberOfArguments signals that an invalid number of arguments has been provided
 var ErrInvalidNumberOfArguments = errors.New("invalid number of arguments")
 

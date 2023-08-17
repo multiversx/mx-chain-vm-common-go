@@ -93,14 +93,13 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	currentEpoch := e.enableEpochsHandler.GetCurrentEpoch()
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsTransferToMetaFlagEnabledInEpoch(currentEpoch)
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.TransferToMetaFlag)
 	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
 
-	if e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabledInEpoch(currentEpoch) {
+	if e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ConsistentTokensValuesLengthCheckFlag) {
 		if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
 			return nil, fmt.Errorf("%w: max length for esdt transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}
@@ -115,7 +114,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	tokenID := vmInput.Arguments[0]
 
 	keyToCheck := esdtTokenKey
-	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabledInEpoch(currentEpoch) {
+	if e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.CheckCorrectTokenIDForTransferRoleFlag) {
 		keyToCheck = tokenID
 	}
 

@@ -205,8 +205,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	currentEpoch := e.enableEpochsHandler.GetCurrentEpoch()
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsTransferToMetaFlagEnabledInEpoch(currentEpoch)
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.TransferToMetaFlag)
 	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
@@ -226,7 +225,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
-	if len(vmInput.Arguments[2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabledInEpoch(currentEpoch) {
+	if len(vmInput.Arguments[2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ConsistentTokensValuesLengthCheckFlag) {
 		return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 	}
 	quantityToTransfer := big.NewInt(0).SetBytes(vmInput.Arguments[2])
@@ -234,7 +233,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, ErrInvalidNFTQuantity
 	}
 
-	isCheckTransferFlagEnabled := e.enableEpochsHandler.IsCheckTransferFlagEnabledInEpoch(currentEpoch)
+	isCheckTransferFlagEnabled := e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.CheckTransferFlag)
 	if isCheckTransferFlagEnabled && quantityToTransfer.Cmp(zero) <= 0 {
 		return nil, ErrInvalidNFTQuantity
 	}
@@ -281,7 +280,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 
 	tokenID := esdtTokenKey
-	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabledInEpoch(currentEpoch) {
+	if e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.CheckCorrectTokenIDForTransferRoleFlag) {
 		tokenID = tickerID
 	}
 

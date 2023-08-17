@@ -34,8 +34,7 @@ func NewPayableCheckFunc(
 
 func (p *payableCheck) mustVerifyPayable(vmInput *vmcommon.ContractCallInput, minLenArguments int) bool {
 	typeToVerify := vm.AsynchronousCall
-	currentEpoch := p.enableEpochsHandler.GetCurrentEpoch()
-	if p.enableEpochsHandler.IsFixAsyncCallbackCheckFlagEnabledInEpoch(currentEpoch) {
+	if p.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.FixAsyncCallbackCheckFlag) {
 		typeToVerify = vm.AsynchronousCallBack
 		if vmInput.ReturnCallAfterError {
 			return false
@@ -48,7 +47,7 @@ func (p *payableCheck) mustVerifyPayable(vmInput *vmcommon.ContractCallInput, mi
 		return false
 	}
 	if len(vmInput.Arguments) > minLenArguments {
-		if p.enableEpochsHandler.IsCheckFunctionArgumentFlagEnabledInEpoch(currentEpoch) {
+		if p.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.CheckFunctionArgumentFlag) {
 			if len(vmInput.Arguments[minLenArguments]) > 0 {
 				return false
 			}
@@ -88,8 +87,7 @@ func (p *payableCheck) DetermineIsSCCallAfter(vmInput *vmcommon.ContractCallInpu
 	if !vmcommon.IsSmartContractAddress(destAddress) {
 		return false
 	}
-	currentEpoch := p.enableEpochsHandler.GetCurrentEpoch()
-	if p.enableEpochsHandler.IsCheckFunctionArgumentFlagEnabledInEpoch(currentEpoch) {
+	if p.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.CheckFunctionArgumentFlag) {
 		if len(vmInput.Arguments[minLenArguments]) == 0 {
 			return false
 		}

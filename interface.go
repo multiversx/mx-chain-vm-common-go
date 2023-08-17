@@ -352,28 +352,7 @@ type AcceptPayableChecker interface {
 
 // EnableEpochsHandler is used to verify which flags are set in the current epoch based on EnableEpochs config
 type EnableEpochsHandler interface {
-	IsGlobalMintBurnFlagEnabledInEpoch(epoch uint32) bool
-	IsESDTTransferRoleFlagEnabledInEpoch(epoch uint32) bool
-	IsCheckCorrectTokenIDForTransferRoleFlagEnabledInEpoch(epoch uint32) bool
-	IsCheckFunctionArgumentFlagEnabledInEpoch(epoch uint32) bool
-	IsFixAsyncCallbackCheckFlagEnabledInEpoch(epoch uint32) bool
-	IsSaveToSystemAccountFlagEnabledInEpoch(epoch uint32) bool
-	IsCheckFrozenCollectionFlagEnabledInEpoch(epoch uint32) bool
-	IsSendAlwaysFlagEnabledInEpoch(epoch uint32) bool
-	IsValueLengthCheckFlagEnabledInEpoch(epoch uint32) bool
-	IsCheckTransferFlagEnabledInEpoch(epoch uint32) bool
-	IsTransferToMetaFlagEnabledInEpoch(epoch uint32) bool
-	IsESDTNFTImprovementV1FlagEnabledInEpoch(epoch uint32) bool
-	IsFixOldTokenLiquidityEnabledInEpoch(epoch uint32) bool
-	IsWipeSingleNFTLiquidityDecreaseEnabledInEpoch(epoch uint32) bool
-	IsAlwaysSaveTokenMetaDataEnabledInEpoch(epoch uint32) bool
-	IsChangeUsernameEnabledInEpoch(epoch uint32) bool
-	IsSetGuardianEnabledInEpoch(epoch uint32) bool
-	IsConsistentTokensValuesLengthCheckEnabledInEpoch(epoch uint32) bool
-	IsAutoBalanceDataTriesEnabledInEpoch(epoch uint32) bool
-
-	GetCurrentEpoch() uint32
-
+	IsFlagEnabledInCurrentEpoch(flag core.EnableEpochFlag) bool
 	IsInterfaceNil() bool
 }
 

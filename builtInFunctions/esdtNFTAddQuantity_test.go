@@ -59,7 +59,9 @@ func TestEsdtNFTAddQuantity_SetNewGasConfig_NilGasCost(t *testing.T) {
 
 	defaultGasCost := uint64(10)
 	eqf, _ := NewESDTNFTAddQuantityFunc(defaultGasCost, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag
+		},
 	})
 
 	eqf.SetNewGasConfig(nil)
@@ -72,7 +74,9 @@ func TestEsdtNFTAddQuantity_SetNewGasConfig_ShouldWork(t *testing.T) {
 	defaultGasCost := uint64(10)
 	newGasCost := uint64(37)
 	eqf, _ := NewESDTNFTAddQuantityFunc(defaultGasCost, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag
+		},
 	})
 
 	eqf.SetNewGasConfig(
@@ -90,7 +94,9 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 	t.Parallel()
 
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag
+		},
 	})
 
 	// nil vm input
@@ -193,7 +199,9 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionInvalidNumberOfArguments(t *te
 	t.Parallel()
 
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag
+		},
 	})
 	output, err := eqf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
@@ -222,7 +230,9 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *
 		},
 	}
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, rolesHandler, &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag
+		},
 	})
 	output, err := eqf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
@@ -246,7 +256,9 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.
 	t.Parallel()
 
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag
+		},
 	})
 	output, err := eqf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
@@ -272,7 +284,9 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) 
 
 	marshaller := &mock.MarshalizerMock{}
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag
+		},
 	})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
@@ -356,7 +370,9 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		},
 	}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ValueLengthCheckFlag
+		},
 	}
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, enableEpochsHandler)
 

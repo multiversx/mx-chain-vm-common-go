@@ -252,7 +252,9 @@ func TestSetGuardian_ProcessBuiltinFunctionSetGuardianOK(t *testing.T) {
 
 	args := createSetGuardianFuncMockArgs()
 	args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-		IsSetGuardianEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.SetGuardianFlag
+		},
 	}
 	args.GuardedAccountHandler = &mockvm.GuardedAccountHandlerStub{
 		SetGuardianCalled: func(_ vmcommon.UserAccountHandler, _ []byte, _ []byte, _ []byte) error {

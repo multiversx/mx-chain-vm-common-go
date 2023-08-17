@@ -9,9 +9,9 @@ import (
 
 var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 
-var trueHandler = func(_ uint32) bool { return true }
-var falseHandler = func(_ uint32) bool { return false }
-var epochZeroHandler = func() uint32 { return 0 }
+var trueHandler = func(_ core.EnableEpochFlag) bool { return true }
+var falseHandler = func(_ core.EnableEpochFlag) bool { return false }
+var placeholderFlag = core.EnableEpochFlag("placeholder flag")
 
 const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are upper case
 
@@ -177,7 +177,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		true,
 		core.BuiltInFunctionESDTPause,
 		trueHandler,
-		epochZeroHandler,
+		placeholderFlag,
 	)
 	if err != nil {
 		return err
@@ -227,7 +227,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		false,
 		core.BuiltInFunctionESDTUnPause,
 		trueHandler,
-		epochZeroHandler,
+		placeholderFlag,
 	)
 	if err != nil {
 		return err
@@ -396,8 +396,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		true,
 		core.BuiltInFunctionESDTSetLimitedTransfer,
-		b.enableEpochsHandler.IsESDTTransferRoleFlagEnabledInEpoch,
-		b.enableEpochsHandler.GetCurrentEpoch,
+		b.enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
+		core.ESDTTransferRoleFlag,
 	)
 	if err != nil {
 		return err
@@ -412,8 +412,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		false,
 		core.BuiltInFunctionESDTUnSetLimitedTransfer,
-		b.enableEpochsHandler.IsESDTTransferRoleFlagEnabledInEpoch,
-		b.enableEpochsHandler.GetCurrentEpoch,
+		b.enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
+		core.ESDTTransferRoleFlag,
 	)
 	if err != nil {
 		return err
@@ -455,8 +455,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		true,
 		vmcommon.BuiltInFunctionESDTSetBurnRoleForAll,
-		b.enableEpochsHandler.IsSendAlwaysFlagEnabledInEpoch,
-		b.enableEpochsHandler.GetCurrentEpoch,
+		b.enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
+		core.SendAlwaysFlag,
 	)
 	if err != nil {
 		return err
@@ -471,8 +471,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		false,
 		vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll,
-		b.enableEpochsHandler.IsSendAlwaysFlagEnabledInEpoch,
-		b.enableEpochsHandler.GetCurrentEpoch,
+		b.enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
+		core.SendAlwaysFlag,
 	)
 	if err != nil {
 		return err

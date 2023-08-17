@@ -29,9 +29,9 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
 		&mock.EnableEpochsHandlerStub{
-			IsTransferToMetaFlagEnabledField:                     false,
-			IsSaveToSystemAccountFlagEnabledField:                true,
-			IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == core.SaveToSystemAccountFlag || flag == core.CheckCorrectTokenIDForTransferRoleFlag
+			},
 		},
 	)
 
@@ -89,9 +89,9 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 
 func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler) *esdtNFTTransfer {
 	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:        true,
-		IsCheckTransferFlagEnabledField:         true,
-		IsCheckFrozenCollectionFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.TransferToMetaFlag || flag == core.CheckTransferFlag || flag == core.CheckFrozenCollectionFlag
+		},
 	})
 	return nftTransfer
 }
@@ -507,7 +507,9 @@ func TestEsdtNFTTransfer_TransferValueLengthChecks(t *testing.T) {
 
 	// after flag activation
 	nftTransfer.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsConsistentTokensValuesLengthCheckEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.ConsistentTokensValuesLengthCheckFlag
+		},
 	}
 	_, err = nftTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Contains(t, err.Error(), "max length for a transfer value is")
@@ -524,8 +526,9 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 				return true, nil
 			},
 		}, &mock.EnableEpochsHandlerStub{
-			IsFixAsyncCallbackCheckFlagEnabledField: true,
-			IsCheckFunctionArgumentFlagEnabledField: true,
+			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == core.FixAsyncCallbackCheckFlag || flag == core.CheckFunctionArgumentFlag
+			},
 		})
 
 	_ = nftTransfer.SetPayableChecker(payableChecker)
@@ -946,9 +949,9 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 
 	globalSettings := &mock.GlobalSettingsHandlerStub{}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:        true,
-		IsCheckTransferFlagEnabledField:         true,
-		IsCheckFrozenCollectionFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.TransferToMetaFlag || flag == core.CheckTransferFlag || flag == core.CheckFrozenCollectionFlag
+		},
 	}
 	transferFunc, _ := createNFTTransferAndStorageHandler(0, 1, globalSettings, enableEpochsHandler)
 
@@ -1006,7 +1009,9 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionCrossShardsFixOldLiquidityIssue(t
 
 	vmInput, sender, nftTransferSenderShard, esdtDataStorageHandler, tokenName, tokenNonce := createSetupToSendNFTCrossShard(t)
 
-	esdtDataStorageHandler.enableEpochsHandler.(*mock.EnableEpochsHandlerStub).IsFixOldTokenLiquidityEnabledField = true
+	esdtDataStorageHandler.enableEpochsHandler.(*mock.EnableEpochsHandlerStub).IsFlagEnabledInCurrentEpochCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == core.FixOldTokenLiquidityFlag
+	}
 	vmOutput, err := nftTransferSenderShard.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
@@ -1024,9 +1029,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionCrossShardsFixOldLiquidityIssue(t
 func TestEsdtNFTTransfer_ProcessBuiltinFunctionCrossShardsFixOldLiquidityIssueWithoutActivation(t *testing.T) {
 	t.Parallel()
 
-	vmInput, sender, nftTransferSenderShard, esdtDataStorageHandler, _, _ := createSetupToSendNFTCrossShard(t)
-
-	esdtDataStorageHandler.enableEpochsHandler.(*mock.EnableEpochsHandlerStub).IsFixOldTokenLiquidityEnabledField = false
+	vmInput, sender, nftTransferSenderShard, _, _, _ := createSetupToSendNFTCrossShard(t)
 	_, err := nftTransferSenderShard.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
 	require.Equal(t, err, ErrInvalidLiquidityForESDT)
 }
@@ -1039,9 +1042,9 @@ func createSetupToSendNFTCrossShard(t *testing.T) (*vmcommon.ContractCallInput, 
 	}
 
 	var enableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsSendAlwaysFlagEnabledField:            true,
-		IsSaveToSystemAccountFlagEnabledField:   true,
-		IsCheckFrozenCollectionFlagEnabledField: true,
+		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == core.SendAlwaysFlag || flag == core.SaveToSystemAccountFlag || flag == core.CheckFrozenCollectionFlag
+		},
 	}
 	nftTransferSenderShard, esdtDataStorageHandler := createNFTTransferAndStorageHandler(1, 2, &mock.GlobalSettingsHandlerStub{}, enableEpochsHandler)
 	_ = nftTransferSenderShard.SetPayableChecker(payableHandler)

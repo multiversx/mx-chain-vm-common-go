@@ -176,8 +176,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 			return nil, err
 		}
 	}
-	currentEpoch := e.enableEpochsHandler.GetCurrentEpoch()
-	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsValueLengthCheckFlagEnabledInEpoch(currentEpoch)
+	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ValueLengthCheckFlag)
 	if isValueLengthCheckFlagEnabled && len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}

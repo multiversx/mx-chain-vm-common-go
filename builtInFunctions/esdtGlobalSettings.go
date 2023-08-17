@@ -24,8 +24,8 @@ func NewESDTGlobalSettingsFunc(
 	marshaller marshal.Marshalizer,
 	set bool,
 	function string,
-	activeHandler func(epoch uint32) bool,
-	currentEpochHandler func() uint32,
+	activeHandler func(flag core.EnableEpochFlag) bool,
+	flag core.EnableEpochFlag,
 ) (*esdtGlobalSettings, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -35,9 +35,6 @@ func NewESDTGlobalSettingsFunc(
 	}
 	if activeHandler == nil {
 		return nil, ErrNilActiveHandler
-	}
-	if currentEpochHandler == nil {
-		return nil, ErrNilCurrentEpochHandler
 	}
 	if !isCorrectFunction(function) {
 		return nil, ErrInvalidArguments
@@ -52,7 +49,7 @@ func NewESDTGlobalSettingsFunc(
 	}
 
 	e.baseActiveHandler.activeHandler = activeHandler
-	e.baseActiveHandler.currentEpochHandler = currentEpochHandler
+	e.baseActiveHandler.flag = flag
 
 	return e, nil
 }
@@ -181,7 +178,7 @@ func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
 
 // IsSenderOrDestinationWithTransferRole returns true if we have transfer role on the system account
 func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool {
-	if !e.activeHandler(e.currentEpochHandler()) {
+	if !e.activeHandler(e.flag) {
 		return false
 	}
 
