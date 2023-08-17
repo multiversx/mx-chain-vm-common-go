@@ -1,6 +1,6 @@
 module github.com/multiversx/mx-chain-vm-common-go
 
-go 1.17
+go 1.20
 
 require (
 	github.com/mitchellh/mapstructure v1.4.1
