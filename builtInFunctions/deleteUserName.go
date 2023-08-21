@@ -3,7 +3,6 @@ package builtInFunctions
 import (
 	"sync"
 
-	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
@@ -35,8 +34,8 @@ func NewDeleteUserNameFunc(
 	for key := range mapDnsAddresses {
 		d.mapDnsAddresses[key] = struct{}{}
 	}
-	d.activeHandler = enableEpochsHandler.IsFlagEnabledInCurrentEpoch
-	d.flag = core.ChangeUsernameFlag
+	d.activeHandler = enableEpochsHandler.IsFlagEnabled
+	d.flag = ChangeUsernameFlag
 
 	return d, nil
 }

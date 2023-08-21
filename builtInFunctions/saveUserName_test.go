@@ -45,7 +45,7 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 		mapDnsAddresses:   mapDnsAddresses,
 		mapDnsV2Addresses: make(map[string]struct{}),
 		enableEpochsHandler: &mock.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 				return false
 			},
 		},
@@ -88,7 +88,7 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	require.Equal(t, ErrUserNameChangeIsDisabled, err)
 
 	coa.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return true
 		},
 	}

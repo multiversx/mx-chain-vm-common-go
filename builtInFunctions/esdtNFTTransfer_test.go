@@ -29,8 +29,8 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 		&mock.ESDTRoleHandlerStub{},
 		createNewESDTDataStorageHandler(),
 		&mock.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.SaveToSystemAccountFlag || flag == core.CheckCorrectTokenIDForTransferRoleFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SaveToSystemAccountFlag || flag == CheckCorrectTokenIDForTransferRoleFlag
 			},
 		},
 	)
@@ -89,8 +89,8 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 
 func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler) *esdtNFTTransfer {
 	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.TransferToMetaFlag || flag == core.CheckTransferFlag || flag == core.CheckFrozenCollectionFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == TransferToMetaFlag || flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
 		},
 	})
 	return nftTransfer
@@ -507,8 +507,8 @@ func TestEsdtNFTTransfer_TransferValueLengthChecks(t *testing.T) {
 
 	// after flag activation
 	nftTransfer.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ConsistentTokensValuesLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ConsistentTokensValuesLengthCheckFlag
 		},
 	}
 	_, err = nftTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
@@ -526,8 +526,8 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 				return true, nil
 			},
 		}, &mock.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.FixAsyncCallbackCheckFlag || flag == core.CheckFunctionArgumentFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == FixAsyncCallbackCheckFlag || flag == CheckFunctionArgumentFlag
 			},
 		})
 
@@ -949,8 +949,8 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 
 	globalSettings := &mock.GlobalSettingsHandlerStub{}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.TransferToMetaFlag || flag == core.CheckTransferFlag || flag == core.CheckFrozenCollectionFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == TransferToMetaFlag || flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
 		},
 	}
 	transferFunc, _ := createNFTTransferAndStorageHandler(0, 1, globalSettings, enableEpochsHandler)
@@ -1009,8 +1009,8 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionCrossShardsFixOldLiquidityIssue(t
 
 	vmInput, sender, nftTransferSenderShard, esdtDataStorageHandler, tokenName, tokenNonce := createSetupToSendNFTCrossShard(t)
 
-	esdtDataStorageHandler.enableEpochsHandler.(*mock.EnableEpochsHandlerStub).IsFlagEnabledInCurrentEpochCalled = func(flag core.EnableEpochFlag) bool {
-		return flag == core.FixOldTokenLiquidityFlag
+	esdtDataStorageHandler.enableEpochsHandler.(*mock.EnableEpochsHandlerStub).IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == FixOldTokenLiquidityFlag
 	}
 	vmOutput, err := nftTransferSenderShard.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
 	require.Nil(t, err)
@@ -1042,8 +1042,8 @@ func createSetupToSendNFTCrossShard(t *testing.T) (*vmcommon.ContractCallInput, 
 	}
 
 	var enableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.SendAlwaysFlag || flag == core.SaveToSystemAccountFlag || flag == core.CheckFrozenCollectionFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == SendAlwaysFlag || flag == SaveToSystemAccountFlag || flag == CheckFrozenCollectionFlag
 		},
 	}
 	nftTransferSenderShard, esdtDataStorageHandler := createNFTTransferAndStorageHandler(1, 2, &mock.GlobalSettingsHandlerStub{}, enableEpochsHandler)

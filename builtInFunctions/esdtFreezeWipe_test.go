@@ -193,8 +193,8 @@ func TestEsdtFreezeWipe_WipeShouldDecreaseLiquidityIfFlagIsEnabled(t *testing.T)
 	assert.False(t, addToLiquiditySystemAccCalled)
 
 	wipe.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.WipeSingleNFTLiquidityDecreaseFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == WipeSingleNFTLiquidityDecreaseFlag
 		},
 	}
 

@@ -33,8 +33,8 @@ func NewSetGuardianFunc(args SetGuardianArgs) (*setGuardian, error) {
 	setGuardianFunc := &setGuardian{
 		baseAccountGuarder: base,
 	}
-	setGuardianFunc.activeHandler = args.EnableEpochsHandler.IsFlagEnabledInCurrentEpoch
-	setGuardianFunc.flag = core.SetGuardianFlag
+	setGuardianFunc.activeHandler = args.EnableEpochsHandler.IsFlagEnabled
+	setGuardianFunc.flag = SetGuardianFlag
 
 	return setGuardianFunc, nil
 }

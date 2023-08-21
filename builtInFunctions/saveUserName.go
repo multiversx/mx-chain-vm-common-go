@@ -125,7 +125,7 @@ func (s *saveUserName) ProcessBuiltinFunction(
 	defer s.mutExecution.RUnlock()
 
 	addressesToCheck := s.mapDnsV2Addresses
-	if !s.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ChangeUsernameFlag) {
+	if !s.enableEpochsHandler.IsFlagEnabled(ChangeUsernameFlag) {
 		addressesToCheck = s.mapDnsAddresses
 	}
 
@@ -136,7 +136,7 @@ func (s *saveUserName) ProcessBuiltinFunction(
 
 	if check.IfNil(acntDst) {
 		gasLimit := vmInput.GasProvided
-		if s.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ChangeUsernameFlag) {
+		if s.enableEpochsHandler.IsFlagEnabled(ChangeUsernameFlag) {
 			gasLimit = vmInput.GasProvided - s.gasCost
 		}
 
@@ -144,14 +144,14 @@ func (s *saveUserName) ProcessBuiltinFunction(
 	}
 
 	currentUserName := acntDst.GetUserName()
-	if !s.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ChangeUsernameFlag) && len(currentUserName) > 0 {
+	if !s.enableEpochsHandler.IsFlagEnabled(ChangeUsernameFlag) && len(currentUserName) > 0 {
 		return nil, ErrUserNameChangeIsDisabled
 	}
 
 	acntDst.SetUserName(vmInput.Arguments[0])
 
 	gasRemaining := vmInput.GasProvided - s.gasCost
-	if s.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ChangeUsernameFlag) && check.IfNil(acntSnd) {
+	if s.enableEpochsHandler.IsFlagEnabled(ChangeUsernameFlag) && check.IfNil(acntSnd) {
 		gasRemaining = vmInput.GasProvided
 	}
 

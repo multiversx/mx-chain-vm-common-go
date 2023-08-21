@@ -80,8 +80,8 @@ func NewESDTNFTMultiTransferFunc(
 		enableEpochsHandler:   enableEpochsHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch
-	e.baseActiveHandler.flag = core.ESDTNFTImprovementV1Flag
+	e.baseActiveHandler.activeHandler = e.enableEpochsHandler.IsFlagEnabled
+	e.baseActiveHandler.flag = ESDTNFTImprovementV1Flag
 
 	return e, nil
 }
@@ -241,7 +241,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
 
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.TransferToMetaFlag)
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(TransferToMetaFlag)
 	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
@@ -284,7 +284,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
-		isConsistenTokensValuesLenghtCheckEnabled := e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ConsistentTokensValuesLengthCheckFlag)
+		isConsistenTokensValuesLenghtCheckEnabled := e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag)
 		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && isConsistenTokensValuesLenghtCheckEnabled {
 			return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}
@@ -359,7 +359,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	esdtData.Value.Set(transferData.ESDTValue)
 
 	tokenID := esdtTokenKey
-	if e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.CheckCorrectTokenIDForTransferRoleFlag) {
+	if e.enableEpochsHandler.IsFlagEnabled(CheckCorrectTokenIDForTransferRoleFlag) {
 		tokenID = transferData.ESDTTokenName
 	}
 

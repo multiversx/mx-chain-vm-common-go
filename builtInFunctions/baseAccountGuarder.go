@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
@@ -48,8 +47,8 @@ func newBaseAccountGuarder(args BaseAccountGuarderArgs) (*baseAccountGuarder, er
 		guardedAccountHandler: args.GuardedAccountHandler,
 	}
 
-	accGuarder.activeHandler = args.EnableEpochsHandler.IsFlagEnabledInCurrentEpoch
-	accGuarder.flag = core.SetGuardianFlag
+	accGuarder.activeHandler = args.EnableEpochsHandler.IsFlagEnabled
+	accGuarder.flag = SetGuardianFlag
 
 	return accGuarder, nil
 }

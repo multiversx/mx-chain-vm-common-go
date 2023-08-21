@@ -205,7 +205,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.TransferToMetaFlag)
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(TransferToMetaFlag)
 	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
@@ -225,7 +225,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
-	if len(vmInput.Arguments[2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.ConsistentTokensValuesLengthCheckFlag) {
+	if len(vmInput.Arguments[2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag) {
 		return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 	}
 	quantityToTransfer := big.NewInt(0).SetBytes(vmInput.Arguments[2])
@@ -233,7 +233,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, ErrInvalidNFTQuantity
 	}
 
-	isCheckTransferFlagEnabled := e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.CheckTransferFlag)
+	isCheckTransferFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(CheckTransferFlag)
 	if isCheckTransferFlagEnabled && quantityToTransfer.Cmp(zero) <= 0 {
 		return nil, ErrInvalidNFTQuantity
 	}
@@ -280,7 +280,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 
 	tokenID := esdtTokenKey
-	if e.enableEpochsHandler.IsFlagEnabledInCurrentEpoch(core.CheckCorrectTokenIDForTransferRoleFlag) {
+	if e.enableEpochsHandler.IsFlagEnabled(CheckCorrectTokenIDForTransferRoleFlag) {
 		tokenID = tickerID
 	}
 

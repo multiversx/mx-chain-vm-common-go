@@ -27,13 +27,13 @@ func TestBaseActiveHandler_IsActive(t *testing.T) {
 
 	enableEpochsHandler := mock.EnableEpochsHandlerStub{}
 	handler = &baseActiveHandler{
-		activeHandler: enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
-		flag:          core.SetGuardianFlag,
+		activeHandler: enableEpochsHandler.IsFlagEnabled,
+		flag:          SetGuardianFlag,
 	}
 	assert.False(t, handler.IsActive())
 
-	enableEpochsHandler.IsFlagEnabledInCurrentEpochCalled = func(flag core.EnableEpochFlag) bool {
-		return flag == core.SetGuardianFlag
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == SetGuardianFlag
 	}
 	assert.True(t, handler.IsActive())
 }

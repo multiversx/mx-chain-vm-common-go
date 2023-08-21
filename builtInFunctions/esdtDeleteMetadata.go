@@ -57,8 +57,8 @@ func NewESDTDeleteMetadataFunc(
 		function:       core.BuiltInFunctionMultiESDTNFTTransfer,
 	}
 
-	e.baseActiveHandler.activeHandler = args.EnableEpochsHandler.IsFlagEnabledInCurrentEpoch
-	e.baseActiveHandler.flag = core.SendAlwaysFlag
+	e.baseActiveHandler.activeHandler = args.EnableEpochsHandler.IsFlagEnabled
+	e.baseActiveHandler.flag = SendAlwaysFlag
 
 	return e, nil
 }

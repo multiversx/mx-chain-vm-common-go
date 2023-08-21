@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -106,7 +107,7 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 		},
 	}
 	_, err = NewBuiltInFunctionsCreator(args)
-	assert.Equal(t, err, core.ErrInvalidEnableEpochsHandler)
+	assert.True(t, errors.Is(err, core.ErrInvalidEnableEpochsHandler))
 
 	args = createMockArguments()
 	args.Marshalizer = nil

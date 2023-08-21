@@ -19,8 +19,8 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 
 	t.Run("invalid args, expect error", func(t *testing.T) {
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.SetGuardianFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SetGuardianFlag
 			},
 		}
 		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
@@ -38,8 +38,8 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.SetGuardianFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SetGuardianFlag
 			},
 		}
 		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)
@@ -64,8 +64,8 @@ func TestUnGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		args.EnableEpochsHandler = &mockvm.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.SetGuardianFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SetGuardianFlag
 			},
 		}
 		unGuardAccountFunc, _ := NewUnGuardAccountFunc(args)

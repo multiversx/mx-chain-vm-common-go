@@ -38,8 +38,8 @@ func TestNewMigrateDataTrieFunc(t *testing.T) {
 		t.Parallel()
 
 		enableEpochs := &mock.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.AutoBalanceDataTriesFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == AutoBalanceDataTriesFlag
 			},
 		}
 		mdtf, err := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, enableEpochs, &mock.AccountsStub{})
@@ -47,7 +47,7 @@ func TestNewMigrateDataTrieFunc(t *testing.T) {
 		assert.Nil(t, err)
 		assert.True(t, mdtf.IsActive())
 
-		enableEpochs.IsFlagEnabledInCurrentEpochCalled = func(flag core.EnableEpochFlag) bool {
+		enableEpochs.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
 			return false
 		}
 		assert.False(t, mdtf.IsActive())

@@ -67,7 +67,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
-	err := core.CheckHandlerCompatibility(args.EnableEpochsHandler)
+	err := core.CheckHandlerCompatibility(args.EnableEpochsHandler, allFlags)
 	if err != nil {
 		return nil, err
 	}
@@ -399,8 +399,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		true,
 		core.BuiltInFunctionESDTSetLimitedTransfer,
-		b.enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
-		core.ESDTTransferRoleFlag,
+		b.enableEpochsHandler.IsFlagEnabled,
+		ESDTTransferRoleFlag,
 	)
 	if err != nil {
 		return err
@@ -415,8 +415,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		false,
 		core.BuiltInFunctionESDTUnSetLimitedTransfer,
-		b.enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
-		core.ESDTTransferRoleFlag,
+		b.enableEpochsHandler.IsFlagEnabled,
+		ESDTTransferRoleFlag,
 	)
 	if err != nil {
 		return err
@@ -458,8 +458,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		true,
 		vmcommon.BuiltInFunctionESDTSetBurnRoleForAll,
-		b.enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
-		core.SendAlwaysFlag,
+		b.enableEpochsHandler.IsFlagEnabled,
+		SendAlwaysFlag,
 	)
 	if err != nil {
 		return err
@@ -474,8 +474,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		false,
 		vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll,
-		b.enableEpochsHandler.IsFlagEnabledInCurrentEpoch,
-		core.SendAlwaysFlag,
+		b.enableEpochsHandler.IsFlagEnabled,
+		SendAlwaysFlag,
 	)
 	if err != nil {
 		return err

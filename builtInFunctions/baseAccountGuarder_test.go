@@ -170,7 +170,7 @@ func createBaseAccountGuarderArgs() BaseAccountGuarderArgs {
 	return BaseAccountGuarderArgs{
 		Marshaller: marshallerMock,
 		EnableEpochsHandler: &mockvm.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 				return false
 			},
 		},

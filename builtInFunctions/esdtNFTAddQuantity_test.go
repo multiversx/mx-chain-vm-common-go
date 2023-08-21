@@ -59,8 +59,8 @@ func TestEsdtNFTAddQuantity_SetNewGasConfig_NilGasCost(t *testing.T) {
 
 	defaultGasCost := uint64(10)
 	eqf, _ := NewESDTNFTAddQuantityFunc(defaultGasCost, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ValueLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag
 		},
 	})
 
@@ -74,8 +74,8 @@ func TestEsdtNFTAddQuantity_SetNewGasConfig_ShouldWork(t *testing.T) {
 	defaultGasCost := uint64(10)
 	newGasCost := uint64(37)
 	eqf, _ := NewESDTNFTAddQuantityFunc(defaultGasCost, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ValueLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag
 		},
 	})
 
@@ -94,8 +94,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 	t.Parallel()
 
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ValueLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag
 		},
 	})
 
@@ -199,8 +199,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionInvalidNumberOfArguments(t *te
 	t.Parallel()
 
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ValueLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag
 		},
 	})
 	output, err := eqf.ProcessBuiltinFunction(
@@ -230,8 +230,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *
 		},
 	}
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, rolesHandler, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ValueLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag
 		},
 	})
 	output, err := eqf.ProcessBuiltinFunction(
@@ -256,8 +256,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.
 	t.Parallel()
 
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ValueLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag
 		},
 	})
 	output, err := eqf.ProcessBuiltinFunction(
@@ -284,8 +284,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) 
 
 	marshaller := &mock.MarshalizerMock{}
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ValueLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag
 		},
 	})
 
@@ -370,8 +370,8 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		},
 	}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.ValueLengthCheckFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag
 		},
 	}
 	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, enableEpochsHandler)

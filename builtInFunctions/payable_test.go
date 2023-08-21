@@ -16,11 +16,11 @@ func createMockPayableChecker(isFixAsyncCallbackCheckFlagEnabledField, isCheckFu
 	p, _ := NewPayableCheckFunc(
 		&mock.PayableHandlerStub{},
 		&mock.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 				switch flag {
-				case core.FixAsyncCallbackCheckFlag:
+				case FixAsyncCallbackCheckFlag:
 					return isFixAsyncCallbackCheckFlagEnabledField
-				case core.CheckFunctionArgumentFlag:
+				case CheckFunctionArgumentFlag:
 					return isCheckFunctionArgumentFlagEnabled
 				default:
 					return false

@@ -95,8 +95,8 @@ func TestGuardUnGuardAccountFunc_ProcessBuiltinFunctionAccountsAlreadyHaveGuarde
 
 	vmInput := getDefaultVmInput([][]byte{})
 	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == core.SetGuardianFlag
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == SetGuardianFlag
 		},
 	}
 	guardAccountFunc, _ := NewGuardAccountFunc(args)
@@ -127,8 +127,8 @@ func TestGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 
 	t.Run("invalid args, expect error", func(t *testing.T) {
 		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.SetGuardianFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SetGuardianFlag
 			},
 		}
 		guardAccountFunc, _ := NewGuardAccountFunc(args)
@@ -151,8 +151,8 @@ func TestGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		}
 
 		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.SetGuardianFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SetGuardianFlag
 			},
 		}
 		guardAccountFunc, _ := NewGuardAccountFunc(args)
@@ -181,8 +181,8 @@ func TestGuardAccountFunc_ProcessBuiltinFunction(t *testing.T) {
 		}
 
 		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-			IsFlagEnabledInCurrentEpochCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == core.SetGuardianFlag
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SetGuardianFlag
 			},
 		}
 		guardAccountFunc, _ := NewGuardAccountFunc(args)
