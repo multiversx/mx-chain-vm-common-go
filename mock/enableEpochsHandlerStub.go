@@ -35,6 +35,7 @@ type EnableEpochsHandlerStub struct {
 	IsWipeSingleNFTLiquidityDecreaseEnabledField         bool
 	IsAlwaysSaveTokenMetaDataEnabledField                bool
 	IsChangeUsernameEnabledEpochField                    bool
+	IsDynamicGasCostForDataTrieStorageLoadEnabledField   bool
 	IsSetGuardianEnabledField                            bool
 	IsConsistentTokensValuesLengthCheckEnabledField      bool
 	IsAutoBalanceDataTriesEnabledField                   bool
@@ -50,6 +51,11 @@ type EnableEpochsHandlerStub struct {
 	RefactorContextEnableEpochField                      uint32
 	CheckExecuteReadOnlyEnableEpochField                 uint32
 	StorageAPICostOptimizationEnableEpochField           uint32
+}
+
+// IsDynamicGasCostForDataTrieStorageLoadEnabled -
+func (stub *EnableEpochsHandlerStub) IsDynamicGasCostForDataTrieStorageLoadEnabled() bool {
+	return stub.IsDynamicGasCostForDataTrieStorageLoadEnabledField
 }
 
 // IsSetGuardianEnabled -

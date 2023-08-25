@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
@@ -42,7 +43,8 @@ func TestChangeOwnerAddress_ProcessBuiltinFunction(t *testing.T) {
 
 	acc := mock.NewUserAccount(addr)
 	vmInput := &vmcommon.ContractCallInput{
-		VMInput: vmcommon.VMInput{CallerAddr: owner, CallValue: big.NewInt(0)},
+		Function: core.BuiltInFunctionChangeOwnerAddress,
+		VMInput:  vmcommon.VMInput{CallerAddr: owner, CallValue: big.NewInt(0)},
 	}
 
 	_, err := coa.ProcessBuiltinFunction(nil, acc, vmInput)
@@ -63,10 +65,18 @@ func TestChangeOwnerAddress_ProcessBuiltinFunction(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, vmOutput.GasRemaining, uint64(0))
 
+	contractAddress := []byte("contract")
+	vmInput.RecipientAddr = contractAddress
 	coa.gasCost = 1
 	vmInput.GasProvided = 10
 	acc.OwnerAddress = owner
 	vmOutput, err = coa.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, vmOutput.GasRemaining, vmInput.GasProvided-coa.gasCost)
+
+	require.Equal(t, &vmcommon.LogEntry{
+		Identifier: []byte(core.BuiltInFunctionChangeOwnerAddress),
+		Address:    contractAddress,
+		Topics:     [][]byte{newAddr},
+	}, vmOutput.Logs[0])
 }
