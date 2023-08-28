@@ -165,7 +165,16 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 				vmInput.CallType,
 				vmOutput)
 
-			addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, acntDst.AddressBytes())
+			addESDTEntryForTransferInVMOutput(
+				vmInput, vmOutput,
+				[]byte(core.BuiltInFunctionESDTTransfer),
+				acntDst.AddressBytes(),
+				[]*TopicTokenData{{
+					tokenID,
+					0,
+					value,
+				}},
+			)
 			return vmOutput, nil
 		}
 
@@ -174,7 +183,15 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput.GasRemaining = vmInput.GasProvided
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, acntDst.AddressBytes())
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionESDTTransfer),
+			acntDst.AddressBytes(),
+			[]*TopicTokenData{{
+				tokenID,
+				0,
+				value,
+			}})
 		return vmOutput, nil
 	}
 
@@ -191,7 +208,15 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, vmInput.RecipientAddr)
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
+		[]byte(core.BuiltInFunctionESDTTransfer),
+		vmInput.RecipientAddr,
+		[]*TopicTokenData{{
+			tokenID,
+			0,
+			value,
+		}})
 	return vmOutput, nil
 }
 
