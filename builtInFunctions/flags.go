@@ -22,6 +22,7 @@ const (
 	ConsistentTokensValuesLengthCheckFlag  core.EnableEpochFlag = "ConsistentTokensValuesLengthCheckFlag"
 	ChangeUsernameFlag                     core.EnableEpochFlag = "ChangeUsernameFlag"
 	AutoBalanceDataTriesFlag               core.EnableEpochFlag = "AutoBalanceDataTriesFlag"
+	ScToScLogEventFlag                     core.EnableEpochFlag = "ScToScLogEventFlag"
 )
 
 // allFlags must have all flags used by mx-chain-vm-common-go in the current version
@@ -45,4 +46,5 @@ var allFlags = []core.EnableEpochFlag{
 	ConsistentTokensValuesLengthCheckFlag,
 	ChangeUsernameFlag,
 	AutoBalanceDataTriesFlag,
+	ScToScLogEventFlag,
 }

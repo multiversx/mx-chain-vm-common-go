@@ -206,7 +206,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+		if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
 			topicTokenData = append(topicTokenData,
 				&TopicTokenData{
 					tokenID,
@@ -224,7 +224,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		}
 	}
 
-	if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
 		addESDTEntryForTransferInVMOutput(
 			vmInput, vmOutput,
 			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
@@ -337,7 +337,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}
 
-		if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+		if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
 			topicTokenData = append(topicTokenData,
 				&TopicTokenData{
 					listTransferData[i].ESDTTokenName,
@@ -355,7 +355,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		}
 	}
 
-	if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
 		addESDTEntryForTransferInVMOutput(
 			vmInput, vmOutput,
 			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),

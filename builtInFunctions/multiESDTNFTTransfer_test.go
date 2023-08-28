@@ -83,7 +83,7 @@ func createESDTNFTMultiTransferWithMockArgumentsWithLogEventFlag(selfShard uint3
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag ||
 				flag == CheckCorrectTokenIDForTransferRoleFlag ||
-				IsScToScEventLogEnabledField == isScToScEventLogEnabled
+				(flag == ScToScLogEventFlag && isScToScEventLogEnabled)
 		},
 	}
 	multiTransfer, _ := NewESDTNFTMultiTransferFunc(
