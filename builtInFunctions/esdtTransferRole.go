@@ -51,8 +51,9 @@ func NewESDTTransferRoleAddressFunc(
 		set:             set,
 	}
 
-	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsFlagEnabled
-	e.baseActiveHandler.flag = SendAlwaysFlag
+	e.baseActiveHandler.activeHandler = func() bool {
+		return enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
+	}
 
 	return e, nil
 }

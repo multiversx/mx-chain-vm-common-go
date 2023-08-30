@@ -52,8 +52,9 @@ func NewESDTNFTUpdateAttributesFunc(
 		rolesHandler:          rolesHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsFlagEnabled
-	e.baseActiveHandler.flag = ESDTNFTImprovementV1Flag
+	e.baseActiveHandler.activeHandler = func() bool {
+		return enableEpochsHandler.IsFlagEnabled(ESDTNFTImprovementV1Flag)
+	}
 
 	return e, nil
 }

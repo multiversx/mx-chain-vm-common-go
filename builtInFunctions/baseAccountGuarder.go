@@ -47,8 +47,9 @@ func newBaseAccountGuarder(args BaseAccountGuarderArgs) (*baseAccountGuarder, er
 		guardedAccountHandler: args.GuardedAccountHandler,
 	}
 
-	accGuarder.activeHandler = args.EnableEpochsHandler.IsFlagEnabled
-	accGuarder.flag = SetGuardianFlag
+	accGuarder.activeHandler = func() bool {
+		return args.EnableEpochsHandler.IsFlagEnabled(SetGuardianFlag)
+	}
 
 	return accGuarder, nil
 }

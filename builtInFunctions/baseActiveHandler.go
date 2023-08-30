@@ -1,13 +1,11 @@
 package builtInFunctions
 
-import "github.com/multiversx/mx-chain-core-go/core"
-
 type baseAlwaysActiveHandler struct {
 }
 
 // IsActive returns true as this built-in function is always active
 func (b baseAlwaysActiveHandler) IsActive() bool {
-	return trueHandler(placeholderFlag)
+	return trueHandler()
 }
 
 // IsInterfaceNil always returns false
@@ -16,13 +14,12 @@ func (b baseAlwaysActiveHandler) IsInterfaceNil() bool {
 }
 
 type baseActiveHandler struct {
-	activeHandler func(flag core.EnableEpochFlag) bool
-	flag          core.EnableEpochFlag
+	activeHandler func() bool
 }
 
 // IsActive returns true if function is active
 func (b *baseActiveHandler) IsActive() bool {
-	return b.activeHandler(b.flag)
+	return b.activeHandler()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

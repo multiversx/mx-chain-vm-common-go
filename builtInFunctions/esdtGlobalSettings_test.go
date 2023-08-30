@@ -18,28 +18,28 @@ func TestNewESDTGlobalSettingsFunc(t *testing.T) {
 	t.Run("nil accounts should error", func(t *testing.T) {
 		t.Parallel()
 
-		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(nil, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, trueHandler, placeholderFlag)
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(nil, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, trueHandler)
 		assert.Equal(t, ErrNilAccountsAdapter, err)
 		assert.True(t, check.IfNil(globalSettingsFunc))
 	})
 	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
-		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, nil, true, core.BuiltInFunctionESDTPause, trueHandler, placeholderFlag)
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, nil, true, core.BuiltInFunctionESDTPause, trueHandler)
 		assert.Equal(t, ErrNilMarshalizer, err)
 		assert.True(t, check.IfNil(globalSettingsFunc))
 	})
 	t.Run("nil active handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, nil, placeholderFlag)
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, nil)
 		assert.Equal(t, ErrNilActiveHandler, err)
 		assert.True(t, check.IfNil(globalSettingsFunc))
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler, placeholderFlag)
+		globalSettingsFunc, err := NewESDTGlobalSettingsFunc(&mock.AccountsStub{}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(globalSettingsFunc))
 	})
@@ -53,7 +53,7 @@ func TestESDTGlobalSettingsPause_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler, placeholderFlag)
+	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler)
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -101,7 +101,7 @@ func TestESDTGlobalSettingsPause_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, false, core.BuiltInFunctionESDTUnPause, falseHandler, placeholderFlag)
+	}, &mock.MarshalizerMock{}, false, core.BuiltInFunctionESDTUnPause, falseHandler)
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -127,7 +127,6 @@ func TestESDTGlobalSettingsPause_ProcessBuiltInFunctionGetNodeFromDbErr(t *testi
 		true,
 		core.BuiltInFunctionESDTPause,
 		falseHandler,
-		placeholderFlag,
 	)
 
 	key := []byte("key")
@@ -154,7 +153,7 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTSetLimitedTransfer, trueHandler, placeholderFlag)
+	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTSetLimitedTransfer, trueHandler)
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -202,7 +201,7 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler, placeholderFlag)
+	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler)
 
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -213,7 +212,7 @@ func TestESDTGlobalSettingsLimitedTransfer_ProcessBuiltInFunction(t *testing.T) 
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, trueHandler, placeholderFlag)
+	}, &mock.MarshalizerMock{}, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, trueHandler)
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -229,7 +228,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, falseHandler, placeholderFlag)
+	}, &mock.MarshalizerMock{}, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, falseHandler)
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Equal(t, err, ErrNilVmInput)
 
@@ -278,7 +277,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler, placeholderFlag)
+	}, &mock.MarshalizerMock{}, true, core.BuiltInFunctionESDTPause, falseHandler)
 
 	_, err = pauseFunc.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)
@@ -290,7 +289,7 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 			return acnt, nil
 		},
-	}, &mock.MarshalizerMock{}, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, falseHandler, placeholderFlag)
+	}, &mock.MarshalizerMock{}, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, falseHandler)
 
 	_, err = esdtGlobalSettingsFalse.ProcessBuiltinFunction(nil, nil, input)
 	assert.Nil(t, err)

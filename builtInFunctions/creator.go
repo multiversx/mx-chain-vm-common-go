@@ -9,9 +9,8 @@ import (
 
 var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 
-var trueHandler = func(_ core.EnableEpochFlag) bool { return true }
-var falseHandler = func(_ core.EnableEpochFlag) bool { return false }
-var placeholderFlag = core.EnableEpochFlag("placeholder flag")
+var trueHandler = func() bool { return true }
+var falseHandler = func() bool { return false }
 
 const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are upper case
 
@@ -180,7 +179,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		true,
 		core.BuiltInFunctionESDTPause,
 		trueHandler,
-		placeholderFlag,
 	)
 	if err != nil {
 		return err
@@ -230,7 +228,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		false,
 		core.BuiltInFunctionESDTUnPause,
 		trueHandler,
-		placeholderFlag,
 	)
 	if err != nil {
 		return err
@@ -399,8 +396,9 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		true,
 		core.BuiltInFunctionESDTSetLimitedTransfer,
-		b.enableEpochsHandler.IsFlagEnabled,
-		ESDTTransferRoleFlag,
+		func() bool {
+			return b.enableEpochsHandler.IsFlagEnabled(ESDTTransferRoleFlag)
+		},
 	)
 	if err != nil {
 		return err
@@ -415,8 +413,9 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		false,
 		core.BuiltInFunctionESDTUnSetLimitedTransfer,
-		b.enableEpochsHandler.IsFlagEnabled,
-		ESDTTransferRoleFlag,
+		func() bool {
+			return b.enableEpochsHandler.IsFlagEnabled(ESDTTransferRoleFlag)
+		},
 	)
 	if err != nil {
 		return err
@@ -458,8 +457,9 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		true,
 		vmcommon.BuiltInFunctionESDTSetBurnRoleForAll,
-		b.enableEpochsHandler.IsFlagEnabled,
-		SendAlwaysFlag,
+		func() bool {
+			return b.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
+		},
 	)
 	if err != nil {
 		return err
@@ -474,8 +474,9 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.marshaller,
 		false,
 		vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll,
-		b.enableEpochsHandler.IsFlagEnabled,
-		SendAlwaysFlag,
+		func() bool {
+			return b.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
+		},
 	)
 	if err != nil {
 		return err

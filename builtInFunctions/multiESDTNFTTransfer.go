@@ -80,8 +80,9 @@ func NewESDTNFTMultiTransferFunc(
 		enableEpochsHandler:   enableEpochsHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = e.enableEpochsHandler.IsFlagEnabled
-	e.baseActiveHandler.flag = ESDTNFTImprovementV1Flag
+	e.baseActiveHandler.activeHandler = func() bool {
+		return e.enableEpochsHandler.IsFlagEnabled(ESDTNFTImprovementV1Flag)
+	}
 
 	return e, nil
 }
