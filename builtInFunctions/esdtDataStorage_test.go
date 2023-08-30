@@ -655,7 +655,7 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 
 	enableEpochsHandler, _ := args.EnableEpochsHandler.(*mock.EnableEpochsHandlerStub)
 	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
-		return false
+		return flag == SendAlwaysFlag
 	}
 	err := e.SaveNFTMetaDataToSystemAccount(nil)
 	assert.Nil(t, err)

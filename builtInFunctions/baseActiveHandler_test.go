@@ -3,9 +3,7 @@ package builtInFunctions
 import (
 	"testing"
 
-	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,19 +20,6 @@ func TestBaseActiveHandler_IsActive(t *testing.T) {
 		activeHandler: falseHandler,
 	}
 	assert.False(t, handler.IsActive())
-
-	enableEpochsHandler := mock.EnableEpochsHandlerStub{}
-	handler = &baseActiveHandler{
-		activeHandler: func() bool {
-			return enableEpochsHandler.IsFlagEnabled(SetGuardianFlag)
-		},
-	}
-	assert.False(t, handler.IsActive())
-
-	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
-		return flag == SetGuardianFlag
-	}
-	assert.True(t, handler.IsActive())
 }
 
 func TestBaseAlwaysActiveHandler_IsActive(t *testing.T) {
