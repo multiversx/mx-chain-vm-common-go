@@ -35,7 +35,9 @@ func NewMigrateDataTrieFunc(
 		accounts:    accounts,
 	}
 
-	mdt.baseActiveHandler.activeHandler = enableEpochsHandler.IsAutoBalanceDataTriesEnabled
+	mdt.baseActiveHandler.activeHandler = func() bool {
+		return enableEpochsHandler.IsFlagEnabled(AutoBalanceDataTriesFlag)
+	}
 
 	return mdt, nil
 }

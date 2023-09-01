@@ -184,7 +184,9 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 
 	// try again with the flag enabled
 	esdtLocalMintF.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsConsistentTokensValuesLengthCheckEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ConsistentTokensValuesLengthCheckFlag
+		},
 	}
 	vmOutput, err = esdtLocalMintF.ProcessBuiltinFunction(sndAccount, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
