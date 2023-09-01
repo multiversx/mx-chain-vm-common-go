@@ -308,11 +308,11 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	listEsdtData := make([]*esdt.ESDigitalToken, numOfTransfers)
 	listTransferData := make([]*vmcommon.ESDTTransfer, numOfTransfers)
 
+	isConsistentTokensValuesLenghtCheckEnabled := e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag)
 	topicTokenData := make([]*TopicTokenData, 0)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
-		isConsistenTokensValuesLenghtCheckEnabled := e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag)
-		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && isConsistenTokensValuesLenghtCheckEnabled {
+		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && isConsistentTokensValuesLenghtCheckEnabled {
 			return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}
 		listTransferData[i] = &vmcommon.ESDTTransfer{
