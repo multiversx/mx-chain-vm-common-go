@@ -1,7 +1,8 @@
 package builtInFunctions
 
 import (
-	"errors"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/data/vm"
 	"math/big"
 	"strings"
 	"sync"
@@ -95,7 +96,7 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		assert.Equal(t, ErrBuiltInFunctionCalledWithValue, err)
 	})
 
-	t.Run("nil dest account", func(t *testing.T) {
+	t.Run("nil dest account creates cross shard call", func(t *testing.T) {
 		t.Parallel()
 
 		input := &vmcommon.ContractCallInput{
@@ -106,8 +107,17 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 
 		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), nil, input)
-		assert.Nil(t, vmOutput)
-		assert.True(t, errors.Is(err, ErrNilSCDestAccount))
+		assert.Nil(t, err)
+		assert.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
+		assert.Equal(t, 1, len(vmOutput.OutputAccounts))
+		assert.Equal(t, 1, len(vmOutput.OutputAccounts[string(input.CallerAddr)].OutputTransfers))
+		outputTransfer := vmOutput.OutputAccounts[string(input.CallerAddr)].OutputTransfers[0]
+		assert.Equal(t, []byte(core.BuiltInFunctionMigrateDataTrie), outputTransfer.Data)
+		assert.Equal(t, vm.AsynchronousCall, outputTransfer.CallType)
+		assert.Equal(t, input.CallerAddr, outputTransfer.SenderAddress)
+		assert.Equal(t, input.GasProvided, outputTransfer.GasLimit)
+		assert.Equal(t, input.GasLocked, outputTransfer.GasLocked)
+		assert.Equal(t, big.NewInt(0), outputTransfer.Value)
 	})
 }
 

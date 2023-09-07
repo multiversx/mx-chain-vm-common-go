@@ -2,10 +2,12 @@ package builtInFunctions
 
 import (
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/vm"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/dataTrieMigrator"
 )
@@ -48,9 +50,13 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 ) (*vmcommon.VMOutput, error) {
 	dataTrieGasCost := mdt.getGasCostForDataTrieLoadAndStore()
 
-	err := checkArgumentsForMigrateDataTrie(acntDst, vmInput, dataTrieGasCost)
+	err := checkArgumentsForMigrateDataTrie(vmInput, dataTrieGasCost)
 	if err != nil {
 		return nil, err
+	}
+
+	if check.IfNil(acntDst) {
+		return createCrossShardMigrateDataTrieCall(vmInput)
 	}
 
 	argsDataTrieMigrator := dataTrieMigrator.ArgsNewDataTrieMigrator{
@@ -74,6 +80,29 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 		ReturnCode:   vmcommon.Ok,
 	}
 
+	return vmOutput, nil
+}
+
+func createCrossShardMigrateDataTrieCall(
+	vmInput *vmcommon.ContractCallInput,
+) (*vmcommon.VMOutput, error) {
+	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
+	vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
+
+	outTransfer := vmcommon.OutputTransfer{
+		Index:         1,
+		Value:         big.NewInt(0),
+		GasLimit:      vmInput.GasProvided,
+		GasLocked:     vmInput.GasLocked,
+		Data:          []byte(core.BuiltInFunctionMigrateDataTrie),
+		CallType:      vm.AsynchronousCall,
+		SenderAddress: vmInput.CallerAddr,
+	}
+
+	vmOutput.OutputAccounts[string(vmInput.RecipientAddr)] = &vmcommon.OutputAccount{
+		Address:         vmInput.RecipientAddr,
+		OutputTransfers: []vmcommon.OutputTransfer{outTransfer},
+	}
 	return vmOutput, nil
 }
 
@@ -106,13 +135,13 @@ func (mdt *migrateDataTrie) IsInterfaceNil() bool {
 }
 
 func checkArgumentsForMigrateDataTrie(
-	acntDst vmcommon.UserAccountHandler,
 	input *vmcommon.ContractCallInput,
 	cost dataTrieMigrator.DataTrieGasCost,
 ) error {
 	if input == nil {
 		return ErrNilVmInput
 	}
+	// TODO check if is necessary to consume gas on sender shard
 	if input.GasProvided < cost.TrieLoadPerNode+cost.TrieStorePerNode {
 		return fmt.Errorf("not enough gas, gas provided: %d, trie load cost: %d, trie store cost: %d", input.GasProvided, cost.TrieLoadPerNode, cost.TrieStorePerNode)
 	}
@@ -121,9 +150,6 @@ func checkArgumentsForMigrateDataTrie(
 	}
 	if len(input.Arguments) != 0 {
 		return fmt.Errorf("no arguments must be given to migrate data trie: %w", ErrInvalidNumberOfArguments)
-	}
-	if check.IfNil(acntDst) {
-		return fmt.Errorf("destination account must be in the same shard as the sender: %w", ErrNilSCDestAccount)
 	}
 
 	return nil
