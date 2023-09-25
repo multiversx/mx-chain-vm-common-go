@@ -1031,13 +1031,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testi
 		RecipientAddr: destinationAddress,
 	}
 
-	// Invalid call, sender should be nil
 	sender, err := multiTransfer.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
-	vmOutput, err := multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
-	require.Equal(t, ErrInvalidRcvAddr, err)
 
-	vmOutput, err = multiTransfer.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
+	vmOutput, err := multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Nil(t, err)
 	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
 
