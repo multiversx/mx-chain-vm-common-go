@@ -69,7 +69,16 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	return &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}, nil
+	vmOutput := &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}
+	logEntry := &vmcommon.LogEntry{
+		Identifier: []byte(vmInput.Function),
+		Address:    vmInput.RecipientAddr,
+		Topics:     [][]byte{vmInput.Arguments[0]},
+	}
+	vmOutput.Logs = make([]*vmcommon.LogEntry, 0, 1)
+	vmOutput.Logs = append(vmOutput.Logs, logEntry)
+
+	return vmOutput, nil
 }
 
 func computeGasRemaining(snd vmcommon.UserAccountHandler, gasProvided uint64, gasToUse uint64) uint64 {
