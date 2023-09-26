@@ -385,7 +385,9 @@ type EnableEpochsHandler interface {
 	IsAlwaysSaveTokenMetaDataEnabled() bool
 	IsRuntimeCodeSizeFixEnabled() bool
 	IsChangeUsernameEnabled() bool
+	IsDynamicGasCostForDataTrieStorageLoadEnabled() bool
 	IsSetGuardianEnabled() bool
+	IsScToScEventLogEnabled() bool
 	IsConsistentTokensValuesLengthCheckEnabled() bool
 	IsAutoBalanceDataTriesEnabled() bool
 
