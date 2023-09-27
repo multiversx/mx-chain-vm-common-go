@@ -199,13 +199,16 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput,
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
 		[]byte(core.BuiltInFunctionESDTNFTTransfer),
-		vmInput.Arguments[0],
-		nonce,
-		value,
-		vmInput.CallerAddr,
-		acntDst.AddressBytes())
+		acntDst.AddressBytes(),
+		[]*TopicTokenData{{
+			vmInput.Arguments[0],
+			nonce,
+			value,
+		}},
+	)
 
 	return vmOutput, nil
 }
@@ -328,7 +331,16 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, err
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, quantityToTransfer, vmInput.CallerAddr, dstAddress)
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
+		[]byte(core.BuiltInFunctionESDTNFTTransfer),
+		dstAddress,
+		[]*TopicTokenData{{
+			vmInput.Arguments[0],
+			nonce,
+			quantityToTransfer,
+		}},
+	)
 
 	return vmOutput, nil
 }

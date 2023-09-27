@@ -35,7 +35,9 @@ type EnableEpochsHandlerStub struct {
 	IsWipeSingleNFTLiquidityDecreaseEnabledField         bool
 	IsAlwaysSaveTokenMetaDataEnabledField                bool
 	IsChangeUsernameEnabledEpochField                    bool
+	IsDynamicGasCostForDataTrieStorageLoadEnabledField   bool
 	IsSetGuardianEnabledField                            bool
+	IsScToScEventLogEnabledField                         bool
 	IsConsistentTokensValuesLengthCheckEnabledField      bool
 	IsAutoBalanceDataTriesEnabledField                   bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
@@ -52,9 +54,19 @@ type EnableEpochsHandlerStub struct {
 	StorageAPICostOptimizationEnableEpochField           uint32
 }
 
+// IsDynamicGasCostForDataTrieStorageLoadEnabled -
+func (stub *EnableEpochsHandlerStub) IsDynamicGasCostForDataTrieStorageLoadEnabled() bool {
+	return stub.IsDynamicGasCostForDataTrieStorageLoadEnabledField
+}
+
 // IsSetGuardianEnabled -
 func (stub *EnableEpochsHandlerStub) IsSetGuardianEnabled() bool {
 	return stub.IsSetGuardianEnabledField
+}
+
+// IsScToScEventLogEnabled -
+func (stub *EnableEpochsHandlerStub) IsScToScEventLogEnabled() bool {
+	return stub.IsScToScEventLogEnabledField
 }
 
 // IsGlobalMintBurnFlagEnabled -
