@@ -122,7 +122,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	// or sender should be ESDTSCAddress in case of a sovereign scr
+	// reduce balance if the sender is in shard, and it is not the  ESDTSCAddress
 	isSenderESDTSCAddr := bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress)
 	if !check.IfNil(acntSnd) && !isSenderESDTSCAddr {
 		// gas is paid only by sender
