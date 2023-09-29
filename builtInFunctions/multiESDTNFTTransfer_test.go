@@ -115,7 +115,7 @@ func createESDTNFTTokenWithReservedField(
 	marshaller vmcommon.Marshalizer,
 	account vmcommon.UserAccountHandler,
 	reserved []byte,
-) {
+) []byte {
 	tokenId := append(keyPrefix, tokenName...)
 	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenId, nonce)
 	esdtData := &esdt.ESDigitalToken{
@@ -134,6 +134,7 @@ func createESDTNFTTokenWithReservedField(
 
 	esdtDataBytes, _ := marshaller.Marshal(esdtData)
 	_ = account.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, esdtDataBytes)
+	return esdtDataBytes
 }
 
 func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
@@ -1024,7 +1025,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testi
 
 	reserved := []byte("reserved")
 	sysAccNFTInitialQuantity := big.NewInt(4)
-	createESDTNFTTokenWithReservedField(token1, core.NonFungible, token1Nonce, sysAccNFTInitialQuantity, multiTransfer.marshaller, sysAcc.(vmcommon.UserAccountHandler), reserved)
+	_ = createESDTNFTTokenWithReservedField(token1, core.NonFungible, token1Nonce, sysAccNFTInitialQuantity, multiTransfer.marshaller, sysAcc.(vmcommon.UserAccountHandler), reserved)
 
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -1036,13 +1037,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testi
 		RecipientAddr: destinationAddress,
 	}
 
-	// Invalid call, sender should be nil
 	sender, err := multiTransfer.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
-	vmOutput, err := multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
-	require.Equal(t, ErrInvalidRcvAddr, err)
 
-	vmOutput, err = multiTransfer.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
+	vmOutput, err := multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Nil(t, err)
 	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
 

@@ -466,3 +466,36 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 }
+
+func TestESDTTransfer_ProcessBuiltInFunctionSenderESDTSystemSC(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &mock.MarshalizerMock{}
+	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsTransferToMetaFlagEnabledField:                     false,
+		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+	})
+	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
+
+	input := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			GasProvided: 0,
+			CallValue:   big.NewInt(0),
+			CallerAddr:  core.ESDTSCAddress,
+		},
+	}
+	key := []byte("key")
+	value := big.NewInt(10).Bytes()
+	input.Arguments = [][]byte{key, value}
+	accDst := mock.NewUserAccount([]byte("dst"))
+	accSnd := mock.NewUserAccount([]byte("snd"))
+
+	vmOutput, err := transferFunc.ProcessBuiltinFunction(accSnd, accDst, input)
+	assert.Nil(t, err)
+	esdtKey := append(transferFunc.keyPrefix, key...)
+	esdtToken := &esdt.ESDigitalToken{}
+	marshaledData, _, _ := accDst.AccountDataHandler().RetrieveValue(esdtKey)
+	_ = marshaller.Unmarshal(esdtToken, marshaledData)
+	assert.True(t, esdtToken.Value.Cmp(big.NewInt(10)) == 0)
+	assert.Equal(t, uint64(0), vmOutput.GasRemaining)
+}
