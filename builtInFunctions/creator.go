@@ -544,6 +544,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	newFunc, err = NewRemoveCodeLeafFunc(b.gasConfig.BuiltInCost.RemoveCodeLeaf, b.enableEpochsHandler, b.accounts)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionRemoveCodeLeaf, newFunc)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
