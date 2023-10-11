@@ -1,6 +1,8 @@
 package builtInFunctions
 
 import (
+	"errors"
+	"math/big"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -59,10 +61,72 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("nil vm input", func(t *testing.T) {
 		t.Parallel()
 
-		rcl, err := NewRemoveCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		rcl, _ := NewRemoveCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), nil)
 		assert.Nil(t, vmOutput)
 		assert.Equal(t, ErrNilVmInput, err)
+	})
+
+	t.Run("invalid num of args", func(t *testing.T) {
+		t.Parallel()
+
+		gasCost := uint64(10)
+
+		rcl, _ := NewRemoveCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+
+		addr := []byte("addr")
+
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr:  addr,
+				GasProvided: 50,
+				CallValue:   big.NewInt(0),
+			},
+			RecipientAddr: addr,
+		}
+
+		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), vmInput)
+		require.Nil(t, vmOutput)
+		require.True(t, errors.Is(err, ErrInvalidNumberOfArguments))
+	})
+
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		wasCalled := false
+		accounts := &mock.AccountsStub{
+			GetCodeCalled: func(b []byte) []byte {
+				return []byte("key code")
+			},
+			RemoveAccountCalled: func(address []byte) error {
+				wasCalled = true
+				return nil
+			},
+		}
+
+		gasCost := uint64(10)
+
+		rcl, _ := NewRemoveCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, accounts)
+
+		addr := []byte("addr")
+		key := []byte("codeHash")
+
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr:  addr,
+				GasProvided: 50,
+				Arguments:   [][]byte{key},
+				CallValue:   big.NewInt(0),
+			},
+			RecipientAddr: addr,
+		}
+
+		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), vmInput)
+		require.Nil(t, err)
+		require.NotNil(t, vmOutput)
+		require.Equal(t, uint64(40), vmOutput.GasRemaining)
+
+		require.True(t, wasCalled)
 	})
 
 }

@@ -41,7 +41,7 @@ func NewRemoveCodeLeafFunc(
 	return mdt, nil
 }
 
-// ProcessBuiltinFunction - ...
+// ProcessBuiltinFunction will remove trie code leaf corresponding to specified codeHash
 func (rcl *removeCodeLeaf) ProcessBuiltinFunction(
 	_, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -59,9 +59,6 @@ func (rcl *removeCodeLeaf) ProcessBuiltinFunction(
 	if code == nil {
 		return nil, fmt.Errorf("codeHash %v does not exist in accounts trie", codeHash)
 	}
-
-	// TODO:
-	// Verify that the node received in previous step is a code leaf
 
 	err := rcl.accounts.RemoveAccount(codeHash)
 	if err != nil {
