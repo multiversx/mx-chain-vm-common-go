@@ -98,7 +98,7 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 			GetCodeCalled: func(b []byte) []byte {
 				return []byte("key code")
 			},
-			RemoveAccountCalled: func(address []byte) error {
+			RemoveCodeLeafCalled: func(codeHash []byte) error {
 				wasCalled = true
 				return nil
 			},
