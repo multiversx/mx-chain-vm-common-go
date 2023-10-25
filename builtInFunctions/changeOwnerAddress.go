@@ -67,23 +67,9 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, c.gasCost)
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasRemaining}
-	isCrossShardCallThroughASmartContract := check.IfNil(acntDst) && vmcommon.IsSmartContractAddress(vmInput.CallerAddr)
-	if isCrossShardCallThroughASmartContract && c.enableEpochsHandler.IsChangeOwnerAddressCrossShardThroughSCEnabled() {
-		addOutputTransferToVMOutput(
-			1,
-			vmInput.CallerAddr,
-			core.BuiltInFunctionChangeOwnerAddress,
-			vmInput.Arguments,
-			vmInput.RecipientAddr,
-			vmInput.GasLocked,
-			vmInput.CallType,
-			vmOutput)
-
-		return vmOutput, nil
-	}
 
 	if check.IfNil(acntDst) {
-		// cross-shard call, in sender shard only the gas is taken out
+		c.addOutputTransferToVmOutputForCallThroughSC(acntDst, vmInput, vmOutput)
 		return vmOutput, nil
 	}
 
@@ -105,6 +91,21 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 	vmOutput.Logs = append(vmOutput.Logs, logEntry)
 
 	return vmOutput, nil
+}
+
+func (c *changeOwnerAddress) addOutputTransferToVmOutputForCallThroughSC(acntDst vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput, vmOutput *vmcommon.VMOutput) {
+	isCrossShardCallThroughASmartContract := check.IfNil(acntDst) && vmcommon.IsSmartContractAddress(vmInput.CallerAddr)
+	if isCrossShardCallThroughASmartContract && c.enableEpochsHandler.IsChangeOwnerAddressCrossShardThroughSCEnabled() {
+		addOutputTransferToVMOutput(
+			1,
+			vmInput.CallerAddr,
+			core.BuiltInFunctionChangeOwnerAddress,
+			vmInput.Arguments,
+			vmInput.RecipientAddr,
+			vmInput.GasLocked,
+			vmInput.CallType,
+			vmOutput)
+	}
 }
 
 func computeGasRemaining(snd vmcommon.UserAccountHandler, gasProvided uint64, gasToUse uint64) uint64 {

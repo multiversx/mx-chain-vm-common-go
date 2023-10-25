@@ -90,3 +90,33 @@ func TestChangeOwnerAddress_ProcessBuiltinFunction(t *testing.T) {
 		Topics:     [][]byte{newAddr},
 	}, vmOutput.Logs[0])
 }
+
+func TestProcessBuiltInFunctionCallThroughSC(t *testing.T) {
+	t.Parallel()
+
+	coa := changeOwnerAddress{
+		enableEpochsHandler: &mock.EnableEpochsHandlerStub{
+			IsChangeOwnerAddressCrossShardThroughSCEnabledField: true,
+		},
+	}
+
+	owner := []byte("00000000000")
+	addr := []byte("addraddradd")
+
+	acc := mock.NewUserAccount(addr)
+	acc.OwnerAddress = owner
+	vmInput := &vmcommon.ContractCallInput{
+		Function:      core.BuiltInFunctionChangeOwnerAddress,
+		RecipientAddr: []byte("contract"),
+		VMInput: vmcommon.VMInput{
+			CallerAddr: make([]byte, 11),
+			CallValue:  big.NewInt(0),
+			Arguments:  [][]byte{[]byte("00000000000")},
+		},
+	}
+
+	vmOutput, err := coa.ProcessBuiltinFunction(acc, nil, vmInput)
+	require.Nil(t, err)
+	require.NotNil(t, vmOutput)
+	require.Equal(t, 1, len(vmOutput.OutputAccounts))
+}
