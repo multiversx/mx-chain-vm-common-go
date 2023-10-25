@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
@@ -13,11 +14,20 @@ type changeOwnerAddress struct {
 	baseAlwaysActiveHandler
 	gasCost      uint64
 	mutExecution sync.RWMutex
+
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
-// NewChangeOwnerAddressFunc create a new change owner built in function
-func NewChangeOwnerAddressFunc(gasCost uint64) *changeOwnerAddress {
-	return &changeOwnerAddress{gasCost: gasCost}
+// NewChangeOwnerAddressFunc create a new change owner built-in function
+func NewChangeOwnerAddressFunc(gasCost uint64, enableEpochsHandler vmcommon.EnableEpochsHandler) (*changeOwnerAddress, error) {
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
+	}
+
+	return &changeOwnerAddress{
+		gasCost:             gasCost,
+		enableEpochsHandler: enableEpochsHandler,
+	}, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -55,9 +65,24 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 		return nil, ErrNotEnoughGas
 	}
 	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, c.gasCost)
+
+	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasRemaining}
+	isCrossShardCallThroughASmartContract := check.IfNil(acntDst) && vmcommon.IsSmartContractAddress(vmInput.CallerAddr)
+	if isCrossShardCallThroughASmartContract && c.enableEpochsHandler.IsChangeOwnerAddressCrossShardThroughSCEnabled() {
+		addOutputTransferToVMOutput(
+			0,
+			vmInput.CallerAddr,
+			core.BuiltInFunctionChangeOwnerAddress,
+			vmInput.Arguments,
+			vmInput.RecipientAddr,
+			vmInput.GasLocked,
+			vmInput.CallType,
+			vmOutput)
+	}
+
 	if check.IfNil(acntDst) {
 		// cross-shard call, in sender shard only the gas is taken out
-		return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasRemaining}, nil
+		return vmOutput, nil
 	}
 
 	if !bytes.Equal(vmInput.CallerAddr, acntDst.GetOwnerAddress()) {
@@ -69,7 +94,6 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	vmOutput := &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}
 	logEntry := &vmcommon.LogEntry{
 		Identifier: []byte(vmInput.Function),
 		Address:    vmInput.RecipientAddr,

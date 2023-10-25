@@ -137,7 +137,11 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc = NewChangeOwnerAddressFunc(b.gasConfig.BuiltInCost.ChangeOwnerAddress)
+	newFunc, err = NewChangeOwnerAddressFunc(b.gasConfig.BuiltInCost.ChangeOwnerAddress, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+
 	err = b.builtInFunctions.Add(core.BuiltInFunctionChangeOwnerAddress, newFunc)
 	if err != nil {
 		return err

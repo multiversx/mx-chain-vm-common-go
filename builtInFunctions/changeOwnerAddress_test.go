@@ -11,11 +11,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewChangeOwnerNilEnableEpochsHandler(t *testing.T) {
+	t.Parallel()
+
+	gasCost := uint64(100)
+	coa, err := NewChangeOwnerAddressFunc(gasCost, nil)
+	require.Nil(t, coa)
+	require.Equal(t, ErrNilEnableEpochsHandler, err)
+}
+
 func TestNewChangeOwnerAddressFunc(t *testing.T) {
 	t.Parallel()
 
 	gasCost := uint64(100)
-	coa := NewChangeOwnerAddressFunc(gasCost)
+	coa, err := NewChangeOwnerAddressFunc(gasCost, &mock.EnableEpochsHandlerStub{})
+	require.Nil(t, err)
 	require.False(t, check.IfNil(coa))
 	require.Equal(t, gasCost, coa.gasCost)
 	require.True(t, coa.IsActive())
@@ -24,7 +34,7 @@ func TestNewChangeOwnerAddressFunc(t *testing.T) {
 func TestChangeOwnerAddress_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	coa := NewChangeOwnerAddressFunc(100)
+	coa, _ := NewChangeOwnerAddressFunc(100, &mock.EnableEpochsHandlerStub{})
 
 	newCost := uint64(37)
 	expectedGasConfig := &vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{ChangeOwnerAddress: newCost}}
