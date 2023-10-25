@@ -78,6 +78,8 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 			vmInput.GasLocked,
 			vmInput.CallType,
 			vmOutput)
+
+		return vmOutput, nil
 	}
 
 	if check.IfNil(acntDst) {
