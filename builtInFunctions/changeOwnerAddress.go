@@ -70,7 +70,7 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 	isCrossShardCallThroughASmartContract := check.IfNil(acntDst) && vmcommon.IsSmartContractAddress(vmInput.CallerAddr)
 	if isCrossShardCallThroughASmartContract && c.enableEpochsHandler.IsChangeOwnerAddressCrossShardThroughSCEnabled() {
 		addOutputTransferToVMOutput(
-			0,
+			1,
 			vmInput.CallerAddr,
 			core.BuiltInFunctionChangeOwnerAddress,
 			vmInput.Arguments,
