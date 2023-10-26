@@ -94,18 +94,24 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 }
 
 func (c *changeOwnerAddress) addOutputTransferToVmOutputForCallThroughSC(acntDst vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput, vmOutput *vmcommon.VMOutput) {
-	isCrossShardCallThroughASmartContract := check.IfNil(acntDst) && vmcommon.IsSmartContractAddress(vmInput.CallerAddr)
-	if isCrossShardCallThroughASmartContract && c.enableEpochsHandler.IsChangeOwnerAddressCrossShardThroughSCEnabled() {
-		addOutputTransferToVMOutput(
-			1,
-			vmInput.CallerAddr,
-			core.BuiltInFunctionChangeOwnerAddress,
-			vmInput.Arguments,
-			vmInput.RecipientAddr,
-			vmInput.GasLocked,
-			vmInput.CallType,
-			vmOutput)
+	if !c.enableEpochsHandler.IsChangeOwnerAddressCrossShardThroughSCEnabled() {
+		return
 	}
+
+	isCrossShardCallThroughASmartContract := check.IfNil(acntDst) && vmcommon.IsSmartContractAddress(vmInput.CallerAddr)
+	if !isCrossShardCallThroughASmartContract {
+		return
+	}
+
+	addOutputTransferToVMOutput(
+		1,
+		vmInput.CallerAddr,
+		core.BuiltInFunctionChangeOwnerAddress,
+		vmInput.Arguments,
+		vmInput.RecipientAddr,
+		vmInput.GasLocked,
+		vmInput.CallType,
+		vmOutput)
 }
 
 func computeGasRemaining(snd vmcommon.UserAccountHandler, gasProvided uint64, gasToUse uint64) uint64 {

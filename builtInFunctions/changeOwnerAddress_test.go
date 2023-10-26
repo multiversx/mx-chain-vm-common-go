@@ -6,6 +6,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/vm"
 	"github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/require"
@@ -46,7 +47,9 @@ func TestChangeOwnerAddress_SetNewGasConfig(t *testing.T) {
 func TestChangeOwnerAddress_ProcessBuiltinFunction(t *testing.T) {
 	t.Parallel()
 
-	coa := changeOwnerAddress{}
+	coa := changeOwnerAddress{
+		enableEpochsHandler: &mock.EnableEpochsHandlerStub{},
+	}
 
 	owner := []byte("send")
 	addr := []byte("addr")
@@ -102,12 +105,13 @@ func TestProcessBuiltInFunctionCallThroughSC(t *testing.T) {
 
 	owner := []byte("00000000000")
 	addr := []byte("addraddradd")
+	rcvAddr := []byte("contract")
 
 	acc := mock.NewUserAccount(addr)
 	acc.OwnerAddress = owner
 	vmInput := &vmcommon.ContractCallInput{
 		Function:      core.BuiltInFunctionChangeOwnerAddress,
-		RecipientAddr: []byte("contract"),
+		RecipientAddr: rcvAddr,
 		VMInput: vmcommon.VMInput{
 			CallerAddr: make([]byte, 11),
 			CallValue:  big.NewInt(0),
@@ -119,4 +123,8 @@ func TestProcessBuiltInFunctionCallThroughSC(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, vmOutput)
 	require.Equal(t, 1, len(vmOutput.OutputAccounts))
+
+	outputTransfer := vmOutput.OutputAccounts[string(rcvAddr)].OutputTransfers[0]
+	require.Equal(t, []byte("ChangeOwnerAddress@3030303030303030303030"), outputTransfer.Data)
+	require.Equal(t, vm.DirectCall, outputTransfer.CallType)
 }
