@@ -90,6 +90,30 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 		require.True(t, errors.Is(err, ErrInvalidNumberOfArguments))
 	})
 
+	t.Run("should not call with value", func(t *testing.T) {
+		t.Parallel()
+
+		gasCost := uint64(10)
+		rcl, _ := NewRemoveCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+
+		addr := []byte("addr")
+		key := []byte("codeHash")
+
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr:  addr,
+				GasProvided: 50,
+				Arguments:   [][]byte{key},
+				CallValue:   big.NewInt(2),
+			},
+			RecipientAddr: addr,
+		}
+
+		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), vmInput)
+		require.Nil(t, vmOutput)
+		require.Equal(t, ErrBuiltInFunctionCalledWithValue, err)
+	})
+
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 

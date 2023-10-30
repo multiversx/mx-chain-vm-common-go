@@ -52,6 +52,9 @@ func (rcl *removeCodeLeaf) ProcessBuiltinFunction(
 	if len(vmInput.Arguments) != noOfArgsRemoveCodeLeaf {
 		return nil, fmt.Errorf("%w, expected %d, got %d ", ErrInvalidNumberOfArguments, noOfArgsRemoveCodeLeaf, len(vmInput.Arguments))
 	}
+	if vmInput.CallValue.Cmp(zero) != 0 {
+		return nil, ErrBuiltInFunctionCalledWithValue
+	}
 
 	codeHash := vmInput.Arguments[0]
 
@@ -60,7 +63,9 @@ func (rcl *removeCodeLeaf) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	rcl.mutExecution.RLock()
 	gasRemaining := vmInput.GasProvided - rcl.gasCost
+	rcl.mutExecution.RUnlock()
 
 	return &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
