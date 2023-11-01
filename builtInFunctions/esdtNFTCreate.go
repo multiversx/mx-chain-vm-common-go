@@ -181,9 +181,14 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
 
+	esdtType, err := e.getTokenType(tokenID)
+	if err != nil {
+		return nil, err
+	}
+
 	nextNonce := nonce + 1
 	esdtData := &esdt.ESDigitalToken{
-		Type:  uint32(core.NonFungible),
+		Type:  esdtType,
 		Value: quantity,
 		TokenMetaData: &esdt.MetaData{
 			Nonce:      nextNonce,
@@ -231,6 +236,24 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), vmInput.Arguments[0], nextNonce, quantity, vmInput.CallerAddr, esdtDataBytes)
 
 	return vmOutput, nil
+}
+
+func (e *esdtNFTCreate) getTokenType(tokenID []byte) (uint32, error) {
+	if !e.enableEpochsHandler.IsDynamicESDTEnabled() {
+		return uint32(core.NonFungible), nil
+	}
+
+	systemAcc, err := e.getAccount(vmcommon.SystemAccountAddress)
+	if err != nil {
+		return 0, err
+	}
+
+	tokenType, _, err := systemAcc.AccountDataHandler().RetrieveValue(tokenID)
+	if err != nil {
+		return 0, err
+	}
+
+	return core.ConvertESDTTypeToUint32(string(tokenType))
 }
 
 func (e *esdtNFTCreate) getAccount(address []byte) (vmcommon.UserAccountHandler, error) {

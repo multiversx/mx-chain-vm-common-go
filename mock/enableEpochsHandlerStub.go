@@ -41,6 +41,7 @@ type EnableEpochsHandlerStub struct {
 	IsConsistentTokensValuesLengthCheckEnabledField      bool
 	IsAutoBalanceDataTriesEnabledField                   bool
 	IsChangeOwnerAddressCrossShardThroughSCEnabledField  bool
+	IsDynamicESDTEnabledField                            bool
 	MultiESDTTransferAsyncCallBackEnableEpochField       uint32
 	FixOOGReturnCodeEnableEpochField                     uint32
 	RemoveNonUpdatedStorageEnableEpochField              uint32
@@ -53,6 +54,7 @@ type EnableEpochsHandlerStub struct {
 	RefactorContextEnableEpochField                      uint32
 	CheckExecuteReadOnlyEnableEpochField                 uint32
 	StorageAPICostOptimizationEnableEpochField           uint32
+	isDynamicESDTEnabledField                            bool
 }
 
 // IsDynamicGasCostForDataTrieStorageLoadEnabled -
@@ -295,8 +297,14 @@ func (stub *EnableEpochsHandlerStub) IsAutoBalanceDataTriesEnabled() bool {
 	return stub.IsAutoBalanceDataTriesEnabledField
 }
 
+// 	IsChangeOwnerAddressCrossShardThroughSCEnabled -
 func (stub *EnableEpochsHandlerStub) IsChangeOwnerAddressCrossShardThroughSCEnabled() bool {
 	return stub.IsChangeOwnerAddressCrossShardThroughSCEnabledField
+}
+
+// IsDynamicESDTEnabled -
+func (stub *EnableEpochsHandlerStub) IsDynamicESDTEnabled() bool {
+	return stub.isDynamicESDTEnabledField
 }
 
 // IsInterfaceNil -
