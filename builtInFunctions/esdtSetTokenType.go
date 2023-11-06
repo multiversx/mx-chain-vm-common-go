@@ -58,15 +58,29 @@ func (e *esdtSetTokenType) ProcessBuiltinFunction(_, _ vmcommon.UserAccountHandl
 		return nil, ErrOnlySystemAccountAccepted
 	}
 
-	tokenID := vmInput.Arguments[0]
-	tokenType := vmInput.Arguments[1]
-
+	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[0]...)
 	systemAccount, err := e.getSystemAccount()
 	if err != nil {
 		return nil, err
 	}
 
-	err = systemAccount.AccountDataHandler().SaveKeyValue(tokenID, tokenType)
+	val, _, err := systemAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, err
+	}
+	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
+	tokenType, err := core.ConvertESDTTypeToUint32(string(vmInput.Arguments[1]))
+	if err != nil {
+		return nil, err
+	}
+	esdtMetaData.TokenType = byte(tokenType)
+
+	err = systemAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
+	if err != nil {
+		return nil, err
+	}
+
+	err = e.accounts.SaveAccount(systemAccount)
 	if err != nil {
 		return nil, err
 	}
