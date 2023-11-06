@@ -143,7 +143,7 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		return nil, false, err
 	}
 
-	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() || nonce == 0 || esdtData.Type == uint32(core.NonFungibleV2) {
+	if !e.metaDataInSystemAccount(esdtData.Type) || nonce == 0 {
 		return esdtData, false, nil
 	}
 
@@ -321,6 +321,18 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 	return nil
 }
 
+func (e *esdtDataStorage) metaDataInSystemAccount(esdtDataType uint32) bool {
+	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
+		return false
+	}
+
+	if core.IsDynamicESDT(esdtDataType) {
+		return true
+	}
+
+	return esdtDataType != uint32(core.NonFungibleV2)
+}
+
 // SaveESDTNFTToken saves the nft token to the account and system account
 func (e *esdtDataStorage) SaveESDTNFTToken(
 	senderAddress []byte,
@@ -338,7 +350,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
-	if e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() && esdtData.Type != uint32(core.NonFungibleV2) {
+	if e.metaDataInSystemAccount(esdtData.Type) {
 		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
 		if err != nil {
 			return nil, err
@@ -349,7 +361,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
 
-	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() || esdtData.Type == uint32(core.NonFungibleV2) {
+	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
 		marshaledData, errMarshal := e.marshaller.Marshal(esdtData)
 		if errMarshal != nil {
 			return nil, errMarshal
