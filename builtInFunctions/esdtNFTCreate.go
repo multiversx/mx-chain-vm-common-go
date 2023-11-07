@@ -243,17 +243,11 @@ func (e *esdtNFTCreate) getTokenType(tokenID []byte) (uint32, error) {
 		return uint32(core.NonFungible), nil
 	}
 
-	systemAcc, err := e.getAccount(vmcommon.SystemAccountAddress)
-	if err != nil {
-		return 0, err
-	}
-
 	esdtTokenKey := append([]byte(baseESDTKeyPrefix), tokenID...)
-	globalMetadataBytes, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	globalMetadata, err := getGlobalMetadata(e.accounts, esdtTokenKey)
 	if err != nil {
 		return 0, err
 	}
-	globalMetadata := ESDTGlobalMetadataFromBytes(globalMetadataBytes)
 
 	return uint32(globalMetadata.TokenType), nil
 }

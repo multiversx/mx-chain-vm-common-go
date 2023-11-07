@@ -143,7 +143,7 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		return nil, false, err
 	}
 
-	if !e.metaDataInSystemAccount(esdtData.Type) || nonce == 0 {
+	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() || nonce == 0 || hasMetaData(esdtData) {
 		return esdtData, false, nil
 	}
 
@@ -156,6 +156,14 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 	}
 
 	return esdtData, false, nil
+}
+
+func hasMetaData(esdtToken *esdt.ESDigitalToken) bool {
+	if esdtToken.TokenMetaData == nil || len(esdtToken.TokenMetaData.Name) == 0 {
+		return false
+	}
+
+	return true
 }
 
 func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
@@ -321,7 +329,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 	return nil
 }
 
-func (e *esdtDataStorage) metaDataInSystemAccount(esdtDataType uint32) bool {
+func (e *esdtDataStorage) shouldSaveMetadataInSystemAccount(esdtDataType uint32) bool {
 	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
 		return false
 	}
@@ -350,7 +358,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
-	if e.metaDataInSystemAccount(esdtData.Type) {
+	if e.shouldSaveMetadataInSystemAccount(esdtData.Type) {
 		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
 		if err != nil {
 			return nil, err

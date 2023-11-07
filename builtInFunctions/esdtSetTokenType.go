@@ -59,48 +59,21 @@ func (e *esdtSetTokenType) ProcessBuiltinFunction(_, _ vmcommon.UserAccountHandl
 	}
 
 	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[0]...)
-	systemAccount, err := e.getSystemAccount()
-	if err != nil {
-		return nil, err
-	}
+	esdtMetaData, err := getGlobalMetadata(e.accounts, esdtTokenKey)
 
-	val, _, err := systemAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
-	if core.IsGetNodeFromDBError(err) {
-		return nil, err
-	}
-	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	tokenType, err := core.ConvertESDTTypeToUint32(string(vmInput.Arguments[1]))
 	if err != nil {
 		return nil, err
 	}
 	esdtMetaData.TokenType = byte(tokenType)
 
-	err = systemAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
-	if err != nil {
-		return nil, err
-	}
-
-	err = e.accounts.SaveAccount(systemAccount)
+	err = saveGlobalMetadata(e.accounts, esdtTokenKey, esdtMetaData)
 	if err != nil {
 		return nil, err
 	}
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok}
 	return vmOutput, nil
-}
-
-func (e *esdtSetTokenType) getSystemAccount() (vmcommon.UserAccountHandler, error) {
-	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	userAcc, ok := systemSCAccount.(vmcommon.UserAccountHandler)
-	if !ok {
-		return nil, ErrWrongTypeAssertion
-	}
-
-	return userAcc, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
