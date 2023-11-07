@@ -634,7 +634,7 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
+func TestEsdtDataStorage_SaveNFTMetaData(t *testing.T) {
 	t.Parallel()
 
 	args := createMockArgsForNewESDTDataStorage()
@@ -644,15 +644,15 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 
 	enableEpochsHandler, _ := args.EnableEpochsHandler.(*mock.EnableEpochsHandlerStub)
 	enableEpochsHandler.IsSaveToSystemAccountFlagEnabledField = false
-	err := e.SaveNFTMetaDataToSystemAccount(nil)
+	err := e.SaveNFTMetaData(nil)
 	assert.Nil(t, err)
 
 	enableEpochsHandler.IsSaveToSystemAccountFlagEnabledField = true
-	err = e.SaveNFTMetaDataToSystemAccount(nil)
+	err = e.SaveNFTMetaData(nil)
 	assert.Nil(t, err)
 
 	enableEpochsHandler.IsSendAlwaysFlagEnabledField = false
-	err = e.SaveNFTMetaDataToSystemAccount(nil)
+	err = e.SaveNFTMetaData(nil)
 	assert.Equal(t, err, ErrNilTransactionHandler)
 
 	scr := &smartContractResult.SmartContractResult{
@@ -660,7 +660,7 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 		RcvAddr: []byte("address2"),
 	}
 
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.Nil(t, err)
 
 	shardCoordinator.ComputeIdCalled = func(address []byte) uint32 {
@@ -679,23 +679,23 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 		return 1
 	}
 
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.Nil(t, err)
 
 	scr.Data = []byte("function")
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.Nil(t, err)
 
 	scr.Data = []byte("function@01@02@03@04")
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.Nil(t, err)
 
 	scr.Data = []byte(core.BuiltInFunctionESDTNFTTransfer + "@01@02@03@04")
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.NotNil(t, err)
 
 	scr.Data = []byte(core.BuiltInFunctionESDTNFTTransfer + "@01@02@03@00")
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.Nil(t, err)
 
 	tickerID := []byte("TCK")
@@ -707,7 +707,7 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccount(t *testing.T) {
 	}
 	esdtMarshalled, _ := args.Marshalizer.Marshal(esdtData)
 	scr.Data = []byte(core.BuiltInFunctionESDTNFTTransfer + "@" + hex.EncodeToString(tickerID) + "@01@01@" + hex.EncodeToString(esdtMarshalled))
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.Nil(t, err)
 
 	key := baseESDTKeyPrefix + string(tickerID)
@@ -738,7 +738,7 @@ func TestEsdtDataStorage_getESDTDigitalTokenDataFromSystemAccountGetNodeFromDbEr
 	assert.True(t, core.IsGetNodeFromDBError(err))
 }
 
-func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *testing.T) {
+func TestEsdtDataStorage_SaveNFTMetaDataWithMultiTransfer(t *testing.T) {
 	t.Parallel()
 
 	args := createMockArgsForNewESDTDataStorage()
@@ -779,16 +779,16 @@ func TestEsdtDataStorage_SaveNFTMetaDataToSystemAccountWithMultiTransfer(t *test
 	}
 	esdtMarshalled, _ := args.Marshalizer.Marshal(esdtData)
 	scr.Data = []byte(core.BuiltInFunctionMultiESDTNFTTransfer + "@00@" + hex.EncodeToString(tickerID) + "@01@01@" + hex.EncodeToString(esdtMarshalled))
-	err := e.SaveNFTMetaDataToSystemAccount(scr)
+	err := e.SaveNFTMetaData(scr)
 	assert.True(t, errors.Is(err, ErrInvalidArguments))
 
 	scr.Data = []byte(core.BuiltInFunctionMultiESDTNFTTransfer + "@02@" + hex.EncodeToString(tickerID) + "@01@01@" + hex.EncodeToString(esdtMarshalled))
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.True(t, errors.Is(err, ErrInvalidArguments))
 
 	scr.Data = []byte(core.BuiltInFunctionMultiESDTNFTTransfer + "@02@" + hex.EncodeToString(tickerID) + "@02@10@" +
 		hex.EncodeToString(tickerID) + "@01@" + hex.EncodeToString(esdtMarshalled))
-	err = e.SaveNFTMetaDataToSystemAccount(scr)
+	err = e.SaveNFTMetaData(scr)
 	assert.Nil(t, err)
 
 	key := baseESDTKeyPrefix + string(tickerID)

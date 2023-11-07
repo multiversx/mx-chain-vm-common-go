@@ -308,7 +308,7 @@ type ESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	GetESDTNFTTokenOnDestinationWithCustomSystemAccount(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, systemAccount UserAccountHandler) (*esdt.ESDigitalToken, bool, error)
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
-	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	SaveNFTMetaData(tx data.TransactionHandler) error
 	AddToLiquiditySystemAcc(esdtTokenKey []byte, nonce uint64, transferValue *big.Int) error
 	IsInterfaceNil() bool
 }
@@ -316,7 +316,7 @@ type ESDTNFTStorageHandler interface {
 // SimpleESDTNFTStorageHandler will handle get of ESDT data and save metadata to system acc
 type SimpleESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
-	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	SaveNFTMetaData(tx data.TransactionHandler) error
 	IsInterfaceNil() bool
 }
 
