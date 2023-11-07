@@ -60,6 +60,9 @@ func (e *esdtSetTokenType) ProcessBuiltinFunction(_, _ vmcommon.UserAccountHandl
 
 	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[0]...)
 	esdtMetaData, err := getGlobalMetadata(e.accounts, esdtTokenKey)
+	if err != nil {
+		return nil, err
+	}
 
 	tokenType, err := core.ConvertESDTTypeToUint32(string(vmInput.Arguments[1]))
 	if err != nil {
