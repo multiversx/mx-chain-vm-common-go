@@ -573,6 +573,12 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
+
+	err = migrateNFTMetadataToAccount(esdtTokenKey, nonce, currentESDTData, e.accounts)
+	if err != nil {
+		return err
+	}
+
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnCallWithError)
 	if err != nil {
 		return err

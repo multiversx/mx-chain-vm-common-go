@@ -320,6 +320,39 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	return vmOutput, nil
 }
 
+func migrateNFTMetadataToAccount(
+	esdtTokenKey []byte,
+	nonce uint64,
+	esdtData *esdt.ESDigitalToken,
+	accounts vmcommon.AccountsAdapter,
+) error {
+	globalMetadata, err := getGlobalMetadata(accounts, esdtTokenKey)
+	if err != nil {
+		return err
+	}
+	if globalMetadata.TokenType != byte(core.NonFungible) {
+		return nil
+	}
+	esdtData.Type = uint32(core.NonFungibleV2)
+	globalMetadata.TokenType = byte(core.NonFungibleV2)
+
+	err = saveGlobalMetadata(accounts, esdtTokenKey, globalMetadata)
+	if err != nil {
+		return err
+	}
+
+	systemAcc, err := getSystemAccount(accounts)
+	if err != nil {
+		return err
+	}
+	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
+	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
+	if err != nil {
+		return err
+	}
+	return accounts.SaveAccount(systemAcc)
+}
+
 func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	vmInput *vmcommon.ContractCallInput,
 	vmOutput *vmcommon.VMOutput,
@@ -419,6 +452,12 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
+
+	err = migrateNFTMetadataToAccount(esdtTokenKey, nonce, currentESDTData, e.accounts)
+	if err != nil {
+		return err
+	}
+
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnWithError)
 	if err != nil {
 		return err
