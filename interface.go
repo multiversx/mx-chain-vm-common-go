@@ -247,7 +247,7 @@ type AccountsAdapter interface {
 	JournalLen() int
 	RevertToSnapshot(snapshot int) error
 	GetCode(codeHash []byte) []byte
-	RemoveCodeLeaf(codeHash []byte) error
+	MigrateCodeLeaf(address []byte) error
 
 	RootHash() ([]byte, error)
 	IsInterfaceNil() bool

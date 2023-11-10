@@ -43,7 +43,7 @@ func NewRemoveCodeLeafFunc(
 
 // ProcessBuiltinFunction will remove trie code leaf corresponding to specified codeHash
 func (rcl *removeCodeLeaf) ProcessBuiltinFunction(
-	_, _ vmcommon.UserAccountHandler,
+	_, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	if vmInput == nil {
@@ -55,10 +55,11 @@ func (rcl *removeCodeLeaf) ProcessBuiltinFunction(
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return nil, ErrBuiltInFunctionCalledWithValue
 	}
+	if check.IfNil(acntDst) {
+		return nil, ErrNilSCDestAccount
+	}
 
-	codeHash := vmInput.Arguments[0]
-
-	err := rcl.accounts.RemoveCodeLeaf(codeHash)
+	err := rcl.accounts.MigrateCodeLeaf(acntDst.AddressBytes())
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +81,7 @@ func (rcl *removeCodeLeaf) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	}
 
 	rcl.mutExecution.Lock()
-	rcl.gasCost = gasCost.BuiltInCost.RemoveCodeLeaf
+	rcl.gasCost = gasCost.BuiltInCost.MigrateCodeLeaf
 	rcl.mutExecution.Unlock()
 }
 

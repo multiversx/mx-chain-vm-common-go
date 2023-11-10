@@ -122,7 +122,7 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 			GetCodeCalled: func(b []byte) []byte {
 				return []byte("key code")
 			},
-			RemoveCodeLeafCalled: func(codeHash []byte) error {
+			MigrateCodeLeafCalled: func(codeHash []byte) error {
 				wasCalled = true
 				return nil
 			},
@@ -163,7 +163,7 @@ func TestRemoveCodeLeaf_SetNewGasConfig(t *testing.T) {
 
 	require.Equal(t, uint64(10), rcl.gasCost)
 
-	rcl.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{RemoveCodeLeaf: 20}})
+	rcl.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{MigrateCodeLeaf: 20}})
 
 	require.Equal(t, uint64(20), rcl.gasCost)
 }
