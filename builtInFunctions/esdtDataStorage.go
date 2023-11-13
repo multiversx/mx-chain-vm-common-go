@@ -26,7 +26,7 @@ func defaultQueryOptions() queryOptions {
 
 type esdtDataStorage struct {
 	accounts              vmcommon.AccountsAdapter
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler GlobalMetadataHandler
 	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
 	shardCoordinator      vmcommon.Coordinator
@@ -37,7 +37,7 @@ type esdtDataStorage struct {
 // ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
 type ArgsNewESDTDataStorage struct {
 	Accounts              vmcommon.AccountsAdapter
-	GlobalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	GlobalSettingsHandler GlobalMetadataHandler
 	Marshalizer           vmcommon.Marshalizer
 	EnableEpochsHandler   vmcommon.EnableEpochsHandler
 	ShardCoordinator      vmcommon.Coordinator
@@ -143,7 +143,7 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		return nil, false, err
 	}
 
-	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() || nonce == 0 || hasMetaData(esdtData) {
+	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() || nonce == 0 || isNFTWithMetadataOnAccount(esdtData) {
 		return esdtData, false, nil
 	}
 
@@ -158,7 +158,11 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 	return esdtData, false, nil
 }
 
-func hasMetaData(esdtToken *esdt.ESDigitalToken) bool {
+func isNFTWithMetadataOnAccount(esdtToken *esdt.ESDigitalToken) bool {
+	if esdtToken.Type != uint32(core.NonFungibleV2) {
+		return false
+	}
+
 	if esdtToken.TokenMetaData == nil || len(esdtToken.TokenMetaData.Name) == 0 {
 		return false
 	}
@@ -238,7 +242,7 @@ func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
 		return err
 	}
 
-	esdtUserMetaData := ESDTUserMetadataFromBytes(esdtData.Properties)
+	esdtUserMetaData := vmcommon.ESDTUserMetadataFromBytes(esdtData.Properties)
 	if esdtUserMetaData.Frozen {
 		return ErrESDTIsFrozenForAccount
 	}
@@ -359,6 +363,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
 	if e.shouldSaveMetadataInSystemAccount(esdtData.Type) {
+		// TODO check version for dynamic tokens
 		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
 		if err != nil {
 			return nil, err
@@ -670,7 +675,7 @@ func (e *esdtDataStorage) addMetaDataToProperAccountFromNFTTransfer(
 		nonce := big.NewInt(0).SetBytes(arguments[1]).Uint64()
 		esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
-		if esdtTransferData.Type == uint32(core.NonFungibleV2) && hasMetaData(esdtTransferData) {
+		if isNFTWithMetadataOnAccount(esdtTransferData) {
 			return e.saveMetaDataToUserAccount(senderAddr, esdtNFTTokenKey, esdtTransferData)
 		}
 
@@ -738,7 +743,7 @@ func (e *esdtDataStorage) addMetaDataToProperAccountFromMultiTransfer(
 			esdtTokenKey := append(e.keyPrefix, tokenID...)
 			esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
-			if esdtTransferData.Type == uint32(core.NonFungibleV2) && hasMetaData(esdtTransferData) {
+			if isNFTWithMetadataOnAccount(esdtTransferData) {
 				err = e.saveMetaDataToUserAccount(senderAddr, esdtNFTTokenKey, esdtTransferData)
 				if err != nil {
 					return err
@@ -755,6 +760,35 @@ func (e *esdtDataStorage) addMetaDataToProperAccountFromMultiTransfer(
 	}
 
 	return nil
+}
+
+// RemoveNFTMetadataFromSystemAccountIfNeeded removes the NFT metadata from the system account if needed
+func (e *esdtDataStorage) RemoveNFTMetadataFromSystemAccountIfNeeded(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error {
+	globalMetadata, err := e.globalSettingsHandler.GetGlobalMetadata(esdtTokenKey)
+	if err != nil {
+		return err
+	}
+	if globalMetadata.TokenType != byte(core.NonFungible) {
+		return nil
+	}
+	esdtData.Type = uint32(core.NonFungibleV2)
+	globalMetadata.TokenType = byte(core.NonFungibleV2)
+
+	err = e.globalSettingsHandler.SaveGlobalMetadata(esdtTokenKey, globalMetadata)
+	if err != nil {
+		return err
+	}
+
+	systemAcc, err := getSystemAccount(e.accounts)
+	if err != nil {
+		return err
+	}
+	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
+	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
+	if err != nil {
+		return err
+	}
+	return e.accounts.SaveAccount(systemAcc)
 }
 
 // IsInterfaceNil returns true if underlying object in nil

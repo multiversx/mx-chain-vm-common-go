@@ -298,7 +298,7 @@ func checkFrozeAndPause(
 		return nil
 	}
 
-	esdtUserMetaData := ESDTUserMetadataFromBytes(esdtData.Properties)
+	esdtUserMetaData := vmcommon.ESDTUserMetadataFromBytes(esdtData.Properties)
 	if esdtUserMetaData.Frozen {
 		return ErrESDTIsFrozenForAccount
 	}

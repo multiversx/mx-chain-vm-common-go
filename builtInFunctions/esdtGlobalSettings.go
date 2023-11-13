@@ -105,7 +105,7 @@ func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
 		return err
 	}
 
-	esdtMetaData, err := getGlobalMetadata(e.accounts, esdtTokenKey)
+	esdtMetaData, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func getSystemAccount(accounts vmcommon.AccountsAdapter) (vmcommon.UserAccountHa
 
 // IsPaused returns true if the esdtTokenKey (prefixed) is paused
 func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
-	esdtMetadata, err := getGlobalMetadata(e.accounts, esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -156,7 +156,7 @@ func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
 
 // IsLimitedTransfer returns true if the esdtTokenKey (prefixed) is with limited transfer
 func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
-	esdtMetadata, err := getGlobalMetadata(e.accounts, esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -166,7 +166,7 @@ func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
 
 // IsBurnForAll returns true if the esdtTokenKey (prefixed) is with burn for all
 func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
-	esdtMetadata, err := getGlobalMetadata(e.accounts, esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -200,8 +200,9 @@ func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, desti
 	return false
 }
 
-func getGlobalMetadata(accounts vmcommon.AccountsAdapter, esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {
-	systemSCAccount, err := getSystemAccount(accounts)
+// GetGlobalMetadata returns the global metadata for the esdtTokenKey
+func (e *esdtGlobalSettings) GetGlobalMetadata(esdtTokenKey []byte) (*vmcommon.ESDTGlobalMetadata, error) {
+	systemSCAccount, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return nil, err
 	}
@@ -210,12 +211,13 @@ func getGlobalMetadata(accounts vmcommon.AccountsAdapter, esdtTokenKey []byte) (
 	if core.IsGetNodeFromDBError(err) {
 		return nil, err
 	}
-	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
+	esdtMetaData := vmcommon.ESDTGlobalMetadataFromBytes(val)
 	return &esdtMetaData, nil
 }
 
-func saveGlobalMetadata(accounts vmcommon.AccountsAdapter, esdtTokenKey []byte, esdtMetaData *ESDTGlobalMetadata) error {
-	systemAccount, err := getSystemAccount(accounts)
+// SaveGlobalMetadata saves the global metadata for the esdtTokenKey
+func (e *esdtGlobalSettings) SaveGlobalMetadata(esdtTokenKey []byte, esdtMetaData *vmcommon.ESDTGlobalMetadata) error {
+	systemAccount, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return err
 	}
@@ -225,7 +227,7 @@ func saveGlobalMetadata(accounts vmcommon.AccountsAdapter, esdtTokenKey []byte, 
 		return err
 	}
 
-	return accounts.SaveAccount(systemAccount)
+	return e.accounts.SaveAccount(systemAccount)
 }
 
 // IsInterfaceNil returns true if underlying object in nil

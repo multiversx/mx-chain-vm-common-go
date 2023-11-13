@@ -53,7 +53,7 @@ func createMockArgsForNewESDTDataStorage() ArgsNewESDTDataStorage {
 }
 
 func createNewESDTDataStorageHandlerWithArgs(
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler GlobalMetadataHandler,
 	accounts vmcommon.AccountsAdapter,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) *esdtDataStorage {
@@ -834,7 +834,7 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 
 	tokenData, _ := getESDTDataFromKey(userAcc, esdtTokenKey, e.marshaller)
 
-	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
+	esdtUserMetadata := vmcommon.ESDTUserMetadataFromBytes(tokenData.Properties)
 	esdtUserMetadata.Frozen = false
 	tokenData.Properties = esdtUserMetadata.ToBytes()
 	_ = saveESDTData(userAcc, tokenData, esdtTokenKey, e.marshaller)

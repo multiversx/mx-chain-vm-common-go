@@ -10,13 +10,15 @@ import (
 
 type esdtSetTokenType struct {
 	baseActiveHandler
-	accounts   vmcommon.AccountsAdapter
-	marshaller marshal.Marshalizer
+	globalSettingsHandler GlobalMetadataHandler
+	accounts              vmcommon.AccountsAdapter
+	marshaller            marshal.Marshalizer
 }
 
 // NewESDTSetTokenTypeFunc returns the esdt set token type built-in function component
 func NewESDTSetTokenTypeFunc(
 	accounts vmcommon.AccountsAdapter,
+	globalSettingsHandler GlobalMetadataHandler,
 	marshaller marshal.Marshalizer,
 	activeHandler func() bool,
 ) (*esdtSetTokenType, error) {
@@ -26,13 +28,17 @@ func NewESDTSetTokenTypeFunc(
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
+	if check.IfNil(globalSettingsHandler) {
+		return nil, ErrNilGlobalSettingsHandler
+	}
 	if activeHandler == nil {
 		return nil, ErrNilActiveHandler
 	}
 
 	e := &esdtSetTokenType{
-		accounts:   accounts,
-		marshaller: marshaller,
+		accounts:              accounts,
+		globalSettingsHandler: globalSettingsHandler,
+		marshaller:            marshaller,
 	}
 
 	e.baseActiveHandler.activeHandler = activeHandler
@@ -59,7 +65,7 @@ func (e *esdtSetTokenType) ProcessBuiltinFunction(_, _ vmcommon.UserAccountHandl
 	}
 
 	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[0]...)
-	esdtMetaData, err := getGlobalMetadata(e.accounts, esdtTokenKey)
+	esdtMetaData, err := e.globalSettingsHandler.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +76,7 @@ func (e *esdtSetTokenType) ProcessBuiltinFunction(_, _ vmcommon.UserAccountHandl
 	}
 	esdtMetaData.TokenType = byte(tokenType)
 
-	err = saveGlobalMetadata(e.accounts, esdtTokenKey, esdtMetaData)
+	err = e.globalSettingsHandler.SaveGlobalMetadata(esdtTokenKey, esdtMetaData)
 	if err != nil {
 		return nil, err
 	}

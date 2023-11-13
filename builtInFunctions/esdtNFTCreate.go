@@ -24,7 +24,7 @@ type esdtNFTCreate struct {
 	keyPrefix             []byte
 	accounts              vmcommon.AccountsAdapter
 	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler GlobalMetadataHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	funcGasCost           uint64
 	gasConfig             vmcommon.BaseOperationCost
@@ -38,7 +38,7 @@ func NewESDTNFTCreateFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
 	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler GlobalMetadataHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	accounts vmcommon.AccountsAdapter,
@@ -244,7 +244,7 @@ func (e *esdtNFTCreate) getTokenType(tokenID []byte) (uint32, error) {
 	}
 
 	esdtTokenKey := append([]byte(baseESDTKeyPrefix), tokenID...)
-	globalMetadata, err := getGlobalMetadata(e.accounts, esdtTokenKey)
+	globalMetadata, err := e.globalSettingsHandler.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return 0, err
 	}

@@ -1,11 +1,17 @@
 package mock
 
+import (
+	"github.com/multiversx/mx-chain-vm-common-go"
+)
+
 // GlobalSettingsHandlerStub -
 type GlobalSettingsHandlerStub struct {
 	IsPausedCalled                              func(token []byte) bool
 	IsLimiterTransferCalled                     func(token []byte) bool
 	IsBurnForAllCalled                          func(token []byte) bool
 	IsSenderOrDestinationWithTransferRoleCalled func(sender, destionation, tokenID []byte) bool
+	GetGlobalMetadataCalled                     func(esdtTokenKey []byte) (*vmcommon.ESDTGlobalMetadata, error)
+	SaveGlobalMetadataCalled                    func(esdtTokenKey []byte, metadata *vmcommon.ESDTGlobalMetadata) error
 }
 
 // IsPaused -
@@ -38,6 +44,22 @@ func (p *GlobalSettingsHandlerStub) IsSenderOrDestinationWithTransferRole(sender
 		return p.IsSenderOrDestinationWithTransferRoleCalled(sender, destination, tokenID)
 	}
 	return false
+}
+
+// GetGlobalMetadata -
+func (p *GlobalSettingsHandlerStub) GetGlobalMetadata(esdtTokenKey []byte) (*vmcommon.ESDTGlobalMetadata, error) {
+	if p.GetGlobalMetadataCalled != nil {
+		return p.GetGlobalMetadataCalled(esdtTokenKey)
+	}
+	return &vmcommon.ESDTGlobalMetadata{}, nil
+}
+
+// SaveGlobalMetadata -
+func (p *GlobalSettingsHandlerStub) SaveGlobalMetadata(esdtTokenKey []byte, metadata *vmcommon.ESDTGlobalMetadata) error {
+	if p.SaveGlobalMetadataCalled != nil {
+		return p.SaveGlobalMetadataCalled(esdtTokenKey, metadata)
+	}
+	return nil
 }
 
 // IsInterfaceNil -

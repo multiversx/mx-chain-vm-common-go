@@ -1,4 +1,4 @@
-package builtInFunctions
+package vmcommon
 
 import (
 	"testing"

@@ -17,7 +17,7 @@ type esdtNFTMultiTransfer struct {
 	baseActiveHandler
 	keyPrefix             []byte
 	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
+	globalSettingsHandler GlobalMetadataHandler
 	payableHandler        vmcommon.PayableChecker
 	funcGasCost           uint64
 	accounts              vmcommon.AccountsAdapter
@@ -35,7 +35,7 @@ const argumentsPerTransfer = uint64(3)
 func NewESDTNFTMultiTransferFunc(
 	funcGasCost uint64,
 	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
+	globalSettingsHandler GlobalMetadataHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
@@ -574,7 +574,7 @@ func (e *esdtNFTMultiTransfer) addNFTToDestination(
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	err = migrateNFTMetadataToAccount(esdtTokenKey, nonce, currentESDTData, e.accounts)
+	err = e.esdtStorageHandler.RemoveNFTMetadataFromSystemAccountIfNeeded(esdtTokenKey, nonce, currentESDTData)
 	if err != nil {
 		return err
 	}
