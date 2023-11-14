@@ -23,7 +23,7 @@ const (
 	ChangeUsernameFlag                     core.EnableEpochFlag = "ChangeUsernameFlag"
 	AutoBalanceDataTriesFlag               core.EnableEpochFlag = "AutoBalanceDataTriesFlag"
 	ScToScLogEventFlag                     core.EnableEpochFlag = "ScToScLogEventFlag"
-	RemoveCodeLeafFlag                     core.EnableEpochFlag = "RemoveCodeLeafFlag"
+	MigrateCodeLeafFlag                    core.EnableEpochFlag = "MigrateCodeLeafFlag"
 )
 
 // allFlags must have all flags used by mx-chain-vm-common-go in the current version
@@ -48,5 +48,5 @@ var allFlags = []core.EnableEpochFlag{
 	ChangeUsernameFlag,
 	AutoBalanceDataTriesFlag,
 	ScToScLogEventFlag,
-	RemoveCodeLeafFlag,
+	MigrateCodeLeafFlag,
 }

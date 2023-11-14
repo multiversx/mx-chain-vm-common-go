@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewRemoveCodeLeafFunc(t *testing.T) {
+func TestNewMigrateCodeLeafFunc(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil enable epochs handler", func(t *testing.T) {
@@ -37,7 +37,7 @@ func TestNewRemoveCodeLeafFunc(t *testing.T) {
 
 		enableEpochs := &mock.EnableEpochsHandlerStub{
 			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == RemoveCodeLeafFlag
+				return flag == MigrateCodeLeafFlag
 			},
 		}
 
@@ -55,7 +55,7 @@ func TestNewRemoveCodeLeafFunc(t *testing.T) {
 	})
 }
 
-func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
+func TestMigrateCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil vm input", func(t *testing.T) {
@@ -177,7 +177,7 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 
 }
 
-func TestRemoveCodeLeaf_SetNewGasConfig(t *testing.T) {
+func TestMigrateCodeLeaf_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
 	rcl, err := NewMigrateCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})

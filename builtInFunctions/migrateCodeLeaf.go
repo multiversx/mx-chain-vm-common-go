@@ -36,7 +36,7 @@ func NewMigrateCodeLeafFunc(
 	}
 
 	mdt.baseActiveHandler.activeHandler = func() bool {
-		return enableEpochsHandler.IsFlagEnabled(RemoveCodeLeafFlag)
+		return enableEpochsHandler.IsFlagEnabled(MigrateCodeLeafFlag)
 	}
 	return mdt, nil
 }
