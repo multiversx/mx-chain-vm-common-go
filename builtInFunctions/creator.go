@@ -544,7 +544,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewRemoveCodeLeafFunc(b.gasConfig.BuiltInCost.MigrateCodeLeaf, b.enableEpochsHandler, b.accounts)
+	newFunc, err = NewMigrateCodeLeafFunc(b.gasConfig.BuiltInCost.MigrateCodeLeaf, b.enableEpochsHandler, b.accounts)
 	if err != nil {
 		return err
 	}

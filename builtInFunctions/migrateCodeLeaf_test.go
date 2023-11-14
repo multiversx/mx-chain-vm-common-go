@@ -19,7 +19,7 @@ func TestNewRemoveCodeLeafFunc(t *testing.T) {
 	t.Run("nil enable epochs handler", func(t *testing.T) {
 		t.Parallel()
 
-		rcl, err := NewRemoveCodeLeafFunc(10, nil, &mock.AccountsStub{})
+		rcl, err := NewMigrateCodeLeafFunc(10, nil, &mock.AccountsStub{})
 		require.Nil(t, rcl)
 		require.Equal(t, ErrNilEnableEpochsHandler, err)
 	})
@@ -27,7 +27,7 @@ func TestNewRemoveCodeLeafFunc(t *testing.T) {
 	t.Run("nil accounts db", func(t *testing.T) {
 		t.Parallel()
 
-		rcl, err := NewRemoveCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, nil)
+		rcl, err := NewMigrateCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, nil)
 		require.Nil(t, rcl)
 		require.Equal(t, ErrNilAccountsAdapter, err)
 	})
@@ -41,7 +41,7 @@ func TestNewRemoveCodeLeafFunc(t *testing.T) {
 			},
 		}
 
-		rcl, err := NewRemoveCodeLeafFunc(10, enableEpochs, &mock.AccountsStub{})
+		rcl, err := NewMigrateCodeLeafFunc(10, enableEpochs, &mock.AccountsStub{})
 		require.Nil(t, err)
 		require.False(t, check.IfNil(rcl))
 
@@ -61,7 +61,7 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("nil vm input", func(t *testing.T) {
 		t.Parallel()
 
-		rcl, _ := NewRemoveCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		rcl, _ := NewMigrateCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), nil)
 		assert.Nil(t, vmOutput)
 		assert.Equal(t, ErrNilVmInput, err)
@@ -72,14 +72,16 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 
 		gasCost := uint64(10)
 
-		rcl, _ := NewRemoveCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 
 		addr := []byte("addr")
+		key := []byte("codeHash")
 
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallerAddr:  addr,
 				GasProvided: 50,
+				Arguments:   [][]byte{key},
 				CallValue:   big.NewInt(0),
 			},
 			RecipientAddr: addr,
@@ -94,7 +96,7 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 		t.Parallel()
 
 		gasCost := uint64(10)
-		rcl, _ := NewRemoveCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 
 		addr := []byte("addr")
 		key := []byte("codeHash")
@@ -104,6 +106,28 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 				CallerAddr:  addr,
 				GasProvided: 50,
 				Arguments:   [][]byte{key},
+				CallValue:   big.NewInt(2),
+			},
+			RecipientAddr: addr,
+		}
+
+		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), vmInput)
+		require.Nil(t, vmOutput)
+		require.True(t, errors.Is(err, ErrInvalidNumberOfArguments))
+	})
+
+	t.Run("should not call with value", func(t *testing.T) {
+		t.Parallel()
+
+		gasCost := uint64(10)
+		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+
+		addr := []byte("addr")
+
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr:  addr,
+				GasProvided: 50,
 				CallValue:   big.NewInt(2),
 			},
 			RecipientAddr: addr,
@@ -130,16 +154,14 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 
 		gasCost := uint64(10)
 
-		rcl, _ := NewRemoveCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, accounts)
+		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, accounts)
 
 		addr := []byte("addr")
-		key := []byte("codeHash")
 
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallerAddr:  addr,
 				GasProvided: 50,
-				Arguments:   [][]byte{key},
 				CallValue:   big.NewInt(0),
 			},
 			RecipientAddr: addr,
@@ -158,7 +180,7 @@ func TestRemoveCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 func TestRemoveCodeLeaf_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	rcl, err := NewRemoveCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+	rcl, err := NewMigrateCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 	require.Nil(t, err)
 
 	require.Equal(t, uint64(10), rcl.gasCost)

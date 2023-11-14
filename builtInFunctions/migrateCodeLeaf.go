@@ -8,21 +8,21 @@ import (
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
-const noOfArgsRemoveCodeLeaf = 1
+const noOfArgsMigrateCodeLeaf = 0
 
-type removeCodeLeaf struct {
+type migrateCodeLeaf struct {
 	baseActiveHandler
 	accounts     vmcommon.AccountsAdapter
 	gasCost      uint64
 	mutExecution sync.RWMutex
 }
 
-// NewRemoveCodeLeafFunc creates a new removeCodeLeaf built-in function component
-func NewRemoveCodeLeafFunc(
+// NewMigrateCodeLeafFunc creates a new removeCodeLeaf built-in function component
+func NewMigrateCodeLeafFunc(
 	gasCost uint64,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	accounts vmcommon.AccountsAdapter,
-) (*removeCodeLeaf, error) {
+) (*migrateCodeLeaf, error) {
 	if check.IfNil(enableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
@@ -30,7 +30,7 @@ func NewRemoveCodeLeafFunc(
 		return nil, ErrNilAccountsAdapter
 	}
 
-	mdt := &removeCodeLeaf{
+	mdt := &migrateCodeLeaf{
 		gasCost:  gasCost,
 		accounts: accounts,
 	}
@@ -42,15 +42,15 @@ func NewRemoveCodeLeafFunc(
 }
 
 // ProcessBuiltinFunction will remove trie code leaf corresponding to specified codeHash
-func (rcl *removeCodeLeaf) ProcessBuiltinFunction(
+func (rcl *migrateCodeLeaf) ProcessBuiltinFunction(
 	_, acntDst vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	if vmInput == nil {
 		return nil, ErrNilVmInput
 	}
-	if len(vmInput.Arguments) != noOfArgsRemoveCodeLeaf {
-		return nil, fmt.Errorf("%w, expected %d, got %d ", ErrInvalidNumberOfArguments, noOfArgsRemoveCodeLeaf, len(vmInput.Arguments))
+	if len(vmInput.Arguments) != noOfArgsMigrateCodeLeaf {
+		return nil, fmt.Errorf("%w, expected %d, got %d ", ErrInvalidNumberOfArguments, noOfArgsMigrateCodeLeaf, len(vmInput.Arguments))
 	}
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return nil, ErrBuiltInFunctionCalledWithValue
@@ -75,7 +75,7 @@ func (rcl *removeCodeLeaf) ProcessBuiltinFunction(
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
-func (rcl *removeCodeLeaf) SetNewGasConfig(gasCost *vmcommon.GasCost) {
+func (rcl *migrateCodeLeaf) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	if gasCost == nil {
 		return
 	}
@@ -86,6 +86,6 @@ func (rcl *removeCodeLeaf) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (rcl *removeCodeLeaf) IsInterfaceNil() bool {
+func (rcl *migrateCodeLeaf) IsInterfaceNil() bool {
 	return rcl == nil
 }
