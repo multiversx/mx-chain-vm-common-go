@@ -163,7 +163,7 @@ func isNFTWithMetadataOnAccount(esdtToken *esdt.ESDigitalToken) bool {
 		return false
 	}
 
-	if esdtToken.TokenMetaData == nil || len(esdtToken.TokenMetaData.Name) == 0 {
+	if esdtToken.TokenMetaData == nil || len(esdtToken.TokenMetaData.Creator) == 0 {
 		return false
 	}
 
