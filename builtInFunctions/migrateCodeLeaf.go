@@ -59,7 +59,7 @@ func (rcl *migrateCodeLeaf) ProcessBuiltinFunction(
 		return nil, ErrNilSCDestAccount
 	}
 
-	err := rcl.accounts.MigrateCodeLeaf(acntDst.AddressBytes())
+	err := rcl.accounts.MigrateCodeLeaf(acntDst)
 	if err != nil {
 		return nil, err
 	}

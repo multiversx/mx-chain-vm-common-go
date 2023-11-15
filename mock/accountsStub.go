@@ -22,7 +22,7 @@ type AccountsStub struct {
 	SetStateCheckpointCalled func(rootHash []byte)
 	IsPruningEnabledCalled   func() bool
 	GetCodeCalled            func([]byte) []byte
-	MigrateCodeLeafCalled    func([]byte) error
+	MigrateCodeLeafCalled    func(account vmcommon.AccountHandler) error
 }
 
 // GetCode -
@@ -129,9 +129,9 @@ func (as *AccountsStub) IsPruningEnabled() bool {
 }
 
 // MigrateCodeLeaf -
-func (as *AccountsStub) MigrateCodeLeaf(codeHash []byte) error {
+func (as *AccountsStub) MigrateCodeLeaf(account vmcommon.AccountHandler) error {
 	if as.MigrateCodeLeafCalled != nil {
-		return as.MigrateCodeLeafCalled(codeHash)
+		return as.MigrateCodeLeafCalled(account)
 	}
 
 	return nil

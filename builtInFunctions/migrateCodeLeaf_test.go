@@ -146,7 +146,7 @@ func TestMigrateCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 			GetCodeCalled: func(b []byte) []byte {
 				return []byte("key code")
 			},
-			MigrateCodeLeafCalled: func(codeHash []byte) error {
+			MigrateCodeLeafCalled: func(account vmcommon.AccountHandler) error {
 				wasCalled = true
 				return nil
 			},
