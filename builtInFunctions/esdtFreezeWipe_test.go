@@ -65,7 +65,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 	marshaledData, _, _ := acnt.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 
-	esdtUserData := vmcommon.ESDTUserMetadataFromBytes(esdtToken.Properties)
+	esdtUserData := ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.True(t, esdtUserData.Frozen)
 	assert.Len(t, vmOutput.Logs, 1)
 	assert.Equal(t, [][]byte{key, {}, frozenAmount.Bytes(), []byte("dst")}, vmOutput.Logs[0].Topics)
@@ -102,7 +102,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	marshaledData, _, _ = acnt.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 
-	esdtUserData := vmcommon.ESDTUserMetadataFromBytes(esdtToken.Properties)
+	esdtUserData := ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.True(t, esdtUserData.Frozen)
 
 	unFreeze, _ := NewESDTFreezeWipeFunc(createNewESDTDataStorageHandler(), &mock.EnableEpochsHandlerStub{}, marshaller, false, false)
@@ -112,7 +112,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	marshaledData, _, _ = acnt.AccountDataHandler().RetrieveValue(esdtKey)
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 
-	esdtUserData = vmcommon.ESDTUserMetadataFromBytes(esdtToken.Properties)
+	esdtUserData = ESDTUserMetadataFromBytes(esdtToken.Properties)
 	assert.False(t, esdtUserData.Frozen)
 
 	// cannot wipe if account is not frozen
@@ -124,7 +124,7 @@ func TestESDTFreezeWipe_ProcessBuiltInFunction(t *testing.T) {
 	assert.NotEqual(t, 0, len(marshaledData))
 
 	// can wipe as account is frozen
-	metaData := vmcommon.ESDTUserMetadata{Frozen: true}
+	metaData := ESDTUserMetadata{Frozen: true}
 	wipedAmount := big.NewInt(42)
 	esdtToken = &esdt.ESDigitalToken{
 		Value:      wipedAmount,
@@ -161,7 +161,7 @@ func TestEsdtFreezeWipe_WipeShouldDecreaseLiquidityIfFlagIsEnabled(t *testing.T)
 	wipe, _ := NewESDTFreezeWipeFunc(esdtStorage, &mock.EnableEpochsHandlerStub{}, marshaller, false, true)
 
 	acnt := mock.NewUserAccount([]byte("dst"))
-	metaData := vmcommon.ESDTUserMetadata{Frozen: true}
+	metaData := ESDTUserMetadata{Frozen: true}
 	esdtToken := &esdt.ESDigitalToken{
 		Value:      balance,
 		Properties: metaData.ToBytes(),

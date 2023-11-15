@@ -278,8 +278,8 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	accSnd := mock.NewUserAccount([]byte("snd"))
 	accDst := mock.NewUserAccount([]byte("dst"))
 
-	esdtFrozen := vmcommon.ESDTUserMetadata{Frozen: true}
-	esdtNotFrozen := vmcommon.ESDTUserMetadata{Frozen: false}
+	esdtFrozen := ESDTUserMetadata{Frozen: true}
+	esdtNotFrozen := ESDTUserMetadata{Frozen: false}
 
 	esdtKey := append(transferFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(100), Properties: esdtFrozen.ToBytes()}
@@ -313,7 +313,7 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	_ = accDst.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 
 	systemAccount := mock.NewUserAccount(vmcommon.SystemAccountAddress)
-	esdtGlobal := vmcommon.ESDTGlobalMetadata{Paused: true}
+	esdtGlobal := ESDTGlobalMetadata{Paused: true}
 	pauseKey := []byte(baseESDTKeyPrefix + string(key))
 	_ = systemAccount.AccountDataHandler().SaveKeyValue(pauseKey, esdtGlobal.ToBytes())
 
@@ -375,7 +375,7 @@ func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
 	_ = accDst.AccountDataHandler().SaveKeyValue(esdtKey, marshaledData)
 
 	systemAccount := mock.NewUserAccount(vmcommon.SystemAccountAddress)
-	esdtGlobal := vmcommon.ESDTGlobalMetadata{LimitedTransfer: true}
+	esdtGlobal := ESDTGlobalMetadata{LimitedTransfer: true}
 	pauseKey := []byte(baseESDTKeyPrefix + string(key))
 	_ = systemAccount.AccountDataHandler().SaveKeyValue(pauseKey, esdtGlobal.ToBytes())
 

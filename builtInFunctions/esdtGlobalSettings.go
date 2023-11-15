@@ -201,7 +201,7 @@ func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, desti
 }
 
 // GetGlobalMetadata returns the global metadata for the esdtTokenKey
-func (e *esdtGlobalSettings) GetGlobalMetadata(esdtTokenKey []byte) (*vmcommon.ESDTGlobalMetadata, error) {
+func (e *esdtGlobalSettings) GetGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {
 	systemSCAccount, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return nil, err
@@ -211,16 +211,33 @@ func (e *esdtGlobalSettings) GetGlobalMetadata(esdtTokenKey []byte) (*vmcommon.E
 	if core.IsGetNodeFromDBError(err) {
 		return nil, err
 	}
-	esdtMetaData := vmcommon.ESDTGlobalMetadataFromBytes(val)
+	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	return &esdtMetaData, nil
 }
 
-// SaveGlobalMetadata saves the global metadata for the esdtTokenKey
-func (e *esdtGlobalSettings) SaveGlobalMetadata(esdtTokenKey []byte, esdtMetaData *vmcommon.ESDTGlobalMetadata) error {
+// GetTokenType returns the token type for the esdtTokenKey
+func (e *esdtGlobalSettings) GetTokenType(esdtTokenKey []byte) (uint32, error) {
+	esdtMetaData, err := e.GetGlobalMetadata(esdtTokenKey)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint32(esdtMetaData.TokenType), nil
+}
+
+// SetTokenType sets the token type for the esdtTokenKey
+func (e *esdtGlobalSettings) SetTokenType(esdtTokenKey []byte, tokenType uint32) error {
 	systemAccount, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return err
 	}
+
+	val, _, err := systemAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return err
+	}
+	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
+	esdtMetaData.TokenType = byte(tokenType)
 
 	err = systemAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
 	if err != nil {

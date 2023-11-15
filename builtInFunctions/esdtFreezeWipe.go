@@ -105,7 +105,7 @@ func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, t
 		return nil, err
 	}
 
-	esdtUserMetadata := vmcommon.ESDTUserMetadataFromBytes(tokenData.Properties)
+	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
 	if !esdtUserMetadata.Frozen {
 		return nil, ErrCannotWipeAccountNotFrozen
 	}
@@ -139,7 +139,7 @@ func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, token
 		return nil, err
 	}
 
-	esdtUserMetadata := vmcommon.ESDTUserMetadataFromBytes(tokenData.Properties)
+	esdtUserMetadata := ESDTUserMetadataFromBytes(tokenData.Properties)
 	esdtUserMetadata.Frozen = e.freeze
 	tokenData.Properties = esdtUserMetadata.ToBytes()
 

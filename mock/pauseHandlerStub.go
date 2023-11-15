@@ -1,17 +1,13 @@
 package mock
 
-import (
-	"github.com/multiversx/mx-chain-vm-common-go"
-)
-
 // GlobalSettingsHandlerStub -
 type GlobalSettingsHandlerStub struct {
 	IsPausedCalled                              func(token []byte) bool
 	IsLimiterTransferCalled                     func(token []byte) bool
 	IsBurnForAllCalled                          func(token []byte) bool
 	IsSenderOrDestinationWithTransferRoleCalled func(sender, destionation, tokenID []byte) bool
-	GetGlobalMetadataCalled                     func(esdtTokenKey []byte) (*vmcommon.ESDTGlobalMetadata, error)
-	SaveGlobalMetadataCalled                    func(esdtTokenKey []byte, metadata *vmcommon.ESDTGlobalMetadata) error
+	GetTokenTypeCalled                          func(esdtTokenKey []byte) (uint32, error)
+	SetTokenTypeCalled                          func(esdtTokenKey []byte, tokenType uint32) error
 }
 
 // IsPaused -
@@ -46,18 +42,18 @@ func (p *GlobalSettingsHandlerStub) IsSenderOrDestinationWithTransferRole(sender
 	return false
 }
 
-// GetGlobalMetadata -
-func (p *GlobalSettingsHandlerStub) GetGlobalMetadata(esdtTokenKey []byte) (*vmcommon.ESDTGlobalMetadata, error) {
-	if p.GetGlobalMetadataCalled != nil {
-		return p.GetGlobalMetadataCalled(esdtTokenKey)
+// GetTokenType -
+func (p *GlobalSettingsHandlerStub) GetTokenType(esdtTokenKey []byte) (uint32, error) {
+	if p.GetTokenTypeCalled != nil {
+		return p.GetTokenTypeCalled(esdtTokenKey)
 	}
-	return &vmcommon.ESDTGlobalMetadata{}, nil
+	return 0, nil
 }
 
-// SaveGlobalMetadata -
-func (p *GlobalSettingsHandlerStub) SaveGlobalMetadata(esdtTokenKey []byte, metadata *vmcommon.ESDTGlobalMetadata) error {
-	if p.SaveGlobalMetadataCalled != nil {
-		return p.SaveGlobalMetadataCalled(esdtTokenKey, metadata)
+// SetTokenType -
+func (p *GlobalSettingsHandlerStub) SetTokenType(esdtTokenKey []byte, tokenType uint32) error {
+	if p.SetTokenTypeCalled != nil {
+		return p.SetTokenTypeCalled(esdtTokenKey, tokenType)
 	}
 	return nil
 }

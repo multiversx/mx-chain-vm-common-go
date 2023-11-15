@@ -1,4 +1,4 @@
-package vmcommon
+package builtInFunctions
 
 const lengthOfESDTMetadata = 2
 

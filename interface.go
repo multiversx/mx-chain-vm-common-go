@@ -213,6 +213,14 @@ type ExtendedESDTGlobalSettingsHandler interface {
 	IsInterfaceNil() bool
 }
 
+// GlobalMetadataHandler provides functions which handle global metadata
+type GlobalMetadataHandler interface {
+	ExtendedESDTGlobalSettingsHandler
+	GetTokenType(esdtTokenKey []byte) (uint32, error)
+	SetTokenType(esdtTokenKey []byte, tokenType uint32) error
+	IsInterfaceNil() bool
+}
+
 // ESDTRoleHandler provides IsAllowedToExecute function for an ESDT
 type ESDTRoleHandler interface {
 	CheckAllowedToExecute(account UserAccountHandler, tokenID []byte, action []byte) error
@@ -309,7 +317,6 @@ type ESDTNFTStorageHandler interface {
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	SaveNFTMetaData(tx data.TransactionHandler) error
 	AddToLiquiditySystemAcc(esdtTokenKey []byte, nonce uint64, transferValue *big.Int) error
-	RemoveNFTMetadataFromSystemAccountIfNeeded(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error
 	IsInterfaceNil() bool
 }
 

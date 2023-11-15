@@ -8,9 +8,14 @@ import (
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
+const (
+	tokenIDindex   = 0
+	tokenTypeIndex = 1
+)
+
 type esdtSetTokenType struct {
 	baseActiveHandler
-	globalSettingsHandler GlobalMetadataHandler
+	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	accounts              vmcommon.AccountsAdapter
 	marshaller            marshal.Marshalizer
 }
@@ -18,7 +23,7 @@ type esdtSetTokenType struct {
 // NewESDTSetTokenTypeFunc returns the esdt set token type built-in function component
 func NewESDTSetTokenTypeFunc(
 	accounts vmcommon.AccountsAdapter,
-	globalSettingsHandler GlobalMetadataHandler,
+	globalSettingsHandler vmcommon.GlobalMetadataHandler,
 	marshaller marshal.Marshalizer,
 	activeHandler func() bool,
 ) (*esdtSetTokenType, error) {
@@ -64,19 +69,13 @@ func (e *esdtSetTokenType) ProcessBuiltinFunction(_, _ vmcommon.UserAccountHandl
 		return nil, ErrOnlySystemAccountAccepted
 	}
 
-	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[0]...)
-	esdtMetaData, err := e.globalSettingsHandler.GetGlobalMetadata(esdtTokenKey)
+	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[tokenIDindex]...)
+	tokenType, err := core.ConvertESDTTypeToUint32(string(vmInput.Arguments[tokenTypeIndex]))
 	if err != nil {
 		return nil, err
 	}
 
-	tokenType, err := core.ConvertESDTTypeToUint32(string(vmInput.Arguments[1]))
-	if err != nil {
-		return nil, err
-	}
-	esdtMetaData.TokenType = byte(tokenType)
-
-	err = e.globalSettingsHandler.SaveGlobalMetadata(esdtTokenKey, esdtMetaData)
+	err = e.globalSettingsHandler.SetTokenType(esdtTokenKey, tokenType)
 	if err != nil {
 		return nil, err
 	}

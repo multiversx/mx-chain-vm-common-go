@@ -110,8 +110,8 @@ func TestESDTBurn_ProcessBuiltInFunctionSenderBurns(t *testing.T) {
 	input.Arguments = [][]byte{key, value}
 	accSnd := mock.NewUserAccount([]byte("snd"))
 
-	esdtFrozen := vmcommon.ESDTUserMetadata{Frozen: true}
-	esdtNotFrozen := vmcommon.ESDTUserMetadata{Frozen: false}
+	esdtFrozen := ESDTUserMetadata{Frozen: true}
+	esdtNotFrozen := ESDTUserMetadata{Frozen: false}
 
 	esdtKey := append(burnFunc.keyPrefix, key...)
 	esdtToken := &esdt.ESDigitalToken{Value: big.NewInt(100), Properties: esdtFrozen.ToBytes()}

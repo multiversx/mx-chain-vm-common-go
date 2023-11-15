@@ -65,11 +65,11 @@ func createAccountsAdapterWithMap() vmcommon.AccountsAdapter {
 	return accounts
 }
 
-func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler GlobalMetadataHandler) *esdtNFTMultiTransfer {
+func createESDTNFTMultiTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.GlobalMetadataHandler) *esdtNFTMultiTransfer {
 	return createESDTNFTMultiTransferWithMockArgumentsWithLogEventFlag(selfShard, numShards, globalSettingsHandler, false)
 }
 
-func createESDTNFTMultiTransferWithMockArgumentsWithLogEventFlag(selfShard uint32, numShards uint32, globalSettingsHandler GlobalMetadataHandler, isScToScEventLogEnabled bool) *esdtNFTMultiTransfer {
+func createESDTNFTMultiTransferWithMockArgumentsWithLogEventFlag(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.GlobalMetadataHandler, isScToScEventLogEnabled bool) *esdtNFTMultiTransfer {
 	marshaller := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard
@@ -969,7 +969,7 @@ func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
 	initialTokens := big.NewInt(3)
 	createESDTNFTToken(token1, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
 	createESDTNFTToken(token2, core.Fungible, 0, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
-	esdtFrozen := vmcommon.ESDTUserMetadata{Frozen: true}
+	esdtFrozen := ESDTUserMetadata{Frozen: true}
 
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()

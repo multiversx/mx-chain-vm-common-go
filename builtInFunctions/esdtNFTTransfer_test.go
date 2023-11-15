@@ -38,7 +38,7 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 	return nftTransfer
 }
 
-func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSettingsHandler GlobalMetadataHandler, enableEpochsHandler vmcommon.EnableEpochsHandler) (*esdtNFTTransfer, *esdtDataStorage) {
+func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSettingsHandler vmcommon.GlobalMetadataHandler, enableEpochsHandler vmcommon.EnableEpochsHandler) (*esdtNFTTransfer, *esdtDataStorage) {
 	marshaller := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard
@@ -87,7 +87,7 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 	return nftTransfer, esdtStorageHandler
 }
 
-func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler GlobalMetadataHandler) *esdtNFTTransfer {
+func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.GlobalMetadataHandler) *esdtNFTTransfer {
 	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
 		IsTransferToMetaFlagEnabledField:        true,
 		IsCheckTransferFlagEnabledField:         true,
@@ -790,7 +790,7 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 
 	initialTokens := big.NewInt(3)
 	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
-	esdtFrozen := vmcommon.ESDTUserMetadata{Frozen: true}
+	esdtFrozen := ESDTUserMetadata{Frozen: true}
 
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()
@@ -965,7 +965,7 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 
 	initialTokens := big.NewInt(3)
 	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
-	esdtFrozen := vmcommon.ESDTUserMetadata{Frozen: true}
+	esdtFrozen := ESDTUserMetadata{Frozen: true}
 
 	_ = transferFunc.accounts.SaveAccount(sender)
 	_, _ = transferFunc.accounts.Commit()
