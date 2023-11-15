@@ -21,16 +21,32 @@ var disabledFixForSaveKeyValueEnableEpochsHandler = &mock.EnableEpochsHandlerStu
 func TestNewSaveKeyValueStorageFunc(t *testing.T) {
 	t.Parallel()
 
-	funcGasCost := uint64(1)
-	gasConfig := vmcommon.BaseOperationCost{
-		StorePerByte: 1,
-	}
+	t.Run("nil enable epoch hanlder should error", func(t *testing.T) {
+		t.Parallel()
 
-	kvs, err := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, disabledFixForSaveKeyValueEnableEpochsHandler)
-	require.NoError(t, err)
-	require.False(t, check.IfNil(kvs))
-	require.Equal(t, funcGasCost, kvs.funcGasCost)
-	require.Equal(t, gasConfig, kvs.gasConfig)
+		funcGasCost := uint64(1)
+		gasConfig := vmcommon.BaseOperationCost{
+			StorePerByte: 1,
+		}
+
+		kvs, err := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, nil)
+		assert.Nil(t, kvs)
+		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		funcGasCost := uint64(1)
+		gasConfig := vmcommon.BaseOperationCost{
+			StorePerByte: 1,
+		}
+
+		kvs, err := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, disabledFixForSaveKeyValueEnableEpochsHandler)
+		require.NoError(t, err)
+		require.False(t, check.IfNil(kvs))
+		require.Equal(t, funcGasCost, kvs.funcGasCost)
+		require.Equal(t, gasConfig, kvs.gasConfig)
+	})
 }
 
 func TestSaveKeyValueStorageFunc_SetNewGasConfig(t *testing.T) {
@@ -277,7 +293,7 @@ func TestSaveKeyValue_ProcessBuiltinFunctionExistingKeyAndNotEnoughGas(t *testin
 		vmOutput, err := skv.ProcessBuiltinFunction(acc, acc, vmInput)
 		assert.Nil(t, err)
 		expectedGasRemaining := 0 - funcGasCost - persistPerByte*uint64(len(key)+len(value))
-		assert.Equal(t, uint64(expectedGasRemaining), vmOutput.GasRemaining) // overflow on uint64 occurs here
+		assert.Equal(t, expectedGasRemaining, vmOutput.GasRemaining) // overflow on uint64 occurs here
 	})
 	t.Run("should return not enough of gas if the fix is enabled", func(t *testing.T) {
 		epochsHandler := &mock.EnableEpochsHandlerStub{

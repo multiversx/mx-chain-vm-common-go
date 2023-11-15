@@ -58,9 +58,9 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 	k.mutExecution.RLock()
 	defer k.mutExecution.RUnlock()
 
-	err := checkArgumentsForSaveKeyValue(acntDest, input)
-	if err != nil {
-		return nil, err
+	errCheck := checkArgumentsForSaveKeyValue(acntDest, input)
+	if errCheck != nil {
+		return nil, errCheck
 	}
 
 	vmOutput := &vmcommon.VMOutput{
