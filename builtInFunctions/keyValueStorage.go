@@ -13,19 +13,26 @@ import (
 
 type saveKeyValueStorage struct {
 	baseAlwaysActiveHandler
-	gasConfig    vmcommon.BaseOperationCost
-	funcGasCost  uint64
-	mutExecution sync.RWMutex
+	gasConfig           vmcommon.BaseOperationCost
+	funcGasCost         uint64
+	mutExecution        sync.RWMutex
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 // NewSaveKeyValueStorageFunc returns the save key-value storage built in function
 func NewSaveKeyValueStorageFunc(
 	gasConfig vmcommon.BaseOperationCost,
 	funcGasCost uint64,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*saveKeyValueStorage, error) {
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
+	}
+
 	s := &saveKeyValueStorage{
-		gasConfig:   gasConfig,
-		funcGasCost: funcGasCost,
+		gasConfig:           gasConfig,
+		funcGasCost:         funcGasCost,
+		enableEpochsHandler: enableEpochsHandler,
 	}
 
 	return s, nil
@@ -100,7 +107,21 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 		}
 	}
 
-	vmOutput.GasRemaining -= useGas
+	return k.subtractGasFromVMoutput(vmOutput, useGas)
+}
+
+func (k *saveKeyValueStorage) subtractGasFromVMoutput(vmOutput *vmcommon.VMOutput, usedGas uint64) (*vmcommon.VMOutput, error) {
+	if !k.enableEpochsHandler.FixGasRemainingForSaveKeyValueBuiltinFunctionEnabled() {
+		// backwards compatibility
+		vmOutput.GasRemaining -= usedGas
+
+		return vmOutput, nil
+	}
+	if vmOutput.GasRemaining < usedGas {
+		return nil, ErrNotEnoughGas
+	}
+
+	vmOutput.GasRemaining -= usedGas
 
 	return vmOutput, nil
 }

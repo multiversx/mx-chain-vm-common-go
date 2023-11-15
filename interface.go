@@ -391,6 +391,7 @@ type EnableEpochsHandler interface {
 	IsConsistentTokensValuesLengthCheckEnabled() bool
 	IsAutoBalanceDataTriesEnabled() bool
 	IsChangeOwnerAddressCrossShardThroughSCEnabled() bool
+	FixGasRemainingForSaveKeyValueBuiltinFunctionEnabled() bool
 
 	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
 	FixOOGReturnCodeEnableEpoch() uint32
