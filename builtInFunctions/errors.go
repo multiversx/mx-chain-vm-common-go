@@ -208,3 +208,6 @@ var ErrWrongUserNameSplit = errors.New("wrong user name split")
 
 // ErrUserNamePrefixNotEqual signals that user name prefix is not equal
 var ErrUserNamePrefixNotEqual = errors.New("user name prefix is not equal")
+
+// ErrBuiltInFunctionIsNotActive signals that built-in function is not active
+var ErrBuiltInFunctionIsNotActive = errors.New("built-in function is not active")
