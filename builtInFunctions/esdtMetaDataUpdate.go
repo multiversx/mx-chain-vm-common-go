@@ -1,9 +1,7 @@
 package builtInFunctions
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"math/big"
 	"sync"
 
@@ -12,15 +10,7 @@ import (
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
-const (
-	nameIndex       = 2
-	royaltiesIndex  = 3
-	hashIndex       = 4
-	attributesIndex = 5
-	urisStartIndex  = 6
-)
-
-type esdtMetaDataRecreate struct {
+type esdtMetaDataUpdate struct {
 	baseActiveHandler
 	funcGasCost           uint64
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
@@ -32,8 +22,8 @@ type esdtMetaDataRecreate struct {
 	mutExecution          sync.RWMutex
 }
 
-// NewESDTMetaDataRecreateFunc returns the esdt meta data recreate built-in function component
-func NewESDTMetaDataRecreateFunc(
+// NewESDTMetaDataUpdateFunc returns the esdt meta data update built-in function component
+func NewESDTMetaDataUpdateFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
 	accounts vmcommon.AccountsAdapter,
@@ -41,7 +31,7 @@ func NewESDTMetaDataRecreateFunc(
 	storageHandler vmcommon.ESDTNFTStorageHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtMetaDataRecreate, error) {
+) (*esdtMetaDataUpdate, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
@@ -58,7 +48,7 @@ func NewESDTMetaDataRecreateFunc(
 		return nil, ErrNilRolesHandler
 	}
 
-	e := &esdtMetaDataRecreate{
+	e := &esdtMetaDataUpdate{
 		accounts:              accounts,
 		globalSettingsHandler: globalSettingsHandler,
 		storageHandler:        storageHandler,
@@ -74,49 +64,8 @@ func NewESDTMetaDataRecreateFunc(
 	return e, nil
 }
 
-func checkArguments(vmInput *vmcommon.ContractCallInput, acntSnd vmcommon.UserAccountHandler, handler baseActiveHandler) error {
-	if vmInput == nil {
-		return ErrNilVmInput
-	}
-	if vmInput.CallValue == nil {
-		return ErrNilValue
-	}
-	if vmInput.CallValue.Cmp(zero) != 0 {
-		return ErrBuiltInFunctionCalledWithValue
-	}
-	if !bytes.Equal(vmInput.CallerAddr, vmInput.RecipientAddr) {
-		return ErrInvalidRcvAddr
-	}
-	if check.IfNil(acntSnd) {
-		return ErrNilUserAccount
-	}
-	if !handler.IsActive() {
-		return ErrBuiltInFunctionIsNotActive
-	}
-
-	return nil
-}
-
-func getEsdtDataAndCheckType(
-	vmInput *vmcommon.ContractCallInput,
-	acntSnd vmcommon.UserAccountHandler,
-	storageHandler vmcommon.ESDTNFTStorageHandler,
-) (*esdt.ESDigitalToken, []byte, uint64, error) {
-	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[tokenIDIndex]...)
-	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[nonceIndex]).Uint64()
-	esdtData, err := storageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	if !core.IsDynamicESDT(esdtData.Type) {
-		return nil, nil, 0, ErrOperationNotPermitted
-	}
-
-	return esdtData, esdtTokenKey, nonce, nil
-}
-
 // ProcessBuiltinFunction saves the token type in the system account
-func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
+func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
 	err := checkArguments(vmInput, acntSnd, e.baseActiveHandler)
 	if err != nil {
 		return nil, err
@@ -125,7 +74,7 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		return nil, ErrInvalidNumberOfArguments
 	}
 
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(core.ESDTMetaDataRecreate))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(core.ESDTRoleNFTUpdate))
 	if err != nil {
 		return nil, err
 	}
@@ -147,17 +96,37 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		return nil, err
 	}
 
-	royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex]).Uint64())
-	if royalties > core.MaxRoyalty {
-		return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
+	if len(vmInput.Arguments[nameIndex]) != 0 {
+		esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
+	}
+	esdtData.TokenMetaData.Creator = vmInput.CallerAddr
+
+	if len(vmInput.Arguments[royaltiesIndex]) != 0 {
+		royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex]).Uint64())
+		if royalties > core.MaxRoyalty {
+			return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
+		}
+		esdtData.TokenMetaData.Royalties = royalties
 	}
 
-	esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
-	esdtData.TokenMetaData.Creator = vmInput.CallerAddr
-	esdtData.TokenMetaData.Royalties = royalties
-	esdtData.TokenMetaData.Hash = vmInput.Arguments[hashIndex]
-	esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
-	esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
+	if len(vmInput.Arguments[hashIndex]) != 0 {
+		esdtData.TokenMetaData.Hash = vmInput.Arguments[hashIndex]
+	}
+
+	if len(vmInput.Arguments[attributesIndex]) != 0 {
+		esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
+	}
+
+	var URIs [][]byte
+	for _, arg := range vmInput.Arguments[urisStartIndex:] {
+		if len(arg) != 0 {
+			URIs = append(URIs, arg)
+		}
+	}
+
+	if len(URIs) != 0 {
+		esdtData.TokenMetaData.URIs = URIs
+	}
 
 	_, err = e.storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
 	if err != nil {
@@ -172,18 +141,18 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
-func (e *esdtMetaDataRecreate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
+func (e *esdtMetaDataUpdate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	if gasCost == nil {
 		return
 	}
 
 	e.mutExecution.Lock()
-	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTRecreate
+	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTUpdate
 	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (e *esdtMetaDataRecreate) IsInterfaceNil() bool {
+func (e *esdtMetaDataUpdate) IsInterfaceNil() bool {
 	return e == nil
 }

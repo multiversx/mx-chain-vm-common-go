@@ -24,6 +24,7 @@ type BuiltInCost struct {
 	ESDTModifyCreator        uint64
 	ESDTNFTCreate            uint64
 	ESDTNFTRecreate          uint64
+	ESDTNFTUpdate            uint64
 	ESDTNFTAddQuantity       uint64
 	ESDTNFTBurn              uint64
 	ESDTNFTTransfer          uint64

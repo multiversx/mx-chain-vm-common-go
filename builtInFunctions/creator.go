@@ -510,6 +510,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	newFunc, err = NewESDTMetaDataUpdateFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTMetaDataUpdate, newFunc)
+	if err != nil {
+		return err
+	}
+
 	newFunc, err = NewESDTNFTSetNewURIsFunc(b.gasConfig.BuiltInCost.ESDTNFTRecreate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
