@@ -1,8 +1,9 @@
 package builtInFunctions
 
 import (
-	"bytes"
+	"fmt"
 	"math/big"
+	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -21,10 +22,13 @@ type esdtModifyRoyalties struct {
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
+	funcGasCost           uint64
+	mutExecution          sync.RWMutex
 }
 
 // NewESDTModifyRoyaltiesFunc returns the esdt modify royalties built-in function component
 func NewESDTModifyRoyaltiesFunc(
+	funcGasCost uint64,
 	accounts vmcommon.AccountsAdapter,
 	globalSettingsHandler vmcommon.GlobalMetadataHandler,
 	storageHandler vmcommon.ESDTNFTStorageHandler,
@@ -52,6 +56,8 @@ func NewESDTModifyRoyaltiesFunc(
 		globalSettingsHandler: globalSettingsHandler,
 		storageHandler:        storageHandler,
 		rolesHandler:          rolesHandler,
+		funcGasCost:           funcGasCost,
+		mutExecution:          sync.RWMutex{},
 	}
 
 	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsDynamicESDTEnabled
@@ -61,45 +67,36 @@ func NewESDTModifyRoyaltiesFunc(
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	if vmInput == nil {
-		return nil, ErrNilVmInput
-	}
-	if vmInput.CallValue == nil {
-		return nil, ErrNilValue
-	}
-	if vmInput.CallValue.Cmp(zero) != 0 {
-		return nil, ErrBuiltInFunctionCalledWithValue
+	err := checkArguments(vmInput, acntSnd, e.baseActiveHandler)
+	if err != nil {
+		return nil, err
 	}
 	if len(vmInput.Arguments) != 3 {
 		return nil, ErrInvalidNumberOfArguments
 	}
-	if !bytes.Equal(vmInput.CallerAddr, vmInput.RecipientAddr) {
-		return nil, ErrInvalidRcvAddr
-	}
-	if check.IfNil(acntSnd) {
-		return nil, ErrNilUserAccount
-	}
-	if !e.baseActiveHandler.IsActive() {
-		return nil, ErrBuiltInFunctionIsNotActive
-	}
-	// TODO check and consume gas
 
-	err := e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(core.ESDTRoleModifyRoyalties))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(core.ESDTRoleModifyRoyalties))
 	if err != nil {
 		return nil, err
 	}
 
-	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[tokenIDIndex]...)
-	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[nonceIndex]).Uint64()
-	esdtData, err := e.storageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
+	e.mutExecution.RLock()
+	funcGasCost := e.funcGasCost
+	e.mutExecution.RUnlock()
+	if vmInput.GasProvided < funcGasCost {
+		return nil, ErrNotEnoughGas
+	}
+
+	esdtData, esdtTokenKey, nonce, err := getEsdtDataAndCheckType(vmInput, acntSnd, e.storageHandler)
 	if err != nil {
 		return nil, err
-	}
-	if esdtData.Type != uint32(core.DynamicNFT) {
-		return nil, ErrOperationNotPermitted
 	}
 
 	newRoyalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[newRoyaltiesIndex]).Uint64())
+	if newRoyalties > core.MaxRoyalty {
+		return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
+	}
+
 	esdtData.TokenMetaData.Royalties = newRoyalties
 
 	_, err = e.storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
@@ -108,15 +105,21 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 	}
 
 	vmOutput := &vmcommon.VMOutput{
-		ReturnCode: vmcommon.Ok,
-		//TODO set GasRemaining
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: vmInput.GasProvided - funcGasCost,
 	}
 	return vmOutput, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
-func (e *esdtModifyRoyalties) SetNewGasConfig(_ *vmcommon.GasCost) {
-	//TODO set gas cost
+func (e *esdtModifyRoyalties) SetNewGasConfig(gasCost *vmcommon.GasCost) {
+	if gasCost == nil {
+		return
+	}
+
+	e.mutExecution.Lock()
+	e.funcGasCost = gasCost.BuiltInCost.ESDTModifyRoyalties
+	e.mutExecution.Unlock()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

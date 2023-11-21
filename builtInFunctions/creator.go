@@ -501,6 +501,42 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	newFunc, err = NewESDTMetaDataRecreateFunc(b.gasConfig.BuiltInCost.ESDTNFTRecreate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTMetaDataRecreate, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTNFTSetNewURIsFunc(b.gasConfig.BuiltInCost.ESDTNFTRecreate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTRoleSetNewURI, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTModifyRoyaltiesFunc(b.gasConfig.BuiltInCost.ESDTModifyRoyalties, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTModifyRoyalties, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTNFTModifyCreatorFunc(b.gasConfig.BuiltInCost.ESDTModifyRoyalties, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTRoleModifyCreator, newFunc)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
