@@ -67,15 +67,7 @@ func NewESDTModifyRoyaltiesFunc(
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkArguments(vmInput, acntSnd, e.baseActiveHandler)
-	if err != nil {
-		return nil, err
-	}
-	if len(vmInput.Arguments) != 3 {
-		return nil, ErrInvalidNumberOfArguments
-	}
-
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(core.ESDTRoleModifyRoyalties))
+	err := checkDynamicArguments(vmInput, acntSnd, e.baseActiveHandler, 3, e.rolesHandler, core.ESDTRoleModifyRoyalties)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +79,7 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 		return nil, ErrNotEnoughGas
 	}
 
-	esdtData, esdtTokenKey, nonce, err := getEsdtDataAndCheckType(vmInput, acntSnd, e.storageHandler)
+	esdtInfo, err := getEsdtInfo(vmInput, acntSnd, e.storageHandler, e.globalSettingsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -97,9 +89,9 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 		return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 	}
 
-	esdtData.TokenMetaData.Royalties = newRoyalties
+	esdtInfo.esdtData.TokenMetaData.Royalties = newRoyalties
 
-	_, err = e.storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
+	err = saveEsdtInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

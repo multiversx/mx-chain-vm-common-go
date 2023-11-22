@@ -74,7 +74,14 @@ func NewESDTMetaDataRecreateFunc(
 	return e, nil
 }
 
-func checkArguments(vmInput *vmcommon.ContractCallInput, acntSnd vmcommon.UserAccountHandler, handler baseActiveHandler) error {
+func checkDynamicArguments(
+	vmInput *vmcommon.ContractCallInput,
+	acntSnd vmcommon.UserAccountHandler,
+	handler baseActiveHandler,
+	minNumOfArgs int,
+	rolesHandler vmcommon.ESDTRoleHandler,
+	role string,
+) error {
 	if vmInput == nil {
 		return ErrNilVmInput
 	}
@@ -93,58 +100,113 @@ func checkArguments(vmInput *vmcommon.ContractCallInput, acntSnd vmcommon.UserAc
 	if !handler.IsActive() {
 		return ErrBuiltInFunctionIsNotActive
 	}
+	if len(vmInput.Arguments) < minNumOfArgs {
+		return ErrInvalidNumberOfArguments
+	}
+	if minNumOfArgs < 1 {
+		return ErrInvalidNumberOfArguments
+	}
+	err := rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(role))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func getEsdtDataAndCheckType(
+type esdtStorageInfo struct {
+	esdtData     *esdt.ESDigitalToken
+	esdtTokenKey []byte
+	nonce        uint64
+	isDynamic    bool
+}
+
+func getEsdtInfo(
 	vmInput *vmcommon.ContractCallInput,
 	acntSnd vmcommon.UserAccountHandler,
 	storageHandler vmcommon.ESDTNFTStorageHandler,
-) (*esdt.ESDigitalToken, []byte, uint64, error) {
+	globalSettingsHandler vmcommon.GlobalMetadataHandler,
+) (*esdtStorageInfo, error) {
 	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[tokenIDIndex]...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[nonceIndex]).Uint64()
-	esdtData, err := storageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
+
+	tokenType, err := globalSettingsHandler.GetTokenType(esdtTokenKey)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, err
 	}
-	if !core.IsDynamicESDT(esdtData.Type) {
-		return nil, nil, 0, ErrOperationNotPermitted
+	if core.IsDynamicESDT(tokenType) {
+		metaData, err := storageHandler.GetMetaDataFromSystemAccount(esdtTokenKey, nonce)
+		if err != nil {
+			return nil, err
+		}
+
+		if metaData == nil {
+			return nil, ErrInvalidMetadata
+		}
+
+		esdtData := &esdt.ESDigitalToken{TokenMetaData: metaData}
+		return &esdtStorageInfo{
+			esdtData:     esdtData,
+			esdtTokenKey: esdtTokenKey,
+			nonce:        nonce,
+			isDynamic:    true,
+		}, nil
 	}
 
-	return esdtData, esdtTokenKey, nonce, nil
+	esdtData, err := storageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
+	if err != nil {
+		return nil, err
+	}
+
+	return &esdtStorageInfo{
+		esdtData:     esdtData,
+		esdtTokenKey: esdtTokenKey,
+		nonce:        nonce,
+		isDynamic:    false,
+	}, nil
+}
+
+func saveEsdtInfo(
+	esdtInfo *esdtStorageInfo,
+	storageHandler vmcommon.ESDTNFTStorageHandler,
+	acntSnd vmcommon.UserAccountHandler,
+	returnCallAfterError bool,
+) error {
+	if esdtInfo.isDynamic {
+		return storageHandler.SaveMetaDataToSystemAccount(esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData)
+	}
+
+	_, err := storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData, true, returnCallAfterError)
+	return err
 }
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkArguments(vmInput, acntSnd, e.baseActiveHandler)
-	if err != nil {
-		return nil, err
-	}
-	if len(vmInput.Arguments) < 7 {
-		return nil, ErrInvalidNumberOfArguments
-	}
-
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(core.ESDTMetaDataRecreate))
+	err := checkDynamicArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTMetaDataRecreate)
 	if err != nil {
 		return nil, err
 	}
 
-	totalLength := uint64(0)
+	totalLengthDifference := 0
 	for _, arg := range vmInput.Arguments {
-		totalLength += uint64(len(arg))
+		totalLengthDifference += len(arg)
+	}
+
+	esdtInfo, err := getEsdtInfo(vmInput, acntSnd, e.storageHandler, e.globalSettingsHandler)
+	if err != nil {
+		return nil, err
+	}
+
+	totalLengthDifference -= esdtInfo.esdtData.TokenMetaData.Size()
+	if totalLengthDifference < 0 {
+		totalLengthDifference = 0
 	}
 
 	e.mutExecution.RLock()
-	gasToUse := totalLength*e.gasConfig.StorePerByte + e.funcGasCost
+	gasToUse := uint64(totalLengthDifference)*e.gasConfig.StorePerByte + e.funcGasCost
 	e.mutExecution.RUnlock()
 	if vmInput.GasProvided < gasToUse {
 		return nil, ErrNotEnoughGas
-	}
-
-	esdtData, esdtTokenKey, nonce, err := getEsdtDataAndCheckType(vmInput, acntSnd, e.storageHandler)
-	if err != nil {
-		return nil, err
 	}
 
 	royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex]).Uint64())
@@ -152,14 +214,14 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 	}
 
-	esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
-	esdtData.TokenMetaData.Creator = vmInput.CallerAddr
-	esdtData.TokenMetaData.Royalties = royalties
-	esdtData.TokenMetaData.Hash = vmInput.Arguments[hashIndex]
-	esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
-	esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
+	esdtInfo.esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
+	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
+	esdtInfo.esdtData.TokenMetaData.Royalties = royalties
+	esdtInfo.esdtData.TokenMetaData.Hash = vmInput.Arguments[hashIndex]
+	esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
+	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
-	_, err = e.storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
+	err = saveEsdtInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

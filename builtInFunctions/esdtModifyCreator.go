@@ -1,36 +1,32 @@
 package builtInFunctions
 
 import (
+	"github.com/multiversx/mx-chain-core-go/core"
 	"sync"
 
-	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
-const uriStartIndex = 2
-
-type esdtNFTSetNewURIs struct {
+type esdtModifyCreator struct {
 	baseActiveHandler
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
 	funcGasCost           uint64
-	gasConfig             vmcommon.BaseOperationCost
 	mutExecution          sync.RWMutex
 }
 
-// NewESDTNFTSetNewURIsFunc returns the esdt set new URIs built-in function component
-func NewESDTNFTSetNewURIsFunc(
+// NewESDTModifyCreatorFunc returns the esdt modify creator built-in function component
+func NewESDTModifyCreatorFunc(
 	funcGasCost uint64,
-	gasConfig vmcommon.BaseOperationCost,
 	accounts vmcommon.AccountsAdapter,
 	globalSettingsHandler vmcommon.GlobalMetadataHandler,
 	storageHandler vmcommon.ESDTNFTStorageHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtNFTSetNewURIs, error) {
+) (*esdtModifyCreator, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
@@ -47,13 +43,12 @@ func NewESDTNFTSetNewURIsFunc(
 		return nil, ErrNilRolesHandler
 	}
 
-	e := &esdtNFTSetNewURIs{
+	e := &esdtModifyCreator{
 		accounts:              accounts,
 		globalSettingsHandler: globalSettingsHandler,
 		storageHandler:        storageHandler,
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
-		gasConfig:             gasConfig,
 		mutExecution:          sync.RWMutex{},
 	}
 
@@ -63,67 +58,51 @@ func NewESDTNFTSetNewURIsFunc(
 }
 
 // ProcessBuiltinFunction saves the token type in the system account
-func (e *esdtNFTSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkArguments(vmInput, acntSnd, e.baseActiveHandler)
+func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
+	err := checkDynamicArguments(vmInput, acntSnd, e.baseActiveHandler, 2, e.rolesHandler, core.ESDTRoleModifyCreator)
 	if err != nil {
 		return nil, err
-	}
-	if len(vmInput.Arguments) < 3 {
-		return nil, ErrInvalidNumberOfArguments
-	}
-
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(core.ESDTRoleSetNewURI))
-	if err != nil {
-		return nil, err
-	}
-
-	esdtData, esdtTokenKey, nonce, err := getEsdtDataAndCheckType(vmInput, acntSnd, e.storageHandler)
-	if err != nil {
-		return nil, err
-	}
-
-	oldURIsLen := len(esdtData.TokenMetaData.URIs)
-	newURIsLen := len(vmInput.Arguments[uriStartIndex:])
-	difference := newURIsLen - oldURIsLen
-	if difference < 0 {
-		difference = 0
 	}
 
 	e.mutExecution.RLock()
-	gasToUse := uint64(difference)*e.gasConfig.StorePerByte + e.funcGasCost
+	funcGasCost := e.funcGasCost
 	e.mutExecution.RUnlock()
 
-	if vmInput.GasProvided < gasToUse {
+	if vmInput.GasProvided < funcGasCost {
 		return nil, ErrNotEnoughGas
 	}
 
-	esdtData.TokenMetaData.URIs = vmInput.Arguments[uriStartIndex:]
+	esdtInfo, err := getEsdtInfo(vmInput, acntSnd, e.storageHandler, e.globalSettingsHandler)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = e.storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
+	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
+
+	err = saveEsdtInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
-		GasRemaining: vmInput.GasProvided - gasToUse,
+		GasRemaining: vmInput.GasProvided - funcGasCost,
 	}
 	return vmOutput, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
-func (e *esdtNFTSetNewURIs) SetNewGasConfig(gasCost *vmcommon.GasCost) {
+func (e *esdtModifyCreator) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	if gasCost == nil {
 		return
 	}
 
 	e.mutExecution.Lock()
-	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTSetNewURIs
-	e.gasConfig = gasCost.BaseOperationCost
+	e.funcGasCost = gasCost.BuiltInCost.ESDTModifyCreator
 	e.mutExecution.Unlock()
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (e *esdtNFTSetNewURIs) IsInterfaceNil() bool {
+func (e *esdtModifyCreator) IsInterfaceNil() bool {
 	return e == nil
 }

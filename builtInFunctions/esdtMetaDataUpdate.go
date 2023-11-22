@@ -66,55 +66,46 @@ func NewESDTMetaDataUpdateFunc(
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkArguments(vmInput, acntSnd, e.baseActiveHandler)
-	if err != nil {
-		return nil, err
-	}
-	if len(vmInput.Arguments) < 7 {
-		return nil, ErrInvalidNumberOfArguments
-	}
-
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(core.ESDTRoleNFTUpdate))
+	err := checkDynamicArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTRoleNFTUpdate)
 	if err != nil {
 		return nil, err
 	}
 
-	totalLength := uint64(0)
+	totalLengthDifference := 0
 	for _, arg := range vmInput.Arguments {
-		totalLength += uint64(len(arg))
+		totalLengthDifference += len(arg)
 	}
 
-	e.mutExecution.RLock()
-	gasToUse := totalLength*e.gasConfig.StorePerByte + e.funcGasCost
-	e.mutExecution.RUnlock()
-	if vmInput.GasProvided < gasToUse {
-		return nil, ErrNotEnoughGas
-	}
-
-	esdtData, esdtTokenKey, nonce, err := getEsdtDataAndCheckType(vmInput, acntSnd, e.storageHandler)
+	esdtInfo, err := getEsdtInfo(vmInput, acntSnd, e.storageHandler, e.globalSettingsHandler)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(vmInput.Arguments[nameIndex]) != 0 {
-		esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
+		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Name)
+		esdtInfo.esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
+
 	}
-	esdtData.TokenMetaData.Creator = vmInput.CallerAddr
+	totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Creator)
+	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
 
 	if len(vmInput.Arguments[royaltiesIndex]) != 0 {
+		totalLengthDifference -= 32
 		royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex]).Uint64())
 		if royalties > core.MaxRoyalty {
 			return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 		}
-		esdtData.TokenMetaData.Royalties = royalties
+		esdtInfo.esdtData.TokenMetaData.Royalties = royalties
 	}
 
 	if len(vmInput.Arguments[hashIndex]) != 0 {
-		esdtData.TokenMetaData.Hash = vmInput.Arguments[hashIndex]
+		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Hash)
+		esdtInfo.esdtData.TokenMetaData.Hash = vmInput.Arguments[hashIndex]
 	}
 
 	if len(vmInput.Arguments[attributesIndex]) != 0 {
-		esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
+		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Attributes)
+		esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	}
 
 	var URIs [][]byte
@@ -125,10 +116,22 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 	}
 
 	if len(URIs) != 0 {
-		esdtData.TokenMetaData.URIs = URIs
+		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.URIs)
+		esdtInfo.esdtData.TokenMetaData.URIs = URIs
 	}
 
-	_, err = e.storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
+	if totalLengthDifference < 0 {
+		totalLengthDifference = 0
+	}
+
+	e.mutExecution.RLock()
+	gasToUse := uint64(totalLengthDifference)*e.gasConfig.StorePerByte + e.funcGasCost
+	e.mutExecution.RUnlock()
+	if vmInput.GasProvided < gasToUse {
+		return nil, ErrNotEnoughGas
+	}
+
+	err = saveEsdtInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
