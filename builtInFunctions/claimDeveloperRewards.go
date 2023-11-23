@@ -96,7 +96,6 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 		return vmOutput, nil
 	}
 
-	// The call is intra-shard.
 	err = acntSnd.AddToBalance(value)
 	if err != nil {
 		return nil, err
