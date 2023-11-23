@@ -74,7 +74,7 @@ func NewESDTMetaDataRecreateFunc(
 	return e, nil
 }
 
-func checkDynamicArguments(
+func checkUpdateArguments(
 	vmInput *vmcommon.ContractCallInput,
 	acntSnd vmcommon.UserAccountHandler,
 	handler baseActiveHandler,
@@ -158,6 +158,10 @@ func getEsdtInfo(
 		return nil, err
 	}
 
+	if esdtData.Value == nil || esdtData.Value.Cmp(zero) == 0 {
+		return nil, ErrInvalidEsdtValue
+	}
+
 	return &esdtStorageInfo{
 		esdtData:     esdtData,
 		esdtTokenKey: esdtTokenKey,
@@ -166,7 +170,7 @@ func getEsdtInfo(
 	}, nil
 }
 
-func saveEsdtInfo(
+func saveESDTMetaDataInfo(
 	esdtInfo *esdtStorageInfo,
 	storageHandler vmcommon.ESDTNFTStorageHandler,
 	acntSnd vmcommon.UserAccountHandler,
@@ -176,13 +180,17 @@ func saveEsdtInfo(
 		return storageHandler.SaveMetaDataToSystemAccount(esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData)
 	}
 
+	if esdtInfo.esdtData.Value == nil || esdtInfo.esdtData.Value.Cmp(zero) == 0 {
+		return ErrInvalidEsdtValue
+	}
+
 	_, err := storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData, true, returnCallAfterError)
 	return err
 }
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkDynamicArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTMetaDataRecreate)
+	err := checkUpdateArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTMetaDataRecreate)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +229,7 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
-	err = saveEsdtInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
+	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

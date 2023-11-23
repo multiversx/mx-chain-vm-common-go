@@ -66,7 +66,7 @@ func NewESDTMetaDataUpdateFunc(
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkDynamicArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTRoleNFTUpdate)
+	err := checkUpdateArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTRoleNFTUpdate)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
 
 	if len(vmInput.Arguments[royaltiesIndex]) != 0 {
-		totalLengthDifference -= 32
+		totalLengthDifference -= len(vmInput.Arguments[royaltiesIndex])
 		royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex]).Uint64())
 		if royalties > core.MaxRoyalty {
 			return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
@@ -108,16 +108,9 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	}
 
-	var URIs [][]byte
-	for _, arg := range vmInput.Arguments[urisStartIndex:] {
-		if len(arg) != 0 {
-			URIs = append(URIs, arg)
-		}
-	}
-
-	if len(URIs) != 0 {
+	if len(vmInput.Arguments[urisStartIndex:]) != 0 {
 		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.URIs)
-		esdtInfo.esdtData.TokenMetaData.URIs = URIs
+		esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 	}
 
 	if totalLengthDifference < 0 {
@@ -131,7 +124,7 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		return nil, ErrNotEnoughGas
 	}
 
-	err = saveEsdtInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
+	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}

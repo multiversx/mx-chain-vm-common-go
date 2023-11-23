@@ -59,7 +59,7 @@ func NewESDTModifyCreatorFunc(
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkDynamicArguments(vmInput, acntSnd, e.baseActiveHandler, 2, e.rolesHandler, core.ESDTRoleModifyCreator)
+	err := checkUpdateArguments(vmInput, acntSnd, e.baseActiveHandler, 2, e.rolesHandler, core.ESDTRoleModifyCreator)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccou
 
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
 
-	err = saveEsdtInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
+	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
