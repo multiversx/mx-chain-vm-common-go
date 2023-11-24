@@ -176,7 +176,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 			return nil, err
 		}
 	}
-	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsValueLengthCheckFlagEnabled()
+	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(ValueLengthCheckFlag)
 	if isValueLengthCheckFlagEnabled && len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
@@ -239,7 +239,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 }
 
 func (e *esdtNFTCreate) getTokenType(tokenID []byte) (uint32, error) {
-	if !e.enableEpochsHandler.IsDynamicESDTEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return uint32(core.NonFungible), nil
 	}
 
