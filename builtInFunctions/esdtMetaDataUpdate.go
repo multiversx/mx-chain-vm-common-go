@@ -59,7 +59,9 @@ func NewESDTMetaDataUpdateFunc(
 		mutExecution:          sync.RWMutex{},
 	}
 
-	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsDynamicESDTEnabled
+	e.baseActiveHandler.activeHandler = func() bool {
+		return enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag)
+	}
 
 	return e, nil
 }
