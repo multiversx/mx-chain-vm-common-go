@@ -239,7 +239,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 }
 
 func (e *esdtNFTCreate) getTokenType(tokenID []byte) (uint32, error) {
-	if !e.enableEpochsHandler.IsDynamicESDTEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return uint32(core.NonFungible), nil
 	}
 

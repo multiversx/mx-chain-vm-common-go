@@ -334,7 +334,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 }
 
 func (e *esdtDataStorage) shouldSaveMetadataInSystemAccount(esdtDataType uint32) bool {
-	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) {
 		return false
 	}
 
