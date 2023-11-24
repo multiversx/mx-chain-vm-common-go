@@ -52,7 +52,9 @@ func NewESDTNFTAddUriFunc(
 		rolesHandler:          rolesHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled
+	e.baseActiveHandler.activeHandler = func() bool {
+		return enableEpochsHandler.IsFlagEnabled(ESDTNFTImprovementV1Flag)
+	}
 
 	return e, nil
 }

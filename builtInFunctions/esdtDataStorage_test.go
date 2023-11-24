@@ -25,8 +25,9 @@ func createNewESDTDataStorageHandler() *esdtDataStorage {
 		GlobalSettingsHandler: &mock.GlobalSettingsHandlerStub{},
 		Marshalizer:           &mock.MarshalizerMock{},
 		EnableEpochsHandler: &mock.EnableEpochsHandlerStub{
-			IsSaveToSystemAccountFlagEnabledField: true,
-			IsSendAlwaysFlagEnabledField:          true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+			},
 		},
 		ShardCoordinator: &mock.ShardCoordinatorStub{},
 	}
@@ -44,8 +45,9 @@ func createMockArgsForNewESDTDataStorage() ArgsNewESDTDataStorage {
 		GlobalSettingsHandler: &mock.GlobalSettingsHandlerStub{},
 		Marshalizer:           &mock.MarshalizerMock{},
 		EnableEpochsHandler: &mock.EnableEpochsHandlerStub{
-			IsSaveToSystemAccountFlagEnabledField: true,
-			IsSendAlwaysFlagEnabledField:          true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+			},
 		},
 		ShardCoordinator: &mock.ShardCoordinatorStub{},
 	}
@@ -327,8 +329,9 @@ func TestESDTDataStorage_saveESDTMetaDataToSystemAccountGetNodeFromDbErrForUserA
 
 	args := createMockArgsForNewESDTDataStorage()
 	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsFixOldTokenLiquidityEnabledField: true,
-		IsSendAlwaysFlagEnabledField:       true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == FixOldTokenLiquidityFlag || flag == SendAlwaysFlag
+		},
 	}
 	e, _ := NewESDTDataStorage(args)
 
@@ -388,9 +391,9 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 
 	args := createMockArgsForNewESDTDataStorage()
 	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsSaveToSystemAccountFlagEnabledField: true,
-		IsSendAlwaysFlagEnabledField:          true,
-		IsAlwaysSaveTokenMetaDataEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == AlwaysSaveTokenMetaDataFlag
+		},
 	}
 	dataStorage, _ := NewESDTDataStorage(args)
 
@@ -465,9 +468,9 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 	t.Run("old token should not rewrite metadata if the flags are not set", func(t *testing.T) {
 		localArgs := createMockArgsForNewESDTDataStorage()
 		localEpochsHandler := &mock.EnableEpochsHandlerStub{
-			IsSaveToSystemAccountFlagEnabledField: true,
-			IsSendAlwaysFlagEnabledField:          true,
-			IsAlwaysSaveTokenMetaDataEnabledField: true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == AlwaysSaveTokenMetaDataFlag
+			},
 		}
 		localArgs.EnableEpochsHandler = localEpochsHandler
 		localDataStorage, _ := NewESDTDataStorage(localArgs)
@@ -498,14 +501,16 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 			TokenMetaData: metaData,
 		}
 
-		localEpochsHandler.IsAlwaysSaveTokenMetaDataEnabledField = false
-		localEpochsHandler.IsSendAlwaysFlagEnabledField = true
+		localEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+			return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+		}
 
 		esdtDataGet := setAndGetStoredToken(t, localDataStorage, userAcc, []byte(key), nonce, transferESDTData)
 		assert.Equal(t, expectedESDTData, esdtDataGet)
 
-		localEpochsHandler.IsAlwaysSaveTokenMetaDataEnabledField = true
-		localEpochsHandler.IsSendAlwaysFlagEnabledField = false
+		localEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+			return flag == SaveToSystemAccountFlag || flag == AlwaysSaveTokenMetaDataFlag
+		}
 
 		esdtDataGet = setAndGetStoredToken(t, localDataStorage, userAcc, []byte(key), nonce, transferESDTData)
 		assert.Equal(t, expectedESDTData, esdtDataGet)
@@ -583,7 +588,9 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.Nil(t, err)
 
 	enableEpochsHandler, _ := args.EnableEpochsHandler.(*mock.EnableEpochsHandlerStub)
-	enableEpochsHandler.IsSendAlwaysFlagEnabledField = false
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == SaveToSystemAccountFlag
+	}
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return core.MetachainShardId
 	}
@@ -591,7 +598,9 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.True(t, val)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsSendAlwaysFlagEnabledField = true
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+	}
 
 	shardCoordinator.ComputeIdCalled = func(_ []byte) uint32 {
 		return 1
@@ -621,7 +630,9 @@ func TestEsdtDataStorage_WasAlreadySentToDestinationShard(t *testing.T) {
 	assert.False(t, val)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsSendAlwaysFlagEnabledField = false
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == SaveToSystemAccountFlag
+	}
 	val, err = e.WasAlreadySentToDestinationShardAndUpdateState(tickerID, 1, dstAddress)
 	assert.False(t, val)
 	assert.Nil(t, err)
@@ -643,15 +654,21 @@ func TestEsdtDataStorage_SaveNFTMetaData(t *testing.T) {
 	e, _ := NewESDTDataStorage(args)
 
 	enableEpochsHandler, _ := args.EnableEpochsHandler.(*mock.EnableEpochsHandlerStub)
-	enableEpochsHandler.IsSaveToSystemAccountFlagEnabledField = false
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == SendAlwaysFlag
+	}
 	err := e.SaveNFTMetaData(nil)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsSaveToSystemAccountFlagEnabledField = true
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+	}
 	err = e.SaveNFTMetaData(nil)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsSendAlwaysFlagEnabledField = false
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == SaveToSystemAccountFlag
+	}
 	err = e.SaveNFTMetaData(nil)
 	assert.Equal(t, err, ErrNilTransactionHandler)
 
@@ -745,7 +762,9 @@ func TestEsdtDataStorage_SaveNFTMetaDataWithMultiTransfer(t *testing.T) {
 	shardCoordinator := &mock.ShardCoordinatorStub{}
 	args.ShardCoordinator = shardCoordinator
 	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsSaveToSystemAccountFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == SaveToSystemAccountFlag
+		},
 	}
 	e, _ := NewESDTDataStorage(args)
 
@@ -812,7 +831,9 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 	e, _ := NewESDTDataStorage(args)
 
 	enableEpochsHandler, _ := args.EnableEpochsHandler.(*mock.EnableEpochsHandlerStub)
-	enableEpochsHandler.IsCheckFrozenCollectionFlagEnabledField = false
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return false
+	}
 
 	acnt, _ := e.accounts.LoadAccount([]byte("address1"))
 	userAcc := acnt.(vmcommon.UserAccountHandler)
@@ -822,7 +843,9 @@ func TestEsdtDataStorage_checkCollectionFrozen(t *testing.T) {
 	err := e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 1, false)
 	assert.Nil(t, err)
 
-	enableEpochsHandler.IsCheckFrozenCollectionFlagEnabledField = true
+	enableEpochsHandler.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+		return flag == CheckFrozenCollectionFlag
+	}
 	err = e.checkCollectionIsFrozenForAccount(userAcc, esdtTokenKey, 0, false)
 	assert.Nil(t, err)
 
@@ -867,7 +890,9 @@ func TestEsdtDataStorage_checkCollectionFrozenGetNodeFromDbErr(t *testing.T) {
 
 	args := createMockArgsForNewESDTDataStorage()
 	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-		IsCheckFrozenCollectionFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckFrozenCollectionFlag
+		},
 	}
 	e, _ := NewESDTDataStorage(args)
 

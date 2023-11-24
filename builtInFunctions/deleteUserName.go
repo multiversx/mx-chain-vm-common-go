@@ -34,7 +34,9 @@ func NewDeleteUserNameFunc(
 	for key := range mapDnsAddresses {
 		d.mapDnsAddresses[key] = struct{}{}
 	}
-	d.activeHandler = enableEpochsHandler.IsChangeUsernameEnabled
+	d.activeHandler = func() bool {
+		return enableEpochsHandler.IsFlagEnabled(ChangeUsernameFlag)
+	}
 
 	return d, nil
 }
