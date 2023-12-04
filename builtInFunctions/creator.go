@@ -548,6 +548,18 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	activeHandler := func() bool {
+		return b.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag)
+	}
+	newFunc, err = NewESDTSetTokenTypeFunc(b.accounts, globalSettingsFunc, b.marshaller, activeHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTSetTokenType, newFunc)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
