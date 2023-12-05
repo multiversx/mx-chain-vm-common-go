@@ -1,9 +1,9 @@
 package builtInFunctions
 
 import (
-	"github.com/multiversx/mx-chain-core-go/core"
 	"sync"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )

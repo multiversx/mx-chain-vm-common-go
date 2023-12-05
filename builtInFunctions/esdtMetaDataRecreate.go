@@ -3,12 +3,12 @@ package builtInFunctions
 import (
 	"bytes"
 	"fmt"
-	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"math/big"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -108,12 +108,9 @@ func checkUpdateArguments(
 	if minNumOfArgs < 1 {
 		return ErrInvalidNumberOfArguments
 	}
-	err := rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(role))
-	if err != nil {
-		return err
-	}
 
-	return nil
+	tokenId := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[tokenIDIndex]...)
+	return rolesHandler.CheckAllowedToExecute(acntSnd, tokenId, []byte(role))
 }
 
 type esdtStorageInfo struct {
