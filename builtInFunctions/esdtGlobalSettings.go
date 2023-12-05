@@ -100,12 +100,12 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 }
 
 func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
-	systemSCAccount, err := e.getSystemAccount()
+	systemSCAccount, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return err
 	}
 
-	esdtMetaData, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetaData, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return err
 	}
@@ -130,8 +130,8 @@ func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
 	return e.accounts.SaveAccount(systemSCAccount)
 }
 
-func (e *esdtGlobalSettings) getSystemAccount() (vmcommon.UserAccountHandler, error) {
-	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+func getSystemAccount(accounts vmcommon.AccountsAdapter) (vmcommon.UserAccountHandler, error) {
+	systemSCAccount, err := accounts.LoadAccount(vmcommon.SystemAccountAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (e *esdtGlobalSettings) getSystemAccount() (vmcommon.UserAccountHandler, er
 
 // IsPaused returns true if the esdtTokenKey (prefixed) is paused
 func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -156,7 +156,7 @@ func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
 
 // IsLimitedTransfer returns true if the esdtTokenKey (prefixed) is with limited transfer
 func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -166,7 +166,7 @@ func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
 
 // IsBurnForAll returns true if the esdtTokenKey (prefixed) is with burn for all
 func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -180,7 +180,7 @@ func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, desti
 		return false
 	}
 
-	systemAcc, err := e.getSystemAccount()
+	systemAcc, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return false
 	}
@@ -200,8 +200,9 @@ func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, desti
 	return false
 }
 
-func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {
-	systemSCAccount, err := e.getSystemAccount()
+// GetGlobalMetadata returns the global metadata for the esdtTokenKey
+func (e *esdtGlobalSettings) GetGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {
+	systemSCAccount, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +213,38 @@ func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobal
 	}
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	return &esdtMetaData, nil
+}
+
+// GetTokenType returns the token type for the esdtTokenKey
+func (e *esdtGlobalSettings) GetTokenType(esdtTokenKey []byte) (uint32, error) {
+	esdtMetaData, err := e.GetGlobalMetadata(esdtTokenKey)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint32(esdtMetaData.TokenType), nil
+}
+
+// SetTokenType sets the token type for the esdtTokenKey
+func (e *esdtGlobalSettings) SetTokenType(esdtTokenKey []byte, tokenType uint32) error {
+	systemAccount, err := getSystemAccount(e.accounts)
+	if err != nil {
+		return err
+	}
+
+	val, _, err := systemAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return err
+	}
+	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
+	esdtMetaData.TokenType = byte(tokenType)
+
+	err = systemAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
+	if err != nil {
+		return err
+	}
+
+	return e.accounts.SaveAccount(systemAccount)
 }
 
 // IsInterfaceNil returns true if underlying object in nil

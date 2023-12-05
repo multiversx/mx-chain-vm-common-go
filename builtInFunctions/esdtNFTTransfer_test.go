@@ -38,7 +38,7 @@ func createNftTransferWithStubArguments() *esdtNFTTransfer {
 	return nftTransfer
 }
 
-func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler, enableEpochsHandler vmcommon.EnableEpochsHandler) (*esdtNFTTransfer, *esdtDataStorage) {
+func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSettingsHandler vmcommon.GlobalMetadataHandler, enableEpochsHandler vmcommon.EnableEpochsHandler) (*esdtNFTTransfer, *esdtDataStorage) {
 	marshaller := &mock.MarshalizerMock{}
 	shardCoordinator := mock.NewMultiShardsCoordinatorMock(numShards)
 	shardCoordinator.CurrentShard = selfShard
@@ -87,7 +87,7 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 	return nftTransfer, esdtStorageHandler
 }
 
-func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler) *esdtNFTTransfer {
+func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.GlobalMetadataHandler) *esdtNFTTransfer {
 	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == TransferToMetaFlag || flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag

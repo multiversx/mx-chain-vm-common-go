@@ -207,10 +207,17 @@ type ESDTGlobalSettingsHandler interface {
 
 // ExtendedESDTGlobalSettingsHandler provides global settings functions for an ESDT token
 type ExtendedESDTGlobalSettingsHandler interface {
-	IsPaused(esdtTokenKey []byte) bool
-	IsLimitedTransfer(esdtTokenKey []byte) bool
+	ESDTGlobalSettingsHandler
 	IsBurnForAll(esdtTokenKey []byte) bool
 	IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool
+	IsInterfaceNil() bool
+}
+
+// GlobalMetadataHandler provides functions which handle global metadata
+type GlobalMetadataHandler interface {
+	ExtendedESDTGlobalSettingsHandler
+	GetTokenType(esdtTokenKey []byte) (uint32, error)
+	SetTokenType(esdtTokenKey []byte, tokenType uint32) error
 	IsInterfaceNil() bool
 }
 
@@ -308,7 +315,7 @@ type ESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	GetESDTNFTTokenOnDestinationWithCustomSystemAccount(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, systemAccount UserAccountHandler) (*esdt.ESDigitalToken, bool, error)
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
-	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	SaveNFTMetaData(tx data.TransactionHandler) error
 	AddToLiquiditySystemAcc(esdtTokenKey []byte, nonce uint64, transferValue *big.Int) error
 	IsInterfaceNil() bool
 }
@@ -316,7 +323,7 @@ type ESDTNFTStorageHandler interface {
 // SimpleESDTNFTStorageHandler will handle get of ESDT data and save metadata to system acc
 type SimpleESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
-	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	SaveNFTMetaData(tx data.TransactionHandler) error
 	IsInterfaceNil() bool
 }
 

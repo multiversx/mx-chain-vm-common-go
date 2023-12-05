@@ -24,7 +24,7 @@ type esdtNFTTransfer struct {
 	baseAlwaysActiveHandler
 	keyPrefix             []byte
 	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
+	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	payableHandler        vmcommon.PayableChecker
 	funcGasCost           uint64
 	accounts              vmcommon.AccountsAdapter
@@ -40,7 +40,7 @@ type esdtNFTTransfer struct {
 func NewESDTNFTTransferFunc(
 	funcGasCost uint64,
 	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.GlobalMetadataHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
@@ -420,6 +420,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
+
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnWithError)
 	if err != nil {
 		return err

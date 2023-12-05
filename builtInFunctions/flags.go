@@ -25,6 +25,7 @@ const (
 	ScToScLogEventFlag                          core.EnableEpochFlag = "ScToScLogEventFlag"
 	FixGasRemainingForSaveKeyValueFlag          core.EnableEpochFlag = "FixGasRemainingForSaveKeyValueFlag"
 	IsChangeOwnerAddressCrossShardThroughSCFlag core.EnableEpochFlag = "IsChangeOwnerAddressCrossShardThroughSCFlag"
+	DynamicEsdtFlag                             core.EnableEpochFlag = "DynamicEsdtFlag"
 )
 
 // allFlags must have all flags used by mx-chain-vm-common-go in the current version
@@ -51,4 +52,5 @@ var allFlags = []core.EnableEpochFlag{
 	ScToScLogEventFlag,
 	FixGasRemainingForSaveKeyValueFlag,
 	IsChangeOwnerAddressCrossShardThroughSCFlag,
+	DynamicEsdtFlag,
 }
