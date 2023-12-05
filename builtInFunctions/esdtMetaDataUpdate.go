@@ -73,10 +73,7 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		return nil, err
 	}
 
-	totalLengthDifference := 0
-	for _, arg := range vmInput.Arguments {
-		totalLengthDifference += len(arg)
-	}
+	totalLengthDifference := lenArgs(vmInput.Arguments)
 
 	esdtInfo, err := getEsdtInfo(vmInput, acntSnd, e.storageHandler, e.globalSettingsHandler)
 	if err != nil {

@@ -190,6 +190,14 @@ func saveESDTMetaDataInfo(
 	return err
 }
 
+func lenArgs(args [][]byte) int {
+	totalLength := 0
+	for _, arg := range args {
+		totalLength += len(arg)
+	}
+	return totalLength
+}
+
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
 	err := checkUpdateArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTMetaDataRecreate)
@@ -197,10 +205,7 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		return nil, err
 	}
 
-	totalLengthDifference := 0
-	for _, arg := range vmInput.Arguments {
-		totalLengthDifference += len(arg)
-	}
+	totalLengthDifference := lenArgs(vmInput.Arguments)
 
 	esdtInfo, err := getEsdtInfo(vmInput, acntSnd, e.storageHandler, e.globalSettingsHandler)
 	if err != nil {

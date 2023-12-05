@@ -76,8 +76,8 @@ func (e *esdtSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountH
 		return nil, err
 	}
 
-	oldURIsLen := len(esdtInfo.esdtData.TokenMetaData.URIs)
-	newURIsLen := len(vmInput.Arguments[uriStartIndex:])
+	oldURIsLen := lenArgs(esdtInfo.esdtData.TokenMetaData.URIs)
+	newURIsLen := lenArgs(vmInput.Arguments[uriStartIndex:])
 	difference := newURIsLen - oldURIsLen
 	if difference < 0 {
 		difference = 0
