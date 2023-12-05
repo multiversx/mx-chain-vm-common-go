@@ -155,7 +155,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 
 	err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, 41, f.BuiltInFunctionContainer().Len())
+	assert.Equal(t, 42, f.BuiltInFunctionContainer().Len())
 
 	err = f.SetPayableHandler(nil)
 	assert.NotNil(t, err)
