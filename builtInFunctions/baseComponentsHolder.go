@@ -35,7 +35,7 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer)
+	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer, esdtDataToTransfer)
 	latestEsdtData.Value.Set(esdtDataToTransfer.Value)
 
 	_, err = b.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnWithError)
@@ -54,7 +54,11 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	return nil
 }
 
-func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken) *esdt.ESDigitalToken {
+func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, enableEpochsHandler vmcommon.EnableEpochsHandler) *esdt.ESDigitalToken {
+	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		return transferEsdtData
+	}
+
 	currentEsdtDataVersion := big.NewInt(0).SetBytes(currentEsdtData.Reserved).Uint64()
 	transferEsdtDataVersion := big.NewInt(0).SetBytes(transferEsdtData.Reserved).Uint64()
 

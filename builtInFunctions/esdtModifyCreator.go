@@ -14,6 +14,7 @@ type esdtModifyCreator struct {
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -49,6 +50,7 @@ func NewESDTModifyCreatorFunc(
 		storageHandler:        storageHandler,
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
+		enableEpochsHandler:   enableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
 	}
 
@@ -82,7 +84,7 @@ func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccou
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
 
 	// TODO inject a component that can get the round (which is used as the version)
-	err = changeEsdtVersion(esdtInfo.esdtData, 0)
+	err = changeEsdtVersion(esdtInfo.esdtData, 0, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}

@@ -234,7 +234,7 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
 	// TODO inject a component that can get the round (which is used as the version)
-	err = changeEsdtVersion(esdtInfo.esdtData, 0)
+	err = changeEsdtVersion(esdtInfo.esdtData, 0, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,11 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	return vmOutput, nil
 }
 
-func changeEsdtVersion(esdt *esdt.ESDigitalToken, newVersion uint64) error {
+func changeEsdtVersion(esdt *esdt.ESDigitalToken, newVersion uint64, enableEpochsHandler vmcommon.EnableEpochsHandler) error {
+	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		return nil
+	}
+
 	currentVersion := big.NewInt(0).SetBytes(esdt.Reserved).Uint64()
 	if currentVersion > newVersion {
 		return fmt.Errorf("%w, current version: %d, new version: %d, token name %s", ErrInvalidVersion, currentVersion, newVersion, esdt.TokenMetaData.Name)

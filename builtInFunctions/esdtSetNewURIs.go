@@ -16,6 +16,7 @@ type esdtSetNewURIs struct {
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	gasConfig             vmcommon.BaseOperationCost
 	mutExecution          sync.RWMutex
@@ -55,6 +56,7 @@ func NewESDTSetNewURIsFunc(
 		funcGasCost:           funcGasCost,
 		gasConfig:             gasConfig,
 		mutExecution:          sync.RWMutex{},
+		enableEpochsHandler:   enableEpochsHandler,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -94,7 +96,7 @@ func (e *esdtSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountH
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[uriStartIndex:]
 
 	// TODO inject a component that can get the round (which is used as the version)
-	err = changeEsdtVersion(esdtInfo.esdtData, 0)
+	err = changeEsdtVersion(esdtInfo.esdtData, 0, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}

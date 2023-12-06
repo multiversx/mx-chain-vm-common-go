@@ -22,6 +22,7 @@ type esdtModifyRoyalties struct {
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -58,6 +59,7 @@ func NewESDTModifyRoyaltiesFunc(
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
 		mutExecution:          sync.RWMutex{},
+		enableEpochsHandler:   enableEpochsHandler,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -94,7 +96,7 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 	esdtInfo.esdtData.TokenMetaData.Royalties = newRoyalties
 
 	// TODO inject a component that can get the round (which is used as the version)
-	err = changeEsdtVersion(esdtInfo.esdtData, 0)
+	err = changeEsdtVersion(esdtInfo.esdtData, 0, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@ type esdtNFTAddUri struct {
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	gasConfig             vmcommon.BaseOperationCost
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -50,6 +51,7 @@ func NewESDTNFTAddUriFunc(
 		globalSettingsHandler: globalSettingsHandler,
 		gasConfig:             gasConfig,
 		rolesHandler:          rolesHandler,
+		enableEpochsHandler:   enableEpochsHandler,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -114,7 +116,7 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
 
 	// TODO inject a component that can get the round (which is used as the version)
-	err = changeEsdtVersion(esdtData, 0)
+	err = changeEsdtVersion(esdtData, 0, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}

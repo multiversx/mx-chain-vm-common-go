@@ -127,7 +127,7 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 	}
 
 	// TODO inject a component that can get the round (which is used as the version)
-	err = changeEsdtVersion(esdtInfo.esdtData, 0)
+	err = changeEsdtVersion(esdtInfo.esdtData, 0, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
