@@ -113,6 +113,12 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 
 	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
 
+	// TODO inject a component that can get the round (which is used as the version)
+	err = changeEsdtVersion(esdtData, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err

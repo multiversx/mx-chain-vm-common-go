@@ -233,6 +233,12 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
+	// TODO inject a component that can get the round (which is used as the version)
+	err = changeEsdtVersion(esdtInfo.esdtData, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
@@ -243,6 +249,16 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		GasRemaining: vmInput.GasProvided - gasToUse,
 	}
 	return vmOutput, nil
+}
+
+func changeEsdtVersion(esdt *esdt.ESDigitalToken, newVersion uint64) error {
+	currentVersion := big.NewInt(0).SetBytes(esdt.Reserved).Uint64()
+	if currentVersion > newVersion {
+		return fmt.Errorf("%w, current version: %d, new version: %d, token name %s", ErrInvalidVersion, currentVersion, newVersion, esdt.TokenMetaData.Name)
+	}
+
+	esdt.Reserved = big.NewInt(0).SetUint64(newVersion).Bytes()
+	return nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed

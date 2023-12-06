@@ -2,7 +2,6 @@ package builtInFunctions
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math/big"
 	"sync"
@@ -15,18 +14,16 @@ import (
 
 type esdtNFTMultiTransfer struct {
 	baseActiveHandler
-	keyPrefix             []byte
-	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.GlobalMetadataHandler
-	payableHandler        vmcommon.PayableChecker
-	funcGasCost           uint64
-	accounts              vmcommon.AccountsAdapter
-	shardCoordinator      vmcommon.Coordinator
-	gasConfig             vmcommon.BaseOperationCost
-	mutExecution          sync.RWMutex
-	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
-	rolesHandler          vmcommon.ESDTRoleHandler
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
+	*baseComponentsHolder
+	keyPrefix           []byte
+	marshaller          vmcommon.Marshalizer
+	payableHandler      vmcommon.PayableChecker
+	funcGasCost         uint64
+	accounts            vmcommon.AccountsAdapter
+	gasConfig           vmcommon.BaseOperationCost
+	mutExecution        sync.RWMutex
+	rolesHandler        vmcommon.ESDTRoleHandler
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 const argumentsPerTransfer = uint64(3)
@@ -66,18 +63,20 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e := &esdtNFTMultiTransfer{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		funcGasCost:           funcGasCost,
-		accounts:              accounts,
-		shardCoordinator:      shardCoordinator,
-		gasConfig:             gasConfig,
-		mutExecution:          sync.RWMutex{},
-		payableHandler:        &disabledPayableHandler{},
-		rolesHandler:          roleHandler,
-		esdtStorageHandler:    esdtStorageHandler,
-		enableEpochsHandler:   enableEpochsHandler,
+		keyPrefix:           []byte(baseESDTKeyPrefix),
+		marshaller:          marshaller,
+		funcGasCost:         funcGasCost,
+		accounts:            accounts,
+		gasConfig:           gasConfig,
+		mutExecution:        sync.RWMutex{},
+		payableHandler:      &disabledPayableHandler{},
+		rolesHandler:        roleHandler,
+		enableEpochsHandler: enableEpochsHandler,
+		baseComponentsHolder: &baseComponentsHolder{
+			esdtStorageHandler:    esdtStorageHandler,
+			globalSettingsHandler: globalSettingsHandler,
+			shardCoordinator:      shardCoordinator,
+		},
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -194,7 +193,8 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				esdtTransferData,
 				esdtTokenKey,
 				nonce,
-				vmInput.ReturnCallAfterError)
+				vmInput.ReturnCallAfterError,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
@@ -420,7 +420,15 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 
 	if !check.IfNil(acntDst) {
-		err = e.addNFTToDestination(acntSnd.AddressBytes(), dstAddress, acntDst, esdtData, esdtTokenKey, transferData.ESDTTokenNonce, isReturnCallWithError)
+		err = e.addNFTToDestination(
+			acntSnd.AddressBytes(),
+			dstAddress,
+			acntDst,
+			esdtData,
+			esdtTokenKey,
+			transferData.ESDTTokenNonce,
+			isReturnCallWithError,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -552,43 +560,6 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 			vmInput.GasLocked,
 			vmInput.CallType,
 			vmOutput)
-	}
-
-	return nil
-}
-
-func (e *esdtNFTMultiTransfer) addNFTToDestination(
-	sndAddress []byte,
-	dstAddress []byte,
-	userAccount vmcommon.UserAccountHandler,
-	esdtDataToTransfer *esdt.ESDigitalToken,
-	esdtTokenKey []byte,
-	nonce uint64,
-	isReturnCallWithError bool,
-) error {
-	currentESDTData, _, err := e.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
-	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
-		return err
-	}
-	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.globalSettingsHandler, isReturnCallWithError)
-	if err != nil {
-		return err
-	}
-
-	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
-	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
-
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnCallWithError)
-	if err != nil {
-		return err
-	}
-
-	isSameShard := e.shardCoordinator.SameShard(sndAddress, dstAddress)
-	if !isSameShard {
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

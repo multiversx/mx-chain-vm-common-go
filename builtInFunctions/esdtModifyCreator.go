@@ -81,6 +81,12 @@ func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccou
 
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
 
+	// TODO inject a component that can get the round (which is used as the version)
+	err = changeEsdtVersion(esdtInfo.esdtData, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err

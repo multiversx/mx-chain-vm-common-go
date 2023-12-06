@@ -93,6 +93,12 @@ func (e *esdtSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountH
 
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[uriStartIndex:]
 
+	// TODO inject a component that can get the round (which is used as the version)
+	err = changeEsdtVersion(esdtInfo.esdtData, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
