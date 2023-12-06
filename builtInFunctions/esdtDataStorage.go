@@ -119,6 +119,12 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestinationWithCustomSystemAccount(
 	return e.getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(accnt, esdtTokenKey, nonce, queryOpts)
 }
 
+// GetMetaDataFromSystemAccount gets the metadata from the system account
+func (e *esdtDataStorage) GetMetaDataFromSystemAccount(esdtTokenKey []byte, nonce uint64) (*esdt.MetaData, error) {
+	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
+	return e.getESDTMetaDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
+}
+
 func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(
 	accnt vmcommon.UserAccountHandler,
 	esdtTokenKey []byte,
@@ -343,6 +349,17 @@ func (e *esdtDataStorage) shouldSaveMetadataInSystemAccount(esdtDataType uint32)
 	}
 
 	return esdtDataType != uint32(core.NonFungibleV2)
+}
+
+// SaveMetaDataToSystemAccount saves the metadata to the system account
+func (e *esdtDataStorage) SaveMetaDataToSystemAccount(tokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error {
+	systemAcc, err := e.loadSystemAccount()
+	if err != nil {
+		return err
+	}
+
+	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
+	return e.marshalAndSaveData(systemAcc, esdtData, esdtNFTTokenKey)
 }
 
 // SaveESDTNFTToken saves the nft token to the account and system account

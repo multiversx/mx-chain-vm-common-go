@@ -1132,3 +1132,64 @@ func TestEsdtDataStorage_ShouldSaveMetadataInSystemAccount(t *testing.T) {
 		assert.True(t, e.shouldSaveMetadataInSystemAccount(uint32(core.NonFungible)))
 	})
 }
+
+func TestEsdtDataStorage_GetMetaDataFromSystemAccount(t *testing.T) {
+	t.Parallel()
+
+	key := []byte("tokenKey")
+	nonce := uint64(10)
+	keyNonce := append(key, big.NewInt(int64(nonce)).Bytes()...)
+
+	args := createMockArgsForNewESDTDataStorage()
+	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+
+	args.Accounts = &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return acnt, nil
+		}}
+	e, _ := NewESDTDataStorage(args)
+
+	metaData := &esdt.MetaData{
+		Name: []byte("test"),
+	}
+	esdtData := &esdt.ESDigitalToken{
+		TokenMetaData: metaData,
+	}
+	esdtDataBytes, _ := e.marshaller.Marshal(esdtData)
+	_ = acnt.SaveKeyValue(keyNonce, esdtDataBytes)
+
+	retrievedMetaData, err := e.GetMetaDataFromSystemAccount(key, nonce)
+	assert.Nil(t, err)
+	assert.Equal(t, metaData, retrievedMetaData)
+}
+
+func TestEsdtDataStorage_SaveMetaDataToSystemAccount(t *testing.T) {
+	t.Parallel()
+
+	key := []byte("tokenKey")
+	nonce := uint64(10)
+	keyNonce := append(key, big.NewInt(int64(nonce)).Bytes()...)
+
+	args := createMockArgsForNewESDTDataStorage()
+	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+	args.Accounts = &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return acnt, nil
+		}}
+	e, _ := NewESDTDataStorage(args)
+
+	metaData := &esdt.MetaData{
+		Name: []byte("test"),
+	}
+	esdtData := &esdt.ESDigitalToken{
+		TokenMetaData: metaData,
+	}
+
+	err := e.SaveMetaDataToSystemAccount(key, nonce, esdtData)
+	assert.Nil(t, err)
+
+	retrievedVal, _, err := acnt.AccountDataHandler().RetrieveValue(keyNonce)
+	assert.Nil(t, err)
+	esdtDataBytes, _ := e.marshaller.Marshal(esdtData)
+	assert.Equal(t, esdtDataBytes, retrievedVal)
+}

@@ -20,13 +20,18 @@ type BuiltInCost struct {
 	ESDTBurn                 uint64
 	ESDTLocalMint            uint64
 	ESDTLocalBurn            uint64
+	ESDTModifyRoyalties      uint64
+	ESDTModifyCreator        uint64
 	ESDTNFTCreate            uint64
+	ESDTNFTRecreate          uint64
+	ESDTNFTUpdate            uint64
 	ESDTNFTAddQuantity       uint64
 	ESDTNFTBurn              uint64
 	ESDTNFTTransfer          uint64
 	ESDTNFTChangeCreateOwner uint64
 	ESDTNFTMultiTransfer     uint64
 	ESDTNFTAddURI            uint64
+	ESDTNFTSetNewURIs        uint64
 	ESDTNFTUpdateAttributes  uint64
 	SetGuardian              uint64
 	GuardAccount             uint64
