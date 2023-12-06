@@ -22,15 +22,14 @@ var zeroByteArray = []byte{0}
 type esdtNFTTransfer struct {
 	baseAlwaysActiveHandler
 	*baseComponentsHolder
-	keyPrefix           []byte
-	marshaller          vmcommon.Marshalizer
-	payableHandler      vmcommon.PayableChecker
-	funcGasCost         uint64
-	accounts            vmcommon.AccountsAdapter
-	gasConfig           vmcommon.BaseOperationCost
-	mutExecution        sync.RWMutex
-	rolesHandler        vmcommon.ESDTRoleHandler
-	enableEpochsHandler vmcommon.EnableEpochsHandler
+	keyPrefix      []byte
+	marshaller     vmcommon.Marshalizer
+	payableHandler vmcommon.PayableChecker
+	funcGasCost    uint64
+	accounts       vmcommon.AccountsAdapter
+	gasConfig      vmcommon.BaseOperationCost
+	mutExecution   sync.RWMutex
+	rolesHandler   vmcommon.ESDTRoleHandler
 }
 
 // NewESDTNFTTransferFunc returns the esdt NFT transfer built-in function component
@@ -68,19 +67,19 @@ func NewESDTNFTTransferFunc(
 	}
 
 	e := &esdtNFTTransfer{
-		keyPrefix:           []byte(baseESDTKeyPrefix),
-		marshaller:          marshaller,
-		funcGasCost:         funcGasCost,
-		accounts:            accounts,
-		gasConfig:           gasConfig,
-		mutExecution:        sync.RWMutex{},
-		payableHandler:      &disabledPayableHandler{},
-		rolesHandler:        rolesHandler,
-		enableEpochsHandler: enableEpochsHandler,
+		keyPrefix:      []byte(baseESDTKeyPrefix),
+		marshaller:     marshaller,
+		funcGasCost:    funcGasCost,
+		accounts:       accounts,
+		gasConfig:      gasConfig,
+		mutExecution:   sync.RWMutex{},
+		payableHandler: &disabledPayableHandler{},
+		rolesHandler:   rolesHandler,
 		baseComponentsHolder: &baseComponentsHolder{
 			esdtStorageHandler:    esdtStorageHandler,
 			globalSettingsHandler: globalSettingsHandler,
 			shardCoordinator:      shardCoordinator,
+			enableEpochsHandler:   enableEpochsHandler,
 		},
 	}
 

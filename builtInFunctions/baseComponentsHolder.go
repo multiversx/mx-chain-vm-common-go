@@ -12,6 +12,7 @@ type baseComponentsHolder struct {
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	shardCoordinator      vmcommon.Coordinator
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 }
 
 func (b *baseComponentsHolder) addNFTToDestination(
@@ -35,7 +36,7 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer, esdtDataToTransfer)
+	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler)
 	latestEsdtData.Value.Set(esdtDataToTransfer.Value)
 
 	_, err = b.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnWithError)

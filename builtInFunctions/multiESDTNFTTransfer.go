@@ -15,15 +15,14 @@ import (
 type esdtNFTMultiTransfer struct {
 	baseActiveHandler
 	*baseComponentsHolder
-	keyPrefix           []byte
-	marshaller          vmcommon.Marshalizer
-	payableHandler      vmcommon.PayableChecker
-	funcGasCost         uint64
-	accounts            vmcommon.AccountsAdapter
-	gasConfig           vmcommon.BaseOperationCost
-	mutExecution        sync.RWMutex
-	rolesHandler        vmcommon.ESDTRoleHandler
-	enableEpochsHandler vmcommon.EnableEpochsHandler
+	keyPrefix      []byte
+	marshaller     vmcommon.Marshalizer
+	payableHandler vmcommon.PayableChecker
+	funcGasCost    uint64
+	accounts       vmcommon.AccountsAdapter
+	gasConfig      vmcommon.BaseOperationCost
+	mutExecution   sync.RWMutex
+	rolesHandler   vmcommon.ESDTRoleHandler
 }
 
 const argumentsPerTransfer = uint64(3)
@@ -63,19 +62,19 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e := &esdtNFTMultiTransfer{
-		keyPrefix:           []byte(baseESDTKeyPrefix),
-		marshaller:          marshaller,
-		funcGasCost:         funcGasCost,
-		accounts:            accounts,
-		gasConfig:           gasConfig,
-		mutExecution:        sync.RWMutex{},
-		payableHandler:      &disabledPayableHandler{},
-		rolesHandler:        roleHandler,
-		enableEpochsHandler: enableEpochsHandler,
+		keyPrefix:      []byte(baseESDTKeyPrefix),
+		marshaller:     marshaller,
+		funcGasCost:    funcGasCost,
+		accounts:       accounts,
+		gasConfig:      gasConfig,
+		mutExecution:   sync.RWMutex{},
+		payableHandler: &disabledPayableHandler{},
+		rolesHandler:   roleHandler,
 		baseComponentsHolder: &baseComponentsHolder{
 			esdtStorageHandler:    esdtStorageHandler,
 			globalSettingsHandler: globalSettingsHandler,
 			shardCoordinator:      shardCoordinator,
+			enableEpochsHandler:   enableEpochsHandler,
 		},
 	}
 
