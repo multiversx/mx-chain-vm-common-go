@@ -17,6 +17,7 @@ type esdtNFTAddUri struct {
 	rolesHandler          vmcommon.ESDTRoleHandler
 	gasConfig             vmcommon.BaseOperationCost
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
+	blockDataHandler      vmcommon.BlockDataHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -52,6 +53,7 @@ func NewESDTNFTAddUriFunc(
 		gasConfig:             gasConfig,
 		rolesHandler:          rolesHandler,
 		enableEpochsHandler:   enableEpochsHandler,
+		blockDataHandler:      &disabledBlockDataHandler{},
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -115,8 +117,7 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 
 	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
 
-	// TODO inject a component that can get the round (which is used as the version)
-	err = changeEsdtVersion(esdtData, 0, e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtData, e.blockDataHandler.CurrentRound(), e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +144,16 @@ func (e *esdtNFTAddUri) getGasCostForURIStore(vmInput *vmcommon.ContractCallInpu
 		lenURIs += len(uri)
 	}
 	return uint64(lenURIs) * e.gasConfig.StorePerByte
+}
+
+// SetBlockDataHandler is called when block data handler is set
+func (e *esdtNFTAddUri) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
+	if check.IfNil(blockDataHandler) {
+		return ErrNilBlockDataHandler
+	}
+
+	e.blockDataHandler = blockDataHandler
+	return nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil

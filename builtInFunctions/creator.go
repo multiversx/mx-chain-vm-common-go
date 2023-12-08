@@ -654,6 +654,41 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 	return &gasCost, nil
 }
 
+// SetBlockDataHandler sets the block data handler interface to the needed functions
+func (b *builtInFuncCreator) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
+	if check.IfNil(blockDataHandler) {
+		return ErrNilBlockDataHandler
+	}
+
+	listOfFuncWithBlockDataHandler := []string{
+		core.ESDTMetaDataRecreate,
+		core.ESDTMetaDataUpdate,
+		core.ESDTModifyCreator,
+		core.ESDTModifyRoyalties,
+		core.BuiltInFunctionESDTNFTAddURI,
+		core.ESDTSetNewURIs,
+	}
+
+	for _, funcName := range listOfFuncWithBlockDataHandler {
+		builtInFunc, err := b.builtInFunctions.Get(funcName)
+		if err != nil {
+			return err
+		}
+
+		esdtWithBlockDataHandler, ok := builtInFunc.(vmcommon.WithBlockDataHandler)
+		if !ok {
+			return ErrWrongTypeAssertion
+		}
+
+		err = esdtWithBlockDataHandler.SetBlockDataHandler(blockDataHandler)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // SetPayableHandler sets the payableCheck interface to the needed functions
 func (b *builtInFuncCreator) SetPayableHandler(payableHandler vmcommon.PayableHandler) error {
 	payableChecker, err := NewPayableCheckFunc(
@@ -667,7 +702,8 @@ func (b *builtInFuncCreator) SetPayableHandler(payableHandler vmcommon.PayableHa
 	listOfTransferFunc := []string{
 		core.BuiltInFunctionMultiESDTNFTTransfer,
 		core.BuiltInFunctionESDTNFTTransfer,
-		core.BuiltInFunctionESDTTransfer}
+		core.BuiltInFunctionESDTTransfer,
+	}
 
 	for _, transferFunc := range listOfTransferFunc {
 		builtInFunc, err := b.builtInFunctions.Get(transferFunc)

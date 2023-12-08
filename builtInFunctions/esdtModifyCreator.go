@@ -15,6 +15,7 @@ type esdtModifyCreator struct {
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
+	blockDataHandler      vmcommon.BlockDataHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -52,6 +53,7 @@ func NewESDTModifyCreatorFunc(
 		funcGasCost:           funcGasCost,
 		enableEpochsHandler:   enableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
+		blockDataHandler:      &disabledBlockDataHandler{},
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -83,8 +85,7 @@ func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccou
 
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
 
-	// TODO inject a component that can get the round (which is used as the version)
-	err = changeEsdtVersion(esdtInfo.esdtData, 0, e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, e.blockDataHandler.CurrentRound(), e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +111,16 @@ func (e *esdtModifyCreator) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.mutExecution.Lock()
 	e.funcGasCost = gasCost.BuiltInCost.ESDTModifyCreator
 	e.mutExecution.Unlock()
+}
+
+// SetBlockDataHandler is called when block data handler is set
+func (e *esdtModifyCreator) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
+	if check.IfNil(blockDataHandler) {
+		return ErrNilBlockDataHandler
+	}
+
+	e.blockDataHandler = blockDataHandler
+	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
