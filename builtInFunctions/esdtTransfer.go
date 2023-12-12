@@ -147,11 +147,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		}
 
 		if isSCCallAfter {
-			vmOutput.GasRemaining, err = vmcommon.SafeSubUint64(vmInput.GasProvided, e.funcGasCost)
-			if err != nil {
-				return nil, err
-			}
-
+			vmOutput.GasRemaining, _ = vmcommon.SafeSubUint64(vmInput.GasProvided, e.funcGasCost)
 			var callArgs [][]byte
 			if len(vmInput.Arguments) > core.MinLenArgumentsESDTTransfer+1 {
 				callArgs = vmInput.Arguments[core.MinLenArgumentsESDTTransfer+1:]
