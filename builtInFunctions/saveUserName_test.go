@@ -12,25 +12,41 @@ import (
 func TestNewSaveUserNameFunc(t *testing.T) {
 	m, err := NewSaveUserNameFunc(0, nil, nil, nil)
 	require.Equal(t, err, ErrNilDnsAddresses)
+	require.Nil(t, m)
 
 	m, err = NewSaveUserNameFunc(0, make(map[string]struct{}), nil, nil)
 	require.Equal(t, err, ErrNilDnsAddresses)
+	require.Nil(t, m)
 
 	m, err = NewSaveUserNameFunc(0, make(map[string]struct{}), make(map[string]struct{}), nil)
 	require.Equal(t, err, ErrNilEnableEpochsHandler)
+	require.Nil(t, m)
 
 	dnsAddr := []byte("DNS")
 	mapDnsAddresses := make(map[string]struct{})
 	mapDnsAddresses[string(dnsAddr)] = struct{}{}
 	m, err = NewSaveUserNameFunc(0, mapDnsAddresses, make(map[string]struct{}), &mock.EnableEpochsHandlerStub{})
 	require.Nil(t, err)
-	require.False(t, m.IsInterfaceNil())
+	require.NotNil(t, m)
 	require.Equal(t, len(m.mapDnsAddresses), 1)
 	require.Equal(t, len(m.mapDnsV2Addresses), 0)
 
 	m.SetNewGasConfig(nil)
 	m.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{SaveUserName: 10}})
 	require.Equal(t, m.gasCost, uint64(10))
+}
+
+func TestSaveUserName_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	var m *saveUserName
+	require.True(t, m.IsInterfaceNil())
+
+	dnsAddr := []byte("DNS")
+	mapDnsAddresses := make(map[string]struct{})
+	mapDnsAddresses[string(dnsAddr)] = struct{}{}
+	m, _ = NewSaveUserNameFunc(0, mapDnsAddresses, make(map[string]struct{}), &mock.EnableEpochsHandlerStub{})
+	require.False(t, m.IsInterfaceNil())
 }
 
 func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
