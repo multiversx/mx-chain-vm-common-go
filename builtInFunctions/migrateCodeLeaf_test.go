@@ -58,10 +58,12 @@ func TestNewMigrateCodeLeafFunc(t *testing.T) {
 func TestMigrateCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 	t.Parallel()
 
+	gasCost := uint64(10)
+
 	t.Run("nil vm input", func(t *testing.T) {
 		t.Parallel()
 
-		rcl, _ := NewMigrateCodeLeafFunc(10, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), nil)
 		assert.Nil(t, vmOutput)
 		assert.Equal(t, ErrNilVmInput, err)
@@ -69,8 +71,6 @@ func TestMigrateCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 
 	t.Run("invalid num of args", func(t *testing.T) {
 		t.Parallel()
-
-		gasCost := uint64(10)
 
 		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 
@@ -95,31 +95,6 @@ func TestMigrateCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("should not call with value", func(t *testing.T) {
 		t.Parallel()
 
-		gasCost := uint64(10)
-		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
-
-		addr := []byte("addr")
-		key := []byte("codeHash")
-
-		vmInput := &vmcommon.ContractCallInput{
-			VMInput: vmcommon.VMInput{
-				CallerAddr:  addr,
-				GasProvided: 50,
-				Arguments:   [][]byte{key},
-				CallValue:   big.NewInt(2),
-			},
-			RecipientAddr: addr,
-		}
-
-		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), vmInput)
-		require.Nil(t, vmOutput)
-		require.True(t, errors.Is(err, ErrInvalidNumberOfArguments))
-	})
-
-	t.Run("should not call with value", func(t *testing.T) {
-		t.Parallel()
-
-		gasCost := uint64(10)
 		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
 
 		addr := []byte("addr")
@@ -138,6 +113,27 @@ func TestMigrateCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 		require.Equal(t, ErrBuiltInFunctionCalledWithValue, err)
 	})
 
+	t.Run("nil dest account, should return error", func(t *testing.T) {
+		t.Parallel()
+
+		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+
+		addr := []byte("addr")
+
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr:  addr,
+				GasProvided: 50,
+				CallValue:   big.NewInt(0),
+			},
+			RecipientAddr: addr,
+		}
+
+		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), nil, vmInput)
+		require.Nil(t, vmOutput)
+		require.Equal(t, ErrNilSCDestAccount, err)
+	})
+
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
@@ -152,16 +148,15 @@ func TestMigrateCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 
-		gasCost := uint64(10)
-
 		rcl, _ := NewMigrateCodeLeafFunc(gasCost, &mock.EnableEpochsHandlerStub{}, accounts)
 
 		addr := []byte("addr")
 
+		gasProvided := uint64(50)
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallerAddr:  addr,
-				GasProvided: 50,
+				GasProvided: gasProvided,
 				CallValue:   big.NewInt(0),
 			},
 			RecipientAddr: addr,
@@ -170,7 +165,7 @@ func TestMigrateCodeLeaf_ProcessBuiltinFunction(t *testing.T) {
 		vmOutput, err := rcl.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount([]byte("dest")), vmInput)
 		require.Nil(t, err)
 		require.NotNil(t, vmOutput)
-		require.Equal(t, uint64(40), vmOutput.GasRemaining)
+		require.Equal(t, gasProvided-gasCost, vmOutput.GasRemaining)
 
 		require.True(t, wasCalled)
 	})
