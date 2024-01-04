@@ -12,7 +12,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 const baseESDTKeyPrefix = core.ProtectedKeyPrefix + core.ESDTKeyIdentifier
@@ -179,6 +179,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer]),
 			callArgs,
@@ -188,7 +189,16 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, value, vmInput.CallerAddr, acntDst.AddressBytes())
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
+		[]byte(core.BuiltInFunctionESDTNFTTransfer),
+		acntDst.AddressBytes(),
+		[]*TopicTokenData{{
+			vmInput.Arguments[0],
+			nonce,
+			value,
+		}},
+	)
 
 	return vmOutput, nil
 }
@@ -224,6 +234,9 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
+	if len(vmInput.Arguments[2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+		return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+	}
 	quantityToTransfer := big.NewInt(0).SetBytes(vmInput.Arguments[2])
 	if esdtData.Value.Cmp(quantityToTransfer) < 0 {
 		return nil, ErrInvalidNFTQuantity
@@ -293,7 +306,16 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, err
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTTransfer), vmInput.Arguments[0], nonce, quantityToTransfer, vmInput.CallerAddr, dstAddress)
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
+		[]byte(core.BuiltInFunctionESDTNFTTransfer),
+		dstAddress,
+		[]*TopicTokenData{{
+			vmInput.Arguments[0],
+			nonce,
+			quantityToTransfer,
+		}},
+	)
 
 	return vmOutput, nil
 }
@@ -343,6 +365,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 			vmOutput.GasRemaining = 0
 		}
 		addNFTTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionESDTNFTTransfer,
@@ -363,6 +386,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer]),
 			callArgs,
@@ -412,6 +436,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 }
 
 func addNFTTransferToVMOutput(
+	index uint32,
 	senderAddress []byte,
 	recipient []byte,
 	funcToCall string,
@@ -426,6 +451,7 @@ func addNFTTransferToVMOutput(
 		nftTransferTxData += "@" + hex.EncodeToString(arg)
 	}
 	outTransfer := vmcommon.OutputTransfer{
+		Index:         index,
 		Value:         big.NewInt(0),
 		GasLimit:      gasLimit,
 		GasLocked:     gasLocked,

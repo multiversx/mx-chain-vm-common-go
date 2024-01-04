@@ -435,14 +435,14 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 
 func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
 	nonceKey := getNonceKey(tokenID)
-	latestNonceBytes, _, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(nonceKey)
+	latestNonceBytes, _, err := account.AccountDataHandler().RetrieveValue(nonceKey)
 	require.Nil(t, err)
 	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
 
 	createdTokenID := []byte(baseESDTKeyPrefix)
 	createdTokenID = append(createdTokenID, tokenID...)
 	tokenKey := computeESDTNFTTokenKey(createdTokenID, nonce)
-	data, _, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(tokenKey)
+	data, _, err := account.AccountDataHandler().RetrieveValue(tokenKey)
 	require.Nil(t, err)
 
 	esdtData := &esdt.ESDigitalToken{}

@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core/pubkeyConverter"
-	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/stretchr/testify/require"
 )
 
-var log = logger.GetOrCreate("parse-tests")
+var addressPrefix = "erd"
 
-var pubKeyConv, _ = pubkeyConverter.NewBech32PubkeyConverter(32, log)
+var pubKeyConv, _ = pubkeyConverter.NewBech32PubkeyConverter(32, addressPrefix)
 
 var sender, _ = pubKeyConv.Decode("erd1kqdm94ef5dr9nz3208rrsdzkgwkz53saj4t5chx26cm4hlq8qz8qqd9207")
 var receiver, _ = pubKeyConv.Decode("erd1kszzq4egxj5m3t22vt2s8vplmxmqrstghecmnk3tq9mn5fdy7pqqgvzkug")

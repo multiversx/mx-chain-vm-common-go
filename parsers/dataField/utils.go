@@ -43,6 +43,7 @@ func getAllBuiltInFunctions() []string {
 		core.BuiltInFunctionESDTNFTAddURI,
 		core.BuiltInFunctionESDTNFTUpdateAttributes,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
+		core.BuiltInFunctionMigrateDataTrie,
 		core.ESDTRoleLocalMint,
 		core.ESDTRoleLocalBurn,
 		core.ESDTRoleNFTCreate,
@@ -66,20 +67,6 @@ func isBuiltInFunction(builtInFunctionsList []string, function string) bool {
 	}
 
 	return false
-}
-
-// EncodeBytesSlice will encode the provided bytes slice with a provided function
-func EncodeBytesSlice(encodeFunc func(b []byte) string, rcvs [][]byte) []string {
-	if encodeFunc == nil {
-		return nil
-	}
-
-	encodedSlice := make([]string, 0, len(rcvs))
-	for _, rcv := range rcvs {
-		encodedSlice = append(encodedSlice, encodeFunc(rcv))
-	}
-
-	return encodedSlice
 }
 
 func computeTokenIdentifier(token string, nonce uint64) string {

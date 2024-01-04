@@ -131,6 +131,9 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		Type:  uint32(core.Fungible),
 	}
 	marshaledData, _, err := accnt.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, false, err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, true, nil
 	}
@@ -165,6 +168,9 @@ func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
 	}
 
 	marshaledData, _, err := systemAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, systemAcc, err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return nil, systemAcc, nil
 	}
@@ -212,6 +218,9 @@ func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
 		Type:  uint32(core.Fungible),
 	}
 	marshaledData, _, err := accnt.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return nil
 	}
@@ -382,7 +391,10 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		return err
 	}
 
-	currentSaveData, _, _ := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	currentSaveData, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return err
+	}
 	err = e.saveMetadataIfRequired(esdtNFTTokenKey, systemAcc, currentSaveData, esdtData)
 	if err != nil {
 		return err
@@ -466,6 +478,9 @@ func (e *esdtDataStorage) setReservedToNilForOldToken(
 		return ErrNilUserAccount
 	}
 	dataOnUserAcc, _, errNotCritical := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	if core.IsGetNodeFromDBError(errNotCritical) {
+		return errNotCritical
+	}
 	shouldIgnoreToken := errNotCritical != nil || len(dataOnUserAcc) == 0
 	if shouldIgnoreToken {
 		return nil
@@ -567,9 +582,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 
 	if uint32(len(esdtData.Properties)) < e.shardCoordinator.NumberOfShards() {
 		newSlice := make([]byte, e.shardCoordinator.NumberOfShards())
-		for i, val := range esdtData.Properties {
-			newSlice[i] = val
-		}
+		copy(newSlice, esdtData.Properties)
 		esdtData.Properties = newSlice
 	}
 

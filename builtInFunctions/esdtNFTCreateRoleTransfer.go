@@ -8,7 +8,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type esdtNFTCreateRoleTransfer struct {
@@ -153,6 +153,7 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtCurrentOwner
 		OutputTransfers: make([]vmcommon.OutputTransfer, 0),
 	}
 	outTransfer := vmcommon.OutputTransfer{
+		Index: 1,
 		Value: big.NewInt(0),
 		Data: []byte(core.BuiltInFunctionESDTNFTCreateRoleTransfer + "@" +
 			hex.EncodeToString(tokenID) + "@" + hex.EncodeToString(big.NewInt(0).SetUint64(nonce).Bytes())),

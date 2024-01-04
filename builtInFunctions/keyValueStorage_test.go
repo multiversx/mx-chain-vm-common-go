@@ -10,22 +10,43 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var disabledFixForSaveKeyValueEnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+	FixGasRemainingForSaveKeyValueBuiltinFunctionEnabledField: false,
+}
 
 func TestNewSaveKeyValueStorageFunc(t *testing.T) {
 	t.Parallel()
 
-	funcGasCost := uint64(1)
-	gasConfig := vmcommon.BaseOperationCost{
-		StorePerByte: 1,
-	}
+	t.Run("nil enable epoch hanlder should error", func(t *testing.T) {
+		t.Parallel()
 
-	kvs, err := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
-	require.NoError(t, err)
-	require.False(t, check.IfNil(kvs))
-	require.Equal(t, funcGasCost, kvs.funcGasCost)
-	require.Equal(t, gasConfig, kvs.gasConfig)
+		funcGasCost := uint64(1)
+		gasConfig := vmcommon.BaseOperationCost{
+			StorePerByte: 1,
+		}
+
+		kvs, err := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, nil)
+		assert.Nil(t, kvs)
+		assert.Equal(t, ErrNilEnableEpochsHandler, err)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		funcGasCost := uint64(1)
+		gasConfig := vmcommon.BaseOperationCost{
+			StorePerByte: 1,
+		}
+
+		kvs, err := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, disabledFixForSaveKeyValueEnableEpochsHandler)
+		require.NoError(t, err)
+		require.False(t, check.IfNil(kvs))
+		require.Equal(t, funcGasCost, kvs.funcGasCost)
+		require.Equal(t, gasConfig, kvs.gasConfig)
+	})
 }
 
 func TestSaveKeyValueStorageFunc_SetNewGasConfig(t *testing.T) {
@@ -36,7 +57,7 @@ func TestSaveKeyValueStorageFunc_SetNewGasConfig(t *testing.T) {
 		StorePerByte: 1,
 	}
 
-	kvs, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
+	kvs, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, disabledFixForSaveKeyValueEnableEpochsHandler)
 	require.NotNil(t, kvs)
 
 	newGasConfig := vmcommon.BaseOperationCost{
@@ -62,7 +83,7 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 		AoTPreparePerByte: 1,
 	}
 
-	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
+	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, disabledFixForSaveKeyValueEnableEpochsHandler)
 
 	addr := []byte("addr")
 	acc := mock.NewUserAccount(addr)
@@ -105,6 +126,43 @@ func TestSaveKeyValue_ProcessBuiltinFunction(t *testing.T) {
 	require.True(t, errors.Is(err, ErrOperationNotPermitted))
 }
 
+func TestSaveKeyValue_ProcessBuiltinFunctionGetNodeFromDbKey(t *testing.T) {
+	t.Parallel()
+
+	funcGasCost := uint64(1)
+	gasConfig := vmcommon.BaseOperationCost{
+		StorePerByte:      1,
+		ReleasePerByte:    1,
+		DataCopyPerByte:   1,
+		PersistPerByte:    1,
+		CompilePerByte:    1,
+		AoTPreparePerByte: 1,
+	}
+
+	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, disabledFixForSaveKeyValueEnableEpochsHandler)
+	addr := []byte("addr")
+	acc := &mock.AccountWrapMock{
+		RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+			return nil, 0, core.NewGetNodeFromDBErrWithKey([]byte("key"), errors.New("error"), "")
+		},
+	}
+
+	key := []byte("key")
+	value := []byte("value")
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallerAddr:  addr,
+			GasProvided: 50,
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{key, value},
+		},
+		RecipientAddr: addr,
+	}
+
+	_, err := skv.ProcessBuiltinFunction(acc, acc, vmInput)
+	assert.True(t, core.IsGetNodeFromDBError(err))
+}
+
 func TestSaveKeyValueStorage_ProcessBuiltinFunctionNilAccountSender(t *testing.T) {
 	t.Parallel()
 
@@ -118,7 +176,7 @@ func TestSaveKeyValueStorage_ProcessBuiltinFunctionNilAccountSender(t *testing.T
 		AoTPreparePerByte: 1,
 	}
 
-	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
+	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, disabledFixForSaveKeyValueEnableEpochsHandler)
 
 	addr := []byte("addr")
 	acc := mock.NewUserAccount(addr)
@@ -142,6 +200,17 @@ func TestSaveKeyValueStorage_ProcessBuiltinFunctionNilAccountSender(t *testing.T
 }
 
 func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
+	t.Run("should work with disabled fix", func(t *testing.T) {
+		processBuiltinFunctionMultipleKeys(t, disabledFixForSaveKeyValueEnableEpochsHandler)
+	})
+	t.Run("should work with enabled fix", func(t *testing.T) {
+		processBuiltinFunctionMultipleKeys(t, &mock.EnableEpochsHandlerStub{
+			FixGasRemainingForSaveKeyValueBuiltinFunctionEnabledField: true,
+		})
+	})
+}
+
+func processBuiltinFunctionMultipleKeys(t *testing.T, enableEpochHandler vmcommon.EnableEpochsHandler) {
 	t.Parallel()
 
 	funcGasCost := uint64(1)
@@ -152,7 +221,7 @@ func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 		PersistPerByte:  1,
 		CompilePerByte:  1,
 	}
-	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost)
+	skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, enableEpochHandler)
 
 	addr := []byte("addr")
 	acc := mock.NewUserAccount(addr)
@@ -187,4 +256,52 @@ func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 	vmInput.Arguments = [][]byte{[]byte("key3"), []byte("value")}
 	_, err = skv.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Equal(t, err, ErrNotEnoughGas)
+}
+
+func TestSaveKeyValue_ProcessBuiltinFunctionExistingKeyAndNotEnoughGas(t *testing.T) {
+	t.Parallel()
+
+	funcGasCost := uint64(100)
+	persistPerByte := uint64(5)
+	gasConfig := vmcommon.BaseOperationCost{
+		StorePerByte:    1,
+		ReleasePerByte:  1,
+		DataCopyPerByte: 1,
+		PersistPerByte:  persistPerByte,
+		CompilePerByte:  1,
+	}
+
+	addr := []byte("addr")
+	acc := mock.NewUserAccount(addr)
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallerAddr:  addr,
+			GasProvided: 0,
+			CallValue:   big.NewInt(0),
+		},
+		RecipientAddr: addr,
+	}
+
+	key := []byte("key")
+	value := []byte("value")
+	vmInput.Arguments = [][]byte{key, value}
+
+	acc.Storage[string(key)] = value
+
+	t.Run("backward compatibility: do not return error but a negative gas remaining value", func(t *testing.T) {
+		skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, disabledFixForSaveKeyValueEnableEpochsHandler)
+		vmOutput, err := skv.ProcessBuiltinFunction(acc, acc, vmInput)
+		assert.Nil(t, err)
+		expectedGasRemaining := 0 - funcGasCost - persistPerByte*uint64(len(key)+len(value))
+		assert.Equal(t, expectedGasRemaining, vmOutput.GasRemaining) // overflow on uint64 occurs here
+	})
+	t.Run("should return not enough of gas if the fix is enabled", func(t *testing.T) {
+		epochsHandler := &mock.EnableEpochsHandlerStub{
+			FixGasRemainingForSaveKeyValueBuiltinFunctionEnabledField: true,
+		}
+		skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, epochsHandler)
+		vmOutput, err := skv.ProcessBuiltinFunction(acc, acc, vmInput)
+		assert.Equal(t, ErrNotEnoughGas, err)
+		assert.Nil(t, vmOutput)
+	})
 }
