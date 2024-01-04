@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -65,7 +66,9 @@ func TestESDTTransfer_ProcessBuiltInFunctionErrors(t *testing.T) {
 
 	shardC := &mock.ShardCoordinatorStub{}
 	transferFunc, _ := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, shardC, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 	_, err := transferFunc.ProcessBuiltinFunction(nil, nil, nil)
@@ -116,7 +119,9 @@ func TestESDTTransfer_ProcessBuiltInFunctionSingleShard(t *testing.T) {
 		},
 	}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
 	}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, esdtRoleHandler, enableEpochsHandler)
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
@@ -157,7 +162,9 @@ func TestESDTTransfer_ProcessBuiltInFunctionSenderInShard(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
@@ -189,7 +196,9 @@ func TestESDTTransfer_ProcessBuiltInFunctionDestInShard(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
@@ -214,6 +223,44 @@ func TestESDTTransfer_ProcessBuiltInFunctionDestInShard(t *testing.T) {
 	assert.Equal(t, uint64(0), vmOutput.GasRemaining)
 }
 
+func TestESDTTransfer_ProcessBuiltInFunctionTooLongValue(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &mock.MarshalizerMock{}
+	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
+	})
+	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
+
+	bigValueStr := "1" + strings.Repeat("0", 1000)
+	bigValue, _ := big.NewInt(0).SetString(bigValueStr, 10)
+	input := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			GasProvided: 50,
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{[]byte("tkn"), bigValue.Bytes()},
+		},
+	}
+	accDst := mock.NewUserAccount([]byte("dst"))
+
+	// before the activation of the flag, large values should not return error
+	vmOutput, err := transferFunc.ProcessBuiltinFunction(nil, accDst, input)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, vmOutput)
+
+	// after the activation, it should return an error
+	transferFunc.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ConsistentTokensValuesLengthCheckFlag
+		},
+	}
+	vmOutput, err = transferFunc.ProcessBuiltinFunction(nil, accDst, input)
+	assert.Equal(t, "invalid arguments to process built-in function: max length for esdt transfer value is 100", err.Error())
+	assert.Empty(t, vmOutput)
+}
+
 func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	t.Parallel()
 
@@ -221,7 +268,9 @@ func TestESDTTransfer_SndDstFrozen(t *testing.T) {
 	accountStub := &mock.AccountsStub{}
 	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshaller, true, core.BuiltInFunctionESDTPause, trueHandler)
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
@@ -307,7 +356,9 @@ func TestESDTTransfer_SndDstWithLimitedTransfer(t *testing.T) {
 	}
 	esdtGlobalSettingsFunc, _ := NewESDTGlobalSettingsFunc(accountStub, marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, trueHandler)
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, esdtGlobalSettingsFunc, &mock.ShardCoordinatorStub{}, rolesHandler, &mock.EnableEpochsHandlerStub{
-		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
@@ -384,7 +435,9 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 

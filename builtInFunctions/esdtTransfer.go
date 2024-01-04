@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 var zero = big.NewInt(0)
@@ -96,6 +97,11 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, ErrInvalidRcvAddr
 	}
 
+	if e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag) {
+		if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
+			return nil, fmt.Errorf("%w: max length for esdt transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+		}
+	}
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[1])
 	if value.Cmp(zero) <= 0 {
 		return nil, ErrNegativeValue
@@ -106,7 +112,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	tokenID := vmInput.Arguments[0]
 
 	keyToCheck := esdtTokenKey
-	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(CheckCorrectTokenIDForTransferRoleFlag) {
 		keyToCheck = tokenID
 	}
 
@@ -141,13 +147,14 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		}
 
 		if isSCCallAfter {
-			vmOutput.GasRemaining, err = vmcommon.SafeSubUint64(vmInput.GasProvided, e.funcGasCost)
+			vmOutput.GasRemaining, _ = vmcommon.SafeSubUint64(vmInput.GasProvided, e.funcGasCost)
 			var callArgs [][]byte
 			if len(vmInput.Arguments) > core.MinLenArgumentsESDTTransfer+1 {
 				callArgs = vmInput.Arguments[core.MinLenArgumentsESDTTransfer+1:]
 			}
 
 			addOutputTransferToVMOutput(
+				1,
 				vmInput.CallerAddr,
 				string(vmInput.Arguments[core.MinLenArgumentsESDTTransfer]),
 				callArgs,
@@ -156,7 +163,16 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 				vmInput.CallType,
 				vmOutput)
 
-			addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, acntDst.AddressBytes())
+			addESDTEntryForTransferInVMOutput(
+				vmInput, vmOutput,
+				[]byte(core.BuiltInFunctionESDTTransfer),
+				acntDst.AddressBytes(),
+				[]*TopicTokenData{{
+					tokenID,
+					0,
+					value,
+				}},
+			)
 			return vmOutput, nil
 		}
 
@@ -165,13 +181,22 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput.GasRemaining = vmInput.GasProvided
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, acntDst.AddressBytes())
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionESDTTransfer),
+			acntDst.AddressBytes(),
+			[]*TopicTokenData{{
+				tokenID,
+				0,
+				value,
+			}})
 		return vmOutput, nil
 	}
 
 	// cross-shard ESDT transfer call through a smart contract
 	if vmcommon.IsSmartContractAddress(vmInput.CallerAddr) {
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			core.BuiltInFunctionESDTTransfer,
 			vmInput.Arguments,
@@ -181,11 +206,20 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTTransfer), tokenID, 0, value, vmInput.CallerAddr, vmInput.RecipientAddr)
+	addESDTEntryForTransferInVMOutput(
+		vmInput, vmOutput,
+		[]byte(core.BuiltInFunctionESDTTransfer),
+		vmInput.RecipientAddr,
+		[]*TopicTokenData{{
+			tokenID,
+			0,
+			value,
+		}})
 	return vmOutput, nil
 }
 
 func addOutputTransferToVMOutput(
+	index uint32,
 	senderAddress []byte,
 	function string,
 	arguments [][]byte,
@@ -199,6 +233,7 @@ func addOutputTransferToVMOutput(
 		esdtTransferTxData += "@" + hex.EncodeToString(arg)
 	}
 	outTransfer := vmcommon.OutputTransfer{
+		Index:         index,
 		Value:         big.NewInt(0),
 		GasLimit:      vmOutput.GasRemaining,
 		GasLocked:     gasLocked,
@@ -310,6 +345,9 @@ func getESDTDataFromKey(
 ) (*esdt.ESDigitalToken, error) {
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
 	marshaledData, _, err := userAcnt.AccountDataHandler().RetrieveValue(key)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, nil
 	}

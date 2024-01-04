@@ -16,6 +16,7 @@ type esdtLocalMint struct {
 	marshaller            vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -26,6 +27,7 @@ func NewESDTLocalMintFunc(
 	marshaller vmcommon.Marshalizer,
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
 ) (*esdtLocalMint, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
@@ -36,6 +38,9 @@ func NewESDTLocalMintFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(enableEpochsHandler) {
+		return nil, ErrNilEnableEpochsHandler
+	}
 
 	e := &esdtLocalMint{
 		keyPrefix:             []byte(baseESDTKeyPrefix),
@@ -43,6 +48,7 @@ func NewESDTLocalMintFunc(
 		globalSettingsHandler: globalSettingsHandler,
 		rolesHandler:          rolesHandler,
 		funcGasCost:           funcGasCost,
+		enableEpochsHandler:   enableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
 	}
 
@@ -80,6 +86,10 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 	}
 
 	if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
+		if e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag) {
+			return nil, fmt.Errorf("%w: max length for esdt local mint value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+		}
+		// backward compatibility - return old error
 		return nil, fmt.Errorf("%w max length for esdt issue is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 	}
 

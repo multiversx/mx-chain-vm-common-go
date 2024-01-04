@@ -10,7 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	"github.com/multiversx/mx-chain-vm-common-go"
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type esdtNFTMultiTransfer struct {
@@ -80,7 +80,9 @@ func NewESDTNFTMultiTransferFunc(
 		enableEpochsHandler:   enableEpochsHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = e.enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled
+	e.baseActiveHandler.activeHandler = func() bool {
+		return e.enableEpochsHandler.IsFlagEnabled(ESDTNFTImprovementV1Flag)
+	}
 
 	return e, nil
 }
@@ -162,6 +164,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	topicTokenData := make([]*TopicTokenData, 0)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
 		tokenID := vmInput.Arguments[tokenStartIndex]
@@ -204,7 +207,31 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionMultiESDTNFTTransfer), tokenID, nonce, value, vmInput.CallerAddr, acntDst.AddressBytes())
+		if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
+			topicTokenData = append(topicTokenData,
+				&TopicTokenData{
+					tokenID,
+					nonce,
+					value,
+				})
+		} else {
+			addESDTEntryInVMOutput(vmOutput,
+				[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+				tokenID,
+				nonce,
+				value,
+				vmInput.CallerAddr,
+				acntDst.AddressBytes())
+		}
+	}
+
+	if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+			acntDst.AddressBytes(),
+			topicTokenData,
+		)
 	}
 
 	// no need to consume gas on destination - sender already paid for it
@@ -215,6 +242,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
@@ -278,8 +306,13 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	listEsdtData := make([]*esdt.ESDigitalToken, numOfTransfers)
 	listTransferData := make([]*vmcommon.ESDTTransfer, numOfTransfers)
 
+	isConsistentTokensValuesLenghtCheckEnabled := e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag)
+	topicTokenData := make([]*TopicTokenData, 0)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
+		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && isConsistentTokensValuesLenghtCheckEnabled {
+			return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
+		}
 		listTransferData[i] = &vmcommon.ESDTTransfer{
 			ESDTValue:      big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2]),
 			ESDTTokenName:  vmInput.Arguments[tokenStartIndex],
@@ -296,11 +329,38 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			dstAddress,
 			listTransferData[i],
 			vmInput.ReturnCallAfterError)
+		if core.IsGetNodeFromDBError(err) {
+			return nil, err
+		}
 		if err != nil {
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}
 
-		addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionMultiESDTNFTTransfer), listTransferData[i].ESDTTokenName, listTransferData[i].ESDTTokenNonce, listTransferData[i].ESDTValue, vmInput.CallerAddr, dstAddress)
+		if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
+			topicTokenData = append(topicTokenData,
+				&TopicTokenData{
+					listTransferData[i].ESDTTokenName,
+					listTransferData[i].ESDTTokenNonce,
+					listTransferData[i].ESDTValue,
+				})
+		} else {
+			addESDTEntryInVMOutput(vmOutput,
+				[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+				listTransferData[i].ESDTTokenName,
+				listTransferData[i].ESDTTokenNonce,
+				listTransferData[i].ESDTValue,
+				vmInput.CallerAddr,
+				dstAddress)
+		}
+	}
+
+	if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
+		addESDTEntryForTransferInVMOutput(
+			vmInput, vmOutput,
+			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
+			dstAddress,
+			topicTokenData,
+		)
 	}
 
 	if !check.IfNil(acntDst) {
@@ -348,7 +408,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	esdtData.Value.Set(transferData.ESDTValue)
 
 	tokenID := esdtTokenKey
-	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(CheckCorrectTokenIDForTransferRoleFlag) {
 		tokenID = transferData.ESDTTokenName
 	}
 
@@ -461,6 +521,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 			vmOutput.GasRemaining = 0
 		}
 		addNFTTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionMultiESDTNFTTransfer,
@@ -481,6 +542,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 		}
 
 		addOutputTransferToVMOutput(
+			1,
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,

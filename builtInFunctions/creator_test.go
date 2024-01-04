@@ -1,12 +1,14 @@
 package builtInFunctions
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createMockArguments() ArgsCreateBuiltInFunctionContainer {
@@ -16,11 +18,13 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 	args := ArgsCreateBuiltInFunctionContainer{
 		GasMap:                           gasMap,
 		MapDNSAddresses:                  make(map[string]struct{}),
+		MapDNSV2Addresses:                make(map[string]struct{}),
 		EnableUserNameChange:             false,
 		Marshalizer:                      &mock.MarshalizerMock{},
 		Accounts:                         &mock.AccountsStub{},
 		ShardCoordinator:                 mock.NewMultiShardsCoordinatorMock(1),
 		EnableEpochsHandler:              &mock.EnableEpochsHandlerStub{},
+		GuardedAccountHandler:            &mock.GuardedAccountHandlerStub{},
 		MaxNumOfAddressesForTransferRole: 100,
 	}
 
@@ -70,6 +74,11 @@ func fillGasMapBuiltInCosts(value uint64) map[string]uint64 {
 	gasMap["ESDTNFTAddUri"] = value
 	gasMap["ESDTNFTUpdateAttributes"] = value
 	gasMap["ESDTNFTMultiTransfer"] = value
+	gasMap["SetGuardian"] = value
+	gasMap["GuardAccount"] = value
+	gasMap["UnGuardAccount"] = value
+	gasMap["TrieLoadPerNode"] = value
+	gasMap["TrieStorePerNode"] = value
 
 	return gasMap
 }
@@ -93,6 +102,15 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 
 	args = createMockArguments()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagDefinedCalled: func(flag core.EnableEpochFlag) bool {
+			return false
+		},
+	}
+	_, err = NewBuiltInFunctionsCreator(args)
+	assert.True(t, errors.Is(err, core.ErrInvalidEnableEpochsHandler))
+
+	args = createMockArguments()
 	args.Marshalizer = nil
 	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilMarshalizer)
@@ -103,12 +121,27 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilAccountsAdapter)
 
 	args = createMockArguments()
+	args.GuardedAccountHandler = nil
+	_, err = NewBuiltInFunctionsCreator(args)
+	assert.Equal(t, err, ErrNilGuardedAccountHandler)
+
+	args = createMockArguments()
 	f, err = NewBuiltInFunctionsCreator(args)
 	assert.Nil(t, err)
-	assert.False(t, f.IsInterfaceNil())
+	assert.NotNil(t, f)
 }
 
-func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
+func TestBuiltInFuncCreator_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	var instance *builtInFuncCreator
+	require.True(t, instance.IsInterfaceNil())
+
+	instance, _ = NewBuiltInFunctionsCreator(createMockArguments())
+	require.False(t, instance.IsInterfaceNil())
+}
+
+func TestCreateBuiltInContainer_GasScheduleChange(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
@@ -122,13 +155,13 @@ func TestCreateBuiltInContainter_GasScheduleChange(t *testing.T) {
 	assert.Equal(t, f.gasConfig.BuiltInCost.ClaimDeveloperRewards, uint64(5))
 }
 
-func TestCreateBuiltInContainter_Create(t *testing.T) {
+func TestCreateBuiltInContainer_Create(t *testing.T) {
 	args := createMockArguments()
 	f, _ := NewBuiltInFunctionsCreator(args)
 
 	err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, f.BuiltInFunctionContainer().Len(), 31)
+	assert.Equal(t, 36, f.BuiltInFunctionContainer().Len())
 
 	err = f.SetPayableHandler(nil)
 	assert.NotNil(t, err)

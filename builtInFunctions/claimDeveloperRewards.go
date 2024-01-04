@@ -66,6 +66,7 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{GasRemaining: gasRemaining, ReturnCode: vmcommon.Ok}
 	outTransfer := vmcommon.OutputTransfer{
+		Index:         1,
 		Value:         big.NewInt(0).Set(value),
 		GasLimit:      0,
 		Data:          nil,
@@ -80,7 +81,7 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 	}
 	outputAcc := &vmcommon.OutputAccount{
 		Address:         vmInput.CallerAddr,
-		BalanceDelta:    big.NewInt(0).Set(value),
+		BalanceDelta:    big.NewInt(0),
 		OutputTransfers: []vmcommon.OutputTransfer{outTransfer},
 	}
 

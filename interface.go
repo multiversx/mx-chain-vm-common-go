@@ -3,6 +3,7 @@ package vmcommon
 import (
 	"math/big"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/closing"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
@@ -107,11 +108,14 @@ type BlockchainHook interface {
 	// RevertToSnapshot reverts snaphots up to the specified one
 	RevertToSnapshot(snapshot int) error
 
+	// ExecuteSmartContractCallOnOtherVM runs contract on another VM
+	ExecuteSmartContractCallOnOtherVM(input *ContractCallInput) (*VMOutput, error)
+
 	// IsInterfaceNil returns true if there is no value under the interface
 	IsInterfaceNil() bool
 }
 
-// VMExecutionHandler interface for any Elrond VM endpoint
+// VMExecutionHandler interface for any MultiversX VM endpoint
 type VMExecutionHandler interface {
 	closing.Closer
 
@@ -154,6 +158,7 @@ type CryptoHook interface {
 // like balance, developer rewards, owner
 type UserAccountHandler interface {
 	GetCodeMetadata() []byte
+	SetCodeMetadata(codeMetadata []byte)
 	GetCodeHash() []byte
 	GetRootHash() []byte
 	AccountDataHandler() AccountDataHandler
@@ -173,6 +178,7 @@ type UserAccountHandler interface {
 type AccountDataHandler interface {
 	RetrieveValue(key []byte) ([]byte, uint32, error)
 	SaveKeyValue(key []byte, value []byte) error
+	MigrateDataTrieLeaves(args ArgsMigrateDataTrieLeaves) error
 	IsInterfaceNil() bool
 }
 
@@ -277,6 +283,18 @@ type EpochNotifier interface {
 	IsInterfaceNil() bool
 }
 
+// RoundSubscriberHandler defines the behavior of a component that can be notified if a new epoch was confirmed
+type RoundSubscriberHandler interface {
+	RoundConfirmed(round uint64, timestamp uint64)
+	IsInterfaceNil() bool
+}
+
+// RoundNotifier can notify upon an epoch change and provide the current epoch
+type RoundNotifier interface {
+	RegisterNotifyHandler(handler RoundSubscriberHandler)
+	IsInterfaceNil() bool
+}
+
 // ESDTTransferParser can parse single and multi ESDT / NFT transfers
 type ESDTTransferParser interface {
 	ParseESDTTransfers(sndAddr []byte, rcvAddr []byte, function string, args [][]byte) (*ParsedESDTTransfers, error)
@@ -334,48 +352,33 @@ type AcceptPayableChecker interface {
 
 // EnableEpochsHandler is used to verify which flags are set in the current epoch based on EnableEpochs config
 type EnableEpochsHandler interface {
-	IsGlobalMintBurnFlagEnabled() bool
-	IsESDTTransferRoleFlagEnabled() bool
-	IsBuiltInFunctionsFlagEnabled() bool
-	IsCheckCorrectTokenIDForTransferRoleFlagEnabled() bool
-	IsMultiESDTTransferFixOnCallBackFlagEnabled() bool
-	IsFixOOGReturnCodeFlagEnabled() bool
-	IsRemoveNonUpdatedStorageFlagEnabled() bool
-	IsCreateNFTThroughExecByCallerFlagEnabled() bool
-	IsStorageAPICostOptimizationFlagEnabled() bool
-	IsFailExecutionOnEveryAPIErrorFlagEnabled() bool
-	IsManagedCryptoAPIsFlagEnabled() bool
-	IsSCDeployFlagEnabled() bool
-	IsAheadOfTimeGasUsageFlagEnabled() bool
-	IsRepairCallbackFlagEnabled() bool
-	IsDisableExecByCallerFlagEnabled() bool
-	IsRefactorContextFlagEnabled() bool
-	IsCheckFunctionArgumentFlagEnabled() bool
-	IsCheckExecuteOnReadOnlyFlagEnabled() bool
-	IsFixAsyncCallbackCheckFlagEnabled() bool
-	IsSaveToSystemAccountFlagEnabled() bool
-	IsCheckFrozenCollectionFlagEnabled() bool
-	IsSendAlwaysFlagEnabled() bool
-	IsValueLengthCheckFlagEnabled() bool
-	IsCheckTransferFlagEnabled() bool
-	IsESDTNFTImprovementV1FlagEnabled() bool
-	IsFixOldTokenLiquidityEnabled() bool
-	IsRuntimeMemStoreLimitEnabled() bool
-	IsMaxBlockchainHookCountersFlagEnabled() bool
-	IsWipeSingleNFTLiquidityDecreaseEnabled() bool
-	IsAlwaysSaveTokenMetaDataEnabled() bool
-	IsRuntimeCodeSizeFixEnabled() bool
+	IsFlagDefined(flag core.EnableEpochFlag) bool
+	IsFlagEnabled(flag core.EnableEpochFlag) bool
+	IsFlagEnabledInEpoch(flag core.EnableEpochFlag, epoch uint32) bool
+	GetActivationEpoch(flag core.EnableEpochFlag) uint32
+	IsInterfaceNil() bool
+}
 
-	MultiESDTTransferAsyncCallBackEnableEpoch() uint32
-	FixOOGReturnCodeEnableEpoch() uint32
-	RemoveNonUpdatedStorageEnableEpoch() uint32
-	CreateNFTThroughExecByCallerEnableEpoch() uint32
-	FixFailExecutionOnErrorEnableEpoch() uint32
-	ManagedCryptoAPIEnableEpoch() uint32
-	DisableExecByCallerEnableEpoch() uint32
-	RefactorContextEnableEpoch() uint32
-	CheckExecuteReadOnlyEnableEpoch() uint32
-	StorageAPICostOptimizationEnableEpoch() uint32
+// GuardedAccountHandler allows setting and getting the configured account guardian
+type GuardedAccountHandler interface {
+	GetActiveGuardian(handler UserAccountHandler) ([]byte, error)
+	SetGuardian(uah UserAccountHandler, guardianAddress []byte, txGuardianAddress []byte, guardianServiceUID []byte) error
+	CleanOtherThanActive(uah UserAccountHandler)
+	IsInterfaceNil() bool
+}
 
+// DataTrieMigrator is the interface that defines the methods needed for migrating data trie leaves
+type DataTrieMigrator interface {
+	ConsumeStorageLoadGas() bool
+	AddLeafToMigrationQueue(leafData core.TrieData, newLeafVersion core.TrieNodeVersion) (bool, error)
+	GetLeavesToBeMigrated() []core.TrieData
+	IsInterfaceNil() bool
+}
+
+// NextOutputTransferIndexProvider interface abstracts a type that manages a transfer index counter
+type NextOutputTransferIndexProvider interface {
+	NextOutputTransferIndex() uint32
+	GetCrtTransferIndex() uint32
+	SetCrtTransferIndex(index uint32)
 	IsInterfaceNil() bool
 }
