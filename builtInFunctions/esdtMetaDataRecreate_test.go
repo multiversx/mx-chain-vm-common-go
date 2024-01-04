@@ -345,3 +345,56 @@ func TestEsdtMetaDataRecreate_SetNewGasConfig(t *testing.T) {
 	assert.Equal(t, newGasCost.BuiltInCost.ESDTNFTRecreate, e.funcGasCost)
 	assert.Equal(t, newGasCost.BaseOperationCost.StorePerByte, e.gasConfig.StorePerByte)
 }
+
+func TestEsdtMetaDataRecreate_changeEsdtVersion(t *testing.T) {
+	t.Parallel()
+
+	t.Run("flag disabled does nothing", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return false
+			},
+		}
+		esdtData := &esdt.ESDigitalToken{}
+		err := changeEsdtVersion(esdtData, 1, enableEpochsHandler)
+		assert.Nil(t, err)
+		assert.Nil(t, esdtData.Reserved)
+	})
+	t.Run("current version is higher than new version should err", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return true
+			},
+		}
+		esdtData := &esdt.ESDigitalToken{
+			Reserved: []byte{2},
+			TokenMetaData: &esdt.MetaData{
+				Name: []byte("name"),
+			},
+		}
+		err := changeEsdtVersion(esdtData, 1, enableEpochsHandler)
+		assert.True(t, errors.Is(err, ErrInvalidVersion))
+	})
+	t.Run("current version is lower than new version should change version", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return true
+			},
+		}
+		esdtData := &esdt.ESDigitalToken{
+			Reserved: []byte{1},
+			TokenMetaData: &esdt.MetaData{
+				Name: []byte("name"),
+			},
+		}
+		err := changeEsdtVersion(esdtData, 2, enableEpochsHandler)
+		assert.Nil(t, err)
+		assert.Equal(t, []byte{2}, esdtData.Reserved)
+	})
+}

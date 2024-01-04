@@ -163,6 +163,12 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 	err = f.SetPayableHandler(&mock.PayableHandlerStub{})
 	assert.Nil(t, err)
 
+	err = f.SetBlockDataHandler(nil)
+	assert.NotNil(t, err)
+
+	err = f.SetBlockDataHandler(&disabledBlockDataHandler{})
+	assert.Nil(t, err)
+
 	fillGasMapInternal(args.GasMap, 5)
 	f.GasScheduleChange(args.GasMap)
 	assert.Equal(t, f.gasConfig.BuiltInCost.ClaimDeveloperRewards, uint64(5))
