@@ -74,31 +74,31 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 
 	vmOutput, err := e.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrNilVmInput)
+	assert.Equal(t, ErrNilVmInput, err)
 
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: big.NewInt(10)}})
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrBuiltInFunctionCalledWithValue)
+	assert.Equal(t, ErrBuiltInFunctionCalledWithValue, err)
 
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: big.NewInt(0)}})
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrAddressIsNotAllowed)
+	assert.Equal(t, ErrAddressIsNotAllowed, err)
 
 	vmInput := &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: big.NewInt(0)}}
 	vmInput.CallerAddr = e.allowedAddress
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidRcvAddr)
+	assert.Equal(t, ErrInvalidRcvAddr, err)
 
 	vmInput.RecipientAddr = e.allowedAddress
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidNumOfArgs)
+	assert.Equal(t, ErrInvalidNumOfArgs, err)
 
 	e.delete = false
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidNumOfArgs)
+	assert.Equal(t, ErrInvalidNumOfArgs, err)
 
 	vmInput.Arguments = [][]byte{{1}, {0}, {1}}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
@@ -108,7 +108,7 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 	e.delete = true
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidNumOfArgs)
+	assert.Equal(t, ErrInvalidNumOfArgs, err)
 
 	vmInput.Arguments = [][]byte{{1}, {0}, {1}, {1}}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
@@ -126,13 +126,13 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 	vmInput.Arguments = [][]byte{{1}, {0}, {1}}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidNonce)
+	assert.Equal(t, ErrInvalidNonce, err)
 
 	vmInput.Arguments[0] = []byte("TOKEN-ABABAB")
 	vmInput.Arguments[1] = []byte{1}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidTokenID)
+	assert.Equal(t, ErrInvalidTokenID, err)
 
 	vmInput.Arguments[0] = []byte("TOKEN-ababab")
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
@@ -160,7 +160,7 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.NotNil(t, ErrTokenHasValidMetadata)
+	assert.Equal(t, ErrTokenHasValidMetadata, err)
 
 	_ = acnt.SaveKeyValue(esdtNftTokenKey, nil)
 	testErr := errors.New("testError")
@@ -171,12 +171,12 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 	vmInput.Arguments[1] = []byte{2}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidMetadata)
+	assert.Equal(t, ErrInvalidMetadata, err)
 
 	vmInput.Arguments[1] = []byte{1}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, testErr)
+	assert.Equal(t, testErr, err)
 }
 
 func TestEsdtDeleteMetaData_ProcessBuiltinFunctionGetNodeFromDbErr(t *testing.T) {
@@ -267,7 +267,7 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionDelete(t *testing.T) {
 	vmInput.Arguments[0] = []byte("TOKEN-ababab")
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidNumOfArgs)
+	assert.Equal(t, ErrInvalidNumOfArgs, err)
 
 	vmInput.Arguments[2] = []byte{0}
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
@@ -285,9 +285,10 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionDelete(t *testing.T) {
 	vmInput.Arguments = append(vmInput.Arguments, []byte("TOKEN-ababab"), []byte{2})
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, err, ErrInvalidNumOfArgs)
+	assert.Equal(t, ErrInvalidNumOfArgs, err)
 
 	vmInput.Arguments = append(vmInput.Arguments, []byte{1}, []byte{2}, []byte{4}, []byte{10})
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.NotNil(t, vmOutput)
+	assert.Nil(t, err)
 }
