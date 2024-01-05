@@ -657,9 +657,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 
 	if uint32(len(esdtData.Properties)) < e.shardCoordinator.NumberOfShards() {
 		newSlice := make([]byte, e.shardCoordinator.NumberOfShards())
-		for i, val := range esdtData.Properties {
-			newSlice[i] = val
-		}
+		copy(newSlice, esdtData.Properties)
 		esdtData.Properties = newSlice
 	}
 

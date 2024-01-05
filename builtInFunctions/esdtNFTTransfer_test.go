@@ -654,7 +654,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoesNotHo
 
 	testNFTTokenShouldExist(t, nftTransferSenderShard.marshaller, sender, tokenName, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 
-	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
+	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
 	destination, err := nftTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
@@ -678,7 +678,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoesNotHo
 	require.Nil(t, err)
 
 	testNFTTokenShouldExist(t, nftTransferDestinationShard.marshaller, destination, tokenName, tokenNonce, big.NewInt(1))
-	funcName, args = extractScResultsFromVmOutput(t, vmOutput)
+	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
 	assert.Equal(t, scCallFunctionAsHex, funcName)
 	require.Equal(t, 1, len(args))
 	require.Equal(t, []byte(scCallArg), args[0])
