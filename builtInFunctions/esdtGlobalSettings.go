@@ -113,13 +113,10 @@ func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
 	switch e.function {
 	case core.BuiltInFunctionESDTSetLimitedTransfer, core.BuiltInFunctionESDTUnSetLimitedTransfer:
 		esdtMetaData.LimitedTransfer = e.set
-		break
 	case core.BuiltInFunctionESDTPause, core.BuiltInFunctionESDTUnPause:
 		esdtMetaData.Paused = e.set
-		break
 	case vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll:
 		esdtMetaData.BurnRoleForAll = e.set
-		break
 	}
 
 	err = systemSCAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())

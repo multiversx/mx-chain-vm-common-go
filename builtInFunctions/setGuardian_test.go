@@ -1,10 +1,10 @@
 package builtInFunctions
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"strings"
 	"testing"
 
