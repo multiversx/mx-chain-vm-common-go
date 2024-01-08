@@ -13,7 +13,6 @@ const (
 	SendAlwaysFlag                              core.EnableEpochFlag = "SendAlwaysFlag"
 	ValueLengthCheckFlag                        core.EnableEpochFlag = "ValueLengthCheckFlag"
 	CheckTransferFlag                           core.EnableEpochFlag = "CheckTransferFlag"
-	TransferToMetaFlag                          core.EnableEpochFlag = "TransferToMetaFlag"
 	ESDTNFTImprovementV1Flag                    core.EnableEpochFlag = "ESDTNFTImprovementV1Flag"
 	FixOldTokenLiquidityFlag                    core.EnableEpochFlag = "FixOldTokenLiquidityFlag"
 	WipeSingleNFTLiquidityDecreaseFlag          core.EnableEpochFlag = "WipeSingleNFTLiquidityDecreaseFlag"
@@ -39,7 +38,6 @@ var allFlags = []core.EnableEpochFlag{
 	SendAlwaysFlag,
 	ValueLengthCheckFlag,
 	CheckTransferFlag,
-	TransferToMetaFlag,
 	ESDTNFTImprovementV1Flag,
 	FixOldTokenLiquidityFlag,
 	WipeSingleNFTLiquidityDecreaseFlag,
