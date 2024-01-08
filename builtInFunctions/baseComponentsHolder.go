@@ -39,14 +39,14 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler)
 	latestEsdtData.Value.Set(esdtDataToTransfer.Value)
 
-	_, err = b.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnWithError)
+	_, err = b.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, latestEsdtData, false, isReturnWithError)
 	if err != nil {
 		return err
 	}
 
 	isSameShard := b.shardCoordinator.SameShard(sndAddress, dstAddress)
 	if !isSameShard {
-		err = b.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, currentESDTData.Type, nonce, transferValue)
+		err = b.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, latestEsdtData.Type, nonce, transferValue)
 		if err != nil {
 			return err
 		}
