@@ -285,12 +285,14 @@ func (e *esdtDataStorage) checkFrozenPauseProperties(
 // AddToLiquiditySystemAcc will increase/decrease the liquidity for ESDT Tokens on the metadata
 func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 	esdtTokenKey []byte,
+	tokenType uint32,
 	nonce uint64,
 	transferValue *big.Int,
 ) error {
 	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag)
 	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
-	if !isSaveToSystemAccountFlagEnabled || !isSendAlwaysFlagEnabled || nonce == 0 {
+	isNonFungibleV2 := tokenType == uint32(core.NonFungibleV2)
+	if !isSaveToSystemAccountFlagEnabled || !isSendAlwaysFlagEnabled || nonce == 0 || isNonFungibleV2 {
 		return nil
 	}
 

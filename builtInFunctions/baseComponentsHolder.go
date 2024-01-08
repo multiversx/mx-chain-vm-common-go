@@ -46,7 +46,7 @@ func (b *baseComponentsHolder) addNFTToDestination(
 
 	isSameShard := b.shardCoordinator.SameShard(sndAddress, dstAddress)
 	if !isSameShard {
-		err = b.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
+		err = b.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, currentESDTData.Type, nonce, transferValue)
 		if err != nil {
 			return err
 		}

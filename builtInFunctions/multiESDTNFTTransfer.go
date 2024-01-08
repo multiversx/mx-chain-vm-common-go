@@ -432,7 +432,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 			return nil, err
 		}
 	} else {
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, transferData.ESDTTokenNonce, big.NewInt(0).Neg(transferData.ESDTValue))
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, transferData.ESDTTokenNonce, big.NewInt(0).Neg(transferData.ESDTValue))
 		if err != nil {
 			return nil, err
 		}
