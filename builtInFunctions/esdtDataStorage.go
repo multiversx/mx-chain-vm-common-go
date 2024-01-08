@@ -131,6 +131,9 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		Type:  uint32(core.Fungible),
 	}
 	marshaledData, _, err := accnt.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, false, err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return esdtData, true, nil
 	}
@@ -140,7 +143,7 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		return nil, false, err
 	}
 
-	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() || nonce == 0 {
+	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) || nonce == 0 {
 		return esdtData, false, nil
 	}
 
@@ -165,6 +168,9 @@ func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
 	}
 
 	marshaledData, _, err := systemAcc.AccountDataHandler().RetrieveValue(tokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return nil, systemAcc, err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return nil, systemAcc, nil
 	}
@@ -200,7 +206,7 @@ func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
 	nonce uint64,
 	isReturnWithError bool,
 ) error {
-	if !e.enableEpochsHandler.IsCheckFrozenCollectionFlagEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(CheckFrozenCollectionFlag) {
 		return nil
 	}
 	if nonce == 0 || isReturnWithError {
@@ -212,6 +218,9 @@ func (e *esdtDataStorage) checkCollectionIsFrozenForAccount(
 		Type:  uint32(core.Fungible),
 	}
 	marshaledData, _, err := accnt.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return err
+	}
 	if err != nil || len(marshaledData) == 0 {
 		return nil
 	}
@@ -261,8 +270,8 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 	nonce uint64,
 	transferValue *big.Int,
 ) error {
-	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled()
-	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsSendAlwaysFlagEnabled()
+	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag)
+	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
 	if !isSaveToSystemAccountFlagEnabled || !isSendAlwaysFlagEnabled || nonce == 0 {
 		return nil
 	}
@@ -282,7 +291,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 		return nil
 	}
 
-	if e.enableEpochsHandler.IsFixOldTokenLiquidityEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(FixOldTokenLiquidityFlag) {
 		// old tokens which were transferred intra shard before the activation of this flag
 		if esdtData.Value.Cmp(zero) == 0 && transferValue.Cmp(zero) < 0 {
 			esdtData.Reserved = nil
@@ -329,7 +338,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
-	if e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) {
 		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
 		if err != nil {
 			return nil, err
@@ -340,7 +349,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
 
-	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) {
 		marshaledData, errMarshal := e.marshaller.Marshal(esdtData)
 		if errMarshal != nil {
 			return nil, errMarshal
@@ -382,7 +391,10 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		return err
 	}
 
-	currentSaveData, _, _ := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	currentSaveData, _, err := systemAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return err
+	}
 	err = e.saveMetadataIfRequired(esdtNFTTokenKey, systemAcc, currentSaveData, esdtData)
 	if err != nil {
 		return err
@@ -398,7 +410,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		TokenMetaData: esdtData.TokenMetaData,
 		Properties:    make([]byte, e.shardCoordinator.NumberOfShards()),
 	}
-	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsSendAlwaysFlagEnabled()
+	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
 	if len(currentSaveData) == 0 && isSendAlwaysFlagEnabled {
 		esdtDataOnSystemAcc.Properties = nil
 		esdtDataOnSystemAcc.Reserved = []byte{1}
@@ -428,10 +440,10 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 	currentSaveData []byte,
 	esdtData *esdt.ESDigitalToken,
 ) error {
-	if !e.enableEpochsHandler.IsAlwaysSaveTokenMetaDataEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(AlwaysSaveTokenMetaDataFlag) {
 		return nil
 	}
-	if !e.enableEpochsHandler.IsSendAlwaysFlagEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag) {
 		// do not re-write the metadata if it is not sent, as it will cause data loss
 		return nil
 	}
@@ -458,7 +470,7 @@ func (e *esdtDataStorage) setReservedToNilForOldToken(
 	userAcc vmcommon.UserAccountHandler,
 	esdtNFTTokenKey []byte,
 ) error {
-	if !e.enableEpochsHandler.IsFixOldTokenLiquidityEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(FixOldTokenLiquidityFlag) {
 		return nil
 	}
 
@@ -466,6 +478,9 @@ func (e *esdtDataStorage) setReservedToNilForOldToken(
 		return ErrNilUserAccount
 	}
 	dataOnUserAcc, _, errNotCritical := userAcc.AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	if core.IsGetNodeFromDBError(errNotCritical) {
+		return errNotCritical
+	}
 	shouldIgnoreToken := errNotCritical != nil || len(dataOnUserAcc) == 0
 	if shouldIgnoreToken {
 		return nil
@@ -535,7 +550,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 	nonce uint64,
 	dstAddress []byte,
 ) (bool, error) {
-	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) {
 		return false, nil
 	}
 
@@ -547,7 +562,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 		return true, nil
 	}
 
-	if e.enableEpochsHandler.IsSendAlwaysFlagEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag) {
 		return false, nil
 	}
 
@@ -567,9 +582,7 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 
 	if uint32(len(esdtData.Properties)) < e.shardCoordinator.NumberOfShards() {
 		newSlice := make([]byte, e.shardCoordinator.NumberOfShards())
-		for i, val := range esdtData.Properties {
-			newSlice[i] = val
-		}
+		copy(newSlice, esdtData.Properties)
 		esdtData.Properties = newSlice
 	}
 
@@ -585,10 +598,10 @@ func (e *esdtDataStorage) WasAlreadySentToDestinationShardAndUpdateState(
 func (e *esdtDataStorage) SaveNFTMetaDataToSystemAccount(
 	tx data.TransactionHandler,
 ) error {
-	if !e.enableEpochsHandler.IsSaveToSystemAccountFlagEnabled() {
+	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) {
 		return nil
 	}
-	if e.enableEpochsHandler.IsSendAlwaysFlagEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag) {
 		return nil
 	}
 	if check.IfNil(tx) {

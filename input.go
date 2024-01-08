@@ -18,6 +18,9 @@ type VMInput struct {
 	// the transaction will return FunctionWrongSignature ReturnCode.
 	Arguments [][]byte
 
+	// AsyncArguments are used only internally by the promises framework
+	AsyncArguments *AsyncArguments
+
 	// CallValue is the eGLD value (amount of tokens) transferred by the transaction.
 	// Before reaching the VM this value is subtracted from sender balance (CallerAddr)
 	// and to added to the smart contract balance.
@@ -65,6 +68,19 @@ type VMInput struct {
 
 	// ReturnCallAfterError
 	ReturnCallAfterError bool
+
+	// GuardianSigned specifies whether the transaction was signed by the guardian
+	TxGuardian []byte
+
+	// OriginalCallerAddr is the public key of the wallet originally initiating the transaction
+	OriginalCallerAddr []byte
+}
+
+type AsyncArguments struct {
+	CallID                       []byte
+	CallerCallID                 []byte
+	CallbackAsyncInitiatorCallID []byte
+	GasAccumulated               uint64
 }
 
 // ESDTTransfer defines the structure for and ESDT / NFT transfer

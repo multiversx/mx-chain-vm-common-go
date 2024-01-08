@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestElrondEI_validateToken(t *testing.T) {
+func TestEI_validateToken(t *testing.T) {
 	var result bool
 	result = ValidateToken([]byte("EGLDRIDEFL-08d8eff"))
 	assert.False(t, result)

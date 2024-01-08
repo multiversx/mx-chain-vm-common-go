@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
 )
 
@@ -73,16 +74,23 @@ type OutputAccount struct {
 
 	// BytesDeletedFromStorage for this output account
 	BytesDeletedFromStorage uint64
+
+	// BytesConsumedByTxAsNetworking for this output account
+	BytesConsumedByTxAsNetworking uint64
 }
 
 // OutputTransfer contains the fields needed to create transfers to another shard
 type OutputTransfer struct {
+	// Index of the transfer
+	Index uint32
 	// Value to be transferred
 	Value *big.Int
 	// GasLimit to used for the call
 	GasLimit uint64
 	// GasLocked holds the amount of gas to be kept aside for the eventual callback execution
 	GasLocked uint64
+	// AsyncData to be used in cross call
+	AsyncData []byte
 	// Data to be used in cross call
 	Data []byte
 	// CallType is set if it is a smart contract invocation
@@ -98,7 +106,7 @@ type LogEntry struct {
 	Identifier []byte
 	Address    []byte
 	Topics     [][]byte
-	Data       []byte
+	Data       [][]byte
 }
 
 // VMOutput is the return data and final account state after a SC execution.
@@ -179,6 +187,45 @@ func (vmOutput *VMOutput) GetFirstReturnData(asType vm.ReturnDataKind) (interfac
 	return nil, fmt.Errorf("can't interpret return data")
 }
 
+// GetMaxOutputTransferIndex returns the maximum output transfer index
+func (vmOutput *VMOutput) GetNextAvailableOutputTransferIndex() uint32 {
+	maxTransferIndex := uint32(0)
+	for _, account := range vmOutput.OutputAccounts {
+		for _, transfer := range account.OutputTransfers {
+			if transfer.Index > maxTransferIndex {
+				maxTransferIndex = transfer.Index
+			}
+		}
+	}
+
+	return maxTransferIndex + 1
+}
+
+// ReindexTransfers from VMOutput
+func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferIndexProvider) error {
+
+	if check.IfNil(nextIndexProvider) {
+		return ErrNilTransferIndexer
+	}
+
+	reindexed := false
+	crtIndex := nextIndexProvider.GetCrtTransferIndex() - 1
+	for _, account := range vmOutput.OutputAccounts {
+		for transferIdx, transfer := range account.OutputTransfers {
+			if transfer.Index == 0 {
+				return ErrTransfersNotIndexed
+			}
+			account.OutputTransfers[transferIdx].Index = transfer.Index + crtIndex
+			reindexed = true
+		}
+	}
+	if reindexed {
+		nextIndexProvider.SetCrtTransferIndex(vmOutput.GetNextAvailableOutputTransferIndex())
+	}
+
+	return nil
+}
+
 // MergeOutputAccounts merges the given account into the current one
 func (o *OutputAccount) MergeOutputAccounts(outAcc *OutputAccount) {
 	if len(outAcc.Address) != 0 {
@@ -227,6 +274,23 @@ func (o *OutputAccount) MergeStorageUpdates(outAcc *OutputAccount) {
 	for key, update := range outAcc.StorageUpdates {
 		o.StorageUpdates[key] = update
 	}
+}
+
+// GetFirstDataItem returns the first item from the Data field of a LogEntry
+func (logEntry *LogEntry) GetFirstDataItem() []byte {
+	if len(logEntry.Data) == 0 {
+		return nil
+	}
+	return logEntry.Data[0]
+}
+
+// FormatLogDataForCall prepares Data field for a LogEntry
+func FormatLogDataForCall(callType string, functionName string, functionArgs [][]byte) [][]byte {
+	data := make([][]byte, 0)
+	data = append(data, []byte(callType))
+	data = append(data, []byte(functionName))
+	data = append(data, functionArgs...)
+	return data
 }
 
 // MaxLengthForValueToOptTransfer defines the maximum length for value to optimize cross shard transfer

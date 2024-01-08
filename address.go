@@ -98,3 +98,15 @@ func IsAllowedToSaveUnderKey(key []byte) bool {
 	trimmedKey := key[:prefixLen]
 	return !bytes.Equal(trimmedKey, []byte(core.ProtectedKeyPrefix))
 }
+
+// ParseVMTypeFromContractAddress obtains the VMType from the contract address
+// TODO maybe move to elgond-go-core
+func ParseVMTypeFromContractAddress(contractAddress []byte) ([]byte, error) {
+	if len(contractAddress) < NumInitCharactersForScAddress {
+		return nil, ErrInvalidVMType
+	}
+
+	startIndex := NumInitCharactersForScAddress - VMTypeLen
+	endIndex := NumInitCharactersForScAddress
+	return contractAddress[startIndex:endIndex], nil
+}

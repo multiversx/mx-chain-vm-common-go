@@ -1,6 +1,10 @@
 package vmcommon
 
-import "math/big"
+import (
+	"math/big"
+
+	"github.com/multiversx/mx-chain-core-go/core"
+)
 
 const tickerMinLength = 3
 const tickerMaxLength = 10
@@ -95,4 +99,11 @@ func ZeroValueIfNil(value *big.Int) *big.Int {
 	}
 
 	return value
+}
+
+// ArgsMigrateDataTrieLeaves is the argument structure for the MigrateDataTrieLeaves function
+type ArgsMigrateDataTrieLeaves struct {
+	OldVersion   core.TrieNodeVersion
+	NewVersion   core.TrieNodeVersion
+	TrieMigrator DataTrieMigrator
 }

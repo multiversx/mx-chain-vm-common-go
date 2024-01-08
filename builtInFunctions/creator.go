@@ -12,21 +12,26 @@ var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 var trueHandler = func() bool { return true }
 var falseHandler = func() bool { return false }
 
+const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are upper case
+
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
 	GasMap                           map[string]map[string]uint64
 	MapDNSAddresses                  map[string]struct{}
+	MapDNSV2Addresses                map[string]struct{}
 	EnableUserNameChange             bool
 	Marshalizer                      vmcommon.Marshalizer
 	Accounts                         vmcommon.AccountsAdapter
 	ShardCoordinator                 vmcommon.Coordinator
 	EnableEpochsHandler              vmcommon.EnableEpochsHandler
+	GuardedAccountHandler            vmcommon.GuardedAccountHandler
 	MaxNumOfAddressesForTransferRole uint32
 	ConfigAddress                    []byte
 }
 
 type builtInFuncCreator struct {
 	mapDNSAddresses                  map[string]struct{}
+	mapDNSV2Addresses                map[string]struct{}
 	enableUserNameChange             bool
 	marshaller                       vmcommon.Marshalizer
 	accounts                         vmcommon.AccountsAdapter
@@ -36,6 +41,7 @@ type builtInFuncCreator struct {
 	esdtStorageHandler               vmcommon.ESDTNFTStorageHandler
 	esdtGlobalSettingsHandler        vmcommon.ESDTGlobalSettingsHandler
 	enableEpochsHandler              vmcommon.EnableEpochsHandler
+	guardedAccountHandler            vmcommon.GuardedAccountHandler
 	maxNumOfAddressesForTransferRole uint32
 	configAddress                    []byte
 }
@@ -51,25 +57,36 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	if args.MapDNSAddresses == nil {
 		return nil, ErrNilDnsAddresses
 	}
+	if args.MapDNSV2Addresses == nil {
+		return nil, ErrNilDnsAddresses
+	}
 	if check.IfNil(args.ShardCoordinator) {
 		return nil, ErrNilShardCoordinator
 	}
 	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
+	err := core.CheckHandlerCompatibility(args.EnableEpochsHandler, allFlags)
+	if err != nil {
+		return nil, err
+	}
+	if check.IfNil(args.GuardedAccountHandler) {
+		return nil, ErrNilGuardedAccountHandler
+	}
 
 	b := &builtInFuncCreator{
 		mapDNSAddresses:                  args.MapDNSAddresses,
+		mapDNSV2Addresses:                args.MapDNSV2Addresses,
 		enableUserNameChange:             args.EnableUserNameChange,
 		marshaller:                       args.Marshalizer,
 		accounts:                         args.Accounts,
 		shardCoordinator:                 args.ShardCoordinator,
 		enableEpochsHandler:              args.EnableEpochsHandler,
+		guardedAccountHandler:            args.GuardedAccountHandler,
 		maxNumOfAddressesForTransferRole: args.MaxNumOfAddressesForTransferRole,
 		configAddress:                    args.ConfigAddress,
 	}
 
-	var err error
 	b.gasConfig, err = createGasConfig(args.GasMap)
 	if err != nil {
 		return nil, err
@@ -123,13 +140,17 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc = NewChangeOwnerAddressFunc(b.gasConfig.BuiltInCost.ChangeOwnerAddress)
+	newFunc, err = NewChangeOwnerAddressFunc(b.gasConfig.BuiltInCost.ChangeOwnerAddress, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+
 	err = b.builtInFunctions.Add(core.BuiltInFunctionChangeOwnerAddress, newFunc)
 	if err != nil {
 		return err
 	}
 
-	newFunc, err = NewSaveUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.enableUserNameChange)
+	newFunc, err = NewSaveUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSAddresses, b.mapDNSV2Addresses, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -138,7 +159,16 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewSaveKeyValueStorageFunc(b.gasConfig.BaseOperationCost, b.gasConfig.BuiltInCost.SaveKeyValue)
+	newFunc, err = NewDeleteUserNameFunc(b.gasConfig.BuiltInCost.SaveUserName, b.mapDNSV2Addresses, b.enableEpochsHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(deleteUserNameFuncName, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewSaveKeyValueStorageFunc(b.gasConfig.BaseOperationCost, b.gasConfig.BuiltInCost.SaveKeyValue, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -147,7 +177,13 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTPause, trueHandler)
+	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		true,
+		core.BuiltInFunctionESDTPause,
+		trueHandler,
+	)
 	if err != nil {
 		return err
 	}
@@ -190,7 +226,13 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnPause, trueHandler)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		false,
+		core.BuiltInFunctionESDTUnPause,
+		trueHandler,
+	)
 	if err != nil {
 		return err
 	}
@@ -208,7 +250,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshaller, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshaller, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -217,7 +259,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshaller, globalSettingsFunc, setRoleFunc)
+	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshaller, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
 	if err != nil {
 		return err
 	}
@@ -353,7 +395,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, core.BuiltInFunctionESDTSetLimitedTransfer, b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		true,
+		core.BuiltInFunctionESDTSetLimitedTransfer,
+		func() bool {
+			return b.enableEpochsHandler.IsFlagEnabled(ESDTTransferRoleFlag)
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -362,7 +412,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, core.BuiltInFunctionESDTUnSetLimitedTransfer, b.enableEpochsHandler.IsESDTTransferRoleFlagEnabled)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		false,
+		core.BuiltInFunctionESDTUnSetLimitedTransfer,
+		func() bool {
+			return b.enableEpochsHandler.IsFlagEnabled(ESDTTransferRoleFlag)
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -398,7 +456,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, true, vmcommon.BuiltInFunctionESDTSetBurnRoleForAll, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		true,
+		vmcommon.BuiltInFunctionESDTSetBurnRoleForAll,
+		func() bool {
+			return b.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -407,7 +473,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTGlobalSettingsFunc(b.accounts, b.marshaller, false, vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll, b.enableEpochsHandler.IsSendAlwaysFlagEnabled)
+	newFunc, err = NewESDTGlobalSettingsFunc(
+		b.accounts,
+		b.marshaller,
+		false,
+		vmcommon.BuiltInFunctionESDTUnSetBurnRoleForAll,
+		func() bool {
+			return b.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -434,7 +508,62 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	argsSetGuardian := SetGuardianArgs{
+		BaseAccountGuarderArgs: b.createBaseAccountGuarderArgs(b.gasConfig.BuiltInCost.SetGuardian),
+	}
+	newFunc, err = NewSetGuardianFunc(argsSetGuardian)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionSetGuardian, newFunc)
+	if err != nil {
+		return err
+	}
+
+	argsGuardAccount := b.createGuardAccountArgs()
+	newFunc, err = NewGuardAccountFunc(argsGuardAccount)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionGuardAccount, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewUnGuardAccountFunc(argsGuardAccount)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionUnGuardAccount, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewMigrateDataTrieFunc(b.gasConfig.BuiltInCost, b.enableEpochsHandler, b.accounts)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionMigrateDataTrie, newFunc)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (b *builtInFuncCreator) createBaseAccountGuarderArgs(funcGasCost uint64) BaseAccountGuarderArgs {
+	return BaseAccountGuarderArgs{
+		Marshaller:            b.marshaller,
+		FuncGasCost:           funcGasCost,
+		GuardedAccountHandler: b.guardedAccountHandler,
+		EnableEpochsHandler:   b.enableEpochsHandler,
+	}
+}
+
+func (b *builtInFuncCreator) createGuardAccountArgs() GuardAccountArgs {
+	return GuardAccountArgs{
+		BaseAccountGuarderArgs: b.createBaseAccountGuarderArgs(b.gasConfig.BuiltInCost.GuardAccount),
+	}
 }
 
 func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, error) {
