@@ -111,8 +111,7 @@ func checkUpdateArguments(
 		return ErrInvalidNumberOfArguments
 	}
 
-	tokenId := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[tokenIDIndex]...)
-	return rolesHandler.CheckAllowedToExecute(acntSnd, tokenId, []byte(role))
+	return rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(role))
 }
 
 type esdtStorageInfo struct {
