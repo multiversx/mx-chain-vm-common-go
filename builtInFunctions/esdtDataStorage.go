@@ -422,6 +422,10 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 
 // removeNFTMetadataFromSystemAccountIfNeeded removes the NFT metadata from the system account if needed
 func (e *esdtDataStorage) removeNFTMetadataFromSystemAccountIfNeeded(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error {
+	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		return nil
+	}
+
 	tokenType, err := e.globalSettingsHandler.GetTokenType(esdtTokenKey)
 	if err != nil {
 		return err
