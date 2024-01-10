@@ -629,6 +629,11 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 				return nil
 			},
 		}
+		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == DynamicEsdtFlag
+			},
+		}
 		dataStorage, _ := NewESDTDataStorage(args)
 		userAcc := mock.NewAccountWrapMock([]byte("addr"))
 		nftToken := &esdt.ESDigitalToken{
