@@ -336,12 +336,6 @@ type CallArgsParser interface {
 	IsInterfaceNil() bool
 }
 
-// WithBlockDataHandler defines the methods to set a block data handler through a set function
-type WithBlockDataHandler interface {
-	SetBlockDataHandler(BlockDataHandler) error
-	IsInterfaceNil() bool
-}
-
 // BlockDataHandler will handle block data
 type BlockDataHandler interface {
 	CurrentRound() uint64

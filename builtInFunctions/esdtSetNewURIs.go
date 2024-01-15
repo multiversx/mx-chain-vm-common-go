@@ -12,12 +12,12 @@ const uriStartIndex = 2
 
 type esdtSetNewURIs struct {
 	baseActiveHandler
+	withBlockDataHandler
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
-	blockDataHandler      vmcommon.BlockDataHandler
 	funcGasCost           uint64
 	gasConfig             vmcommon.BaseOperationCost
 	mutExecution          sync.RWMutex
@@ -58,7 +58,7 @@ func NewESDTSetNewURIsFunc(
 		gasConfig:             gasConfig,
 		mutExecution:          sync.RWMutex{},
 		enableEpochsHandler:   enableEpochsHandler,
-		blockDataHandler:      &disabledBlockDataHandler{},
+		withBlockDataHandler:  NewBlockDataHandler(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -97,7 +97,7 @@ func (e *esdtSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountH
 
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[uriStartIndex:]
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.blockDataHandler.CurrentRound(), e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, e.withBlockDataHandler, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -124,16 +124,6 @@ func (e *esdtSetNewURIs) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTSetNewURIs
 	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
-}
-
-// SetBlockDataHandler is called when block data handler is set
-func (e *esdtSetNewURIs) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
-	if check.IfNil(blockDataHandler) {
-		return ErrNilBlockDataHandler
-	}
-
-	e.blockDataHandler = blockDataHandler
-	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

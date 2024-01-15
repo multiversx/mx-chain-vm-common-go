@@ -243,6 +243,7 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		e, _ := NewESDTMetaDataRecreateFunc(101, vmcommon.BaseOperationCost{StorePerByte: 1}, accounts, globalSettingsHandler, storageHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
+		_ = e.SetBlockDataHandler(&mock.BlockDataHandlerStub{})
 
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
@@ -307,6 +308,7 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		e, _ := NewESDTMetaDataRecreateFunc(101, vmcommon.BaseOperationCost{StorePerByte: 1}, accounts, globalSettingsHandler, storageHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
+		_ = e.SetBlockDataHandler(&mock.BlockDataHandlerStub{})
 
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
@@ -358,7 +360,12 @@ func TestEsdtMetaDataRecreate_changeEsdtVersion(t *testing.T) {
 			},
 		}
 		esdtData := &esdt.ESDigitalToken{}
-		err := changeEsdtVersion(esdtData, 1, enableEpochsHandler)
+		handler := &mock.WithBlockDataHandlerStub{
+			CurrentRoundCalled: func() (uint64, error) {
+				return 1, nil
+			},
+		}
+		err := changeEsdtVersion(esdtData, handler, enableEpochsHandler)
 		assert.Nil(t, err)
 		assert.Nil(t, esdtData.Reserved)
 	})
@@ -376,7 +383,12 @@ func TestEsdtMetaDataRecreate_changeEsdtVersion(t *testing.T) {
 				Name: []byte("name"),
 			},
 		}
-		err := changeEsdtVersion(esdtData, 1, enableEpochsHandler)
+		handler := &mock.WithBlockDataHandlerStub{
+			CurrentRoundCalled: func() (uint64, error) {
+				return 1, nil
+			},
+		}
+		err := changeEsdtVersion(esdtData, handler, enableEpochsHandler)
 		assert.True(t, errors.Is(err, ErrInvalidVersion))
 	})
 	t.Run("current version is lower than new version should change version", func(t *testing.T) {
@@ -393,7 +405,12 @@ func TestEsdtMetaDataRecreate_changeEsdtVersion(t *testing.T) {
 				Name: []byte("name"),
 			},
 		}
-		err := changeEsdtVersion(esdtData, 2, enableEpochsHandler)
+		handler := &mock.WithBlockDataHandlerStub{
+			CurrentRoundCalled: func() (uint64, error) {
+				return 2, nil
+			},
+		}
+		err := changeEsdtVersion(esdtData, handler, enableEpochsHandler)
 		assert.Nil(t, err)
 		assert.Equal(t, []byte{2}, esdtData.Reserved)
 	})

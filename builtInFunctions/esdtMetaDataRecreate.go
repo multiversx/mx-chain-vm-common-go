@@ -22,6 +22,7 @@ const (
 
 type esdtMetaDataRecreate struct {
 	baseActiveHandler
+	withBlockDataHandler
 	funcGasCost           uint64
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
@@ -29,7 +30,6 @@ type esdtMetaDataRecreate struct {
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	gasConfig             vmcommon.BaseOperationCost
-	blockDataHandler      vmcommon.BlockDataHandler
 	mutExecution          sync.RWMutex
 }
 
@@ -68,7 +68,7 @@ func NewESDTMetaDataRecreateFunc(
 		funcGasCost:           funcGasCost,
 		gasConfig:             gasConfig,
 		mutExecution:          sync.RWMutex{},
-		blockDataHandler:      &disabledBlockDataHandler{},
+		withBlockDataHandler:  NewBlockDataHandler(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -238,7 +238,7 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.blockDataHandler.CurrentRound(), e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, e.withBlockDataHandler, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,12 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	return vmOutput, nil
 }
 
-func changeEsdtVersion(esdt *esdt.ESDigitalToken, newVersion uint64, enableEpochsHandler vmcommon.EnableEpochsHandler) error {
+func changeEsdtVersion(esdt *esdt.ESDigitalToken, blockDataHandler withBlockDataHandler, enableEpochsHandler vmcommon.EnableEpochsHandler) error {
+	newVersion, err := blockDataHandler.CurrentRound()
+	if err != nil {
+		return err
+	}
+
 	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return nil
 	}
@@ -279,16 +284,6 @@ func (e *esdtMetaDataRecreate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTRecreate
 	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
-}
-
-// SetBlockDataHandler is called when block data handler is set
-func (e *esdtMetaDataRecreate) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
-	if check.IfNil(blockDataHandler) {
-		return ErrNilBlockDataHandler
-	}
-
-	e.blockDataHandler = blockDataHandler
-	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

@@ -248,6 +248,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		e, _ := NewESDTSetNewURIsFunc(101, vmcommon.BaseOperationCost{StorePerByte: 1}, accounts, globalSettingsHandler, storageHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
+		_ = e.SetBlockDataHandler(&mock.BlockDataHandlerStub{})
 
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{

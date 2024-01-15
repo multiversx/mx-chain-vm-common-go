@@ -12,6 +12,7 @@ import (
 
 type esdtMetaDataUpdate struct {
 	baseActiveHandler
+	withBlockDataHandler
 	funcGasCost           uint64
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
@@ -19,7 +20,6 @@ type esdtMetaDataUpdate struct {
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	gasConfig             vmcommon.BaseOperationCost
-	blockDataHandler      vmcommon.BlockDataHandler
 	mutExecution          sync.RWMutex
 }
 
@@ -58,7 +58,7 @@ func NewESDTMetaDataUpdateFunc(
 		funcGasCost:           funcGasCost,
 		gasConfig:             gasConfig,
 		mutExecution:          sync.RWMutex{},
-		blockDataHandler:      &disabledBlockDataHandler{},
+		withBlockDataHandler:  NewBlockDataHandler(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -128,7 +128,7 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		return nil, ErrNotEnoughGas
 	}
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.blockDataHandler.CurrentRound(), e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, e.withBlockDataHandler, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -155,16 +155,6 @@ func (e *esdtMetaDataUpdate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTUpdate
 	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
-}
-
-// SetBlockDataHandler is called when block data handler is set
-func (e *esdtMetaDataUpdate) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
-	if check.IfNil(blockDataHandler) {
-		return ErrNilBlockDataHandler
-	}
-
-	e.blockDataHandler = blockDataHandler
-	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

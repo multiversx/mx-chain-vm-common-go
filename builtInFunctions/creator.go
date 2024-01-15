@@ -660,24 +660,16 @@ func (b *builtInFuncCreator) SetBlockDataHandler(blockDataHandler vmcommon.Block
 		return ErrNilBlockDataHandler
 	}
 
-	listOfFuncWithBlockDataHandler := []string{
-		core.ESDTMetaDataRecreate,
-		core.ESDTMetaDataUpdate,
-		core.ESDTModifyCreator,
-		core.ESDTModifyRoyalties,
-		core.BuiltInFunctionESDTNFTAddURI,
-		core.ESDTSetNewURIs,
-	}
-
-	for _, funcName := range listOfFuncWithBlockDataHandler {
+	builtInFuncs := b.builtInFunctions.Keys()
+	for funcName := range builtInFuncs {
 		builtInFunc, err := b.builtInFunctions.Get(funcName)
 		if err != nil {
 			return err
 		}
 
-		esdtWithBlockDataHandler, ok := builtInFunc.(vmcommon.WithBlockDataHandler)
+		esdtWithBlockDataHandler, ok := builtInFunc.(withBlockDataHandler)
 		if !ok {
-			return ErrWrongTypeAssertion
+			continue
 		}
 
 		err = esdtWithBlockDataHandler.SetBlockDataHandler(blockDataHandler)

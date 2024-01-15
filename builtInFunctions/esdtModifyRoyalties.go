@@ -18,12 +18,12 @@ const (
 
 type esdtModifyRoyalties struct {
 	baseActiveHandler
+	withBlockDataHandler
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
-	blockDataHandler      vmcommon.BlockDataHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -61,7 +61,7 @@ func NewESDTModifyRoyaltiesFunc(
 		funcGasCost:           funcGasCost,
 		mutExecution:          sync.RWMutex{},
 		enableEpochsHandler:   enableEpochsHandler,
-		blockDataHandler:      &disabledBlockDataHandler{},
+		withBlockDataHandler:  NewBlockDataHandler(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -97,7 +97,7 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 
 	esdtInfo.esdtData.TokenMetaData.Royalties = newRoyalties
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.blockDataHandler.CurrentRound(), e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, e.withBlockDataHandler, e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -123,16 +123,6 @@ func (e *esdtModifyRoyalties) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.mutExecution.Lock()
 	e.funcGasCost = gasCost.BuiltInCost.ESDTModifyRoyalties
 	e.mutExecution.Unlock()
-}
-
-// SetBlockDataHandler is called when block data handler is set
-func (e *esdtModifyRoyalties) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
-	if check.IfNil(blockDataHandler) {
-		return ErrNilBlockDataHandler
-	}
-
-	e.blockDataHandler = blockDataHandler
-	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

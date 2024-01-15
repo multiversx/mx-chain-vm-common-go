@@ -327,6 +327,7 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsPaused
 		},
 	}
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, enableEpochsHandler), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
+	_ = e.SetBlockDataHandler(&mock.BlockDataHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -380,6 +381,7 @@ func TestESDTNFTAddUri_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		},
 	}
 	e, _ := NewESDTNFTAddUriFunc(10, vmcommon.BaseOperationCost{}, esdtDataStorage, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, enableEpochsHandler)
+	_ = e.SetBlockDataHandler(&mock.BlockDataHandlerStub{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
