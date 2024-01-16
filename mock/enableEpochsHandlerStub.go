@@ -40,6 +40,7 @@ type EnableEpochsHandlerStub struct {
 	IsScToScEventLogEnabledField                              bool
 	IsConsistentTokensValuesLengthCheckEnabledField           bool
 	IsAutoBalanceDataTriesEnabledField                        bool
+	IsMigrateDataTrieEnabledField                             bool
 	IsChangeOwnerAddressCrossShardThroughSCEnabledField       bool
 	FixGasRemainingForSaveKeyValueBuiltinFunctionEnabledField bool
 	MultiESDTTransferAsyncCallBackEnableEpochField            uint32
@@ -294,6 +295,11 @@ func (stub *EnableEpochsHandlerStub) IsChangeUsernameEnabled() bool {
 // IsAutoBalanceDataTriesEnabled -
 func (stub *EnableEpochsHandlerStub) IsAutoBalanceDataTriesEnabled() bool {
 	return stub.IsAutoBalanceDataTriesEnabledField
+}
+
+// IsMigrateDataTrieEnabled -
+func (stub *EnableEpochsHandlerStub) IsMigrateDataTrieEnabled() bool {
+	return stub.IsMigrateDataTrieEnabledField
 }
 
 // IsChangeOwnerAddressCrossShardThroughSCEnabled -
