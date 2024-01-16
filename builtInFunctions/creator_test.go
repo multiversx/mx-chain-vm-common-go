@@ -175,7 +175,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 	err = f.SetPayableHandler(&mock.PayableHandlerStub{})
 	assert.Nil(t, err)
 
-	err = f.SetBlockDataHandler(nil)
+	err = f.SetBlockchainHook(nil)
 	assert.Equal(t, ErrNilBlockchainHook, err)
 
 	numSetBlockDataHandlerCalls := 0
@@ -196,7 +196,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	err = f.SetBlockDataHandler(&disabledBlockchainHook{})
+	err = f.SetBlockchainHook(&disabledBlockchainHook{})
 	assert.Nil(t, err)
 	assert.Equal(t, 6, numSetBlockDataHandlerCalls)
 

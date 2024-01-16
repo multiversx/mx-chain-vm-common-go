@@ -342,7 +342,7 @@ type BuiltInFunctionFactory interface {
 	NFTStorageHandler() SimpleESDTNFTStorageHandler
 	BuiltInFunctionContainer() BuiltInFunctionContainer
 	SetPayableHandler(handler PayableHandler) error
-	SetBlockDataHandler(handler BlockchainDataHook) error
+	SetBlockchainHook(handler BlockchainDataHook) error
 	CreateBuiltInFunctionContainer() error
 	IsInterfaceNil() bool
 }

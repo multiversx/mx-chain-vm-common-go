@@ -654,8 +654,8 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 	return &gasCost, nil
 }
 
-// SetBlockDataHandler sets the block data handler interface to the needed functions
-func (b *builtInFuncCreator) SetBlockDataHandler(blockchainHook vmcommon.BlockchainDataHook) error {
+// SetBlockchainHook sets the blockchain hook to the needed functions
+func (b *builtInFuncCreator) SetBlockchainHook(blockchainHook vmcommon.BlockchainDataHook) error {
 	if check.IfNil(blockchainHook) {
 		return ErrNilBlockchainHook
 	}
