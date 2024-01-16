@@ -106,7 +106,7 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, big.NewInt(0).Neg(quantityToBurn))
+	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, big.NewInt(0).Neg(quantityToBurn))
 	if err != nil {
 		return nil, err
 	}

@@ -12,6 +12,7 @@ import (
 
 type esdtMetaDataUpdate struct {
 	baseActiveHandler
+	vmcommon.BlockchainDataProvider
 	funcGasCost           uint64
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
@@ -49,14 +50,15 @@ func NewESDTMetaDataUpdateFunc(
 	}
 
 	e := &esdtMetaDataUpdate{
-		accounts:              accounts,
-		globalSettingsHandler: globalSettingsHandler,
-		storageHandler:        storageHandler,
-		rolesHandler:          rolesHandler,
-		enableEpochsHandler:   enableEpochsHandler,
-		funcGasCost:           funcGasCost,
-		gasConfig:             gasConfig,
-		mutExecution:          sync.RWMutex{},
+		accounts:               accounts,
+		globalSettingsHandler:  globalSettingsHandler,
+		storageHandler:         storageHandler,
+		rolesHandler:           rolesHandler,
+		enableEpochsHandler:    enableEpochsHandler,
+		funcGasCost:            funcGasCost,
+		gasConfig:              gasConfig,
+		mutExecution:           sync.RWMutex{},
+		BlockchainDataProvider: NewBlockchainDataProvider(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -124,6 +126,11 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 	e.mutExecution.RUnlock()
 	if vmInput.GasProvided < gasToUse {
 		return nil, ErrNotEnoughGas
+	}
+
+	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	if err != nil {
+		return nil, err
 	}
 
 	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)

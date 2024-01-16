@@ -629,6 +629,11 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 				return nil
 			},
 		}
+		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == DynamicEsdtFlag
+			},
+		}
 		dataStorage, _ := NewESDTDataStorage(args)
 		userAcc := mock.NewAccountWrapMock([]byte("addr"))
 		nftToken := &esdt.ESDigitalToken{
@@ -1010,7 +1015,7 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 
 	tokenKey := append(e.keyPrefix, []byte("TOKEN-ababab")...)
 	nonce := uint64(10)
-	err := e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))
+	err := e.AddToLiquiditySystemAcc(tokenKey, 0, nonce, big.NewInt(10))
 	assert.Equal(t, err, ErrNilESDTData)
 
 	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
@@ -1020,20 +1025,20 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
 
-	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))
+	err = e.AddToLiquiditySystemAcc(tokenKey, 0, nonce, big.NewInt(10))
 	assert.Nil(t, err)
 
 	esdtData = &esdt.ESDigitalToken{Value: big.NewInt(10), Reserved: []byte{1}}
 	marshalledData, _ = e.marshaller.Marshal(esdtData)
 
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
-	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(10))
+	err = e.AddToLiquiditySystemAcc(tokenKey, 0, nonce, big.NewInt(10))
 	assert.Nil(t, err)
 
 	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
 	assert.Equal(t, esdtData.Value, big.NewInt(20))
 
-	err = e.AddToLiquiditySystemAcc(tokenKey, nonce, big.NewInt(-20))
+	err = e.AddToLiquiditySystemAcc(tokenKey, 0, nonce, big.NewInt(-20))
 	assert.Nil(t, err)
 
 	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())

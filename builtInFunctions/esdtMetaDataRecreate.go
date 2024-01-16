@@ -22,6 +22,7 @@ const (
 
 type esdtMetaDataRecreate struct {
 	baseActiveHandler
+	vmcommon.BlockchainDataProvider
 	funcGasCost           uint64
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
@@ -59,14 +60,15 @@ func NewESDTMetaDataRecreateFunc(
 	}
 
 	e := &esdtMetaDataRecreate{
-		accounts:              accounts,
-		globalSettingsHandler: globalSettingsHandler,
-		storageHandler:        storageHandler,
-		rolesHandler:          rolesHandler,
-		enableEpochsHandler:   enableEpochsHandler,
-		funcGasCost:           funcGasCost,
-		gasConfig:             gasConfig,
-		mutExecution:          sync.RWMutex{},
+		accounts:               accounts,
+		globalSettingsHandler:  globalSettingsHandler,
+		storageHandler:         storageHandler,
+		rolesHandler:           rolesHandler,
+		enableEpochsHandler:    enableEpochsHandler,
+		funcGasCost:            funcGasCost,
+		gasConfig:              gasConfig,
+		mutExecution:           sync.RWMutex{},
+		BlockchainDataProvider: NewBlockchainDataProvider(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -109,8 +111,7 @@ func checkUpdateArguments(
 		return ErrInvalidNumberOfArguments
 	}
 
-	tokenId := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[tokenIDIndex]...)
-	return rolesHandler.CheckAllowedToExecute(acntSnd, tokenId, []byte(role))
+	return rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[tokenIDIndex], []byte(role))
 }
 
 type esdtStorageInfo struct {
@@ -159,6 +160,10 @@ func getEsdtInfo(
 
 	if esdtData.Value == nil || esdtData.Value.Cmp(zero) == 0 {
 		return nil, ErrInvalidEsdtValue
+	}
+
+	if esdtData.TokenMetaData == nil {
+		esdtData.TokenMetaData = &esdt.MetaData{}
 	}
 
 	return &esdtStorageInfo{
@@ -233,6 +238,11 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
+	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	if err != nil {
+		return nil, err
+	}
+
 	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
@@ -243,6 +253,20 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		GasRemaining: vmInput.GasProvided - gasToUse,
 	}
 	return vmOutput, nil
+}
+
+func changeEsdtVersion(esdt *esdt.ESDigitalToken, newVersion uint64, enableEpochsHandler vmcommon.EnableEpochsHandler) error {
+	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		return nil
+	}
+
+	currentVersion := big.NewInt(0).SetBytes(esdt.Reserved).Uint64()
+	if currentVersion > newVersion {
+		return fmt.Errorf("%w, current version: %d, new version: %d, token name %s", ErrInvalidVersion, currentVersion, newVersion, esdt.TokenMetaData.Name)
+	}
+
+	esdt.Reserved = big.NewInt(0).SetUint64(newVersion).Bytes()
+	return nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed

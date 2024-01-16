@@ -12,10 +12,12 @@ const uriStartIndex = 2
 
 type esdtSetNewURIs struct {
 	baseActiveHandler
+	vmcommon.BlockchainDataProvider
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	gasConfig             vmcommon.BaseOperationCost
 	mutExecution          sync.RWMutex
@@ -48,13 +50,15 @@ func NewESDTSetNewURIsFunc(
 	}
 
 	e := &esdtSetNewURIs{
-		accounts:              accounts,
-		globalSettingsHandler: globalSettingsHandler,
-		storageHandler:        storageHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		gasConfig:             gasConfig,
-		mutExecution:          sync.RWMutex{},
+		accounts:               accounts,
+		globalSettingsHandler:  globalSettingsHandler,
+		storageHandler:         storageHandler,
+		rolesHandler:           rolesHandler,
+		funcGasCost:            funcGasCost,
+		gasConfig:              gasConfig,
+		mutExecution:           sync.RWMutex{},
+		enableEpochsHandler:    enableEpochsHandler,
+		BlockchainDataProvider: NewBlockchainDataProvider(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -92,6 +96,11 @@ func (e *esdtSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountH
 	}
 
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[uriStartIndex:]
+
+	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	if err != nil {
+		return nil, err
+	}
 
 	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {

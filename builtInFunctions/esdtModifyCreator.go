@@ -10,10 +10,12 @@ import (
 
 type esdtModifyCreator struct {
 	baseActiveHandler
+	vmcommon.BlockchainDataProvider
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	accounts              vmcommon.AccountsAdapter
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -44,12 +46,14 @@ func NewESDTModifyCreatorFunc(
 	}
 
 	e := &esdtModifyCreator{
-		accounts:              accounts,
-		globalSettingsHandler: globalSettingsHandler,
-		storageHandler:        storageHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		mutExecution:          sync.RWMutex{},
+		accounts:               accounts,
+		globalSettingsHandler:  globalSettingsHandler,
+		storageHandler:         storageHandler,
+		rolesHandler:           rolesHandler,
+		funcGasCost:            funcGasCost,
+		enableEpochsHandler:    enableEpochsHandler,
+		mutExecution:           sync.RWMutex{},
+		BlockchainDataProvider: NewBlockchainDataProvider(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -80,6 +84,11 @@ func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccou
 	}
 
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
+
+	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	if err != nil {
+		return nil, err
+	}
 
 	err = saveESDTMetaDataInfo(esdtInfo, e.storageHandler, acntSnd, vmInput.ReturnCallAfterError)
 	if err != nil {

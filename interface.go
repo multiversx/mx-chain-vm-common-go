@@ -318,7 +318,7 @@ type ESDTNFTStorageHandler interface {
 	GetMetaDataFromSystemAccount([]byte, uint64) (*esdt.MetaData, error)
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	SaveNFTMetaData(tx data.TransactionHandler) error
-	AddToLiquiditySystemAcc(esdtTokenKey []byte, nonce uint64, transferValue *big.Int) error
+	AddToLiquiditySystemAcc(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int) error
 	IsInterfaceNil() bool
 }
 
@@ -342,6 +342,7 @@ type BuiltInFunctionFactory interface {
 	NFTStorageHandler() SimpleESDTNFTStorageHandler
 	BuiltInFunctionContainer() BuiltInFunctionContainer
 	SetPayableHandler(handler PayableHandler) error
+	SetBlockchainHook(handler BlockchainDataHook) error
 	CreateBuiltInFunctionContainer() error
 	IsInterfaceNil() bool
 }
@@ -389,5 +390,18 @@ type NextOutputTransferIndexProvider interface {
 	NextOutputTransferIndex() uint32
 	GetCrtTransferIndex() uint32
 	SetCrtTransferIndex(index uint32)
+	IsInterfaceNil() bool
+}
+
+// BlockchainDataProvider is an interface for getting blockchain data
+type BlockchainDataProvider interface {
+	SetBlockchainHook(BlockchainDataHook) error
+	CurrentRound() uint64
+	IsInterfaceNil() bool
+}
+
+// BlockchainDataHook is an interface for getting blockchain data
+type BlockchainDataHook interface {
+	CurrentRound() uint64
 	IsInterfaceNil() bool
 }

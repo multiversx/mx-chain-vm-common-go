@@ -654,6 +654,33 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 	return &gasCost, nil
 }
 
+// SetBlockchainHook sets the blockchain hook to the needed functions
+func (b *builtInFuncCreator) SetBlockchainHook(blockchainHook vmcommon.BlockchainDataHook) error {
+	if check.IfNil(blockchainHook) {
+		return ErrNilBlockchainHook
+	}
+
+	builtInFuncs := b.builtInFunctions.Keys()
+	for funcName := range builtInFuncs {
+		builtInFunc, err := b.builtInFunctions.Get(funcName)
+		if err != nil {
+			return err
+		}
+
+		esdtBlockchainDataProvider, ok := builtInFunc.(vmcommon.BlockchainDataProvider)
+		if !ok {
+			continue
+		}
+
+		err = esdtBlockchainDataProvider.SetBlockchainHook(blockchainHook)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // SetPayableHandler sets the payableCheck interface to the needed functions
 func (b *builtInFuncCreator) SetPayableHandler(payableHandler vmcommon.PayableHandler) error {
 	payableChecker, err := NewPayableCheckFunc(
@@ -667,7 +694,8 @@ func (b *builtInFuncCreator) SetPayableHandler(payableHandler vmcommon.PayableHa
 	listOfTransferFunc := []string{
 		core.BuiltInFunctionMultiESDTNFTTransfer,
 		core.BuiltInFunctionESDTNFTTransfer,
-		core.BuiltInFunctionESDTTransfer}
+		core.BuiltInFunctionESDTTransfer,
+	}
 
 	for _, transferFunc := range listOfTransferFunc {
 		builtInFunc, err := b.builtInFunctions.Get(transferFunc)
