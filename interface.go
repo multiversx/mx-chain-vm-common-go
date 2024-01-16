@@ -390,6 +390,7 @@ type EnableEpochsHandler interface {
 	IsScToScEventLogEnabled() bool
 	IsConsistentTokensValuesLengthCheckEnabled() bool
 	IsAutoBalanceDataTriesEnabled() bool
+	IsMigrateDataTrieEnabled() bool
 	IsChangeOwnerAddressCrossShardThroughSCEnabled() bool
 	FixGasRemainingForSaveKeyValueBuiltinFunctionEnabled() bool
 

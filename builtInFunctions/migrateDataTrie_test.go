@@ -37,14 +37,14 @@ func TestNewMigrateDataTrieFunc(t *testing.T) {
 		t.Parallel()
 
 		enableEpochs := &mock.EnableEpochsHandlerStub{
-			IsAutoBalanceDataTriesEnabledField: true,
+			IsMigrateDataTrieEnabledField: true,
 		}
 		mdtf, err := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, enableEpochs, &mock.AccountsStub{})
 		assert.False(t, check.IfNil(mdtf))
 		assert.Nil(t, err)
 		assert.True(t, mdtf.IsActive())
 
-		enableEpochs.IsAutoBalanceDataTriesEnabledField = false
+		enableEpochs.IsMigrateDataTrieEnabledField = false
 		assert.False(t, mdtf.IsActive())
 	})
 }
