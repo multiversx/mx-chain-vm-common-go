@@ -18,7 +18,7 @@ const (
 
 type esdtModifyRoyalties struct {
 	baseActiveHandler
-	withBlockDataHandler
+	vmcommon.BlockchainDataProvider
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
@@ -54,14 +54,14 @@ func NewESDTModifyRoyaltiesFunc(
 	}
 
 	e := &esdtModifyRoyalties{
-		accounts:              accounts,
-		globalSettingsHandler: globalSettingsHandler,
-		storageHandler:        storageHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		mutExecution:          sync.RWMutex{},
-		enableEpochsHandler:   enableEpochsHandler,
-		withBlockDataHandler:  NewBlockDataHandler(),
+		accounts:               accounts,
+		globalSettingsHandler:  globalSettingsHandler,
+		storageHandler:         storageHandler,
+		rolesHandler:           rolesHandler,
+		funcGasCost:            funcGasCost,
+		mutExecution:           sync.RWMutex{},
+		enableEpochsHandler:    enableEpochsHandler,
+		BlockchainDataProvider: NewBlockchainDataProvider(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -97,7 +97,7 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 
 	esdtInfo.esdtData.TokenMetaData.Royalties = newRoyalties
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.withBlockDataHandler, e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}

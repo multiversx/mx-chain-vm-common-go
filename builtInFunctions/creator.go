@@ -655,9 +655,9 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 }
 
 // SetBlockDataHandler sets the block data handler interface to the needed functions
-func (b *builtInFuncCreator) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
-	if check.IfNil(blockDataHandler) {
-		return ErrNilBlockDataHandler
+func (b *builtInFuncCreator) SetBlockDataHandler(blockchainHook vmcommon.BlockchainDataHook) error {
+	if check.IfNil(blockchainHook) {
+		return ErrNilBlockchainHook
 	}
 
 	builtInFuncs := b.builtInFunctions.Keys()
@@ -667,12 +667,12 @@ func (b *builtInFuncCreator) SetBlockDataHandler(blockDataHandler vmcommon.Block
 			return err
 		}
 
-		esdtWithBlockDataHandler, ok := builtInFunc.(withBlockDataHandler)
+		esdtBlockchainDataProvider, ok := builtInFunc.(vmcommon.BlockchainDataProvider)
 		if !ok {
 			continue
 		}
 
-		err = esdtWithBlockDataHandler.SetBlockDataHandler(blockDataHandler)
+		err = esdtBlockchainDataProvider.SetBlockchainHook(blockchainHook)
 		if err != nil {
 			return err
 		}

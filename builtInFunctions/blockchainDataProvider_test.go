@@ -10,49 +10,45 @@ import (
 func TestNewBlockDataHandler(t *testing.T) {
 	t.Parallel()
 
-	bdh := NewBlockDataHandler()
+	bdh := NewBlockchainDataProvider()
 	require.NotNil(t, bdh)
-	require.Nil(t, bdh.handler)
+	require.Equal(t, uint64(0), bdh.CurrentRound())
 }
 
 func TestBlockDataHandler_SetBlockDataHandler(t *testing.T) {
 	t.Parallel()
 
-	bdh := NewBlockDataHandler()
-	err := bdh.SetBlockDataHandler(nil)
-	require.Equal(t, ErrNilBlockDataHandler, err)
+	bdh := NewBlockchainDataProvider()
+	err := bdh.SetBlockchainHook(nil)
+	require.Equal(t, ErrNilBlockchainHook, err)
 
 	newDataHandler := &mock.BlockDataHandlerStub{}
-	err = bdh.SetBlockDataHandler(newDataHandler)
+	err = bdh.SetBlockchainHook(newDataHandler)
 	require.Nil(t, err)
-	require.Equal(t, newDataHandler, bdh.handler)
+	require.Equal(t, newDataHandler, bdh.blockchainHook)
 }
 
 func TestBlockDataHandler_CurrentRound(t *testing.T) {
 	t.Parallel()
 
-	bdh := NewBlockDataHandler()
-	_, err := bdh.CurrentRound()
-	require.Equal(t, ErrNilBlockDataHandler, err)
-
+	bdh := NewBlockchainDataProvider()
 	newDataHandler := &mock.BlockDataHandlerStub{
 		CurrentRoundCalled: func() uint64 {
 			return 1
 		},
 	}
-	bdh.handler = newDataHandler
+	bdh.blockchainHook = newDataHandler
 
-	currentRound, err := bdh.CurrentRound()
-	require.Nil(t, err)
+	currentRound := bdh.CurrentRound()
 	require.Equal(t, uint64(1), currentRound)
 }
 
 func TestBlockDataHandler_IsInterfaceNil(t *testing.T) {
 	t.Parallel()
 
-	var instance *blockDataHandler
+	var instance *blockchainDataProvider
 	require.True(t, instance.IsInterfaceNil())
 
-	instance = &blockDataHandler{}
+	instance = &blockchainDataProvider{}
 	require.False(t, instance.IsInterfaceNil())
 }

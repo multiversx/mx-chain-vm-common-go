@@ -218,5 +218,5 @@ var ErrInvalidEsdtValue = errors.New("invalid esdt value provided")
 // ErrInvalidVersion signals that an invalid version has been provided
 var ErrInvalidVersion = errors.New("invalid version")
 
-// ErrNilBlockDataHandler signals that a nil block data handler has been provided
-var ErrNilBlockDataHandler = errors.New("nil block data handler")
+// ErrNilBlockchainHook signals that a nil blockchain hook has been provided
+var ErrNilBlockchainHook = errors.New("nil blockchain hook")

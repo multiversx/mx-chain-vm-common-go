@@ -11,7 +11,7 @@ import (
 
 type esdtNFTAddUri struct {
 	baseActiveHandler
-	withBlockDataHandler
+	vmcommon.BlockchainDataProvider
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
@@ -45,15 +45,15 @@ func NewESDTNFTAddUriFunc(
 	}
 
 	e := &esdtNFTAddUri{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		esdtStorageHandler:    esdtStorageHandler,
-		funcGasCost:           funcGasCost,
-		mutExecution:          sync.RWMutex{},
-		globalSettingsHandler: globalSettingsHandler,
-		gasConfig:             gasConfig,
-		rolesHandler:          rolesHandler,
-		enableEpochsHandler:   enableEpochsHandler,
-		withBlockDataHandler:  NewBlockDataHandler(),
+		keyPrefix:              []byte(baseESDTKeyPrefix),
+		esdtStorageHandler:     esdtStorageHandler,
+		funcGasCost:            funcGasCost,
+		mutExecution:           sync.RWMutex{},
+		globalSettingsHandler:  globalSettingsHandler,
+		gasConfig:              gasConfig,
+		rolesHandler:           rolesHandler,
+		enableEpochsHandler:    enableEpochsHandler,
+		BlockchainDataProvider: NewBlockchainDataProvider(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -117,7 +117,7 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 
 	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
 
-	err = changeEsdtVersion(esdtData, e.withBlockDataHandler, e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtData, e.CurrentRound(), e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}

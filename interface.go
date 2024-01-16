@@ -336,19 +336,13 @@ type CallArgsParser interface {
 	IsInterfaceNil() bool
 }
 
-// BlockDataHandler will handle block data
-type BlockDataHandler interface {
-	CurrentRound() uint64
-	IsInterfaceNil() bool
-}
-
 // BuiltInFunctionFactory will handle built-in functions and components
 type BuiltInFunctionFactory interface {
 	ESDTGlobalSettingsHandler() ESDTGlobalSettingsHandler
 	NFTStorageHandler() SimpleESDTNFTStorageHandler
 	BuiltInFunctionContainer() BuiltInFunctionContainer
 	SetPayableHandler(handler PayableHandler) error
-	SetBlockDataHandler(handler BlockDataHandler) error
+	SetBlockDataHandler(handler BlockchainDataHook) error
 	CreateBuiltInFunctionContainer() error
 	IsInterfaceNil() bool
 }
@@ -396,5 +390,18 @@ type NextOutputTransferIndexProvider interface {
 	NextOutputTransferIndex() uint32
 	GetCrtTransferIndex() uint32
 	SetCrtTransferIndex(index uint32)
+	IsInterfaceNil() bool
+}
+
+// BlockchainDataProvider is an interface for getting blockchain data
+type BlockchainDataProvider interface {
+	SetBlockchainHook(BlockchainDataHook) error
+	CurrentRound() uint64
+	IsInterfaceNil() bool
+}
+
+// BlockchainDataHook is an interface for getting blockchain data
+type BlockchainDataHook interface {
+	CurrentRound() uint64
 	IsInterfaceNil() bool
 }

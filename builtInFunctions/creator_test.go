@@ -176,18 +176,18 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = f.SetBlockDataHandler(nil)
-	assert.Equal(t, ErrNilBlockDataHandler, err)
+	assert.Equal(t, ErrNilBlockchainHook, err)
 
 	numSetBlockDataHandlerCalls := 0
 	for funcName := range f.builtInFunctions.Keys() {
 		builtInFunc, _ := f.builtInFunctions.Get(funcName)
-		_, ok := builtInFunc.(withBlockDataHandler)
+		_, ok := builtInFunc.(vmcommon.BlockchainDataProvider)
 		if !ok {
 			continue
 		}
 
 		builtInFunc = &mock.BuiltInFunctionStub{
-			SetBlockDataHandlerCalled: func(blockDataHandler vmcommon.BlockDataHandler) error {
+			SetBlockchainHookCalled: func(blockDataHandler vmcommon.BlockchainDataHook) error {
 				numSetBlockDataHandlerCalls++
 				return nil
 			},
@@ -196,7 +196,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	err = f.SetBlockDataHandler(&disabledBlockDataHandler{})
+	err = f.SetBlockDataHandler(&disabledBlockchainHook{})
 	assert.Nil(t, err)
 	assert.Equal(t, 6, numSetBlockDataHandlerCalls)
 

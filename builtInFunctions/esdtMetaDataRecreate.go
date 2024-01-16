@@ -22,7 +22,7 @@ const (
 
 type esdtMetaDataRecreate struct {
 	baseActiveHandler
-	withBlockDataHandler
+	vmcommon.BlockchainDataProvider
 	funcGasCost           uint64
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	storageHandler        vmcommon.ESDTNFTStorageHandler
@@ -60,15 +60,15 @@ func NewESDTMetaDataRecreateFunc(
 	}
 
 	e := &esdtMetaDataRecreate{
-		accounts:              accounts,
-		globalSettingsHandler: globalSettingsHandler,
-		storageHandler:        storageHandler,
-		rolesHandler:          rolesHandler,
-		enableEpochsHandler:   enableEpochsHandler,
-		funcGasCost:           funcGasCost,
-		gasConfig:             gasConfig,
-		mutExecution:          sync.RWMutex{},
-		withBlockDataHandler:  NewBlockDataHandler(),
+		accounts:               accounts,
+		globalSettingsHandler:  globalSettingsHandler,
+		storageHandler:         storageHandler,
+		rolesHandler:           rolesHandler,
+		enableEpochsHandler:    enableEpochsHandler,
+		funcGasCost:            funcGasCost,
+		gasConfig:              gasConfig,
+		mutExecution:           sync.RWMutex{},
+		BlockchainDataProvider: NewBlockchainDataProvider(),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -238,7 +238,7 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.withBlockDataHandler, e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
 	if err != nil {
 		return nil, err
 	}
@@ -255,12 +255,7 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	return vmOutput, nil
 }
 
-func changeEsdtVersion(esdt *esdt.ESDigitalToken, blockDataHandler withBlockDataHandler, enableEpochsHandler vmcommon.EnableEpochsHandler) error {
-	newVersion, err := blockDataHandler.CurrentRound()
-	if err != nil {
-		return err
-	}
-
+func changeEsdtVersion(esdt *esdt.ESDigitalToken, newVersion uint64, enableEpochsHandler vmcommon.EnableEpochsHandler) error {
 	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return nil
 	}

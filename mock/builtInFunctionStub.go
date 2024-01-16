@@ -9,8 +9,8 @@ type BuiltInFunctionStub struct {
 	ProcessBuiltinFunctionCalled func(acntSnd, acntDst vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error)
 	SetNewGasConfigCalled        func(gasCost *vmcommon.GasCost)
 	IsActiveCalled               func() bool
-	SetBlockDataHandlerCalled    func(blockDataHandler vmcommon.BlockDataHandler) error
-	CurrentRoundCalled           func() (uint64, error)
+	SetBlockchainHookCalled      func(blockchainHook vmcommon.BlockchainDataHook) error
+	CurrentRoundCalled           func() uint64
 }
 
 // ProcessBuiltinFunction -
@@ -36,20 +36,20 @@ func (b *BuiltInFunctionStub) IsActive() bool {
 	return true
 }
 
-// SetBlockDataHandler -
-func (b *BuiltInFunctionStub) SetBlockDataHandler(blockDataHandler vmcommon.BlockDataHandler) error {
-	if b.SetBlockDataHandlerCalled != nil {
-		return b.SetBlockDataHandlerCalled(blockDataHandler)
+// SetBlockchainHook -
+func (b *BuiltInFunctionStub) SetBlockchainHook(blockchainHook vmcommon.BlockchainDataHook) error {
+	if b.SetBlockchainHookCalled != nil {
+		return b.SetBlockchainHookCalled(blockchainHook)
 	}
 	return nil
 }
 
 // CurrentRound -
-func (b *BuiltInFunctionStub) CurrentRound() (uint64, error) {
+func (b *BuiltInFunctionStub) CurrentRound() uint64 {
 	if b.CurrentRoundCalled != nil {
 		return b.CurrentRoundCalled()
 	}
-	return 0, nil
+	return 0
 }
 
 // IsInterfaceNil -

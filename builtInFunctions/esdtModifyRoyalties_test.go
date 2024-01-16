@@ -248,7 +248,6 @@ func TestESDTModifyRoyalties_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		e, _ := NewESDTModifyRoyaltiesFunc(101, accounts, globalSettingsHandler, storageHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
-		_ = e.SetBlockDataHandler(&mock.BlockDataHandlerStub{})
 
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
