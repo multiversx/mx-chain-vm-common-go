@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 
@@ -12,9 +13,10 @@ import (
 
 type migrateDataTrie struct {
 	baseActiveHandler
-	accounts     vmcommon.AccountsAdapter
-	builtInCost  vmcommon.BuiltInCost
-	mutExecution sync.RWMutex
+	accounts         vmcommon.AccountsAdapter
+	shardCoordinator vmcommon.Coordinator
+	builtInCost      vmcommon.BuiltInCost
+	mutExecution     sync.RWMutex
 }
 
 // NewMigrateDataTrieFunc creates a new migrateDataTrie built-in function component
@@ -22,6 +24,7 @@ func NewMigrateDataTrieFunc(
 	builtInCost vmcommon.BuiltInCost,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	accounts vmcommon.AccountsAdapter,
+	shardCoordinator vmcommon.Coordinator,
 ) (*migrateDataTrie, error) {
 	if check.IfNil(enableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
@@ -29,10 +32,14 @@ func NewMigrateDataTrieFunc(
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
+	if check.IfNil(shardCoordinator) {
+		return nil, ErrNilShardCoordinator
+	}
 
 	mdt := &migrateDataTrie{
-		builtInCost: builtInCost,
-		accounts:    accounts,
+		builtInCost:      builtInCost,
+		accounts:         accounts,
+		shardCoordinator: shardCoordinator,
 	}
 
 	mdt.baseActiveHandler.activeHandler = enableEpochsHandler.IsMigrateDataTrieEnabled
@@ -43,12 +50,18 @@ func NewMigrateDataTrieFunc(
 // ProcessBuiltinFunction will migrate as many leaves as possible from the old version to the new version.
 // This will stop when it runs out of gas.
 func (mdt *migrateDataTrie) ProcessBuiltinFunction(
-	_, acntDst vmcommon.UserAccountHandler,
+	_, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	dataTrieGasCost := mdt.getGasCostForDataTrieLoadAndStore()
 
-	err := checkArgumentsForMigrateDataTrie(acntDst, vmInput, dataTrieGasCost)
+	err := checkArgumentsForMigrateDataTrie(vmInput, dataTrieGasCost)
+	if err != nil {
+		return nil, err
+	}
+
+	address := vmInput.Arguments[0]
+	account, err := mdt.getAccountForMigration(vmInput.CallerAddr, address)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +77,7 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 		NewVersion:   core.AutoBalanceEnabled,
 		TrieMigrator: dtm,
 	}
-	err = acntDst.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
+	err = account.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +88,42 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 	}
 
 	return vmOutput, nil
+}
+
+func (mdt *migrateDataTrie) getAccountForMigration(callerAddr []byte, address []byte) (vmcommon.UserAccountHandler, error) {
+	if vmcommon.IsSystemAccountAddress(address) {
+		systemSCAccount, err := mdt.loadAccount(vmcommon.SystemAccountAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		return systemSCAccount, nil
+	}
+
+	if !mdt.shardCoordinator.SameShard(callerAddr, address) {
+		return nil, fmt.Errorf("%w, address must be in the same shard as the sender; caller shard = %v, address shard = %v ", ErrOperationNotPermitted, mdt.shardCoordinator.ComputeId(callerAddr), mdt.shardCoordinator.ComputeId(address))
+	}
+
+	account, err := mdt.loadAccount(address)
+	if err != nil {
+		return nil, err
+	}
+
+	return account, nil
+}
+
+func (mdt *migrateDataTrie) loadAccount(address []byte) (vmcommon.UserAccountHandler, error) {
+	account, err := mdt.accounts.LoadAccount(address)
+	if err != nil {
+		return nil, err
+	}
+
+	userAccount, ok := account.(vmcommon.UserAccountHandler)
+	if !ok {
+		return nil, ErrWrongTypeAssertion
+	}
+
+	return userAccount, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -106,7 +155,6 @@ func (mdt *migrateDataTrie) IsInterfaceNil() bool {
 }
 
 func checkArgumentsForMigrateDataTrie(
-	acntDst vmcommon.UserAccountHandler,
 	input *vmcommon.ContractCallInput,
 	cost dataTrieMigrator.DataTrieGasCost,
 ) error {
@@ -119,11 +167,12 @@ func checkArgumentsForMigrateDataTrie(
 	if input.CallValue.Cmp(zero) != 0 {
 		return ErrBuiltInFunctionCalledWithValue
 	}
-	if len(input.Arguments) != 0 {
-		return fmt.Errorf("no arguments must be given to migrate data trie: %w", ErrInvalidNumberOfArguments)
+	if len(input.Arguments) != 1 {
+		return fmt.Errorf("one argument must be given to migrate data trie: %w", ErrInvalidNumberOfArguments)
 	}
-	if check.IfNil(acntDst) {
-		return fmt.Errorf("destination account must be in the same shard as the sender: %w", ErrNilSCDestAccount)
+	senderIsNotReceiver := !bytes.Equal(input.CallerAddr, input.RecipientAddr)
+	if senderIsNotReceiver {
+		return ErrOperationNotPermitted
 	}
 
 	return nil
