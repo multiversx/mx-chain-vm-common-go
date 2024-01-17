@@ -134,19 +134,55 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		assert.Nil(t, vmOutput)
 		assert.Equal(t, ErrOperationNotPermitted, err)
 	})
+	t.Run("address is empty address", func(t *testing.T) {
+		t.Parallel()
+
+		input := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:  big.NewInt(0),
+				Arguments:  [][]byte{make([]byte, 6)},
+				CallerAddr: []byte("caller"),
+			},
+			RecipientAddr: []byte("caller"),
+		}
+
+		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{}, &mock.ShardCoordinatorStub{})
+		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), nil, input)
+		assert.Nil(t, vmOutput)
+		assert.True(t, errors.Is(err, ErrInvalidAddress))
+	})
+	t.Run("address length is not equal to caller address length", func(t *testing.T) {
+		t.Parallel()
+
+		input := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:  big.NewInt(0),
+				Arguments:  [][]byte{[]byte("arg")},
+				CallerAddr: []byte("caller"),
+			},
+			RecipientAddr: []byte("caller"),
+		}
+
+		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{}, &mock.ShardCoordinatorStub{})
+		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), nil, input)
+		assert.Nil(t, vmOutput)
+		assert.True(t, errors.Is(err, ErrInvalidAddress))
+	})
 	t.Run("address is not in same shard as the caller", func(t *testing.T) {
 		t.Parallel()
 
 		input := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue:  big.NewInt(0),
-				Arguments:  [][]byte{[]byte("arg1")},
+				Arguments:  [][]byte{[]byte("arg123")},
 				CallerAddr: []byte("caller"),
 			},
 			RecipientAddr: []byte("caller"),
 		}
 		shardCoordinator := &mock.ShardCoordinatorStub{
 			SameShardCalled: func(firstAddress, secondAddress []byte) bool {
+				assert.Equal(t, firstAddress, input.CallerAddr)
+				assert.Equal(t, secondAddress, input.Arguments[0])
 				return false
 			},
 		}
@@ -164,9 +200,9 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 			VMInput: vmcommon.VMInput{
 				CallValue:  big.NewInt(0),
 				Arguments:  [][]byte{vmcommon.SystemAccountAddress},
-				CallerAddr: []byte("caller"),
+				CallerAddr: []byte("12345678912345678912345678912345"),
 			},
-			RecipientAddr: []byte("caller"),
+			RecipientAddr: []byte("12345678912345678912345678912345"),
 		}
 		adb := &mock.AccountsStub{
 			LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
@@ -199,9 +235,9 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 			VMInput: vmcommon.VMInput{
 				CallValue:  big.NewInt(0),
 				Arguments:  [][]byte{dataTrieAddress},
-				CallerAddr: []byte("caller"),
+				CallerAddr: []byte("123456789123456"),
 			},
-			RecipientAddr: []byte("caller"),
+			RecipientAddr: []byte("123456789123456"),
 		}
 		adb := &mock.AccountsStub{
 			LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
@@ -247,7 +283,7 @@ func TestMigrateDataTrie_Concurrency(t *testing.T) {
 		VMInput: vmcommon.VMInput{
 			CallValue:   big.NewInt(0),
 			GasProvided: 10000,
-			Arguments:   [][]byte{[]byte("arg1")},
+			Arguments:   [][]byte{[]byte("arg123")},
 			CallerAddr:  []byte("caller"),
 		},
 		RecipientAddr: []byte("caller"),

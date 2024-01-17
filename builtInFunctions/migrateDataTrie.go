@@ -61,6 +61,13 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 	}
 
 	address := vmInput.Arguments[0]
+	if core.IsEmptyAddress(address) {
+		return nil, ErrInvalidAddress
+	}
+	if len(address) != len(vmInput.CallerAddr) {
+		return nil, fmt.Errorf("%w, address length must be %d bytes", ErrInvalidAddress, len(vmInput.CallerAddr))
+	}
+
 	account, err := mdt.getAccountForMigration(vmInput.CallerAddr, address)
 	if err != nil {
 		return nil, err
