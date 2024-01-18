@@ -94,7 +94,8 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	}
 
 	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(TransferToMetaFlag)
-	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !isTransferToMetaFlagEnabled
+	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId &&
+		!isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
@@ -123,7 +124,9 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	if !check.IfNil(acntSnd) {
+	// reduce balance if the sender is in shard, and it is not the  ESDTSCAddress
+	isSenderESDTSCAddr := bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress)
+	if !check.IfNil(acntSnd) && !isSenderESDTSCAddr {
 		// gas is paid only by sender
 		if vmInput.GasProvided < e.funcGasCost {
 			return nil, ErrNotEnoughGas
