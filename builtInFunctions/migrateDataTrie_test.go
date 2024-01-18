@@ -144,7 +144,7 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 			},
 		}
 		adb := &mock.AccountsStub{
-			LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			GetExistingAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
 				return systemAcc, nil
 			},
 			SaveAccountCalled: func(account vmcommon.AccountHandler) error {

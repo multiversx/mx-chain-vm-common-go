@@ -89,19 +89,14 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 
 func (mdt *migrateDataTrie) getAccountForMigration(acntDst vmcommon.UserAccountHandler) (vmcommon.UserAccountHandler, error) {
 	if vmcommon.IsSystemAccountAddress(acntDst.AddressBytes()) {
-		systemSCAccount, err := mdt.loadAccount(vmcommon.SystemAccountAddress)
-		if err != nil {
-			return nil, err
-		}
-
-		return systemSCAccount, nil
+		return mdt.getExistingAccount(vmcommon.SystemAccountAddress)
 	}
 
 	return acntDst, nil
 }
 
-func (mdt *migrateDataTrie) loadAccount(address []byte) (vmcommon.UserAccountHandler, error) {
-	account, err := mdt.accounts.LoadAccount(address)
+func (mdt *migrateDataTrie) getExistingAccount(address []byte) (vmcommon.UserAccountHandler, error) {
+	account, err := mdt.accounts.GetExistingAccount(address)
 	if err != nil {
 		return nil, err
 	}
