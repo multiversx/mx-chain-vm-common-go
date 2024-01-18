@@ -1090,12 +1090,11 @@ func TestESDTNFTTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testing.T)
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsFixAsyncCallbackCheckFlagEnabledField: true,
-		IsCheckFunctionArgumentFlagEnabledField: true,
-		IsSaveToSystemAccountFlagEnabledField:   true,
-		IsSendAlwaysFlagEnabledField:            true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == FixAsyncCallbackCheckFlag || flag == CheckFunctionArgumentFlag ||
+				flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+		},
 	}
-
 	esdtStorage := createNewESDTDataStorageHandlerWithArgs(transferFunc.globalSettingsHandler, transferFunc.accounts, enableEpochsHandler)
 	transferFunc.esdtStorageHandler = esdtStorage
 

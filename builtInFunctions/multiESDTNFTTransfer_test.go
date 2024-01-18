@@ -989,10 +989,10 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testi
 	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
 
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsFixAsyncCallbackCheckFlagEnabledField: true,
-		IsCheckFunctionArgumentFlagEnabledField: true,
-		IsSaveToSystemAccountFlagEnabledField:   true,
-		IsSendAlwaysFlagEnabledField:            true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == FixAsyncCallbackCheckFlag || flag == CheckFunctionArgumentFlag ||
+				flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+		},
 	}
 
 	esdtStorage := createNewESDTDataStorageHandlerWithArgs(multiTransfer.globalSettingsHandler, multiTransfer.accounts, enableEpochsHandler)

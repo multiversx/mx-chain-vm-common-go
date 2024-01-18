@@ -482,8 +482,9 @@ func TestESDTTransfer_ProcessBuiltInFunctionSenderESDTSystemSC(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 	transferFunc, _ := NewESDTTransferFunc(10, marshaller, &mock.GlobalSettingsHandlerStub{}, &mock.ShardCoordinatorStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsTransferToMetaFlagEnabledField:                     false,
-		IsCheckCorrectTokenIDForTransferRoleFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckCorrectTokenIDForTransferRoleFlag
+		},
 	})
 	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
 
