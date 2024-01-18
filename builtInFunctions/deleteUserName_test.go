@@ -12,20 +12,36 @@ import (
 func TestNewDeleteUserNameFunc(t *testing.T) {
 	d, err := NewDeleteUserNameFunc(0, nil, nil)
 	require.Equal(t, err, ErrNilDnsAddresses)
+	require.Nil(t, d)
 
 	d, err = NewDeleteUserNameFunc(0, make(map[string]struct{}), nil)
 	require.Equal(t, err, ErrNilEnableEpochsHandler)
+	require.Nil(t, d)
 
 	dnsAddr := []byte("DNS")
 	mapDnsAddresses := make(map[string]struct{})
 	mapDnsAddresses[string(dnsAddr)] = struct{}{}
 	d, err = NewDeleteUserNameFunc(0, mapDnsAddresses, &mock.EnableEpochsHandlerStub{})
 	require.Nil(t, err)
+	require.NotNil(t, d)
 	require.False(t, d.IsInterfaceNil())
 
 	d.SetNewGasConfig(nil)
 	d.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{SaveUserName: 10}})
 	require.Equal(t, d.gasCost, uint64(10))
+}
+
+func TestDeleteUserName_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	var d *deleteUserName
+	require.True(t, d.IsInterfaceNil())
+
+	dnsAddr := []byte("DNS")
+	mapDnsAddresses := make(map[string]struct{})
+	mapDnsAddresses[string(dnsAddr)] = struct{}{}
+	d, _ = NewDeleteUserNameFunc(0, mapDnsAddresses, &mock.EnableEpochsHandlerStub{})
+	require.False(t, d.IsInterfaceNil())
 }
 
 func TestDeleteUserName_ProcessBuiltinFunction(t *testing.T) {

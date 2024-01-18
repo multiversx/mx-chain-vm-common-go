@@ -1,12 +1,14 @@
 package builtInFunctions
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createMockArguments() ArgsCreateBuiltInFunctionContainer {
@@ -100,6 +102,15 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 
 	args = createMockArguments()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagDefinedCalled: func(flag core.EnableEpochFlag) bool {
+			return false
+		},
+	}
+	_, err = NewBuiltInFunctionsCreator(args)
+	assert.True(t, errors.Is(err, core.ErrInvalidEnableEpochsHandler))
+
+	args = createMockArguments()
 	args.Marshalizer = nil
 	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilMarshalizer)
@@ -111,13 +122,23 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 
 	args = createMockArguments()
 	args.GuardedAccountHandler = nil
-	f, err = NewBuiltInFunctionsCreator(args)
+	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilGuardedAccountHandler)
 
 	args = createMockArguments()
 	f, err = NewBuiltInFunctionsCreator(args)
 	assert.Nil(t, err)
-	assert.False(t, f.IsInterfaceNil())
+	assert.NotNil(t, f)
+}
+
+func TestBuiltInFuncCreator_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	var instance *builtInFuncCreator
+	require.True(t, instance.IsInterfaceNil())
+
+	instance, _ = NewBuiltInFunctionsCreator(createMockArguments())
+	require.False(t, instance.IsInterfaceNil())
 }
 
 func TestCreateBuiltInContainer_GasScheduleChange(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
@@ -37,14 +38,18 @@ func TestNewMigrateDataTrieFunc(t *testing.T) {
 		t.Parallel()
 
 		enableEpochs := &mock.EnableEpochsHandlerStub{
-			IsAutoBalanceDataTriesEnabledField: true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == AutoBalanceDataTriesFlag
+			},
 		}
 		mdtf, err := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, enableEpochs, &mock.AccountsStub{})
 		assert.False(t, check.IfNil(mdtf))
 		assert.Nil(t, err)
 		assert.True(t, mdtf.IsActive())
 
-		enableEpochs.IsAutoBalanceDataTriesEnabledField = false
+		enableEpochs.IsFlagEnabledCalled = func(flag core.EnableEpochFlag) bool {
+			return false
+		}
 		assert.False(t, mdtf.IsActive())
 	})
 }
