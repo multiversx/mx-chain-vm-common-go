@@ -92,13 +92,15 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
+
+	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(TransferToMetaFlag)
 	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId &&
-		!e.enableEpochsHandler.IsTransferToMetaFlagEnabled()
+		!isTransferToMetaFlagEnabled
 	if isInvalidTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
 
-	if e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag) {
 		if len(vmInput.Arguments[1]) > core.MaxLenForESDTIssueMint {
 			return nil, fmt.Errorf("%w: max length for esdt transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}
@@ -113,7 +115,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	tokenID := vmInput.Arguments[0]
 
 	keyToCheck := esdtTokenKey
-	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(CheckCorrectTokenIDForTransferRoleFlag) {
 		keyToCheck = tokenID
 	}
 
@@ -150,7 +152,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		}
 
 		if isSCCallAfter {
-			vmOutput.GasRemaining, err = vmcommon.SafeSubUint64(vmInput.GasProvided, e.funcGasCost)
+			vmOutput.GasRemaining, _ = vmcommon.SafeSubUint64(vmInput.GasProvided, e.funcGasCost)
 			var callArgs [][]byte
 			if len(vmInput.Arguments) > core.MinLenArgumentsESDTTransfer+1 {
 				callArgs = vmInput.Arguments[core.MinLenArgumentsESDTTransfer+1:]

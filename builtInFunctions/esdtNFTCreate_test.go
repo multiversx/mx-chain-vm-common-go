@@ -26,7 +26,9 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 		createNewESDTDataStorageHandler(),
 		&mock.AccountsStub{},
 		&mock.EnableEpochsHandlerStub{
-			IsValueLengthCheckFlagEnabledField: true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == ValueLengthCheckFlag
+			},
 		},
 	)
 
@@ -146,7 +148,9 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 		createNewESDTDataStorageHandler(),
 		&mock.AccountsStub{},
 		&mock.EnableEpochsHandlerStub{
-			IsValueLengthCheckFlagEnabledField: true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == ValueLengthCheckFlag
+			},
 		},
 	)
 	assert.False(t, check.IfNil(nftCreate))
@@ -244,7 +248,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		&mock.EnableEpochsHandlerStub{
-			IsValueLengthCheckFlagEnabledField: true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == ValueLengthCheckFlag
+			},
 		},
 	)
 	sender := mock.NewAccountWrapMock([]byte("address"))
@@ -286,7 +292,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		&mock.EnableEpochsHandlerStub{
-			IsValueLengthCheckFlagEnabledField: true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == ValueLengthCheckFlag
+			},
 		},
 	)
 	address := bytes.Repeat([]byte{1}, 32)
@@ -359,9 +367,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 
 	accounts := createAccountsAdapterWithMap()
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-		IsValueLengthCheckFlagEnabledField:      true,
-		IsSaveToSystemAccountFlagEnabledField:   true,
-		IsCheckFrozenCollectionFlagEnabledField: true,
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == CheckFrozenCollectionFlag
+		},
 	}
 	esdtDataStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
 	nftCreate, _ := NewESDTNFTCreateFunc(
@@ -435,14 +443,14 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 
 func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
 	nonceKey := getNonceKey(tokenID)
-	latestNonceBytes, _, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(nonceKey)
+	latestNonceBytes, _, err := account.AccountDataHandler().RetrieveValue(nonceKey)
 	require.Nil(t, err)
 	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
 
 	createdTokenID := []byte(baseESDTKeyPrefix)
 	createdTokenID = append(createdTokenID, tokenID...)
 	tokenKey := computeESDTNFTTokenKey(createdTokenID, nonce)
-	data, _, err := account.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(tokenKey)
+	data, _, err := account.AccountDataHandler().RetrieveValue(tokenKey)
 	require.Nil(t, err)
 
 	esdtData := &esdt.ESDigitalToken{}
