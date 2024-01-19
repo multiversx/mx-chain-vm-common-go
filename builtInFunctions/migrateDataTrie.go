@@ -73,7 +73,7 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 			return nil, err
 		}
 	} else {
-		err := mdt.migrateSystemAccount(argsMigrateDataTrie)
+		err = mdt.migrateSystemAccount(argsMigrateDataTrie)
 		if err != nil {
 			return nil, err
 		}

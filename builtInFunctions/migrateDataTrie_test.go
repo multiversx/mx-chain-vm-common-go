@@ -114,7 +114,6 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 				CallValue:  big.NewInt(0),
 				CallerAddr: []byte("caller"),
 			},
-			RecipientAddr: []byte("caller"),
 		}
 
 		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
@@ -132,7 +131,6 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 				CallValue:  big.NewInt(0),
 				CallerAddr: []byte("12345678912345678912345678912345"),
 			},
-			RecipientAddr: []byte("12345678912345678912345678912345"),
 		}
 		systemAcc := &mock.UserAccountStub{
 			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -174,7 +172,6 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 				CallValue:  big.NewInt(0),
 				CallerAddr: []byte("12345678912345678912345678912345"),
 			},
-			RecipientAddr: []byte("12345678912345678912345678912345"),
 		}
 		systemAcc := &mock.UserAccountStub{
 			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
