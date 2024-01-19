@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 
@@ -53,11 +54,6 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	account, err := mdt.getAccountForMigration(acntDst)
-	if err != nil {
-		return nil, err
-	}
-
 	argsDataTrieMigrator := dataTrieMigrator.ArgsNewDataTrieMigrator{
 		GasProvided:     vmInput.GasProvided,
 		DataTrieGasCost: dataTrieGasCost,
@@ -69,14 +65,18 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 		NewVersion:   core.AutoBalanceEnabled,
 		TrieMigrator: dtm,
 	}
-	err = account.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
-	if err != nil {
-		return nil, err
-	}
 
-	err = mdt.accounts.SaveAccount(account)
-	if err != nil {
-		return nil, err
+	shouldMigrateAcntDst := bytes.Equal(acntDst.AddressBytes(), vmcommon.SystemAccountAddress) || !vmcommon.IsSystemAccountAddress(acntDst.AddressBytes())
+	if shouldMigrateAcntDst {
+		err = acntDst.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := mdt.migrateSystemAccount(argsMigrateDataTrie)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	vmOutput := &vmcommon.VMOutput{
@@ -87,12 +87,18 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-func (mdt *migrateDataTrie) getAccountForMigration(acntDst vmcommon.UserAccountHandler) (vmcommon.UserAccountHandler, error) {
-	if vmcommon.IsSystemAccountAddress(acntDst.AddressBytes()) {
-		return mdt.getExistingAccount(vmcommon.SystemAccountAddress)
+func (mdt *migrateDataTrie) migrateSystemAccount(argsMigrateDataTrie vmcommon.ArgsMigrateDataTrieLeaves) error {
+	account, err := mdt.getExistingAccount(vmcommon.SystemAccountAddress)
+	if err != nil {
+		return err
 	}
 
-	return acntDst, nil
+	err = account.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
+	if err != nil {
+		return err
+	}
+
+	return mdt.accounts.SaveAccount(account)
 }
 
 func (mdt *migrateDataTrie) getExistingAccount(address []byte) (vmcommon.UserAccountHandler, error) {
