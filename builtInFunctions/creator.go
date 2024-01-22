@@ -548,6 +548,15 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	newFunc, err = NewMigrateCodeLeafFunc(b.gasConfig.BuiltInCost.MigrateCodeLeaf, b.enableEpochsHandler, b.accounts)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.BuiltInFunctionMigrateCodeLeaf, newFunc)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
