@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -78,6 +79,7 @@ func fillGasMapBuiltInCosts(value uint64) map[string]uint64 {
 	gasMap["UnGuardAccount"] = value
 	gasMap["TrieLoadPerNode"] = value
 	gasMap["TrieStorePerNode"] = value
+	gasMap["MigrateCodeLeaf"] = value
 
 	return gasMap
 }
@@ -99,6 +101,15 @@ func TestCreateBuiltInFunctionContainer_Errors(t *testing.T) {
 	args.EnableEpochsHandler = nil
 	_, err = NewBuiltInFunctionsCreator(args)
 	assert.Equal(t, err, ErrNilEnableEpochsHandler)
+
+	args = createMockArguments()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagDefinedCalled: func(flag core.EnableEpochFlag) bool {
+			return false
+		},
+	}
+	_, err = NewBuiltInFunctionsCreator(args)
+	assert.True(t, errors.Is(err, core.ErrInvalidEnableEpochsHandler))
 
 	args = createMockArguments()
 	args.Marshalizer = nil
@@ -151,7 +162,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 
 	err := f.CreateBuiltInFunctionContainer()
 	assert.Nil(t, err)
-	assert.Equal(t, 36, f.BuiltInFunctionContainer().Len())
+	assert.Equal(t, 37, f.BuiltInFunctionContainer().Len())
 
 	err = f.SetPayableHandler(nil)
 	assert.NotNil(t, err)

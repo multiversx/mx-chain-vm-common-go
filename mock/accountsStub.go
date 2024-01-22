@@ -22,6 +22,7 @@ type AccountsStub struct {
 	SetStateCheckpointCalled func(rootHash []byte)
 	IsPruningEnabledCalled   func() bool
 	GetCodeCalled            func([]byte) []byte
+	MigrateCodeLeafCalled    func(account vmcommon.AccountHandler) error
 }
 
 // GetCode -
@@ -125,6 +126,15 @@ func (as *AccountsStub) IsPruningEnabled() bool {
 	}
 
 	return false
+}
+
+// MigrateCodeLeaf -
+func (as *AccountsStub) MigrateCodeLeaf(account vmcommon.AccountHandler) error {
+	if as.MigrateCodeLeafCalled != nil {
+		return as.MigrateCodeLeafCalled(account)
+	}
+
+	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

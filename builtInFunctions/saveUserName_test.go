@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/require"
@@ -59,8 +60,10 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 		gasCost:           1,
 		mapDnsAddresses:   mapDnsAddresses,
 		mapDnsV2Addresses: make(map[string]struct{}),
-		isChangeEnabled: func() bool {
-			return false
+		enableEpochsHandler: &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return false
+			},
 		},
 	}
 
@@ -100,8 +103,10 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Equal(t, ErrUserNameChangeIsDisabled, err)
 
-	coa.isChangeEnabled = func() bool {
-		return true
+	coa.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return true
+		},
 	}
 
 	_, err = coa.ProcessBuiltinFunction(nil, acc, vmInput)
