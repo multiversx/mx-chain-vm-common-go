@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 
@@ -64,9 +65,18 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 		NewVersion:   core.AutoBalanceEnabled,
 		TrieMigrator: dtm,
 	}
-	err = acntDst.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
-	if err != nil {
-		return nil, err
+
+	shouldMigrateAcntDst := bytes.Equal(acntDst.AddressBytes(), vmcommon.SystemAccountAddress) || !vmcommon.IsSystemAccountAddress(acntDst.AddressBytes())
+	if shouldMigrateAcntDst {
+		err = acntDst.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = mdt.migrateSystemAccount(argsMigrateDataTrie)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	vmOutput := &vmcommon.VMOutput{
@@ -75,6 +85,34 @@ func (mdt *migrateDataTrie) ProcessBuiltinFunction(
 	}
 
 	return vmOutput, nil
+}
+
+func (mdt *migrateDataTrie) migrateSystemAccount(argsMigrateDataTrie vmcommon.ArgsMigrateDataTrieLeaves) error {
+	account, err := mdt.getExistingAccount(vmcommon.SystemAccountAddress)
+	if err != nil {
+		return err
+	}
+
+	err = account.AccountDataHandler().MigrateDataTrieLeaves(argsMigrateDataTrie)
+	if err != nil {
+		return err
+	}
+
+	return mdt.accounts.SaveAccount(account)
+}
+
+func (mdt *migrateDataTrie) getExistingAccount(address []byte) (vmcommon.UserAccountHandler, error) {
+	account, err := mdt.accounts.GetExistingAccount(address)
+	if err != nil {
+		return nil, err
+	}
+
+	userAccount, ok := account.(vmcommon.UserAccountHandler)
+	if !ok {
+		return nil, ErrWrongTypeAssertion
+	}
+
+	return userAccount, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
