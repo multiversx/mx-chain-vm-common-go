@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 	"strings"
@@ -25,7 +26,6 @@ func TestNewMigrateDataTrieFunc(t *testing.T) {
 		assert.True(t, check.IfNil(mdtf))
 		assert.Equal(t, ErrNilEnableEpochsHandler, err)
 	})
-
 	t.Run("nil accountsDB", func(t *testing.T) {
 		t.Parallel()
 
@@ -33,13 +33,12 @@ func TestNewMigrateDataTrieFunc(t *testing.T) {
 		assert.True(t, check.IfNil(mdtf))
 		assert.Equal(t, ErrNilAccountsAdapter, err)
 	})
-
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		enableEpochs := &mock.EnableEpochsHandlerStub{
 			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == AutoBalanceDataTriesFlag
+				return flag == MigrateDataTriesFlag
 			},
 		}
 		mdtf, err := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, enableEpochs, &mock.AccountsStub{})
@@ -65,7 +64,6 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		assert.Nil(t, vmOutput)
 		assert.Equal(t, ErrNilVmInput, err)
 	})
-
 	t.Run("not enough gas provided for at least one migration", func(t *testing.T) {
 		t.Parallel()
 
@@ -84,7 +82,6 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		assert.Nil(t, vmOutput)
 		assert.True(t, strings.Contains(err.Error(), "not enough gas"))
 	})
-
 	t.Run("invalid call value", func(t *testing.T) {
 		t.Parallel()
 
@@ -99,13 +96,28 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		assert.Nil(t, vmOutput)
 		assert.Equal(t, ErrBuiltInFunctionCalledWithValue, err)
 	})
-
-	t.Run("nil dest account", func(t *testing.T) {
+	t.Run("invalid number of arguments", func(t *testing.T) {
 		t.Parallel()
 
 		input := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue: big.NewInt(0),
+				Arguments: [][]byte{[]byte("arg1")},
+			},
+		}
+
+		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), nil, input)
+		assert.Nil(t, vmOutput)
+		assert.True(t, errors.Is(err, ErrInvalidNumberOfArguments))
+	})
+	t.Run("nil dest account", func(t *testing.T) {
+		t.Parallel()
+
+		input := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:  big.NewInt(0),
+				CallerAddr: []byte("caller"),
 			},
 		}
 
@@ -113,6 +125,113 @@ func TestMigrateDataTrie_ProcessBuiltinFunction(t *testing.T) {
 		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), nil, input)
 		assert.Nil(t, vmOutput)
 		assert.True(t, errors.Is(err, ErrNilSCDestAccount))
+	})
+	t.Run("address is system account address from shard 0", func(t *testing.T) {
+		t.Parallel()
+
+		migrateCalled := false
+		saveCalled := false
+		input := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:  big.NewInt(0),
+				CallerAddr: []byte("12345678912345678912345678912345"),
+			},
+		}
+		systemAcc := &mock.UserAccountStub{
+			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+				return &mock.DataTrieTrackerStub{
+					MigrateDataTrieLeavesCalled: func(args vmcommon.ArgsMigrateDataTrieLeaves) error {
+						migrateCalled = true
+						return nil
+					},
+				}
+			},
+		}
+		adb := &mock.AccountsStub{
+			GetExistingAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+				return systemAcc, nil
+			},
+			SaveAccountCalled: func(account vmcommon.AccountHandler) error {
+				assert.Equal(t, systemAcc, account)
+				saveCalled = true
+				return nil
+			},
+		}
+
+		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, adb)
+
+		shard0SystemAccAddr := bytes.Repeat([]byte{255}, 30)
+		shard0SystemAccAddr = append(shard0SystemAccAddr, []byte{0, 0}...)
+		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), mock.NewUserAccount(shard0SystemAccAddr), input)
+		assert.Nil(t, err)
+		assert.NotNil(t, vmOutput)
+		assert.True(t, migrateCalled)
+		assert.True(t, saveCalled)
+	})
+	t.Run("address is system account address from shard 1", func(t *testing.T) {
+		t.Parallel()
+
+		migrateCalled := false
+		input := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:  big.NewInt(0),
+				CallerAddr: []byte("12345678912345678912345678912345"),
+			},
+		}
+		systemAcc := &mock.UserAccountStub{
+			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+				return &mock.DataTrieTrackerStub{
+					MigrateDataTrieLeavesCalled: func(args vmcommon.ArgsMigrateDataTrieLeaves) error {
+						migrateCalled = true
+						return nil
+					},
+				}
+			},
+		}
+		adb := &mock.AccountsStub{
+			GetExistingAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+				assert.Fail(t, "should not be called")
+				return nil, nil
+			},
+			SaveAccountCalled: func(account vmcommon.AccountHandler) error {
+				assert.Fail(t, "should not be called")
+				return nil
+			},
+		}
+
+		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, adb)
+
+		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), systemAcc, input)
+		assert.Nil(t, err)
+		assert.NotNil(t, vmOutput)
+		assert.True(t, migrateCalled)
+	})
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
+
+		migrateCalled := false
+		input := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:  big.NewInt(0),
+				CallerAddr: []byte("sender"),
+			},
+		}
+		destAcc := &mock.UserAccountStub{
+			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+				return &mock.DataTrieTrackerStub{
+					MigrateDataTrieLeavesCalled: func(args vmcommon.ArgsMigrateDataTrieLeaves) error {
+						migrateCalled = true
+						return nil
+					},
+				}
+			},
+		}
+
+		mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+		vmOutput, err := mdtf.ProcessBuiltinFunction(mock.NewUserAccount([]byte("sender")), destAcc, input)
+		assert.Nil(t, err)
+		assert.NotNil(t, vmOutput)
+		assert.True(t, migrateCalled)
 	})
 }
 
@@ -131,10 +250,16 @@ func TestMigrateDataTrie_Concurrency(t *testing.T) {
 		VMInput: vmcommon.VMInput{
 			CallValue:   big.NewInt(0),
 			GasProvided: 10000,
+			CallerAddr:  []byte("sender"),
+		},
+	}
+	adb := &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return mock.NewUserAccount(address), nil
 		},
 	}
 
-	mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, &mock.AccountsStub{})
+	mdtf, _ := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, &mock.EnableEpochsHandlerStub{}, adb)
 	numOperations := 1000
 
 	wg := sync.WaitGroup{}
