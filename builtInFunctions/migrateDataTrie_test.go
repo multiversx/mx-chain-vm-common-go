@@ -38,7 +38,7 @@ func TestNewMigrateDataTrieFunc(t *testing.T) {
 
 		enableEpochs := &mock.EnableEpochsHandlerStub{
 			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-				return flag == MigrateDataTriesFlag
+				return flag == MigrateDataTrieFlag
 			},
 		}
 		mdtf, err := NewMigrateDataTrieFunc(vmcommon.BuiltInCost{}, enableEpochs, &mock.AccountsStub{})

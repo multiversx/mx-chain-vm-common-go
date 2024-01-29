@@ -37,7 +37,7 @@ func NewMigrateDataTrieFunc(
 	}
 
 	mdt.baseActiveHandler.activeHandler = func() bool {
-		return enableEpochsHandler.IsFlagEnabled(MigrateDataTriesFlag)
+		return enableEpochsHandler.IsFlagEnabled(MigrateDataTrieFlag)
 	}
 
 	return mdt, nil
