@@ -2,6 +2,7 @@ package builtInFunctions
 
 import "github.com/multiversx/mx-chain-core-go/core"
 
+// Enable epoch flags definitions
 const (
 	GlobalMintBurnFlag                          core.EnableEpochFlag = "GlobalMintBurnFlag"
 	ESDTTransferRoleFlag                        core.EnableEpochFlag = "ESDTTransferRoleFlag"
@@ -24,6 +25,7 @@ const (
 	ScToScLogEventFlag                          core.EnableEpochFlag = "ScToScLogEventFlag"
 	FixGasRemainingForSaveKeyValueFlag          core.EnableEpochFlag = "FixGasRemainingForSaveKeyValueFlag"
 	IsChangeOwnerAddressCrossShardThroughSCFlag core.EnableEpochFlag = "IsChangeOwnerAddressCrossShardThroughSCFlag"
+	MigrateDataTrieFlag                         core.EnableEpochFlag = "MigrateDataTrieFlag"
 )
 
 // allFlags must have all flags used by mx-chain-vm-common-go in the current version
@@ -49,4 +51,5 @@ var allFlags = []core.EnableEpochFlag{
 	ScToScLogEventFlag,
 	FixGasRemainingForSaveKeyValueFlag,
 	IsChangeOwnerAddressCrossShardThroughSCFlag,
+	MigrateDataTrieFlag,
 }
