@@ -160,7 +160,6 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 				vmInput.CallerAddr,
 				string(vmInput.Arguments[core.MinLenArgumentsESDTTransfer]),
 				callArgs,
-				big.NewInt(0),
 				vmInput.RecipientAddr,
 				vmInput.GasLocked,
 				vmInput.CallType,
@@ -203,7 +202,6 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 			vmInput.CallerAddr,
 			core.BuiltInFunctionESDTTransfer,
 			vmInput.Arguments,
-			big.NewInt(0),
 			vmInput.RecipientAddr,
 			vmInput.GasLocked,
 			vmInput.CallType,
@@ -227,22 +225,21 @@ func addOutputTransferToVMOutput(
 	senderAddress []byte,
 	function string,
 	arguments [][]byte,
-	callValue *big.Int,
 	recipient []byte,
 	gasLocked uint64,
 	callType vm.CallType,
 	vmOutput *vmcommon.VMOutput,
 ) {
-	esdtTransferTxData := function
+	encodedTxData := function
 	for _, arg := range arguments {
-		esdtTransferTxData += "@" + hex.EncodeToString(arg)
+		encodedTxData += "@" + hex.EncodeToString(arg)
 	}
 	outTransfer := vmcommon.OutputTransfer{
 		Index:         index,
-		Value:         big.NewInt(0).Set(callValue),
+		Value:         big.NewInt(0),
 		GasLimit:      vmOutput.GasRemaining,
 		GasLocked:     gasLocked,
-		Data:          []byte(esdtTransferTxData),
+		Data:          []byte(encodedTxData),
 		CallType:      callType,
 		SenderAddress: senderAddress,
 	}

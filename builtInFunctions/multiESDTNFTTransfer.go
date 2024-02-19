@@ -182,6 +182,13 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 
+	if vmInput.CallValue.Cmp(zero) > 0 {
+		err = acntDst.AddToBalance(vmInput.CallValue)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	topicTokenData := make([]*TopicTokenData, 0)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
@@ -264,7 +271,6 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
-			vmInput.CallValue,
 			vmInput.RecipientAddr,
 			vmInput.GasLocked,
 			vmInput.CallType,
@@ -314,6 +320,13 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		err = e.payableHandler.CheckPayable(vmInput, dstAddress, int(minNumOfArguments))
 		if err != nil {
 			return nil, err
+		}
+
+		if vmInput.CallValue.Cmp(zero) > 0 {
+			err = acntDst.AddToBalance(vmInput.CallValue)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -565,7 +578,6 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
-			vmInput.CallValue,
 			dstAddress,
 			vmInput.GasLocked,
 			vmInput.CallType,
