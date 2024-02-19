@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -108,6 +109,7 @@ func (c *changeOwnerAddress) addOutputTransferToVmOutputForCallThroughSC(acntDst
 		vmInput.CallerAddr,
 		core.BuiltInFunctionChangeOwnerAddress,
 		vmInput.Arguments,
+		big.NewInt(0),
 		vmInput.RecipientAddr,
 		vmInput.GasLocked,
 		vmInput.CallType,

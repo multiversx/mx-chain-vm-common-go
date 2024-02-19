@@ -109,6 +109,24 @@ func (e *esdtNFTMultiTransfer) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.mutExecution.Unlock()
 }
 
+func (e *esdtNFTMultiTransfer) checkMultiTransferArguments(vmInput *vmcommon.ContractCallInput) error {
+	if !e.enableEpochsHandler.IsFlagEnabled(EGLDInESDTMultiTransferFlag) {
+		return checkBasicESDTArguments(vmInput)
+	}
+
+	if vmInput == nil {
+		return ErrNilVmInput
+	}
+	if vmInput.CallValue == nil {
+		return ErrNilValue
+	}
+	if len(vmInput.Arguments) < core.MinLenArgumentsESDTTransfer {
+		return ErrInvalidArguments
+	}
+
+	return nil
+}
+
 // ProcessBuiltinFunction resolves ESDT NFT transfer roles function call
 // Requires the following arguments:
 // arg0 - destination address
@@ -246,6 +264,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
+			vmInput.CallValue,
 			vmInput.RecipientAddr,
 			vmInput.GasLocked,
 			vmInput.CallType,
@@ -524,13 +543,11 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 		}
 		addNFTTransferToVMOutput(
 			1,
-			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionMultiESDTNFTTransfer,
 			multiTransferCallArgs,
-			vmInput.GasLocked,
 			gasToTransfer,
-			vmInput.CallType,
+			vmInput,
 			vmOutput,
 		)
 
@@ -548,6 +565,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 			vmInput.CallerAddr,
 			string(vmInput.Arguments[minNumOfArguments]),
 			callArgs,
+			vmInput.CallValue,
 			dstAddress,
 			vmInput.GasLocked,
 			vmInput.CallType,
