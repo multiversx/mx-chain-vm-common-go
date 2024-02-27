@@ -270,8 +270,6 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			vmOutput)
 	}
 
-	e.addTxValueToOutputAccount(vmInput.RecipientAddr, vmInput.CallValue, vmOutput)
-
 	return vmOutput, nil
 }
 
@@ -396,8 +394,6 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	if err != nil {
 		return nil, err
 	}
-
-	e.addTxValueToOutputAccount(dstAddress, vmInput.CallValue, vmOutput)
 
 	return vmOutput, nil
 }
@@ -575,28 +571,6 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 	}
 
 	return nil
-}
-
-func (e *esdtNFTMultiTransfer) addTxValueToOutputAccount(address []byte, value *big.Int, vmOutput *vmcommon.VMOutput) {
-	if !e.enableEpochsHandler.IsFlagEnabled(EGLDInESDTMultiTransferFlag) || value.Cmp(zero) == 0 {
-		return
-	}
-
-	if vmOutput.OutputAccounts == nil {
-		vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
-	}
-
-	outputAccount, ok := vmOutput.OutputAccounts[string(address)]
-	if !ok {
-		outputAccount = &vmcommon.OutputAccount{
-			Address:         address,
-			OutputTransfers: []vmcommon.OutputTransfer{},
-		}
-	}
-
-	outputAccount.Balance = big.NewInt(0)
-	outputAccount.BalanceDelta = big.NewInt(0).Set(value)
-	vmOutput.OutputAccounts[string(address)] = outputAccount
 }
 
 func (e *esdtNFTMultiTransfer) addNFTToDestination(
