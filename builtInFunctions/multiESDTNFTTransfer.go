@@ -109,24 +109,6 @@ func (e *esdtNFTMultiTransfer) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	e.mutExecution.Unlock()
 }
 
-func (e *esdtNFTMultiTransfer) checkMultiTransferArguments(vmInput *vmcommon.ContractCallInput) error {
-	if !e.enableEpochsHandler.IsFlagEnabled(EGLDInESDTMultiTransferFlag) {
-		return checkBasicESDTArguments(vmInput)
-	}
-
-	if vmInput == nil {
-		return ErrNilVmInput
-	}
-	if vmInput.CallValue == nil {
-		return ErrNilValue
-	}
-	if len(vmInput.Arguments) < core.MinLenArgumentsESDTTransfer {
-		return ErrInvalidArguments
-	}
-
-	return nil
-}
-
 // ProcessBuiltinFunction resolves ESDT NFT transfer roles function call
 // Requires the following arguments:
 // arg0 - destination address
