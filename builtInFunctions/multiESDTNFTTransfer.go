@@ -398,6 +398,7 @@ func (e *esdtNFTMultiTransfer) transferBaseToken(
 	transferData *vmcommon.ESDTTransfer,
 ) (*esdt.ESDigitalToken, error) {
 	if !e.enableEpochsHandler.IsFlagEnabled(EGLDInESDTMultiTransferFlag) {
+		// do not enable this flag on SovereignShards - there is no need for that, as base token is already an ESDT
 		return nil, computeInsufficientQuantityESDTError(transferData.ESDTTokenName, transferData.ESDTTokenNonce)
 	}
 
