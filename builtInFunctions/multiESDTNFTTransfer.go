@@ -31,7 +31,7 @@ type esdtNFTMultiTransfer struct {
 }
 
 const argumentsPerTransfer = uint64(3)
-const eGLD = "egld"
+const eGLD = "EGLD-000000"
 
 // NewESDTNFTMultiTransferFunc returns the esdt NFT multi transfer built-in function component
 func NewESDTNFTMultiTransferFunc(
