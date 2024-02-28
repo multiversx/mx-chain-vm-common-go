@@ -1217,7 +1217,7 @@ func createSetupForMultiTransferWithEGLD(t *testing.T) (*vmcommon.ContractCallIn
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte("egld")
+	token2 := []byte(eGLD)
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
