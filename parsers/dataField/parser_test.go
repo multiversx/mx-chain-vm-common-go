@@ -189,7 +189,7 @@ func TestParseBlockingOperationESDT(t *testing.T) {
 		dataField := []byte("callMe@01")
 		res := parser.Parse(dataField, sender, receiverSC, 3)
 		require.Equal(t, &ResponseParseData{
-			Operation: operationTransfer,
+			Operation: OperationTransfer,
 			Function:  "callMe",
 		}, res)
 	})
@@ -236,7 +236,7 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 		res := parser.Parse(dataField, sender, receiver, 3)
 		require.Equal(t, &ResponseParseData{
 			IsRelayed:        true,
-			Operation:        operationTransfer,
+			Operation:        OperationTransfer,
 			Function:         "callMe",
 			Receivers:        [][]byte{receiverSC},
 			ReceiversShardID: []uint32{0},
