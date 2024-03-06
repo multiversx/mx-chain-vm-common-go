@@ -1261,10 +1261,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCallWithEGL
 	vmInput, multiTransfer := createSetupForMultiTransferWithEGLD(t)
 	multiTransfer.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			if flag == EGLDInESDTMultiTransferFlag {
-				return false
-			}
-			return true
+			return flag != EGLDInESDTMultiTransferFlag
 		},
 	}
 
