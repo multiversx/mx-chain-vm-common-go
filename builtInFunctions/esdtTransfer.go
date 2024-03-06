@@ -230,16 +230,16 @@ func addOutputTransferToVMOutput(
 	callType vm.CallType,
 	vmOutput *vmcommon.VMOutput,
 ) {
-	esdtTransferTxData := function
+	encodedTxData := function
 	for _, arg := range arguments {
-		esdtTransferTxData += "@" + hex.EncodeToString(arg)
+		encodedTxData += "@" + hex.EncodeToString(arg)
 	}
 	outTransfer := vmcommon.OutputTransfer{
 		Index:         index,
 		Value:         big.NewInt(0),
 		GasLimit:      vmOutput.GasRemaining,
 		GasLocked:     gasLocked,
-		Data:          []byte(esdtTransferTxData),
+		Data:          []byte(encodedTxData),
 		CallType:      callType,
 		SenderAddress: senderAddress,
 	}
