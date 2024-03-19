@@ -16,7 +16,7 @@ type ESDTNFTStorageHandlerStub struct {
 	GetESDTNFTTokenOnDestinationWithCustomSystemAccountCalled func(accnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, systemAccount vmcommon.UserAccountHandler) (*esdt.ESDigitalToken, bool, error)
 	WasAlreadySentToDestinationShardAndUpdateStateCalled      func(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	SaveNFTMetaDataCalled                                     func(tx data.TransactionHandler) error
-	AddToLiquiditySystemAccCalled                             func(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int) error
+	AddToLiquiditySystemAccCalled                             func(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int, keepMetadataOnZeroLiquidity bool) error
 	GetMetaDataFromSystemAccountCalled                        func([]byte, uint64) (*esdt.MetaData, error)
 	SaveMetaDataToSystemAccountCalled                         func(tokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error
 }
@@ -86,9 +86,9 @@ func (stub *ESDTNFTStorageHandlerStub) SaveNFTMetaData(tx data.TransactionHandle
 }
 
 // AddToLiquiditySystemAcc -
-func (stub *ESDTNFTStorageHandlerStub) AddToLiquiditySystemAcc(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int) error {
+func (stub *ESDTNFTStorageHandlerStub) AddToLiquiditySystemAcc(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int, keepMetadataOnZeroLiquidity bool) error {
 	if stub.AddToLiquiditySystemAccCalled != nil {
-		return stub.AddToLiquiditySystemAccCalled(esdtTokenKey, tokenType, nonce, transferValue)
+		return stub.AddToLiquiditySystemAccCalled(esdtTokenKey, tokenType, nonce, transferValue, keepMetadataOnZeroLiquidity)
 	}
 	return nil
 }

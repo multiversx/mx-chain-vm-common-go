@@ -296,7 +296,12 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 	} else {
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, big.NewInt(0).Neg(quantityToTransfer))
+		hasDynamicRole, err := hasDynamicRole(acntSnd, esdtTokenKey, e.marshaller)
+		if err != nil {
+			return nil, err
+		}
+
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, big.NewInt(0).Neg(quantityToTransfer), hasDynamicRole)
 		if err != nil {
 			return nil, err
 		}
@@ -333,6 +338,31 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	)
 
 	return vmOutput, nil
+}
+
+func hasDynamicRole(account vmcommon.UserAccountHandler, tokenID []byte, marshaller vmcommon.Marshalizer) (bool, error) {
+	roleKey := append(roleKeyPrefix, tokenID...)
+	roles, _, err := getESDTRolesForAcnt(marshaller, account, roleKey)
+	if err != nil {
+		return false, err
+	}
+
+	dynamicRoles := [][]byte{
+		[]byte(core.ESDTMetaDataRecreate),
+		[]byte(core.ESDTRoleNFTUpdate),
+		[]byte(core.ESDTRoleModifyCreator),
+		[]byte(core.ESDTRoleModifyRoyalties),
+		[]byte(core.ESDTRoleSetNewURI),
+	}
+
+	for _, role := range dynamicRoles {
+		_, exists := doesRoleExist(roles, role)
+		if exists {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (e *esdtNFTTransfer) createNFTOutputTransfers(

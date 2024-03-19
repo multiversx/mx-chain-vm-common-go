@@ -115,7 +115,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, value)
+	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, value, false)
 	if err != nil {
 		return nil, err
 	}
