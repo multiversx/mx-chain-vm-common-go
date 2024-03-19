@@ -31,7 +31,7 @@ func TestBaseComponentsHolder_addNFTToDestination(t *testing.T) {
 					saveCalled = true
 					return nil, nil
 				},
-				AddToLiquiditySystemAccCalled: func(esdtTokenKey []byte, _ uint32, nonce uint64, transferValue *big.Int) error {
+				AddToLiquiditySystemAccCalled: func(esdtTokenKey []byte, _ uint32, nonce uint64, transferValue *big.Int, _ bool) error {
 					assert.Equal(t, big.NewInt(100), transferValue)
 					addToLiquiditySystemAccCalled = true
 					return nil
