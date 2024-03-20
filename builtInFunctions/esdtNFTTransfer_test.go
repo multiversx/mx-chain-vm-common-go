@@ -1165,6 +1165,7 @@ func senderHasDynamicRoleAndLiqudityReaches0AfterTransfer(t *testing.T, role []b
 	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenId, tokenNonce)
 	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0), Type: uint32(core.Fungible)}
 	marshaledData, _, err := systemSCAccount.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(esdtNFTTokenKey)
+	require.Nil(t, err)
 	require.True(t, len(marshaledData) > 0)
 	_ = nftTransferSenderShard.marshaller.Unmarshal(esdtData, marshaledData)
 	assert.Equal(t, big.NewInt(0), esdtData.Value)
