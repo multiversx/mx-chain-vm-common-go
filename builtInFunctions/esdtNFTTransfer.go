@@ -296,7 +296,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 	} else {
-		hasDynamicRole, err := hasDynamicRole(acntSnd, esdtTokenKey, e.marshaller)
+		hasDynamicRole, err := hasDynamicRole(acntSnd, tickerID, e.marshaller)
 		if err != nil {
 			return nil, err
 		}
