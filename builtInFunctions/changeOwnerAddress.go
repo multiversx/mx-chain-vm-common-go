@@ -94,7 +94,7 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 }
 
 func (c *changeOwnerAddress) addOutputTransferToVmOutputForCallThroughSC(acntDst vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput, vmOutput *vmcommon.VMOutput) {
-	if !c.enableEpochsHandler.IsChangeOwnerAddressCrossShardThroughSCEnabled() {
+	if !c.enableEpochsHandler.IsFlagEnabled(IsChangeOwnerAddressCrossShardThroughSCFlag) {
 		return
 	}
 

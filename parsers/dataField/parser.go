@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	operationTransfer = `transfer`
+	// OperationTransfer is the const for the transfer operation
+	OperationTransfer = `transfer`
 	operationDeploy   = `scDeploy`
 
 	minArgumentsQuantityOperationESDT = 2
@@ -69,7 +70,7 @@ func (odp *operationDataFieldParser) Parse(dataField []byte, sender, receiver []
 
 func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []byte, ignoreRelayed bool, numOfShards uint32) *ResponseParseData {
 	responseParse := &ResponseParseData{
-		Operation: operationTransfer,
+		Operation: OperationTransfer,
 	}
 
 	isSCDeploy := len(dataField) > 0 && isEmptyAddr(odp.addressLength, receiver)

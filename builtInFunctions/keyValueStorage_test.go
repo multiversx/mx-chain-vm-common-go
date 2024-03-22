@@ -14,9 +14,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var disabledFixForSaveKeyValueEnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-	FixGasRemainingForSaveKeyValueBuiltinFunctionEnabledField: false,
+var enabledFixForSaveKeyValueEnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+	IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+		return flag == FixGasRemainingForSaveKeyValueFlag
+	},
 }
+
+var disabledFixForSaveKeyValueEnableEpochsHandler = &mock.EnableEpochsHandlerStub{}
 
 func TestNewSaveKeyValueStorageFunc(t *testing.T) {
 	t.Parallel()
@@ -204,9 +208,7 @@ func TestSaveKeyValue_ProcessBuiltinFunctionMultipleKeys(t *testing.T) {
 		processBuiltinFunctionMultipleKeys(t, disabledFixForSaveKeyValueEnableEpochsHandler)
 	})
 	t.Run("should work with enabled fix", func(t *testing.T) {
-		processBuiltinFunctionMultipleKeys(t, &mock.EnableEpochsHandlerStub{
-			FixGasRemainingForSaveKeyValueBuiltinFunctionEnabledField: true,
-		})
+		processBuiltinFunctionMultipleKeys(t, enabledFixForSaveKeyValueEnableEpochsHandler)
 	})
 }
 
@@ -296,10 +298,7 @@ func TestSaveKeyValue_ProcessBuiltinFunctionExistingKeyAndNotEnoughGas(t *testin
 		assert.Equal(t, expectedGasRemaining, vmOutput.GasRemaining) // overflow on uint64 occurs here
 	})
 	t.Run("should return not enough of gas if the fix is enabled", func(t *testing.T) {
-		epochsHandler := &mock.EnableEpochsHandlerStub{
-			FixGasRemainingForSaveKeyValueBuiltinFunctionEnabledField: true,
-		}
-		skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, epochsHandler)
+		skv, _ := NewSaveKeyValueStorageFunc(gasConfig, funcGasCost, enabledFixForSaveKeyValueEnableEpochsHandler)
 		vmOutput, err := skv.ProcessBuiltinFunction(acc, acc, vmInput)
 		assert.Equal(t, ErrNotEnoughGas, err)
 		assert.Nil(t, vmOutput)
