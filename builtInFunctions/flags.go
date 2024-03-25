@@ -2,6 +2,7 @@ package builtInFunctions
 
 import "github.com/multiversx/mx-chain-core-go/core"
 
+// Enable epoch flags definitions
 const (
 	GlobalMintBurnFlag                          core.EnableEpochFlag = "GlobalMintBurnFlag"
 	ESDTTransferRoleFlag                        core.EnableEpochFlag = "ESDTTransferRoleFlag"
@@ -13,7 +14,6 @@ const (
 	SendAlwaysFlag                              core.EnableEpochFlag = "SendAlwaysFlag"
 	ValueLengthCheckFlag                        core.EnableEpochFlag = "ValueLengthCheckFlag"
 	CheckTransferFlag                           core.EnableEpochFlag = "CheckTransferFlag"
-	TransferToMetaFlag                          core.EnableEpochFlag = "TransferToMetaFlag"
 	ESDTNFTImprovementV1Flag                    core.EnableEpochFlag = "ESDTNFTImprovementV1Flag"
 	FixOldTokenLiquidityFlag                    core.EnableEpochFlag = "FixOldTokenLiquidityFlag"
 	WipeSingleNFTLiquidityDecreaseFlag          core.EnableEpochFlag = "WipeSingleNFTLiquidityDecreaseFlag"
@@ -25,6 +25,7 @@ const (
 	ScToScLogEventFlag                          core.EnableEpochFlag = "ScToScLogEventFlag"
 	FixGasRemainingForSaveKeyValueFlag          core.EnableEpochFlag = "FixGasRemainingForSaveKeyValueFlag"
 	IsChangeOwnerAddressCrossShardThroughSCFlag core.EnableEpochFlag = "IsChangeOwnerAddressCrossShardThroughSCFlag"
+	MigrateDataTrieFlag                         core.EnableEpochFlag = "MigrateDataTrieFlag"
 )
 
 // allFlags must have all flags used by mx-chain-vm-common-go in the current version
@@ -39,7 +40,6 @@ var allFlags = []core.EnableEpochFlag{
 	SendAlwaysFlag,
 	ValueLengthCheckFlag,
 	CheckTransferFlag,
-	TransferToMetaFlag,
 	ESDTNFTImprovementV1Flag,
 	FixOldTokenLiquidityFlag,
 	WipeSingleNFTLiquidityDecreaseFlag,
@@ -51,4 +51,5 @@ var allFlags = []core.EnableEpochFlag{
 	ScToScLogEventFlag,
 	FixGasRemainingForSaveKeyValueFlag,
 	IsChangeOwnerAddressCrossShardThroughSCFlag,
+	MigrateDataTrieFlag,
 }
