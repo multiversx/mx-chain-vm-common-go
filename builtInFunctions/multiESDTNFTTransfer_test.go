@@ -1230,12 +1230,6 @@ func createSetupForMultiTransferWithEGLD(t *testing.T) (*vmcommon.ContractCallIn
 	_ = multiTransfer.accounts.SaveAccount(destination)
 	_, _ = multiTransfer.accounts.Commit()
 
-	// reload accounts
-	sender, err = multiTransfer.accounts.LoadAccount(senderAddress)
-	require.Nil(t, err)
-	destination, err = multiTransfer.accounts.LoadAccount(destinationAddress)
-	require.Nil(t, err)
-
 	scCallFunctionAsHex := hex.EncodeToString([]byte("functionToCall"))
 	scCallArg := hex.EncodeToString([]byte("arg"))
 	nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
