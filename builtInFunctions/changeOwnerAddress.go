@@ -64,7 +64,7 @@ func (c *changeOwnerAddress) ProcessBuiltinFunction(
 	if vmInput.GasProvided < c.gasCost {
 		return nil, ErrNotEnoughGas
 	}
-	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, c.gasCost)
+	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, c.gasCost, false)
 
 	vmOutput := &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasRemaining}
 
@@ -114,7 +114,11 @@ func (c *changeOwnerAddress) addOutputTransferToVmOutputForCallThroughSC(acntDst
 		vmOutput)
 }
 
-func computeGasRemaining(snd vmcommon.UserAccountHandler, gasProvided uint64, gasToUse uint64) uint64 {
+func computeGasRemaining(snd vmcommon.UserAccountHandler, gasProvided uint64, gasToUse uint64, noGasUse bool) uint64 {
+	if noGasUse {
+		return gasProvided
+	}
+
 	if gasProvided < gasToUse {
 		return 0
 	}

@@ -46,7 +46,7 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return nil, ErrBuiltInFunctionCalledWithValue
 	}
-	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, c.gasCost)
+	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, c.gasCost, false)
 	if check.IfNil(acntDst) {
 		// cross-shard call, in sender shard only the gas is taken out
 		return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasRemaining}, nil

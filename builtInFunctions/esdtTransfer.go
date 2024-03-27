@@ -107,7 +107,8 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, ErrNegativeValue
 	}
 
-	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, e.funcGasCost)
+	noGasUse := noGasUseIfReturnCallAfterError(e.enableEpochsHandler, vmInput)
+	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, e.funcGasCost, noGasUse)
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	tokenID := vmInput.Arguments[0]
 
@@ -123,7 +124,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 
 	if !check.IfNil(acntSnd) {
 		// gas is paid only by sender
-		if vmInput.GasProvided < e.funcGasCost {
+		if vmInput.GasProvided < e.funcGasCost && !noGasUse {
 			return nil, ErrNotEnoughGas
 		}
 
@@ -408,4 +409,11 @@ func (e *esdtTransfer) SetPayableChecker(payableHandler vmcommon.PayableChecker)
 // IsInterfaceNil returns true if underlying object in nil
 func (e *esdtTransfer) IsInterfaceNil() bool {
 	return e == nil
+}
+
+func noGasUseIfReturnCallAfterError(enableEpochsHandler vmcommon.EnableEpochsHandler, vmInput *vmcommon.ContractCallInput) bool {
+	if !enableEpochsHandler.IsFlagEnabled(EGLDInESDTMultiTransferFlag) {
+		return false
+	}
+	return vmInput.ReturnCallAfterError
 }

@@ -291,8 +291,9 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		return nil, fmt.Errorf("%w, invalid number of arguments", ErrInvalidArguments)
 	}
 
+	noGasUse := noGasUseIfReturnCallAfterError(e.enableEpochsHandler, vmInput)
 	multiTransferCost := numOfTransfers * e.funcGasCost
-	if vmInput.GasProvided < multiTransferCost {
+	if vmInput.GasProvided < multiTransferCost && !noGasUse {
 		return nil, ErrNotEnoughGas
 	}
 
@@ -310,7 +311,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
-		GasRemaining: vmInput.GasProvided - multiTransferCost,
+		GasRemaining: computeGasRemaining(acntSnd, vmInput.GasProvided, multiTransferCost, noGasUse),
 		Logs:         make([]*vmcommon.LogEntry, 0, numOfTransfers),
 	}
 
@@ -382,7 +383,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		}
 	}
 
-	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress)
+	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress, noGasUse)
 	if err != nil {
 		return nil, err
 	}
@@ -517,6 +518,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 	listESDTData []*esdt.ESDigitalToken,
 	listESDTTransfers []*vmcommon.ESDTTransfer,
 	dstAddress []byte,
+	noGasUse bool,
 ) error {
 	multiTransferCallArgs := make([][]byte, 0, argumentsPerTransfer*uint64(len(listESDTTransfers))+1)
 	numTokenTransfer := big.NewInt(int64(len(listESDTTransfers))).Bytes()
@@ -544,11 +546,13 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 					return err
 				}
 
-				gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
-				if gasForTransfer > vmOutput.GasRemaining {
-					return ErrNotEnoughGas
+				if !noGasUse {
+					gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
+					if gasForTransfer > vmOutput.GasRemaining {
+						return ErrNotEnoughGas
+					}
+					vmOutput.GasRemaining -= gasForTransfer
 				}
-				vmOutput.GasRemaining -= gasForTransfer
 
 				multiTransferCallArgs = append(multiTransferCallArgs, marshaledNFTTransfer)
 			} else {
