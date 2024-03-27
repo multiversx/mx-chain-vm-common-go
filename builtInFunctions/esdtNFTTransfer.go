@@ -296,12 +296,12 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 	} else {
-		hasDynamicRole, err := hasDynamicRole(acntSnd, tickerID, e.marshaller)
+		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, tickerID, e.marshaller)
 		if err != nil {
 			return nil, err
 		}
 
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, big.NewInt(0).Neg(quantityToTransfer), hasDynamicRole)
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, big.NewInt(0).Neg(quantityToTransfer), keepMetadataOnZeroLiquidity)
 		if err != nil {
 			return nil, err
 		}
