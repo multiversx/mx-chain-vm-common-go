@@ -91,7 +91,7 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.GlobalMetadataHandler) *esdtNFTTransfer {
 	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == TransferToMetaFlag || flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
+			return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
 		},
 	})
 	return nftTransfer
@@ -951,7 +951,7 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 	globalSettings := &mock.GlobalSettingsHandlerStub{}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == TransferToMetaFlag || flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
+			return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
 		},
 	}
 	transferFunc, _ := createNFTTransferAndStorageHandler(0, 1, globalSettings, enableEpochsHandler)
@@ -1114,7 +1114,7 @@ func senderHasDynamicRoleAndLiqudityReaches0AfterTransfer(t *testing.T, role []b
 
 	nftTransferSenderShard, _ := createNFTTransferAndStorageHandler(0, 2, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == TransferToMetaFlag || flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag || flag == SendAlwaysFlag || flag == SaveToSystemAccountFlag
+			return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag || flag == SendAlwaysFlag || flag == SaveToSystemAccountFlag
 		},
 	})
 
