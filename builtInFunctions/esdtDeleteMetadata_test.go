@@ -21,7 +21,9 @@ func createMockArgsForNewESDTDelete() ArgsNewESDTDeleteMetadata {
 		AllowedAddress: bytes.Repeat([]byte{1}, 32),
 		Delete:         true,
 		EnableEpochsHandler: &mock.EnableEpochsHandlerStub{
-			IsSendAlwaysFlagEnabledField: true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == SendAlwaysFlag
+			},
 		},
 	}
 }

@@ -111,7 +111,7 @@ func (k *saveKeyValueStorage) ProcessBuiltinFunction(
 }
 
 func (k *saveKeyValueStorage) subtractGasFromVMoutput(vmOutput *vmcommon.VMOutput, usedGas uint64) (*vmcommon.VMOutput, error) {
-	if !k.enableEpochsHandler.FixGasRemainingForSaveKeyValueBuiltinFunctionEnabled() {
+	if !k.enableEpochsHandler.IsFlagEnabled(FixGasRemainingForSaveKeyValueFlag) {
 		// backwards compatibility
 		vmOutput.GasRemaining -= usedGas
 

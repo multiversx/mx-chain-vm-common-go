@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	mockvm "github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/require"
@@ -169,7 +170,9 @@ func createBaseAccountGuarderArgs() BaseAccountGuarderArgs {
 	return BaseAccountGuarderArgs{
 		Marshaller: marshallerMock,
 		EnableEpochsHandler: &mockvm.EnableEpochsHandlerStub{
-			IsSetGuardianEnabledField: false,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return false
+			},
 		},
 		FuncGasCost:           100000,
 		GuardedAccountHandler: &mockvm.GuardedAccountHandlerStub{},
