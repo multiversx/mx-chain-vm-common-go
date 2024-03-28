@@ -318,7 +318,7 @@ type ESDTNFTStorageHandler interface {
 	GetMetaDataFromSystemAccount([]byte, uint64) (*esdt.MetaData, error)
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	SaveNFTMetaData(tx data.TransactionHandler) error
-	AddToLiquiditySystemAcc(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int) error
+	AddToLiquiditySystemAcc(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int, keepMetadataOnZeroLiquidity bool) error
 	IsInterfaceNil() bool
 }
 

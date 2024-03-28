@@ -130,7 +130,7 @@ func (e *esdtFreezeWipe) removeLiquidity(tokenIdentifier []byte, tokenType uint3
 	}
 
 	tokenIDKey := append(e.keyPrefix, tokenIdentifier...)
-	return e.esdtStorageHandler.AddToLiquiditySystemAcc(tokenIDKey, tokenType, nonce, big.NewInt(0).Neg(value))
+	return e.esdtStorageHandler.AddToLiquiditySystemAcc(tokenIDKey, tokenType, nonce, big.NewInt(0).Neg(value), false)
 }
 
 func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) (*big.Int, error) {

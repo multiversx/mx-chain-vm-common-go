@@ -150,7 +150,7 @@ func TestEsdtFreezeWipe_WipeShouldDecreaseLiquidityIfFlagIsEnabled(t *testing.T)
 	balance := big.NewInt(37)
 	addToLiquiditySystemAccCalled := false
 	esdtStorage := &mock.ESDTNFTStorageHandlerStub{
-		AddToLiquiditySystemAccCalled: func(_ []byte, _ uint32, _ uint64, transferValue *big.Int) error {
+		AddToLiquiditySystemAccCalled: func(_ []byte, _ uint32, _ uint64, transferValue *big.Int, _ bool) error {
 			require.Equal(t, big.NewInt(0).Neg(balance), transferValue)
 			addToLiquiditySystemAccCalled = true
 			return nil

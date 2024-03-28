@@ -274,12 +274,7 @@ func (e *esdtDataStorage) checkFrozenPauseProperties(
 		return err
 	}
 
-	err = e.checkCollectionIsFrozenForAccount(acnt, esdtTokenKey, nonce, isReturnWithError)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.checkCollectionIsFrozenForAccount(acnt, esdtTokenKey, nonce, isReturnWithError)
 }
 
 // AddToLiquiditySystemAcc will increase/decrease the liquidity for ESDT Tokens on the metadata
@@ -288,6 +283,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 	tokenType uint32,
 	nonce uint64,
 	transferValue *big.Int,
+	keepMetadataOnZeroLiquidity bool,
 ) error {
 	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag)
 	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
@@ -324,7 +320,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 		return ErrInvalidLiquidityForESDT
 	}
 
-	if esdtData.Value.Cmp(zero) == 0 {
+	if esdtData.Value.Cmp(zero) == 0 && !keepMetadataOnZeroLiquidity {
 		err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 		if err != nil {
 			return err
@@ -333,12 +329,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 		return e.accounts.SaveAccount(systemAcc)
 	}
 
-	err = e.marshalAndSaveData(systemAcc, esdtData, esdtNFTTokenKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return e.marshalAndSaveData(systemAcc, esdtData, esdtNFTTokenKey)
 }
 
 func (e *esdtDataStorage) shouldSaveMetadataInSystemAccount(esdtDataType uint32) bool {
