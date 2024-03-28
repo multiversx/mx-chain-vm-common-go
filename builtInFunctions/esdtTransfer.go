@@ -92,10 +92,8 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(TransferToMetaFlag)
-	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId && !isTransferToMetaFlagEnabled
-	if isInvalidTransferToMeta {
+	isTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId
+	if isTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
 
