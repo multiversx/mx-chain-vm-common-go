@@ -1114,7 +1114,7 @@ func senderHasDynamicRoleAndLiqudityReaches0AfterTransfer(t *testing.T, role []b
 
 	nftTransferSenderShard, _ := createNFTTransferAndStorageHandler(0, 2, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == TransferToMetaFlag || flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag || flag == SendAlwaysFlag || flag == SaveToSystemAccountFlag
+			return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag || flag == SendAlwaysFlag || flag == SaveToSystemAccountFlag
 		},
 	})
 
