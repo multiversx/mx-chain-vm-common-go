@@ -18,7 +18,7 @@ func TestParseESDTTransfer(t *testing.T) {
 		dataField := []byte("ESDTTransfer@1234@011")
 		res := parser.Parse(dataField, sender, receiver, 3)
 		require.Equal(t, &ResponseParseData{
-			Operation: operationTransfer,
+			Operation: OperationTransfer,
 		}, res)
 	})
 
