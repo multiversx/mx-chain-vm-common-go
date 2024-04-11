@@ -277,12 +277,7 @@ func addToESDTBalance(
 		return ErrInsufficientFunds
 	}
 
-	err = saveESDTData(userAcnt, esdtData, key, marshaller)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return saveESDTData(userAcnt, esdtData, key, marshaller)
 }
 
 func checkFrozeAndPause(

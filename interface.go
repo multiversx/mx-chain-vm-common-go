@@ -208,10 +208,17 @@ type ESDTGlobalSettingsHandler interface {
 
 // ExtendedESDTGlobalSettingsHandler provides global settings functions for an ESDT token
 type ExtendedESDTGlobalSettingsHandler interface {
-	IsPaused(esdtTokenKey []byte) bool
-	IsLimitedTransfer(esdtTokenKey []byte) bool
+	ESDTGlobalSettingsHandler
 	IsBurnForAll(esdtTokenKey []byte) bool
 	IsSenderOrDestinationWithTransferRole(sender, destination, tokenID []byte) bool
+	IsInterfaceNil() bool
+}
+
+// GlobalMetadataHandler provides functions which handle global metadata
+type GlobalMetadataHandler interface {
+	ExtendedESDTGlobalSettingsHandler
+	GetTokenType(esdtTokenKey []byte) (uint32, error)
+	SetTokenType(esdtTokenKey []byte, tokenType uint32) error
 	IsInterfaceNil() bool
 }
 
@@ -305,19 +312,21 @@ type ESDTTransferParser interface {
 // ESDTNFTStorageHandler will handle the storage for the nft metadata
 type ESDTNFTStorageHandler interface {
 	SaveESDTNFTToken(senderAddress []byte, acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error)
+	SaveMetaDataToSystemAccount(tokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error
 	GetESDTNFTTokenOnSender(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 	GetESDTNFTTokenOnDestination(acnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	GetESDTNFTTokenOnDestinationWithCustomSystemAccount(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64, systemAccount UserAccountHandler) (*esdt.ESDigitalToken, bool, error)
+	GetMetaDataFromSystemAccount([]byte, uint64) (*esdt.MetaData, error)
 	WasAlreadySentToDestinationShardAndUpdateState(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
-	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
-	AddToLiquiditySystemAcc(esdtTokenKey []byte, nonce uint64, transferValue *big.Int) error
+	SaveNFTMetaData(tx data.TransactionHandler) error
+	AddToLiquiditySystemAcc(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int, keepMetadataOnZeroLiquidity bool) error
 	IsInterfaceNil() bool
 }
 
 // SimpleESDTNFTStorageHandler will handle get of ESDT data and save metadata to system acc
 type SimpleESDTNFTStorageHandler interface {
 	GetESDTNFTTokenOnDestination(accnt UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
-	SaveNFTMetaDataToSystemAccount(tx data.TransactionHandler) error
+	SaveNFTMetaData(tx data.TransactionHandler) error
 	IsInterfaceNil() bool
 }
 
@@ -334,6 +343,7 @@ type BuiltInFunctionFactory interface {
 	NFTStorageHandler() SimpleESDTNFTStorageHandler
 	BuiltInFunctionContainer() BuiltInFunctionContainer
 	SetPayableHandler(handler PayableHandler) error
+	SetBlockchainHook(handler BlockchainDataHook) error
 	CreateBuiltInFunctionContainer() error
 	IsInterfaceNil() bool
 }
@@ -381,5 +391,18 @@ type NextOutputTransferIndexProvider interface {
 	NextOutputTransferIndex() uint32
 	GetCrtTransferIndex() uint32
 	SetCrtTransferIndex(index uint32)
+	IsInterfaceNil() bool
+}
+
+// BlockchainDataProvider is an interface for getting blockchain data
+type BlockchainDataProvider interface {
+	SetBlockchainHook(BlockchainDataHook) error
+	CurrentRound() uint64
+	IsInterfaceNil() bool
+}
+
+// BlockchainDataHook is an interface for getting blockchain data
+type BlockchainDataHook interface {
+	CurrentRound() uint64
 	IsInterfaceNil() bool
 }

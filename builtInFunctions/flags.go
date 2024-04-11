@@ -26,6 +26,7 @@ const (
 	FixGasRemainingForSaveKeyValueFlag          core.EnableEpochFlag = "FixGasRemainingForSaveKeyValueFlag"
 	IsChangeOwnerAddressCrossShardThroughSCFlag core.EnableEpochFlag = "IsChangeOwnerAddressCrossShardThroughSCFlag"
 	MigrateDataTrieFlag                         core.EnableEpochFlag = "MigrateDataTrieFlag"
+	DynamicEsdtFlag                             core.EnableEpochFlag = "DynamicEsdtFlag"
 	EGLDInESDTMultiTransferFlag                 core.EnableEpochFlag = "EGLDInESDTMultiTransferFlag"
 )
 
@@ -53,5 +54,6 @@ var allFlags = []core.EnableEpochFlag{
 	FixGasRemainingForSaveKeyValueFlag,
 	IsChangeOwnerAddressCrossShardThroughSCFlag,
 	MigrateDataTrieFlag,
+	DynamicEsdtFlag,
 	EGLDInESDTMultiTransferFlag,
 }
