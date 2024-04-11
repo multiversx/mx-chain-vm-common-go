@@ -102,7 +102,6 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 	}
 
 	if vmcommon.IsSmartContractAddress(vmInput.CallerAddr) {
-		// Question for review: the output accounts map is cleared, since this is a contract-to-contract call?
 		vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
 	}
 
