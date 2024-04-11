@@ -531,7 +531,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 
 	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
 
-	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
+	_, args := extractScResultsFromVmOutput(t, vmOutput)
 
 	destination, err := multiTransferDestinationShard.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
@@ -556,7 +556,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoes
 
 	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshaller, destination, token1, tokenNonce, big.NewInt(1))
 	testNFTTokenShouldExist(t, multiTransferDestinationShard.marshaller, destination, token2, 0, big.NewInt(1))
-	funcName, args = extractScResultsFromVmOutput(t, vmOutput)
+	funcName, args := extractScResultsFromVmOutput(t, vmOutput)
 	assert.Equal(t, scCallFunctionAsHex, funcName)
 	require.Equal(t, 1, len(args))
 	require.Equal(t, []byte(scCallArg), args[0])
@@ -644,16 +644,13 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationAddT
 		IsPausedCalled: func(tokenKey []byte) bool {
 			esdtTokenKey := []byte(baseESDTKeyPrefix)
 			esdtTokenKey = append(esdtTokenKey, token2...)
-			if bytes.Equal(tokenKey, esdtTokenKey) {
-				return true
-			}
-
-			return false
+			return bytes.Equal(tokenKey, esdtTokenKey)
 		},
 	}
 	vmOutput, err = multiTransferDestinationShard.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Error(t, err)
 	require.Equal(t, "esdt token is paused for token token2", err.Error())
+	require.Nil(t, vmOutput)
 }
 
 func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsOneTransfer(t *testing.T) {
@@ -941,12 +938,14 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	vmOutput, err = multiTransferDestinationShard.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Error(t, err)
 	require.Equal(t, "sending value to non payable contract", err.Error())
+	require.Nil(t, vmOutput)
 
 	// check the multi transfer for fungible ESDT transfers as well
 	vmInput.Arguments = [][]byte{big.NewInt(2).Bytes(), token1, big.NewInt(0).Bytes(), quantityBytes, token2, big.NewInt(0).Bytes(), quantityBytes}
 	vmOutput, err = multiTransferDestinationShard.ProcessBuiltinFunction(nil, destination.(vmcommon.UserAccountHandler), vmInput)
 	require.Error(t, err)
 	require.Equal(t, "sending value to non payable contract", err.Error())
+	require.Nil(t, vmOutput)
 }
 
 func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {
