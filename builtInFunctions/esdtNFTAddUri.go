@@ -11,11 +11,13 @@ import (
 
 type esdtNFTAddUri struct {
 	baseActiveHandler
+	vmcommon.BlockchainDataProvider
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	gasConfig             vmcommon.BaseOperationCost
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
 }
@@ -43,16 +45,20 @@ func NewESDTNFTAddUriFunc(
 	}
 
 	e := &esdtNFTAddUri{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		esdtStorageHandler:    esdtStorageHandler,
-		funcGasCost:           funcGasCost,
-		mutExecution:          sync.RWMutex{},
-		globalSettingsHandler: globalSettingsHandler,
-		gasConfig:             gasConfig,
-		rolesHandler:          rolesHandler,
+		keyPrefix:              []byte(baseESDTKeyPrefix),
+		esdtStorageHandler:     esdtStorageHandler,
+		funcGasCost:            funcGasCost,
+		mutExecution:           sync.RWMutex{},
+		globalSettingsHandler:  globalSettingsHandler,
+		gasConfig:              gasConfig,
+		rolesHandler:           rolesHandler,
+		enableEpochsHandler:    enableEpochsHandler,
+		BlockchainDataProvider: NewBlockchainDataProvider(),
 	}
 
-	e.baseActiveHandler.activeHandler = enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled
+	e.baseActiveHandler.activeHandler = func() bool {
+		return enableEpochsHandler.IsFlagEnabled(ESDTNFTImprovementV1Flag)
+	}
 
 	return e, nil
 }
@@ -110,6 +116,11 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 	}
 
 	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
+
+	err = changeEsdtVersion(esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	if err != nil {
+		return nil, err
+	}
 
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
 	if err != nil {

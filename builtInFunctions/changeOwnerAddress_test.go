@@ -99,7 +99,9 @@ func TestProcessBuiltInFunctionCallThroughSC(t *testing.T) {
 
 	coa := changeOwnerAddress{
 		enableEpochsHandler: &mock.EnableEpochsHandlerStub{
-			IsChangeOwnerAddressCrossShardThroughSCEnabledField: true,
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == IsChangeOwnerAddressCrossShardThroughSCFlag
+			},
 		},
 	}
 

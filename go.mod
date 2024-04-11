@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/mitchellh/mapstructure v1.4.1
-	github.com/multiversx/mx-chain-core-go v1.2.13
-	github.com/multiversx/mx-chain-logger-go v1.0.13
+	github.com/multiversx/mx-chain-core-go v1.2.20-0.20240328090024-e88291d59ace
+	github.com/multiversx/mx-chain-logger-go v1.0.14-0.20240129144507-d00e967c890c
 	github.com/stretchr/testify v1.7.0
 )
 
@@ -20,7 +20,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
 
 replace github.com/gogo/protobuf => github.com/multiversx/protobuf v1.3.2

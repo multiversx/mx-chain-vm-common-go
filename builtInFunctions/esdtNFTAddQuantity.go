@@ -103,7 +103,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
-	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsValueLengthCheckFlagEnabled()
+	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(ValueLengthCheckFlag)
 	if isValueLengthCheckFlagEnabled && len(vmInput.Arguments[2]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for add nft quantity is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
@@ -115,7 +115,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, value)
+	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, value, false)
 	if err != nil {
 		return nil, err
 	}

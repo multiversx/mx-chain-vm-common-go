@@ -115,7 +115,7 @@ func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, t
 		return nil, err
 	}
 
-	err = e.removeLiquidity(identifier, nonce, tokenData.Value)
+	err = e.removeLiquidity(identifier, tokenData.Type, nonce, tokenData.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -124,13 +124,13 @@ func (e *esdtFreezeWipe) wipeIfApplicable(acntDst vmcommon.UserAccountHandler, t
 	return wipedAmount, nil
 }
 
-func (e *esdtFreezeWipe) removeLiquidity(tokenIdentifier []byte, nonce uint64, value *big.Int) error {
-	if !e.enableEpochsHandler.IsWipeSingleNFTLiquidityDecreaseEnabled() {
+func (e *esdtFreezeWipe) removeLiquidity(tokenIdentifier []byte, tokenType uint32, nonce uint64, value *big.Int) error {
+	if !e.enableEpochsHandler.IsFlagEnabled(WipeSingleNFTLiquidityDecreaseFlag) {
 		return nil
 	}
 
 	tokenIDKey := append(e.keyPrefix, tokenIdentifier...)
-	return e.esdtStorageHandler.AddToLiquiditySystemAcc(tokenIDKey, nonce, big.NewInt(0).Neg(value))
+	return e.esdtStorageHandler.AddToLiquiditySystemAcc(tokenIDKey, tokenType, nonce, big.NewInt(0).Neg(value), false)
 }
 
 func (e *esdtFreezeWipe) toggleFreeze(acntDst vmcommon.UserAccountHandler, tokenKey []byte) (*big.Int, error) {
