@@ -2,8 +2,10 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -20,37 +22,43 @@ type esdtLocalBurn struct {
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	mutExecution          sync.RWMutex
+	selfESDTPrefix        []byte
+}
+
+// ESDTLocalBurnFuncArgs holds args needed for local burn
+type ESDTLocalBurnFuncArgs struct {
+	FuncGasCost           uint64
+	Marshaller            vmcommon.Marshalizer
+	GlobalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
+	RolesHandler          vmcommon.ESDTRoleHandler
+	EnableEpochsHandler   vmcommon.EnableEpochsHandler
+	SelfESDTPrefix        []byte
 }
 
 // NewESDTLocalBurnFunc returns the esdt local burn built-in function component
-func NewESDTLocalBurnFunc(
-	funcGasCost uint64,
-	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
-	rolesHandler vmcommon.ESDTRoleHandler,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtLocalBurn, error) {
-	if check.IfNil(marshaller) {
+func NewESDTLocalBurnFunc(args ESDTLocalBurnFuncArgs) (*esdtLocalBurn, error) {
+	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(globalSettingsHandler) {
+	if check.IfNil(args.GlobalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if check.IfNil(rolesHandler) {
+	if check.IfNil(args.RolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
+	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtLocalBurn{
 		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		enableEpochsHandler:   enableEpochsHandler,
+		marshaller:            args.Marshaller,
+		globalSettingsHandler: args.GlobalSettingsHandler,
+		rolesHandler:          args.RolesHandler,
+		funcGasCost:           args.FuncGasCost,
+		enableEpochsHandler:   args.EnableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
+		selfESDTPrefix:        args.SelfESDTPrefix,
 	}
 
 	return e, nil
@@ -107,6 +115,10 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 }
 
 func (e *esdtLocalBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, tokenID []byte) error {
+	if e.isCrossChainOperation(tokenID) {
+		return nil
+	}
+
 	esdtTokenKey := append(e.keyPrefix, tokenID...)
 	isBurnForAll := e.globalSettingsHandler.IsBurnForAll(esdtTokenKey)
 	if isBurnForAll {
@@ -114,6 +126,34 @@ func (e *esdtLocalBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, tok
 	}
 
 	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalBurn))
+}
+
+func (e *esdtLocalBurn) isCrossChainOperation(tokenID []byte) bool {
+	if !isTokenPrefixValid(tokenID) {
+		return false
+	}
+
+	tokenIDPrefix, err := extractTokenIDPrefix(tokenID)
+	if err != nil {
+		return false
+	}
+
+	return !bytes.Equal(tokenIDPrefix, e.selfESDTPrefix)
+}
+
+func isTokenPrefixValid(tokenID []byte) bool {
+	return false
+}
+
+func extractTokenIDPrefix(tokenID []byte) ([]byte, error) {
+	tokenStr := string(tokenID)
+	tokenSplits := strings.Split(tokenStr, "-")
+	if len(tokenSplits) < 1 {
+		log.Error("extractTokenIDPrefix: validated a token id with prefix which does not have enough info", "tokenID", tokenStr)
+		return nil, errors.New("dsa")
+	}
+
+	return []byte(tokenSplits[0]), nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil

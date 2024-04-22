@@ -27,6 +27,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	GuardedAccountHandler            vmcommon.GuardedAccountHandler
 	MaxNumOfAddressesForTransferRole uint32
 	ConfigAddress                    []byte
+	SelfESDTPrefix                   []byte
 }
 
 type builtInFuncCreator struct {
@@ -44,6 +45,7 @@ type builtInFuncCreator struct {
 	guardedAccountHandler            vmcommon.GuardedAccountHandler
 	maxNumOfAddressesForTransferRole uint32
 	configAddress                    []byte
+	selfESDTPrefix                   []byte
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -85,6 +87,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		guardedAccountHandler:            args.GuardedAccountHandler,
 		maxNumOfAddressesForTransferRole: args.MaxNumOfAddressesForTransferRole,
 		configAddress:                    args.ConfigAddress,
+		selfESDTPrefix:                   args.SelfESDTPrefix,
 	}
 
 	b.gasConfig, err = createGasConfig(args.GasMap)
@@ -250,7 +253,16 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTLocalBurnFunc(b.gasConfig.BuiltInCost.ESDTLocalBurn, b.marshaller, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTLocalBurnFunc(
+		ESDTLocalBurnFuncArgs{
+			FuncGasCost:           b.gasConfig.BuiltInCost.ESDTLocalBurn,
+			Marshaller:            b.marshaller,
+			GlobalSettingsHandler: globalSettingsFunc,
+			RolesHandler:          setRoleFunc,
+			EnableEpochsHandler:   b.enableEpochsHandler,
+			SelfESDTPrefix:        b.selfESDTPrefix,
+		},
+	)
 	if err != nil {
 		return err
 	}
