@@ -1194,6 +1194,7 @@ func runMultiTransfer(t *testing.T, isScToScEventLogEnabled bool) (*vmcommon.VMO
 	return multiTransferSenderShard.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
 }
 
+// creates accounts with token1 and eGLD balances.
 func createSetupForMultiTransferWithEGLD(t *testing.T) (*vmcommon.ContractCallInput, *esdtNFTMultiTransfer) {
 	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
 	payableChecker, _ := NewPayableCheckFunc(
@@ -1266,6 +1267,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCallWithEGL
 
 	_, err = multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	require.NotNil(t, err)
+	require.Equal(t, err.Error(), "insufficient quantity for token: EGLD-000000 for token EGLD-000000")
 }
 
 func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSameShardWithScCallWithEGLD(t *testing.T) {
@@ -1380,6 +1382,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsWithEGLD(t *tes
 	require.Nil(t, err)
 
 	testNFTTokenShouldExist(t, multiTransferSenderShard.marshaller, sender, token1, tokenNonce, big.NewInt(2)) // 3 initial - 1 transferred
+	require.Equal(t, sender.(vmcommon.UserAccountHandler).GetBalance(), big.NewInt(2))
 
 	_, args := extractScResultsFromVmOutput(t, vmOutput)
 

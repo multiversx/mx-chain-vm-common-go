@@ -107,8 +107,8 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, ErrNegativeValue
 	}
 
-	noGasUse := noGasUseIfReturnCallAfterError(e.enableEpochsHandler, vmInput)
-	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, e.funcGasCost, noGasUse)
+	noGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
+	gasRemaining := computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, e.funcGasCost, noGasUse)
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	tokenID := vmInput.Arguments[0]
 
@@ -406,7 +406,7 @@ func (e *esdtTransfer) IsInterfaceNil() bool {
 	return e == nil
 }
 
-func noGasUseIfReturnCallAfterError(enableEpochsHandler vmcommon.EnableEpochsHandler, vmInput *vmcommon.ContractCallInput) bool {
+func noGasUseIfReturnCallAfterErrorWithFlag(enableEpochsHandler vmcommon.EnableEpochsHandler, vmInput *vmcommon.ContractCallInput) bool {
 	if !enableEpochsHandler.IsFlagEnabled(EGLDInESDTMultiTransferFlag) {
 		return false
 	}

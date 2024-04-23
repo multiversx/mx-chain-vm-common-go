@@ -23,7 +23,7 @@ type esdtNFTMultiTransfer struct {
 	gasConfig      vmcommon.BaseOperationCost
 	mutExecution   sync.RWMutex
 	rolesHandler   vmcommon.ESDTRoleHandler
-	baseTokenID           []byte
+	baseTokenID    []byte
 }
 
 const argumentsPerTransfer = uint64(3)
@@ -78,7 +78,7 @@ func NewESDTNFTMultiTransferFunc(
 			shardCoordinator:      shardCoordinator,
 			enableEpochsHandler:   enableEpochsHandler,
 		},
-		baseTokenID:           []byte(eGLD),
+		baseTokenID: []byte(eGLD),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -206,13 +206,10 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 
 			if bytes.Equal(e.baseTokenID, tokenID) {
 				err = acntDst.AddToBalance(transferredValue)
-				if err != nil {
-					return nil, err
-				}
-				continue
+			} else {
+				err = addToESDTBalance(acntDst, esdtTokenKey, transferredValue, e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 			}
 
-			err = addToESDTBalance(acntDst, esdtTokenKey, transferredValue, e.marshaller, e.globalSettingsHandler, vmInput.ReturnCallAfterError)
 			if err != nil {
 				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
@@ -290,9 +287,9 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		return nil, fmt.Errorf("%w, invalid number of arguments", ErrInvalidArguments)
 	}
 
-	noGasUse := noGasUseIfReturnCallAfterError(e.enableEpochsHandler, vmInput)
+	skipGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
 	multiTransferCost := numOfTransfers * e.funcGasCost
-	if vmInput.GasProvided < multiTransferCost && !noGasUse {
+	if vmInput.GasProvided < multiTransferCost && !skipGasUse {
 		return nil, ErrNotEnoughGas
 	}
 
@@ -310,7 +307,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
-		GasRemaining: computeGasRemaining(acntSnd, vmInput.GasProvided, multiTransferCost, noGasUse),
+		GasRemaining: computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, multiTransferCost, skipGasUse),
 		Logs:         make([]*vmcommon.LogEntry, 0, numOfTransfers),
 	}
 
@@ -382,7 +379,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		}
 	}
 
-	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress, noGasUse)
+	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress, skipGasUse)
 	if err != nil {
 		return nil, err
 	}
@@ -405,11 +402,6 @@ func (e *esdtNFTMultiTransfer) transferBaseToken(
 		return nil, ErrInvalidNonce
 	}
 
-	baseESDTData := &esdt.ESDigitalToken{
-		Type:  0,
-		Value: big.NewInt(0).Set(transferData.ESDTValue),
-	}
-
 	if !check.IfNil(acntSnd) {
 		err := acntSnd.SubFromBalance(transferData.ESDTValue)
 		if err != nil {
@@ -424,6 +416,10 @@ func (e *esdtNFTMultiTransfer) transferBaseToken(
 		}
 	}
 
+	baseESDTData := &esdt.ESDigitalToken{
+		Type:  0,
+		Value: big.NewInt(0).Set(transferData.ESDTValue),
+	}
 	return baseESDTData, nil
 }
 
@@ -530,7 +526,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 	listESDTData []*esdt.ESDigitalToken,
 	listESDTTransfers []*vmcommon.ESDTTransfer,
 	dstAddress []byte,
-	noGasUse bool,
+	skipGasUse bool,
 ) error {
 	multiTransferCallArgs := make([][]byte, 0, argumentsPerTransfer*uint64(len(listESDTTransfers))+1)
 	numTokenTransfer := big.NewInt(int64(len(listESDTTransfers))).Bytes()
@@ -558,7 +554,7 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 					return err
 				}
 
-				if !noGasUse {
+				if !skipGasUse {
 					gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
 					if gasForTransfer > vmOutput.GasRemaining {
 						return ErrNotEnoughGas

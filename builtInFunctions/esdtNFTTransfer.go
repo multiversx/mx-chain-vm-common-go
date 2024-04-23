@@ -223,8 +223,8 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if isTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
-	noGasUse := noGasUseIfReturnCallAfterError(e.enableEpochsHandler, vmInput)
-	if vmInput.GasProvided < e.funcGasCost && !noGasUse {
+	skipGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
+	if vmInput.GasProvided < e.funcGasCost && !skipGasUse {
 		return nil, ErrNotEnoughGas
 	}
 
@@ -318,9 +318,9 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
-		GasRemaining: computeGasRemaining(acntSnd, vmInput.GasProvided, e.funcGasCost, noGasUse),
+		GasRemaining: computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, e.funcGasCost, skipGasUse),
 	}
-	err = e.createNFTOutputTransfers(vmInput, vmOutput, esdtData, dstAddress, tickerID, nonce, noGasUse)
+	err = e.createNFTOutputTransfers(vmInput, vmOutput, esdtData, dstAddress, tickerID, nonce, skipGasUse)
 	if err != nil {
 		return nil, err
 	}
