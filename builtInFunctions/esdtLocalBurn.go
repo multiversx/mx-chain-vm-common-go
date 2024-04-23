@@ -2,14 +2,13 @@ package builtInFunctions
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math/big"
-	"strings"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -129,31 +128,13 @@ func (e *esdtLocalBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, tok
 }
 
 func (e *esdtLocalBurn) isCrossChainOperation(tokenID []byte) bool {
-	if !isTokenPrefixValid(tokenID) {
+	tokenPrefix, hasPrefix := esdt.IsValidPrefixedToken(string(tokenID))
+	// normal tokens main chain operation
+	if !hasPrefix && len(e.selfESDTPrefix) == 0 {
 		return false
 	}
 
-	tokenIDPrefix, err := extractTokenIDPrefix(tokenID)
-	if err != nil {
-		return false
-	}
-
-	return !bytes.Equal(tokenIDPrefix, e.selfESDTPrefix)
-}
-
-func isTokenPrefixValid(tokenID []byte) bool {
-	return false
-}
-
-func extractTokenIDPrefix(tokenID []byte) ([]byte, error) {
-	tokenStr := string(tokenID)
-	tokenSplits := strings.Split(tokenStr, "-")
-	if len(tokenSplits) < 1 {
-		log.Error("extractTokenIDPrefix: validated a token id with prefix which does not have enough info", "tokenID", tokenStr)
-		return nil, errors.New("dsa")
-	}
-
-	return []byte(tokenSplits[0]), nil
+	return !bytes.Equal([]byte(tokenPrefix), e.selfESDTPrefix)
 }
 
 // IsInterfaceNil returns true if underlying object in nil

@@ -382,3 +382,84 @@ func TestCheckInputArgumentsForLocalAction_NotEnoughGas(t *testing.T) {
 	err := checkInputArgumentsForLocalAction(&mock.UserAccountStub{}, vmInput, 500)
 	require.Equal(t, ErrNotEnoughGas, err)
 }
+
+func TestEsdtLocalBurn_isCrossChainOperation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("cross chain operations in a sovereign shard", func(t *testing.T) {
+		args := createESDTLocalBurnArgs()
+		args.SelfESDTPrefix = []byte("sov1")
+		esdtLocalBurnFunc, _ := NewESDTLocalBurnFunc(args)
+
+		require.True(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("ALICE-abcdef")))
+		require.True(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("sov2-ALICE-abcdef")))
+		require.False(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("sov1-ALICE-abcdef")))
+	})
+
+	t.Run("cross chain operations in a main chain", func(t *testing.T) {
+		args := createESDTLocalBurnArgs()
+		args.SelfESDTPrefix = nil
+		esdtLocalBurnFunc, _ := NewESDTLocalBurnFunc(args)
+
+		require.True(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("sov2-ALICE-abcdef")))
+		require.True(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("sov1-ALICE-abcdef")))
+		require.False(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("ALICE-abcdef")))
+	})
+}
+
+func TestEsdtLocalBurn_ProcessBuiltinFunction_CrossChainOperations(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &mock.MarshalizerMock{}
+	args := createESDTLocalBurnArgs()
+	args.SelfESDTPrefix = nil
+	args.FuncGasCost = 50
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			require.Equal(t, core.ESDTRoleLocalBurn, string(action))
+			return nil
+		},
+	}
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
+
+	sndAccout := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
+					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					return serializedEsdtData, 0, err
+				},
+				SaveKeyValueCalled: func(key []byte, value []byte) error {
+					esdtData := &esdt.ESDigitalToken{}
+					_ = marshaller.Unmarshal(esdtData, value)
+					require.Equal(t, big.NewInt(56), esdtData.Value)
+					return nil
+				},
+			}
+		},
+	}
+
+	burnValue := big.NewInt(44).Bytes()
+	vmOutput, err := esdtLocalBurnF.ProcessBuiltinFunction(sndAccout, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{[]byte("sov1-TKN-abcdef"), burnValue},
+			GasProvided: 500,
+		},
+	})
+	require.Nil(t, err)
+	expectedVMOutput := &vmcommon.VMOutput{
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: 450,
+		Logs: []*vmcommon.LogEntry{
+			{
+				Identifier: []byte("ESDTLocalBurn"),
+				Address:    nil,
+				Topics:     [][]byte{[]byte("sov1-TKN-abcdef"), big.NewInt(0).Bytes(), burnValue},
+				Data:       nil,
+			},
+		},
+	}
+	require.Equal(t, expectedVMOutput, vmOutput)
+}
