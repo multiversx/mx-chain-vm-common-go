@@ -75,6 +75,16 @@ func TestNewESDTLocalBurnFunc(t *testing.T) {
 			exError: ErrNilEnableEpochsHandler,
 		},
 		{
+			name: "NilCrossChainTokenChecker",
+			argsFunc: func() ESDTLocalBurnFuncArgs {
+				args := createESDTLocalBurnArgs()
+				args.CrossChainTokenChecker = nil
+
+				return args
+			},
+			exError: ErrNilCrossChainTokenChecker,
+		},
+		{
 			name: "Ok",
 			argsFunc: func() ESDTLocalBurnFuncArgs {
 				return createESDTLocalBurnArgs()
