@@ -253,14 +253,19 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	crossChainTokenCheckerHandler, err := NewCrossChainTokenChecker(b.selfESDTPrefix)
+	if err != nil {
+		return err
+	}
+
 	newFunc, err = NewESDTLocalBurnFunc(
 		ESDTLocalBurnFuncArgs{
-			FuncGasCost:           b.gasConfig.BuiltInCost.ESDTLocalBurn,
-			Marshaller:            b.marshaller,
-			GlobalSettingsHandler: globalSettingsFunc,
-			RolesHandler:          setRoleFunc,
-			EnableEpochsHandler:   b.enableEpochsHandler,
-			SelfESDTPrefix:        b.selfESDTPrefix,
+			FuncGasCost:            b.gasConfig.BuiltInCost.ESDTLocalBurn,
+			Marshaller:             b.marshaller,
+			GlobalSettingsHandler:  globalSettingsFunc,
+			RolesHandler:           setRoleFunc,
+			EnableEpochsHandler:    b.enableEpochsHandler,
+			CrossChainTokenChecker: crossChainTokenCheckerHandler,
 		},
 	)
 	if err != nil {

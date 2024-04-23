@@ -8,30 +8,29 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type esdtLocalBurn struct {
 	baseAlwaysActiveHandler
-	keyPrefix             []byte
-	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
-	rolesHandler          vmcommon.ESDTRoleHandler
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
-	funcGasCost           uint64
-	mutExecution          sync.RWMutex
-	selfESDTPrefix        []byte
+	keyPrefix              []byte
+	marshaller             vmcommon.Marshalizer
+	globalSettingsHandler  vmcommon.ExtendedESDTGlobalSettingsHandler
+	rolesHandler           vmcommon.ESDTRoleHandler
+	enableEpochsHandler    vmcommon.EnableEpochsHandler
+	funcGasCost            uint64
+	mutExecution           sync.RWMutex
+	crossChainTokenChecker CrossChainTokenCheckerHandler
 }
 
 // ESDTLocalBurnFuncArgs holds args needed for local burn
 type ESDTLocalBurnFuncArgs struct {
-	FuncGasCost           uint64
-	Marshaller            vmcommon.Marshalizer
-	GlobalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
-	RolesHandler          vmcommon.ESDTRoleHandler
-	EnableEpochsHandler   vmcommon.EnableEpochsHandler
-	SelfESDTPrefix        []byte
+	FuncGasCost            uint64
+	Marshaller             vmcommon.Marshalizer
+	GlobalSettingsHandler  vmcommon.ExtendedESDTGlobalSettingsHandler
+	RolesHandler           vmcommon.ESDTRoleHandler
+	EnableEpochsHandler    vmcommon.EnableEpochsHandler
+	CrossChainTokenChecker CrossChainTokenCheckerHandler
 }
 
 // NewESDTLocalBurnFunc returns the esdt local burn built-in function component
@@ -48,16 +47,19 @@ func NewESDTLocalBurnFunc(args ESDTLocalBurnFuncArgs) (*esdtLocalBurn, error) {
 	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
+	if check.IfNil(args.CrossChainTokenChecker) {
+		return nil, ErrNilCrossChainTokenChecker
+	}
 
 	e := &esdtLocalBurn{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            args.Marshaller,
-		globalSettingsHandler: args.GlobalSettingsHandler,
-		rolesHandler:          args.RolesHandler,
-		funcGasCost:           args.FuncGasCost,
-		enableEpochsHandler:   args.EnableEpochsHandler,
-		mutExecution:          sync.RWMutex{},
-		selfESDTPrefix:        args.SelfESDTPrefix,
+		keyPrefix:              []byte(baseESDTKeyPrefix),
+		marshaller:             args.Marshaller,
+		globalSettingsHandler:  args.GlobalSettingsHandler,
+		rolesHandler:           args.RolesHandler,
+		funcGasCost:            args.FuncGasCost,
+		enableEpochsHandler:    args.EnableEpochsHandler,
+		mutExecution:           sync.RWMutex{},
+		crossChainTokenChecker: args.CrossChainTokenChecker,
 	}
 
 	return e, nil
@@ -114,7 +116,7 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 }
 
 func (e *esdtLocalBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, tokenID []byte) error {
-	if e.isCrossChainOperation(tokenID) {
+	if e.crossChainTokenChecker.IsCrossChainOperation(tokenID) {
 		return nil
 	}
 
@@ -125,16 +127,6 @@ func (e *esdtLocalBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, tok
 	}
 
 	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalBurn))
-}
-
-func (e *esdtLocalBurn) isCrossChainOperation(tokenID []byte) bool {
-	tokenPrefix, hasPrefix := esdt.IsValidPrefixedToken(string(tokenID))
-	// normal tokens main chain operation
-	if !hasPrefix && len(e.selfESDTPrefix) == 0 {
-		return false
-	}
-
-	return !bytes.Equal([]byte(tokenPrefix), e.selfESDTPrefix)
 }
 
 // IsInterfaceNil returns true if underlying object in nil

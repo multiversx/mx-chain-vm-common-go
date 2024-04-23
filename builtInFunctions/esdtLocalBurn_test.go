@@ -15,13 +15,14 @@ import (
 )
 
 func createESDTLocalBurnArgs() ESDTLocalBurnFuncArgs {
+	ctc, _ := NewCrossChainTokenChecker(nil)
 	return ESDTLocalBurnFuncArgs{
-		FuncGasCost:           0,
-		Marshaller:            &mock.MarshalizerMock{},
-		GlobalSettingsHandler: &mock.GlobalSettingsHandlerStub{},
-		RolesHandler:          &mock.ESDTRoleHandlerStub{},
-		EnableEpochsHandler:   &mock.EnableEpochsHandlerStub{},
-		SelfESDTPrefix:        nil,
+		FuncGasCost:            0,
+		Marshaller:             &mock.MarshalizerMock{},
+		GlobalSettingsHandler:  &mock.GlobalSettingsHandlerStub{},
+		RolesHandler:           &mock.ESDTRoleHandlerStub{},
+		EnableEpochsHandler:    &mock.EnableEpochsHandlerStub{},
+		CrossChainTokenChecker: ctc,
 	}
 }
 
@@ -383,68 +384,58 @@ func TestCheckInputArgumentsForLocalAction_NotEnoughGas(t *testing.T) {
 	require.Equal(t, ErrNotEnoughGas, err)
 }
 
-func TestEsdtLocalBurn_isCrossChainOperation(t *testing.T) {
-	t.Parallel()
-
-	t.Run("cross chain operations in a sovereign shard", func(t *testing.T) {
-		args := createESDTLocalBurnArgs()
-		args.SelfESDTPrefix = []byte("sov1")
-		esdtLocalBurnFunc, _ := NewESDTLocalBurnFunc(args)
-
-		require.True(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("ALICE-abcdef")))
-		require.True(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("sov2-ALICE-abcdef")))
-		require.False(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("sov1-ALICE-abcdef")))
-	})
-
-	t.Run("cross chain operations in a main chain", func(t *testing.T) {
-		args := createESDTLocalBurnArgs()
-		args.SelfESDTPrefix = nil
-		esdtLocalBurnFunc, _ := NewESDTLocalBurnFunc(args)
-
-		require.True(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("sov2-ALICE-abcdef")))
-		require.True(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("sov1-ALICE-abcdef")))
-		require.False(t, esdtLocalBurnFunc.isCrossChainOperation([]byte("ALICE-abcdef")))
-	})
-}
-
 func TestEsdtLocalBurn_ProcessBuiltinFunction_CrossChainOperations(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
 	args := createESDTLocalBurnArgs()
-	args.SelfESDTPrefix = nil
 	args.FuncGasCost = 50
+
+	wasAllowedToExecuteCalled := false
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
-			require.Equal(t, core.ESDTRoleLocalBurn, string(action))
+			wasAllowedToExecuteCalled = true
 			return nil
 		},
 	}
+	wasBurnForAllCalled := false
+	args.GlobalSettingsHandler = &mock.GlobalSettingsHandlerStub{
+		IsBurnForAllCalled: func(token []byte) bool {
+			wasBurnForAllCalled = true
+			return false
+		},
+	}
+
 	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
 
-	sndAccout := &mock.UserAccountStub{
+	initialBalance := big.NewInt(100)
+	burnValue := big.NewInt(44)
+	wasNewBalanceUpdated := false
+	senderAcc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
-					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
+					esdtData := &esdt.ESDigitalToken{Value: initialBalance}
 					serializedEsdtData, err := marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
 					_ = marshaller.Unmarshal(esdtData, value)
-					require.Equal(t, big.NewInt(56), esdtData.Value)
+					require.Equal(t, big.NewInt(0).Sub(initialBalance, burnValue), esdtData.Value)
+
+					wasNewBalanceUpdated = true
 					return nil
 				},
 			}
 		},
 	}
 
-	burnValue := big.NewInt(44).Bytes()
-	vmOutput, err := esdtLocalBurnF.ProcessBuiltinFunction(sndAccout, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+	crossChainToken := []byte("sov1-TKN-abcdef")
+	vmOutput, err := esdtLocalBurnF.ProcessBuiltinFunction(senderAcc, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:   big.NewInt(0),
-			Arguments:   [][]byte{[]byte("sov1-TKN-abcdef"), burnValue},
+			Arguments:   [][]byte{crossChainToken, burnValue.Bytes()},
 			GasProvided: 500,
 		},
 	})
@@ -456,10 +447,13 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CrossChainOperations(t *testing.T)
 			{
 				Identifier: []byte("ESDTLocalBurn"),
 				Address:    nil,
-				Topics:     [][]byte{[]byte("sov1-TKN-abcdef"), big.NewInt(0).Bytes(), burnValue},
+				Topics:     [][]byte{crossChainToken, big.NewInt(0).Bytes(), burnValue.Bytes()},
 				Data:       nil,
 			},
 		},
 	}
 	require.Equal(t, expectedVMOutput, vmOutput)
+	require.True(t, wasNewBalanceUpdated)
+	require.False(t, wasAllowedToExecuteCalled)
+	require.False(t, wasBurnForAllCalled)
 }

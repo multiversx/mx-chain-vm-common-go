@@ -220,3 +220,9 @@ var ErrInvalidVersion = errors.New("invalid version")
 
 // ErrNilBlockchainHook signals that a nil blockchain hook has been provided
 var ErrNilBlockchainHook = errors.New("nil blockchain hook")
+
+// ErrInvalidTokenPrefix signals that an invalid token prefix has been provided
+var ErrInvalidTokenPrefix = errors.New("invalid token prefix, should have max 4 (lowercase/alphanumeric) characters")
+
+// ErrNilCrossChainTokenChecker signals that a nil cross chain token checker has been provided
+var ErrNilCrossChainTokenChecker = errors.New("nil cross chain token checker has been provided")
