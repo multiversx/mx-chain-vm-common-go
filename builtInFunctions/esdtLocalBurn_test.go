@@ -387,9 +387,15 @@ func TestCheckInputArgumentsForLocalAction_NotEnoughGas(t *testing.T) {
 func TestEsdtLocalBurn_ProcessBuiltinFunction_CrossChainOperations(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
+	testEsdtLocalBurnCrossChainOperations(t, nil, []byte("sov1-TKN-abcdef"))
+	testEsdtLocalBurnCrossChainOperations(t, []byte("sov2"), []byte("sov1-TKN-abcdef"))
+	testEsdtLocalBurnCrossChainOperations(t, []byte("sov1"), []byte("TKN-abcdef"))
+}
+
+func testEsdtLocalBurnCrossChainOperations(t *testing.T, selfPrefix, crossChainToken []byte) {
 	args := createESDTLocalBurnArgs()
 	args.FuncGasCost = 50
+	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker(selfPrefix)
 
 	wasAllowedToExecuteCalled := false
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
@@ -411,6 +417,7 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CrossChainOperations(t *testing.T)
 	initialBalance := big.NewInt(100)
 	burnValue := big.NewInt(44)
 	wasNewBalanceUpdated := false
+	marshaller := args.Marshaller
 	senderAcc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
@@ -431,7 +438,6 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CrossChainOperations(t *testing.T)
 		},
 	}
 
-	crossChainToken := []byte("sov1-TKN-abcdef")
 	vmOutput, err := esdtLocalBurnF.ProcessBuiltinFunction(senderAcc, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallValue:   big.NewInt(0),
