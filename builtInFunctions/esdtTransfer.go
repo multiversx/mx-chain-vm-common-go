@@ -107,8 +107,8 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, ErrNegativeValue
 	}
 
-	noGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
-	gasRemaining := computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, e.funcGasCost, noGasUse)
+	skipGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
+	gasRemaining := computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, e.funcGasCost, skipGasUse)
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	tokenID := vmInput.Arguments[0]
 
@@ -124,7 +124,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 
 	if !check.IfNil(acntSnd) {
 		// gas is paid only by sender
-		if vmInput.GasProvided < e.funcGasCost && !noGasUse {
+		if vmInput.GasProvided < e.funcGasCost && !skipGasUse {
 			return nil, ErrNotEnoughGas
 		}
 
