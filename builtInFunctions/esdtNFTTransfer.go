@@ -3,7 +3,6 @@ package builtInFunctions
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"sync"
@@ -22,25 +21,22 @@ var zeroByteArray = []byte{0}
 
 type esdtNFTTransfer struct {
 	baseAlwaysActiveHandler
-	keyPrefix             []byte
-	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
-	payableHandler        vmcommon.PayableChecker
-	funcGasCost           uint64
-	accounts              vmcommon.AccountsAdapter
-	shardCoordinator      vmcommon.Coordinator
-	gasConfig             vmcommon.BaseOperationCost
-	mutExecution          sync.RWMutex
-	rolesHandler          vmcommon.ESDTRoleHandler
-	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
+	*baseComponentsHolder
+	keyPrefix      []byte
+	marshaller     vmcommon.Marshalizer
+	payableHandler vmcommon.PayableChecker
+	funcGasCost    uint64
+	accounts       vmcommon.AccountsAdapter
+	gasConfig      vmcommon.BaseOperationCost
+	mutExecution   sync.RWMutex
+	rolesHandler   vmcommon.ESDTRoleHandler
 }
 
 // NewESDTNFTTransferFunc returns the esdt NFT transfer built-in function component
 func NewESDTNFTTransferFunc(
 	funcGasCost uint64,
 	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.GlobalMetadataHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
@@ -71,18 +67,20 @@ func NewESDTNFTTransferFunc(
 	}
 
 	e := &esdtNFTTransfer{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		funcGasCost:           funcGasCost,
-		accounts:              accounts,
-		shardCoordinator:      shardCoordinator,
-		gasConfig:             gasConfig,
-		mutExecution:          sync.RWMutex{},
-		payableHandler:        &disabledPayableHandler{},
-		rolesHandler:          rolesHandler,
-		enableEpochsHandler:   enableEpochsHandler,
-		esdtStorageHandler:    esdtStorageHandler,
+		keyPrefix:      []byte(baseESDTKeyPrefix),
+		marshaller:     marshaller,
+		funcGasCost:    funcGasCost,
+		accounts:       accounts,
+		gasConfig:      gasConfig,
+		mutExecution:   sync.RWMutex{},
+		payableHandler: &disabledPayableHandler{},
+		rolesHandler:   rolesHandler,
+		baseComponentsHolder: &baseComponentsHolder{
+			esdtStorageHandler:    esdtStorageHandler,
+			globalSettingsHandler: globalSettingsHandler,
+			shardCoordinator:      shardCoordinator,
+			enableEpochsHandler:   enableEpochsHandler,
+		},
 	}
 
 	return e, nil
@@ -306,7 +304,12 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 	} else {
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, big.NewInt(0).Neg(quantityToTransfer))
+		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, tickerID, e.marshaller)
+		if err != nil {
+			return nil, err
+		}
+
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, big.NewInt(0).Neg(quantityToTransfer), keepMetadataOnZeroLiquidity)
 		if err != nil {
 			return nil, err
 		}
@@ -343,6 +346,31 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	)
 
 	return vmOutput, nil
+}
+
+func hasDynamicRole(account vmcommon.UserAccountHandler, tokenID []byte, marshaller vmcommon.Marshalizer) (bool, error) {
+	roleKey := append(roleKeyPrefix, tokenID...)
+	roles, _, err := getESDTRolesForAcnt(marshaller, account, roleKey)
+	if err != nil {
+		return false, err
+	}
+
+	dynamicRoles := [][]byte{
+		[]byte(core.ESDTMetaDataRecreate),
+		[]byte(core.ESDTRoleNFTUpdate),
+		[]byte(core.ESDTRoleModifyCreator),
+		[]byte(core.ESDTRoleModifyRoyalties),
+		[]byte(core.ESDTRoleSetNewURI),
+	}
+
+	for _, role := range dynamicRoles {
+		_, exists := doesRoleExist(roles, role)
+		if exists {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (e *esdtNFTTransfer) createNFTOutputTransfers(
