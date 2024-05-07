@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
+
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -480,7 +482,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 
 	isSameShard := e.shardCoordinator.SameShard(sndAddress, dstAddress)
 	if !isSameShard || isSenderESDTSCAddr {
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, currentESDTData.Type, nonce, transferValue, false)
 		if err != nil {
 			return err
 		}
