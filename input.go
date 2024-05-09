@@ -74,6 +74,9 @@ type VMInput struct {
 
 	// OriginalCallerAddr is the public key of the wallet originally initiating the transaction
 	OriginalCallerAddr []byte
+
+	// RelayerAddr is the public key of the relayer address who paid for the txFee
+	RelayerAddr []byte
 }
 
 type AsyncArguments struct {
