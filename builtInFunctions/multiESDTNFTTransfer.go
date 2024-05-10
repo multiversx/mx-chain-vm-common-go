@@ -80,7 +80,9 @@ func NewESDTNFTMultiTransferFunc(
 		enableEpochsHandler:   enableEpochsHandler,
 	}
 
-	e.baseActiveHandler.activeHandler = e.enableEpochsHandler.IsESDTNFTImprovementV1FlagEnabled
+	e.baseActiveHandler.activeHandler = func() bool {
+		return e.enableEpochsHandler.IsFlagEnabled(ESDTNFTImprovementV1Flag)
+	}
 
 	return e, nil
 }
@@ -205,7 +207,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 			}
 		}
 
-		if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+		if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
 			topicTokenData = append(topicTokenData,
 				&TopicTokenData{
 					tokenID,
@@ -223,7 +225,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		}
 	}
 
-	if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
 		addESDTEntryForTransferInVMOutput(
 			vmInput, vmOutput,
 			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
@@ -264,9 +266,8 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	if bytes.Equal(dstAddress, vmInput.CallerAddr) {
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
-	isTransferToMetaFlagEnabled := e.enableEpochsHandler.IsTransferToMetaFlagEnabled()
-	isInvalidTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId && !isTransferToMetaFlagEnabled
-	if isInvalidTransferToMeta {
+	isTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId
+	if isTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
 	numOfTransfers := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
@@ -305,10 +306,11 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	listEsdtData := make([]*esdt.ESDigitalToken, numOfTransfers)
 	listTransferData := make([]*vmcommon.ESDTTransfer, numOfTransfers)
 
+	isConsistentTokensValuesLenghtCheckEnabled := e.enableEpochsHandler.IsFlagEnabled(ConsistentTokensValuesLengthCheckFlag)
 	topicTokenData := make([]*TopicTokenData, 0)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
-		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && e.enableEpochsHandler.IsConsistentTokensValuesLengthCheckEnabled() {
+		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && isConsistentTokensValuesLenghtCheckEnabled {
 			return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}
 		listTransferData[i] = &vmcommon.ESDTTransfer{
@@ -334,7 +336,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 			return nil, fmt.Errorf("%w for token %s", err, string(listTransferData[i].ESDTTokenName))
 		}
 
-		if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+		if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
 			topicTokenData = append(topicTokenData,
 				&TopicTokenData{
 					listTransferData[i].ESDTTokenName,
@@ -352,7 +354,7 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		}
 	}
 
-	if e.enableEpochsHandler.IsScToScEventLogEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(ScToScLogEventFlag) {
 		addESDTEntryForTransferInVMOutput(
 			vmInput, vmOutput,
 			[]byte(core.BuiltInFunctionMultiESDTNFTTransfer),
@@ -406,7 +408,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	esdtData.Value.Set(transferData.ESDTValue)
 
 	tokenID := esdtTokenKey
-	if e.enableEpochsHandler.IsCheckCorrectTokenIDForTransferRoleFlagEnabled() {
+	if e.enableEpochsHandler.IsFlagEnabled(CheckCorrectTokenIDForTransferRoleFlag) {
 		tokenID = transferData.ESDTTokenName
 	}
 
