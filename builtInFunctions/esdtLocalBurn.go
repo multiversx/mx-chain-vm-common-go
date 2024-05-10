@@ -18,9 +18,9 @@ type esdtLocalBurn struct {
 	globalSettingsHandler  vmcommon.ExtendedESDTGlobalSettingsHandler
 	rolesHandler           vmcommon.ESDTRoleHandler
 	enableEpochsHandler    vmcommon.EnableEpochsHandler
+	crossChainTokenChecker CrossChainTokenCheckerHandler
 	funcGasCost            uint64
 	mutExecution           sync.RWMutex
-	crossChainTokenChecker CrossChainTokenCheckerHandler
 }
 
 // ESDTLocalBurnFuncArgs holds args needed for local burn

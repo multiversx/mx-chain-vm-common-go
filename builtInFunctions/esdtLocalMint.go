@@ -12,44 +12,48 @@ import (
 
 type esdtLocalMint struct {
 	baseAlwaysActiveHandler
-	keyPrefix             []byte
-	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
-	rolesHandler          vmcommon.ESDTRoleHandler
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
-	funcGasCost           uint64
-	mutExecution          sync.RWMutex
+	keyPrefix              []byte
+	marshaller             vmcommon.Marshalizer
+	globalSettingsHandler  vmcommon.ESDTGlobalSettingsHandler
+	rolesHandler           vmcommon.ESDTRoleHandler
+	enableEpochsHandler    vmcommon.EnableEpochsHandler
+	crossChainTokenChecker CrossChainTokenCheckerHandler
+	funcGasCost            uint64
+	mutExecution           sync.RWMutex
+}
+
+// ESDTLocalMintFuncArgs holds args needed for local mint
+type ESDTLocalMintFuncArgs struct {
+	ESDTLocalBurnFuncArgs
 }
 
 // NewESDTLocalMintFunc returns the esdt local mint built-in function component
-func NewESDTLocalMintFunc(
-	funcGasCost uint64,
-	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
-	rolesHandler vmcommon.ESDTRoleHandler,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtLocalMint, error) {
-	if check.IfNil(marshaller) {
+func NewESDTLocalMintFunc(args ESDTLocalMintFuncArgs) (*esdtLocalMint, error) {
+	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(globalSettingsHandler) {
+	if check.IfNil(args.GlobalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if check.IfNil(rolesHandler) {
+	if check.IfNil(args.RolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
+	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
+	}
+	if check.IfNil(args.CrossChainTokenChecker) {
+		return nil, ErrNilCrossChainTokenChecker
 	}
 
 	e := &esdtLocalMint{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		enableEpochsHandler:   enableEpochsHandler,
-		mutExecution:          sync.RWMutex{},
+		keyPrefix:              []byte(baseESDTKeyPrefix),
+		marshaller:             args.Marshaller,
+		globalSettingsHandler:  args.GlobalSettingsHandler,
+		rolesHandler:           args.RolesHandler,
+		funcGasCost:            args.FuncGasCost,
+		enableEpochsHandler:    args.EnableEpochsHandler,
+		mutExecution:           sync.RWMutex{},
+		crossChainTokenChecker: args.CrossChainTokenChecker,
 	}
 
 	return e, nil
@@ -105,6 +109,14 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTLocalMint), vmInput.Arguments[0], 0, value, vmInput.CallerAddr)
 
 	return vmOutput, nil
+}
+
+func (e *esdtLocalMint) isAllowedToMint(acntSnd vmcommon.UserAccountHandler, tokenID []byte) error {
+	if e.crossChainTokenChecker.IsCrossChainOperation(tokenID) && e.crossChainTokenChecker.IsSelfMainChain() {
+		return nil
+	}
+
+	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalBurn))
 }
 
 // IsInterfaceNil returns true if underlying object in nil

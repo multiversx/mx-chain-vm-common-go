@@ -39,6 +39,11 @@ func (ctc *crossChainTokenChecker) IsCrossChainOperation(tokenID []byte) bool {
 	return !bytes.Equal([]byte(tokenPrefix), ctc.selfESDTPrefix)
 }
 
+// IsSelfMainChain returns true if the current chain is the main chain
+func (ctc *crossChainTokenChecker) IsSelfMainChain() bool {
+	return len(ctc.selfESDTPrefix) == 0
+}
+
 // IsInterfaceNil checks if the underlying pointer is nil
 func (ctc *crossChainTokenChecker) IsInterfaceNil() bool {
 	return ctc == nil
