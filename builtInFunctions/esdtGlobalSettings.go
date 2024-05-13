@@ -89,12 +89,14 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	}
 
 	var err error
-	systemSCAccount := dstAccount
-	if !bytes.Equal(core.SystemAccountAddress, dstAccount.AddressBytes()) {
+	var systemSCAccount vmcommon.UserAccountHandler
+	if !bytes.Equal(core.SystemAccountAddress, vmInput.RecipientAddr) || check.IfNil(dstAccount) {
 		systemSCAccount, err = e.getSystemAccount()
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		systemSCAccount = dstAccount
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
