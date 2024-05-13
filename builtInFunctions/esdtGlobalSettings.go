@@ -69,7 +69,7 @@ func (e *esdtGlobalSettings) SetNewGasConfig(_ *vmcommon.GasCost) {
 
 // ProcessBuiltinFunction resolves ESDT pause function call
 func (e *esdtGlobalSettings) ProcessBuiltinFunction(
-	_, _ vmcommon.UserAccountHandler,
+	_, dstAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	if vmInput == nil {
@@ -88,9 +88,17 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 		return nil, ErrOnlySystemAccountAccepted
 	}
 
-	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	var err error
+	systemSCAccount := dstAccount
+	if !bytes.Equal(core.SystemAccountAddress, dstAccount.AddressBytes()) {
+		systemSCAccount, err = e.getSystemAccount()
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	err := e.toggleSetting(esdtTokenKey)
+	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	err = e.toggleSetting(esdtTokenKey, systemSCAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +107,7 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
-	systemSCAccount, err := e.getSystemAccount()
-	if err != nil {
-		return err
-	}
-
+func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte, systemSCAccount vmcommon.UserAccountHandler) error {
 	esdtMetaData, err := e.getGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return err
