@@ -119,6 +119,7 @@ func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
 		esdtMetaData.BurnRoleForAll = e.set
 	}
 
+	log.Error("setting global", "addr", systemSCAccount.AddressBytes(), "value", esdtMetaData)
 	err = systemSCAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
 	if err != nil {
 		return err
@@ -165,8 +166,11 @@ func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
 func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
 	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
 	if err != nil {
+		log.Error("isburnforall", "err", err)
 		return false
 	}
+
+	log.Error("IsBurnForAll", "esdtMetadata", esdtMetadata)
 
 	return esdtMetadata.BurnRoleForAll
 }
