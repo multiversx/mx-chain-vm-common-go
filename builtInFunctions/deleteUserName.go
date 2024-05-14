@@ -89,7 +89,7 @@ func addLogEntryForUserNameChange(
 	vmInput *vmcommon.ContractCallInput,
 	vmOutput *vmcommon.VMOutput,
 	oldUserName []byte,
-) *vmcommon.LogEntry {
+) {
 	logEntry := &vmcommon.LogEntry{
 		Identifier: []byte(vmInput.Function),
 		Address:    vmInput.RecipientAddr,
@@ -98,7 +98,6 @@ func addLogEntryForUserNameChange(
 	}
 	vmOutput.Logs = make([]*vmcommon.LogEntry, 1)
 	vmOutput.Logs[0] = logEntry
-	return logEntry
 }
 
 // IsInterfaceNil returns true if underlying object in nil
