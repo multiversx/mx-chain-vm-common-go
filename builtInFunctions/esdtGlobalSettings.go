@@ -108,7 +108,6 @@ func (e *esdtGlobalSettings) getSystemAccountIfNeeded(
 	dstAccount vmcommon.UserAccountHandler,
 ) (vmcommon.UserAccountHandler, error) {
 	if !bytes.Equal(core.SystemAccountAddress, vmInput.RecipientAddr) || check.IfNil(dstAccount) {
-		log.Error("do we get hree")
 		return e.getSystemAccount()
 	}
 
