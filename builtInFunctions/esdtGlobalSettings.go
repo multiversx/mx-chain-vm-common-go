@@ -88,15 +88,9 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 		return nil, ErrOnlySystemAccountAccepted
 	}
 
-	var err error
-	var systemSCAccount vmcommon.UserAccountHandler
-	if !bytes.Equal(core.SystemAccountAddress, vmInput.RecipientAddr) || check.IfNil(dstAccount) {
-		systemSCAccount, err = e.getSystemAccount()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		systemSCAccount = dstAccount
+	systemSCAccount, err := e.getSystemAccountIfNeeded(vmInput, dstAccount)
+	if err != nil {
+		return nil, err
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
@@ -109,8 +103,20 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
+func (e *esdtGlobalSettings) getSystemAccountIfNeeded(
+	vmInput *vmcommon.ContractCallInput,
+	dstAccount vmcommon.UserAccountHandler,
+) (vmcommon.UserAccountHandler, error) {
+	if !bytes.Equal(core.SystemAccountAddress, vmInput.RecipientAddr) || check.IfNil(dstAccount) {
+		log.Error("do we get hree")
+		return e.getSystemAccount()
+	}
+
+	return dstAccount, nil
+}
+
 func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte, systemSCAccount vmcommon.UserAccountHandler) error {
-	esdtMetaData, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetaData, err := e.getGlobalMetadataFromAccount(esdtTokenKey, systemSCAccount)
 	if err != nil {
 		return err
 	}
@@ -208,6 +214,13 @@ func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobal
 		return nil, err
 	}
 
+	return e.getGlobalMetadataFromAccount(esdtTokenKey, systemSCAccount)
+}
+
+func (e *esdtGlobalSettings) getGlobalMetadataFromAccount(
+	esdtTokenKey []byte,
+	systemSCAccount vmcommon.UserAccountHandler,
+) (*ESDTGlobalMetadata, error) {
 	val, _, err := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
 	if core.IsGetNodeFromDBError(err) {
 		return nil, err
