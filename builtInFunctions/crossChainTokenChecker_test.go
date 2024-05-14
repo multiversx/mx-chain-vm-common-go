@@ -47,3 +47,13 @@ func TestCrossChainTokenChecker_IsCrossChainOperation(t *testing.T) {
 		require.False(t, ctc.IsCrossChainOperation([]byte("ALICE-abcdef")))
 	})
 }
+
+func TestCrossChainTokenChecker_IsSelfMainChain(t *testing.T) {
+	t.Parallel()
+
+	ctcSov, _ := NewCrossChainTokenChecker([]byte("sov1"))
+	require.False(t, ctcSov.IsSelfMainChain())
+
+	ctcMain, _ := NewCrossChainTokenChecker(nil)
+	require.True(t, ctcMain.IsSelfMainChain())
+}
