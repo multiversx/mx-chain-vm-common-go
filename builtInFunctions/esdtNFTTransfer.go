@@ -137,7 +137,9 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	}
 
 	// in cross shard NFT transfer the sender account must be nil
-	if !check.IfNil(acntSnd) {
+	// or sender should be ESDTSCAddress in case of a sovereign scr
+	isSenderESDTSCAddr := bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress)
+	if !check.IfNil(acntSnd) && !isSenderESDTSCAddr {
 		return nil, ErrInvalidRcvAddr
 	}
 	if check.IfNil(acntDst) {
@@ -165,7 +167,15 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	err = e.addNFTToDestination(vmInput.CallerAddr, vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, nonce, vmInput.ReturnCallAfterError)
+	err = e.addNFTToDestination(
+		vmInput.CallerAddr,
+		vmInput.RecipientAddr,
+		acntDst,
+		esdtTransferData,
+		esdtTokenKey,
+		nonce,
+		vmInput.ReturnCallAfterError,
+		isSenderESDTSCAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +257,14 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, false, vmInput.ReturnCallAfterError)
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(
+		acntSnd.AddressBytes(),
+		acntSnd,
+		esdtTokenKey,
+		nonce,
+		esdtData,
+		false,
+		vmInput.ReturnCallAfterError)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +288,15 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		if err != nil {
 			return nil, err
 		}
-		err = e.addNFTToDestination(vmInput.CallerAddr, dstAddress, userAccount, esdtData, esdtTokenKey, nonce, vmInput.ReturnCallAfterError)
+		err = e.addNFTToDestination(
+			vmInput.CallerAddr,
+			dstAddress,
+			userAccount,
+			esdtData,
+			esdtTokenKey,
+			nonce,
+			vmInput.ReturnCallAfterError,
+			false)
 		if err != nil {
 			return nil, err
 		}
@@ -407,6 +432,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	esdtTokenKey []byte,
 	nonce uint64,
 	isReturnWithError bool,
+	isSenderESDTSCAddr bool,
 ) error {
 	currentESDTData, _, err := e.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
@@ -425,7 +451,7 @@ func (e *esdtNFTTransfer) addNFTToDestination(
 	}
 
 	isSameShard := e.shardCoordinator.SameShard(sndAddress, dstAddress)
-	if !isSameShard {
+	if !isSameShard || isSenderESDTSCAddr {
 		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
 		if err != nil {
 			return err
