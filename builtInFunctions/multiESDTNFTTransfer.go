@@ -621,43 +621,6 @@ func (e *esdtNFTMultiTransfer) createESDTNFTOutputTransfers(
 	return nil
 }
 
-func (e *esdtNFTMultiTransfer) addNFTToDestination(
-	sndAddress []byte,
-	dstAddress []byte,
-	userAccount vmcommon.UserAccountHandler,
-	esdtDataToTransfer *esdt.ESDigitalToken,
-	esdtTokenKey []byte,
-	nonce uint64,
-	isReturnCallWithError bool,
-	isSenderESDTSCAddr bool,
-) error {
-	currentESDTData, _, err := e.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
-	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
-		return err
-	}
-	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.globalSettingsHandler, isReturnCallWithError)
-	if err != nil {
-		return err
-	}
-
-	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
-	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnCallWithError)
-	if err != nil {
-		return err
-	}
-
-	isSameShard := e.shardCoordinator.SameShard(sndAddress, dstAddress)
-	if !isSameShard || isSenderESDTSCAddr {
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // IsInterfaceNil returns true if underlying object in nil
 func (e *esdtNFTMultiTransfer) IsInterfaceNil() bool {
 	return e == nil
