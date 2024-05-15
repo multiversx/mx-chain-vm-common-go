@@ -22,13 +22,8 @@ type esdtLocalMint struct {
 	mutExecution           sync.RWMutex
 }
 
-// ESDTLocalMintFuncArgs holds args needed for local mint
-type ESDTLocalMintFuncArgs struct {
-	ESDTLocalBurnFuncArgs
-}
-
 // NewESDTLocalMintFunc returns the esdt local mint built-in function component
-func NewESDTLocalMintFunc(args ESDTLocalMintFuncArgs) (*esdtLocalMint, error) {
+func NewESDTLocalMintFunc(args ESDTLocalMintBurnFuncArgs) (*esdtLocalMint, error) {
 	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}

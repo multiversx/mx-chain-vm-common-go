@@ -14,24 +14,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createESDTLocalMintArgs() ESDTLocalMintFuncArgs {
-	return ESDTLocalMintFuncArgs{
-		ESDTLocalBurnFuncArgs: createESDTLocalBurnArgs(),
-	}
-}
-
 func TestNewESDTLocalMintFunc(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name     string
-		argsFunc func() ESDTLocalMintFuncArgs
+		argsFunc func() ESDTLocalMintBurnFuncArgs
 		exError  error
 	}{
 		{
 			name: "NilMarshalizer",
-			argsFunc: func() ESDTLocalMintFuncArgs {
-				args := createESDTLocalMintArgs()
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
 				args.Marshaller = nil
 
 				return args
@@ -40,8 +34,8 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 		},
 		{
 			name: "NilGlobalSettingsHandler",
-			argsFunc: func() ESDTLocalMintFuncArgs {
-				args := createESDTLocalMintArgs()
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
 				args.GlobalSettingsHandler = nil
 
 				return args
@@ -50,8 +44,8 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 		},
 		{
 			name: "NilRolesHandler",
-			argsFunc: func() ESDTLocalMintFuncArgs {
-				args := createESDTLocalMintArgs()
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
 				args.RolesHandler = nil
 
 				return args
@@ -60,8 +54,8 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 		},
 		{
 			name: "NilEnableEpochsHandler",
-			argsFunc: func() ESDTLocalMintFuncArgs {
-				args := createESDTLocalMintArgs()
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
 				args.EnableEpochsHandler = nil
 
 				return args
@@ -70,8 +64,8 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 		},
 		{
 			name: "NilCrossChainTokenChecker",
-			argsFunc: func() ESDTLocalMintFuncArgs {
-				args := createESDTLocalMintArgs()
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
 				args.CrossChainTokenChecker = nil
 
 				return args
@@ -80,8 +74,8 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 		},
 		{
 			name: "Ok",
-			argsFunc: func() ESDTLocalMintFuncArgs {
-				return createESDTLocalMintArgs()
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				return createESDTLocalMintBurnArgs()
 			},
 			exError: nil,
 		},
@@ -98,7 +92,7 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 func TestEsdtLocalMint_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(createESDTLocalMintArgs())
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(createESDTLocalMintBurnArgs())
 
 	esdtLocalMintF.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{
 		ESDTLocalMint: 500},
@@ -110,7 +104,7 @@ func TestEsdtLocalMint_SetNewGasConfig(t *testing.T) {
 func TestEsdtLocalMint_ProcessBuiltinFunction_CalledWithValueShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(createESDTLocalMintArgs())
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(createESDTLocalMintBurnArgs())
 
 	_, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -124,7 +118,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CheckAllowToExecuteShouldErr(t *te
 	t.Parallel()
 
 	localErr := errors.New("local err")
-	args := createESDTLocalMintArgs()
+	args := createESDTLocalMintBurnArgs()
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return localErr
@@ -144,7 +138,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CheckAllowToExecuteShouldErr(t *te
 func TestEsdtLocalMint_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t *testing.T) {
 	t.Parallel()
 
-	args := createESDTLocalMintArgs()
+	args := createESDTLocalMintBurnArgs()
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return nil
@@ -177,7 +171,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	args := createESDTLocalMintArgs()
+	args := createESDTLocalMintBurnArgs()
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleLocalMint, string(action))
@@ -238,7 +232,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 
 	marshaller := &mock.MarshalizerMock{}
 
-	args := createESDTLocalMintArgs()
+	args := createESDTLocalMintBurnArgs()
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleLocalMint, string(action))
@@ -306,7 +300,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMai
 
 	marshaller := &mock.MarshalizerMock{}
 
-	args := createESDTLocalMintArgs()
+	args := createESDTLocalMintBurnArgs()
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			require.Fail(t, "should not check here, should only check if cross operation and self chain == main chain")
@@ -365,7 +359,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMai
 func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldNotMintCrossChainTokenInSovereignChain(t *testing.T) {
 	t.Parallel()
 
-	args := createESDTLocalMintArgs()
+	args := createESDTLocalMintBurnArgs()
 	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker([]byte("self"))
 	errNotAllowedToMint := errors.New("not allowed")
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{

@@ -23,8 +23,8 @@ type esdtLocalBurn struct {
 	mutExecution           sync.RWMutex
 }
 
-// ESDTLocalBurnFuncArgs holds args needed for local burn
-type ESDTLocalBurnFuncArgs struct {
+// ESDTLocalMintBurnFuncArgs holds args needed for local mint/burn
+type ESDTLocalMintBurnFuncArgs struct {
 	FuncGasCost            uint64
 	Marshaller             vmcommon.Marshalizer
 	GlobalSettingsHandler  vmcommon.ExtendedESDTGlobalSettingsHandler
@@ -34,7 +34,7 @@ type ESDTLocalBurnFuncArgs struct {
 }
 
 // NewESDTLocalBurnFunc returns the esdt local burn built-in function component
-func NewESDTLocalBurnFunc(args ESDTLocalBurnFuncArgs) (*esdtLocalBurn, error) {
+func NewESDTLocalBurnFunc(args ESDTLocalMintBurnFuncArgs) (*esdtLocalBurn, error) {
 	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}

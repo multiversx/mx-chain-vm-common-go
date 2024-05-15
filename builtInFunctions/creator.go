@@ -258,7 +258,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	argsEsdtLocalBurn := ESDTLocalBurnFuncArgs{
+	argsEsdtLocalBurn := ESDTLocalMintBurnFuncArgs{
 		FuncGasCost:            b.gasConfig.BuiltInCost.ESDTLocalBurn,
 		Marshaller:             b.marshaller,
 		GlobalSettingsHandler:  globalSettingsFunc,
@@ -275,15 +275,13 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	argsLocalMint := ESDTLocalMintFuncArgs{
-		ESDTLocalBurnFuncArgs{
-			FuncGasCost:            b.gasConfig.BuiltInCost.ESDTLocalMint,
-			Marshaller:             b.marshaller,
-			GlobalSettingsHandler:  globalSettingsFunc,
-			RolesHandler:           setRoleFunc,
-			EnableEpochsHandler:    b.enableEpochsHandler,
-			CrossChainTokenChecker: crossChainTokenCheckerHandler,
-		},
+	argsLocalMint := ESDTLocalMintBurnFuncArgs{
+		FuncGasCost:            b.gasConfig.BuiltInCost.ESDTLocalMint,
+		Marshaller:             b.marshaller,
+		GlobalSettingsHandler:  globalSettingsFunc,
+		RolesHandler:           setRoleFunc,
+		EnableEpochsHandler:    b.enableEpochsHandler,
+		CrossChainTokenChecker: crossChainTokenCheckerHandler,
 	}
 	newFunc, err = NewESDTLocalMintFunc(argsLocalMint)
 	if err != nil {
