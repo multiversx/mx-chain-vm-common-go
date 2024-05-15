@@ -300,3 +300,100 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	require.True(t, errors.Is(err, ErrInvalidArguments))
 	require.Nil(t, vmOutput)
 }
+
+func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMainChain(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &mock.MarshalizerMock{}
+
+	args := createESDTLocalMintArgs()
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			require.Fail(t, "should not check here, should only check if cross operation and self chain == main chain")
+			return nil
+		},
+	}
+	args.FuncGasCost = 50
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(args)
+
+	tokenID := []byte("pref-TKNX-abcdef")
+	initialSupply := big.NewInt(100)
+	mintQuantity := big.NewInt(1)
+	sndAccout := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					esdtData := &esdt.ESDigitalToken{Value: initialSupply}
+					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					return serializedEsdtData, 0, err
+				},
+				SaveKeyValueCalled: func(key []byte, value []byte) error {
+					esdtData := &esdt.ESDigitalToken{}
+					_ = marshaller.Unmarshal(esdtData, value)
+					require.Equal(t, big.NewInt(0).Add(initialSupply, mintQuantity), esdtData.Value)
+					return nil
+				},
+			}
+		},
+	}
+
+	initialGas := uint64(500)
+	vmOutput, err := esdtLocalMintF.ProcessBuiltinFunction(sndAccout, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{tokenID, mintQuantity.Bytes()},
+			GasProvided: initialGas,
+		},
+	})
+	require.Equal(t, nil, err)
+
+	expectedVMOutput := &vmcommon.VMOutput{
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: initialGas - args.FuncGasCost,
+		Logs: []*vmcommon.LogEntry{
+			{
+				Identifier: []byte("ESDTLocalMint"),
+				Address:    nil,
+				Topics:     [][]byte{tokenID, big.NewInt(0).Bytes(), mintQuantity.Bytes()},
+				Data:       nil,
+			},
+		},
+	}
+	require.Equal(t, expectedVMOutput, vmOutput)
+}
+
+func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldNotMintCrossChainTokenInSovereignChain(t *testing.T) {
+	t.Parallel()
+
+	args := createESDTLocalMintArgs()
+	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker([]byte("self"))
+	errNotAllowedToMint := errors.New("not allowed")
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			return errNotAllowedToMint
+		},
+	}
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(args)
+
+	// Cross chain token from another sovereign chain
+	vmOutput, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{[]byte("pref-TKNX-abcdef"), big.NewInt(1).Bytes()},
+			GasProvided: 500,
+		},
+	})
+	require.Equal(t, errNotAllowedToMint, err)
+	require.Nil(t, vmOutput)
+
+	// Cross chain token from main chain
+	vmOutput, err = esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{[]byte("TKNX-abcdef"), big.NewInt(1).Bytes()},
+			GasProvided: 500,
+		},
+	})
+	require.Equal(t, errNotAllowedToMint, err)
+	require.Nil(t, vmOutput)
+}

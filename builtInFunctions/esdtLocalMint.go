@@ -84,7 +84,7 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 	}
 
 	tokenID := vmInput.Arguments[0]
-	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalMint))
+	err = e.isAllowedToMint(acntSnd, tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (e *esdtLocalMint) isAllowedToMint(acntSnd vmcommon.UserAccountHandler, tok
 		return nil
 	}
 
-	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalBurn))
+	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalMint))
 }
 
 // IsInterfaceNil returns true if underlying object in nil
