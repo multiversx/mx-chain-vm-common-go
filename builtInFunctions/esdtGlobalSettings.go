@@ -134,7 +134,7 @@ func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte, systemSCAccount 
 		return err
 	}
 
-	log.Error("are we here ?")
+	log.Error("are we here ? - like really good code now")
 	return nil
 }
 
