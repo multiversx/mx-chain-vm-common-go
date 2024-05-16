@@ -88,13 +88,13 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 		return nil, ErrOnlySystemAccountAccepted
 	}
 
-	systemSCAccount, err := e.getSystemAccountIfNeeded(vmInput, dstAccount)
+	/*systemSCAccount, err := e.getSystemAccountIfNeeded(vmInput, dstAccount)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
-	err = e.toggleSetting(esdtTokenKey, systemSCAccount)
+	err := e.toggleSetting(esdtTokenKey, dstAccount)
 	if err != nil {
 		return nil, err
 	}
