@@ -88,7 +88,7 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 		return nil, ErrOnlySystemAccountAccepted
 	}
 
-	systemSCAccount, err := e.getSystemAccountIfNeeded(vmInput, dstAccount)
+	systemSCAccount, err := getSystemAccountIfNeeded(vmInput, dstAccount, e.accounts)
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +103,13 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-func (e *esdtGlobalSettings) getSystemAccountIfNeeded(
+func getSystemAccountIfNeeded(
 	vmInput *vmcommon.ContractCallInput,
 	dstAccount vmcommon.UserAccountHandler,
+	accounts vmcommon.AccountsAdapter,
 ) (vmcommon.UserAccountHandler, error) {
 	if !bytes.Equal(core.SystemAccountAddress, vmInput.RecipientAddr) || check.IfNil(dstAccount) {
-		return getSystemAccount(e.accounts)
+		return getSystemAccount(accounts)
 	}
 
 	return dstAccount, nil
@@ -240,10 +241,21 @@ func (e *esdtGlobalSettings) GetTokenType(esdtTokenKey []byte) (uint32, error) {
 }
 
 // SetTokenType sets the token type for the esdtTokenKey
-func (e *esdtGlobalSettings) SetTokenType(esdtTokenKey []byte, tokenType uint32) error {
-	systemAccount, err := getSystemAccount(e.accounts)
-	if err != nil {
-		return err
+func (e *esdtGlobalSettings) SetTokenType(
+	esdtTokenKey []byte,
+	tokenType uint32,
+	dstAcc vmcommon.UserAccountHandler,
+) error {
+	var systemAccount vmcommon.UserAccountHandler
+	var err error
+
+	if check.IfNil(dstAcc) {
+		systemAccount, err = getSystemAccount(e.accounts)
+		if err != nil {
+			return err
+		}
+	} else {
+		systemAccount = dstAcc
 	}
 
 	val, _, err := systemAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
