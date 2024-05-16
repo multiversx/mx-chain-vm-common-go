@@ -622,7 +622,7 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 			GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
 				return uint32(core.NonFungible), nil
 			},
-			SetTokenTypeCalled: func(esdtTokenKey []byte, tokenType uint32) error {
+			SetTokenTypeCalled: func(esdtTokenKey []byte, tokenType uint32, _ vmcommon.UserAccountHandler) error {
 				assert.Equal(t, []byte(key), esdtTokenKey)
 				assert.Equal(t, uint32(core.NonFungibleV2), tokenType)
 				setTokenTypeCalled = true

@@ -121,13 +121,14 @@ func TestESDTSetTokenType_ProcessBuiltinFunction(t *testing.T) {
 		setTokenTypeCalled := false
 		e := &esdtSetTokenType{
 			globalSettingsHandler: &mock.GlobalSettingsHandlerStub{
-				SetTokenTypeCalled: func(esdtTokenKey []byte, tokenType uint32) error {
+				SetTokenTypeCalled: func(esdtTokenKey []byte, tokenType uint32, _ vmcommon.UserAccountHandler) error {
 					require.Equal(t, append([]byte(baseESDTKeyPrefix), tokenKey...), esdtTokenKey)
 					require.Equal(t, uint32(core.NonFungibleV2), tokenType)
 					setTokenTypeCalled = true
 					return nil
 				},
 			},
+			accounts: createAccountsAdapterWithMap(),
 		}
 
 		_, err := e.ProcessBuiltinFunction(nil, nil, &vmcommon.ContractCallInput{
