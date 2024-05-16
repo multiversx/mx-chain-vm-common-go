@@ -134,7 +134,8 @@ func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte, systemSCAccount 
 		return err
 	}
 
-	return e.accounts.SaveAccount(systemSCAccount)
+	log.Error("are we here ?")
+	return nil
 }
 
 func getSystemAccount(accounts vmcommon.AccountsAdapter) (vmcommon.UserAccountHandler, error) {
