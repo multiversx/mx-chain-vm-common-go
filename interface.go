@@ -218,7 +218,7 @@ type ExtendedESDTGlobalSettingsHandler interface {
 type GlobalMetadataHandler interface {
 	ExtendedESDTGlobalSettingsHandler
 	GetTokenType(esdtTokenKey []byte) (uint32, error)
-	SetTokenType(esdtTokenKey []byte, tokenType uint32) error
+	SetTokenType(esdtTokenKey []byte, tokenType uint32, dstAcc UserAccountHandler) error
 	IsInterfaceNil() bool
 }
 

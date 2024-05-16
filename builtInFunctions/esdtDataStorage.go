@@ -426,20 +426,22 @@ func (e *esdtDataStorage) removeNFTMetadataFromSystemAccountIfNeeded(esdtTokenKe
 	}
 
 	esdtData.Type = uint32(core.NonFungibleV2)
-	err = e.globalSettingsHandler.SetTokenType(esdtTokenKey, uint32(core.NonFungibleV2))
-	if err != nil {
-		return err
-	}
-
 	systemAcc, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return err
 	}
+
+	err = e.globalSettingsHandler.SetTokenType(esdtTokenKey, uint32(core.NonFungibleV2), systemAcc)
+	if err != nil {
+		return err
+	}
+
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	if err != nil {
 		return err
 	}
+
 	return e.accounts.SaveAccount(systemAcc)
 }
 
