@@ -10,7 +10,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	"github.com/multiversx/mx-chain-core-go/data/vm"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -224,7 +223,8 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if isTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
-	if vmInput.GasProvided < e.funcGasCost {
+	skipGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
+	if vmInput.GasProvided < e.funcGasCost && !skipGasUse {
 		return nil, ErrNotEnoughGas
 	}
 
@@ -318,9 +318,9 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
-		GasRemaining: vmInput.GasProvided - e.funcGasCost,
+		GasRemaining: computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, e.funcGasCost, skipGasUse),
 	}
-	err = e.createNFTOutputTransfers(vmInput, vmOutput, esdtData, dstAddress, tickerID, nonce)
+	err = e.createNFTOutputTransfers(vmInput, vmOutput, esdtData, dstAddress, tickerID, nonce, skipGasUse)
 	if err != nil {
 		return nil, err
 	}
@@ -371,6 +371,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	dstAddress []byte,
 	tickerID []byte,
 	nonce uint64,
+	noGasUse bool,
 ) error {
 	nftTransferCallArgs := make([][]byte, 0)
 	nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[:3]...)
@@ -386,11 +387,14 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 			return err
 		}
 
-		gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
-		if gasForTransfer > vmOutput.GasRemaining {
-			return ErrNotEnoughGas
+		if !noGasUse {
+			gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
+			if gasForTransfer > vmOutput.GasRemaining {
+				return ErrNotEnoughGas
+			}
+			vmOutput.GasRemaining -= gasForTransfer
 		}
-		vmOutput.GasRemaining -= gasForTransfer
+
 		nftTransferCallArgs = append(nftTransferCallArgs, marshaledNFTTransfer)
 	} else {
 		nftTransferCallArgs = append(nftTransferCallArgs, zeroByteArray)
@@ -410,13 +414,11 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		}
 		addNFTTransferToVMOutput(
 			1,
-			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionESDTNFTTransfer,
 			nftTransferCallArgs,
-			vmInput.GasLocked,
 			gasToTransfer,
-			vmInput.CallType,
+			vmInput,
 			vmOutput,
 		)
 
@@ -445,13 +447,11 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 
 func addNFTTransferToVMOutput(
 	index uint32,
-	senderAddress []byte,
 	recipient []byte,
 	funcToCall string,
 	arguments [][]byte,
-	gasLocked uint64,
 	gasLimit uint64,
-	callType vm.CallType,
+	vmInput *vmcommon.ContractCallInput,
 	vmOutput *vmcommon.VMOutput,
 ) {
 	nftTransferTxData := funcToCall
@@ -460,12 +460,12 @@ func addNFTTransferToVMOutput(
 	}
 	outTransfer := vmcommon.OutputTransfer{
 		Index:         index,
-		Value:         big.NewInt(0),
+		Value:         big.NewInt(0).Set(vmInput.CallValue),
 		GasLimit:      gasLimit,
-		GasLocked:     gasLocked,
+		GasLocked:     vmInput.GasLocked,
 		Data:          []byte(nftTransferTxData),
-		CallType:      callType,
-		SenderAddress: senderAddress,
+		CallType:      vmInput.CallType,
+		SenderAddress: vmInput.CallerAddr,
 	}
 	vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
 	vmOutput.OutputAccounts[string(recipient)] = &vmcommon.OutputAccount{
