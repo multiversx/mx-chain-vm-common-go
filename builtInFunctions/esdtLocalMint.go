@@ -12,14 +12,14 @@ import (
 
 type esdtLocalMint struct {
 	baseAlwaysActiveHandler
-	keyPrefix              []byte
-	marshaller             vmcommon.Marshalizer
-	globalSettingsHandler  vmcommon.ESDTGlobalSettingsHandler
-	rolesHandler           vmcommon.ESDTRoleHandler
-	enableEpochsHandler    vmcommon.EnableEpochsHandler
-	crossChainTokenChecker CrossChainTokenCheckerHandler
-	funcGasCost            uint64
-	mutExecution           sync.RWMutex
+	*baseCrossChainActionAllowedChecker
+	keyPrefix             []byte
+	marshaller            vmcommon.Marshalizer
+	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	rolesHandler          vmcommon.ESDTRoleHandler
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
+	funcGasCost           uint64
+	mutExecution          sync.RWMutex
 }
 
 // NewESDTLocalMintFunc returns the esdt local mint built-in function component
@@ -41,14 +41,17 @@ func NewESDTLocalMintFunc(args ESDTLocalMintBurnFuncArgs) (*esdtLocalMint, error
 	}
 
 	e := &esdtLocalMint{
-		keyPrefix:              []byte(baseESDTKeyPrefix),
-		marshaller:             args.Marshaller,
-		globalSettingsHandler:  args.GlobalSettingsHandler,
-		rolesHandler:           args.RolesHandler,
-		funcGasCost:            args.FuncGasCost,
-		enableEpochsHandler:    args.EnableEpochsHandler,
-		mutExecution:           sync.RWMutex{},
-		crossChainTokenChecker: args.CrossChainTokenChecker,
+		keyPrefix:             []byte(baseESDTKeyPrefix),
+		marshaller:            args.Marshaller,
+		globalSettingsHandler: args.GlobalSettingsHandler,
+		rolesHandler:          args.RolesHandler,
+		funcGasCost:           args.FuncGasCost,
+		enableEpochsHandler:   args.EnableEpochsHandler,
+		mutExecution:          sync.RWMutex{},
+		baseCrossChainActionAllowedChecker: &baseCrossChainActionAllowedChecker{
+			rolesHandler:           args.RolesHandler,
+			crossChainTokenChecker: args.CrossChainTokenChecker,
+		},
 	}
 
 	return e, nil
@@ -79,7 +82,7 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 	}
 
 	tokenID := vmInput.Arguments[0]
-	err = e.isAllowedToMint(acntSnd, tokenID)
+	err = e.isAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalMint))
 	if err != nil {
 		return nil, err
 	}
@@ -104,14 +107,6 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTLocalMint), vmInput.Arguments[0], 0, value, vmInput.CallerAddr)
 
 	return vmOutput, nil
-}
-
-func (e *esdtLocalMint) isAllowedToMint(acntSnd vmcommon.UserAccountHandler, tokenID []byte) error {
-	if e.crossChainTokenChecker.IsCrossChainOperation(tokenID) && e.crossChainTokenChecker.IsWhiteListed(acntSnd.AddressBytes()) {
-		return nil
-	}
-
-	return e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalMint))
 }
 
 // IsInterfaceNil returns true if underlying object in nil

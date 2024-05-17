@@ -325,7 +325,17 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTCreateFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshaller, globalSettingsFunc, setRoleFunc, b.esdtStorageHandler, b.accounts, b.enableEpochsHandler)
+	newFunc, err = NewESDTNFTCreateFunc(
+		b.gasConfig.BuiltInCost.ESDTNFTCreate,
+		b.gasConfig.BaseOperationCost,
+		b.marshaller,
+		globalSettingsFunc,
+		setRoleFunc,
+		b.esdtStorageHandler,
+		b.accounts,
+		b.enableEpochsHandler,
+		crossChainTokenCheckerHandler,
+	)
 	if err != nil {
 		return err
 	}

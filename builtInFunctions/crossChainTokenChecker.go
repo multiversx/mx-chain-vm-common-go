@@ -52,7 +52,12 @@ func (ctc *crossChainTokenChecker) IsCrossChainOperation(tokenID []byte) bool {
 	return !bytes.Equal([]byte(tokenPrefix), ctc.selfESDTPrefix)
 }
 
-func (ctc *crossChainTokenChecker) IsWhiteListed(address []byte) bool {
+// IsAllowedToMint checks whether an address is allowed to mint/create/add quantity a token
+func (ctc *crossChainTokenChecker) IsAllowedToMint(address []byte, tokenID []byte) bool {
+	return ctc.isWhiteListed(address) && ctc.IsCrossChainOperation(tokenID)
+}
+
+func (ctc *crossChainTokenChecker) isWhiteListed(address []byte) bool {
 	_, found := ctc.whiteListedAddresses[string(address)]
 	return found
 }

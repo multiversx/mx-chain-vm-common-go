@@ -64,7 +64,7 @@ func TestCrossChainTokenChecker_IsCrossChainOperation(t *testing.T) {
 	})
 }
 
-func TestCrossChainTokenChecker_IsWhiteListed(t *testing.T) {
+func TestCrossChainTokenChecker_isWhiteListed(t *testing.T) {
 	t.Parallel()
 
 	whiteListedAddr1 := "whiteListedAddress1"
@@ -75,8 +75,8 @@ func TestCrossChainTokenChecker_IsWhiteListed(t *testing.T) {
 	}
 	ctc, _ := NewCrossChainTokenChecker(nil, whiteListedAddresses)
 
-	require.True(t, ctc.IsWhiteListed([]byte(whiteListedAddr1)))
-	require.True(t, ctc.IsWhiteListed([]byte(whiteListedAddr2)))
-	require.False(t, ctc.IsWhiteListed([]byte("addr3")))
-	require.False(t, ctc.IsWhiteListed(nil))
+	require.True(t, ctc.isWhiteListed([]byte(whiteListedAddr1)))
+	require.True(t, ctc.isWhiteListed([]byte(whiteListedAddr2)))
+	require.False(t, ctc.isWhiteListed([]byte("addr3")))
+	require.False(t, ctc.isWhiteListed(nil))
 }
