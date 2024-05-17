@@ -114,6 +114,14 @@ func (c *changeOwnerAddress) addOutputTransferToVmOutputForCallThroughSC(acntDst
 		vmOutput)
 }
 
+func computeGasRemainingIfNeeded(snd vmcommon.UserAccountHandler, gasProvided uint64, gasToUse uint64, noGasUse bool) uint64 {
+	if noGasUse {
+		return gasProvided
+	}
+
+	return computeGasRemaining(snd, gasProvided, gasToUse)
+}
+
 func computeGasRemaining(snd vmcommon.UserAccountHandler, gasProvided uint64, gasToUse uint64) uint64 {
 	if gasProvided < gasToUse {
 		return 0
