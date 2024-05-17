@@ -80,3 +80,24 @@ func TestCrossChainTokenChecker_isWhiteListed(t *testing.T) {
 	require.False(t, ctc.isWhiteListed([]byte("addr3")))
 	require.False(t, ctc.isWhiteListed(nil))
 }
+
+func TestCrossChainTokenChecker_IsAllowedToMint(t *testing.T) {
+	t.Parallel()
+
+	whiteListAddr := []byte("whiteListedAddress")
+	t.Run("main chain", func(t *testing.T) {
+		ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
+
+		require.True(t, ctc.IsAllowedToMint(whiteListAddr, []byte("sov1-ALICE-abcdef")))
+		require.False(t, ctc.IsAllowedToMint([]byte("anotherAddress"), []byte("sov1-ALICE-abcdef")))
+		require.False(t, ctc.IsAllowedToMint(whiteListAddr, []byte("ALICE-abcdef")))
+		require.False(t, ctc.IsAllowedToMint([]byte("anotherAddress"), []byte("ALICE-abcdef")))
+	})
+
+	t.Run("single shard chain", func(t *testing.T) {
+		ctc, _ := NewCrossChainTokenChecker([]byte("pref"), nil)
+
+		require.False(t, ctc.IsAllowedToMint(whiteListAddr, []byte("sov1-ALICE-abcdef")))
+		require.False(t, ctc.IsAllowedToMint(whiteListAddr, []byte("ALICE-abcdef")))
+	})
+}
