@@ -16,36 +16,38 @@ const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are
 
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
-	GasMap                           map[string]map[string]uint64
-	MapDNSAddresses                  map[string]struct{}
-	MapDNSV2Addresses                map[string]struct{}
-	EnableUserNameChange             bool
-	Marshalizer                      vmcommon.Marshalizer
-	Accounts                         vmcommon.AccountsAdapter
-	ShardCoordinator                 vmcommon.Coordinator
-	EnableEpochsHandler              vmcommon.EnableEpochsHandler
-	GuardedAccountHandler            vmcommon.GuardedAccountHandler
-	MaxNumOfAddressesForTransferRole uint32
-	ConfigAddress                    []byte
-	SelfESDTPrefix                   []byte
+	GasMap                                map[string]map[string]uint64
+	MapDNSAddresses                       map[string]struct{}
+	MapDNSV2Addresses                     map[string]struct{}
+	MapWhiteListedCrossChainMintAddresses map[string]struct{}
+	EnableUserNameChange                  bool
+	Marshalizer                           vmcommon.Marshalizer
+	Accounts                              vmcommon.AccountsAdapter
+	ShardCoordinator                      vmcommon.Coordinator
+	EnableEpochsHandler                   vmcommon.EnableEpochsHandler
+	GuardedAccountHandler                 vmcommon.GuardedAccountHandler
+	MaxNumOfAddressesForTransferRole      uint32
+	ConfigAddress                         []byte
+	SelfESDTPrefix                        []byte
 }
 
 type builtInFuncCreator struct {
-	mapDNSAddresses                  map[string]struct{}
-	mapDNSV2Addresses                map[string]struct{}
-	enableUserNameChange             bool
-	marshaller                       vmcommon.Marshalizer
-	accounts                         vmcommon.AccountsAdapter
-	builtInFunctions                 vmcommon.BuiltInFunctionContainer
-	gasConfig                        *vmcommon.GasCost
-	shardCoordinator                 vmcommon.Coordinator
-	esdtStorageHandler               vmcommon.ESDTNFTStorageHandler
-	esdtGlobalSettingsHandler        vmcommon.ESDTGlobalSettingsHandler
-	enableEpochsHandler              vmcommon.EnableEpochsHandler
-	guardedAccountHandler            vmcommon.GuardedAccountHandler
-	maxNumOfAddressesForTransferRole uint32
-	configAddress                    []byte
-	selfESDTPrefix                   []byte
+	mapDNSAddresses                       map[string]struct{}
+	mapDNSV2Addresses                     map[string]struct{}
+	mapWhiteListedCrossChainMintAddresses map[string]struct{}
+	enableUserNameChange                  bool
+	marshaller                            vmcommon.Marshalizer
+	accounts                              vmcommon.AccountsAdapter
+	builtInFunctions                      vmcommon.BuiltInFunctionContainer
+	gasConfig                             *vmcommon.GasCost
+	shardCoordinator                      vmcommon.Coordinator
+	esdtStorageHandler                    vmcommon.ESDTNFTStorageHandler
+	esdtGlobalSettingsHandler             vmcommon.ESDTGlobalSettingsHandler
+	enableEpochsHandler                   vmcommon.EnableEpochsHandler
+	guardedAccountHandler                 vmcommon.GuardedAccountHandler
+	maxNumOfAddressesForTransferRole      uint32
+	configAddress                         []byte
+	selfESDTPrefix                        []byte
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -77,17 +79,18 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	}
 
 	b := &builtInFuncCreator{
-		mapDNSAddresses:                  args.MapDNSAddresses,
-		mapDNSV2Addresses:                args.MapDNSV2Addresses,
-		enableUserNameChange:             args.EnableUserNameChange,
-		marshaller:                       args.Marshalizer,
-		accounts:                         args.Accounts,
-		shardCoordinator:                 args.ShardCoordinator,
-		enableEpochsHandler:              args.EnableEpochsHandler,
-		guardedAccountHandler:            args.GuardedAccountHandler,
-		maxNumOfAddressesForTransferRole: args.MaxNumOfAddressesForTransferRole,
-		configAddress:                    args.ConfigAddress,
-		selfESDTPrefix:                   args.SelfESDTPrefix,
+		mapDNSAddresses:                       args.MapDNSAddresses,
+		mapDNSV2Addresses:                     args.MapDNSV2Addresses,
+		enableUserNameChange:                  args.EnableUserNameChange,
+		marshaller:                            args.Marshalizer,
+		accounts:                              args.Accounts,
+		shardCoordinator:                      args.ShardCoordinator,
+		enableEpochsHandler:                   args.EnableEpochsHandler,
+		guardedAccountHandler:                 args.GuardedAccountHandler,
+		maxNumOfAddressesForTransferRole:      args.MaxNumOfAddressesForTransferRole,
+		configAddress:                         args.ConfigAddress,
+		selfESDTPrefix:                        args.SelfESDTPrefix,
+		mapWhiteListedCrossChainMintAddresses: args.MapWhiteListedCrossChainMintAddresses,
 	}
 
 	b.gasConfig, err = createGasConfig(args.GasMap)
@@ -253,7 +256,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	crossChainTokenCheckerHandler, err := NewCrossChainTokenChecker(b.selfESDTPrefix)
+	crossChainTokenCheckerHandler, err := NewCrossChainTokenChecker(b.selfESDTPrefix, b.mapWhiteListedCrossChainMintAddresses)
 	if err != nil {
 		return err
 	}

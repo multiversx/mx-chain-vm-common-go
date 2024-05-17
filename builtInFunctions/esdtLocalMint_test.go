@@ -301,6 +301,12 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMai
 	marshaller := &mock.MarshalizerMock{}
 
 	args := createESDTLocalMintBurnArgs()
+
+	whiteListedAddr := []byte("whiteListedAddress")
+	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker(nil, map[string]struct{}{
+		string(whiteListedAddr): {},
+	})
+
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			require.Fail(t, "should not check here, should only check if cross operation and self chain == main chain")
@@ -329,6 +335,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMai
 				},
 			}
 		},
+		Address: whiteListedAddr,
 	}
 
 	initialGas := uint64(500)
@@ -360,7 +367,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldNotMintCrossChainTokenInSove
 	t.Parallel()
 
 	args := createESDTLocalMintBurnArgs()
-	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker([]byte("self"))
+	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker([]byte("self"), map[string]struct{}{})
 	errNotAllowedToMint := errors.New("not allowed")
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {

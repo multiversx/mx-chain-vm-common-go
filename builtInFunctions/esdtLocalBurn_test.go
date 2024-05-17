@@ -15,7 +15,7 @@ import (
 )
 
 func createESDTLocalMintBurnArgs() ESDTLocalMintBurnFuncArgs {
-	ctc, _ := NewCrossChainTokenChecker(nil)
+	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
 	return ESDTLocalMintBurnFuncArgs{
 		FuncGasCost:            0,
 		Marshaller:             &mock.MarshalizerMock{},
@@ -405,7 +405,12 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CrossChainOperations(t *testing.T)
 func testEsdtLocalBurnCrossChainOperations(t *testing.T, selfPrefix, crossChainToken []byte) {
 	args := createESDTLocalMintBurnArgs()
 	args.FuncGasCost = 50
-	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker(selfPrefix)
+
+	whiteListedAddr := make(map[string]struct{})
+	if len(selfPrefix) == 0 {
+		whiteListedAddr = getWhiteListedAddress()
+	}
+	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker(selfPrefix, whiteListedAddr)
 
 	wasAllowedToExecuteCalled := false
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{

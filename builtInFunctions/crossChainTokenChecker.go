@@ -8,13 +8,19 @@ import (
 )
 
 type crossChainTokenChecker struct {
-	selfESDTPrefix []byte
+	selfESDTPrefix       []byte
+	whiteListedAddresses map[string]struct{}
 }
 
 // NewCrossChainTokenChecker creates a new cross chain token checker
-func NewCrossChainTokenChecker(selfESDTPrefix []byte) (*crossChainTokenChecker, error) {
+func NewCrossChainTokenChecker(selfESDTPrefix []byte, whiteListedAddresses map[string]struct{}) (*crossChainTokenChecker, error) {
 	ctc := &crossChainTokenChecker{
-		selfESDTPrefix: selfESDTPrefix,
+		selfESDTPrefix:       selfESDTPrefix,
+		whiteListedAddresses: whiteListedAddresses,
+	}
+
+	if !areChainParamsCompatible(selfESDTPrefix, whiteListedAddresses) {
+		return nil, ErrInvalidCrossChainConfig
 	}
 
 	if len(selfESDTPrefix) == 0 {
@@ -28,6 +34,13 @@ func NewCrossChainTokenChecker(selfESDTPrefix []byte) (*crossChainTokenChecker, 
 	return ctc, nil
 }
 
+func areChainParamsCompatible(selfESDTPrefix []byte, whiteListedAddresses map[string]struct{}) bool {
+	validConfigMainChain := len(selfESDTPrefix) == 0 && len(whiteListedAddresses) != 0
+	validConfigSingleShardChain := len(selfESDTPrefix) != 0 && len(whiteListedAddresses) == 0
+
+	return validConfigMainChain || validConfigSingleShardChain
+}
+
 // IsCrossChainOperation checks if the provided token comes from another chain/sovereign shard
 func (ctc *crossChainTokenChecker) IsCrossChainOperation(tokenID []byte) bool {
 	tokenPrefix, hasPrefix := esdt.IsValidPrefixedToken(string(tokenID))
@@ -39,9 +52,9 @@ func (ctc *crossChainTokenChecker) IsCrossChainOperation(tokenID []byte) bool {
 	return !bytes.Equal([]byte(tokenPrefix), ctc.selfESDTPrefix)
 }
 
-// IsSelfMainChain returns true if the current chain is the main chain
-func (ctc *crossChainTokenChecker) IsSelfMainChain() bool {
-	return len(ctc.selfESDTPrefix) == 0
+func (ctc *crossChainTokenChecker) IsWhiteListed(address []byte) bool {
+	_, found := ctc.whiteListedAddresses[string(address)]
+	return found
 }
 
 // IsInterfaceNil checks if the underlying pointer is nil

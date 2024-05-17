@@ -107,7 +107,7 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 }
 
 func (e *esdtLocalMint) isAllowedToMint(acntSnd vmcommon.UserAccountHandler, tokenID []byte) error {
-	if e.crossChainTokenChecker.IsCrossChainOperation(tokenID) && e.crossChainTokenChecker.IsSelfMainChain() {
+	if e.crossChainTokenChecker.IsCrossChainOperation(tokenID) && e.crossChainTokenChecker.IsWhiteListed(acntSnd.AddressBytes()) {
 		return nil
 	}
 
