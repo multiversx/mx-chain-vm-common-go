@@ -163,6 +163,7 @@ type UserAccountHandler interface {
 	GetRootHash() []byte
 	AccountDataHandler() AccountDataHandler
 	AddToBalance(value *big.Int) error
+	SubFromBalance(value *big.Int) error
 	GetBalance() *big.Int
 	ClaimDeveloperRewards([]byte) (*big.Int, error)
 	GetDeveloperReward() *big.Int

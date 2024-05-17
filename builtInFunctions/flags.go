@@ -27,6 +27,7 @@ const (
 	IsChangeOwnerAddressCrossShardThroughSCFlag core.EnableEpochFlag = "IsChangeOwnerAddressCrossShardThroughSCFlag"
 	MigrateDataTrieFlag                         core.EnableEpochFlag = "MigrateDataTrieFlag"
 	DynamicEsdtFlag                             core.EnableEpochFlag = "DynamicEsdtFlag"
+	EGLDInESDTMultiTransferFlag                 core.EnableEpochFlag = "EGLDInESDTMultiTransferFlag"
 )
 
 // allFlags must have all flags used by mx-chain-vm-common-go in the current version
@@ -54,4 +55,5 @@ var allFlags = []core.EnableEpochFlag{
 	IsChangeOwnerAddressCrossShardThroughSCFlag,
 	MigrateDataTrieFlag,
 	DynamicEsdtFlag,
+	EGLDInESDTMultiTransferFlag,
 }
