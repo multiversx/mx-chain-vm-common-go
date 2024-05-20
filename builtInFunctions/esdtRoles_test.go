@@ -14,13 +14,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewESDTRolesFunc_NilMarshalizerShouldErr(t *testing.T) {
+func TestNewESDTRolesFunc(t *testing.T) {
 	t.Parallel()
 
-	esdtRolesF, err := NewESDTRolesFunc(nil, &mock.CrossChainTokenCheckerMock{}, false)
-
-	require.Equal(t, ErrNilMarshalizer, err)
-	require.Nil(t, esdtRolesF)
+	t.Run("should work", func(t *testing.T) {
+		esdtRolesF, err := NewESDTRolesFunc(&mock.MarshalizerMock{}, &mock.CrossChainTokenCheckerMock{}, false)
+		require.Nil(t, err)
+		require.False(t, esdtRolesF.IsInterfaceNil())
+		require.Equal(t, map[string]struct{}{
+			core.ESDTRoleLocalMint:      {},
+			core.ESDTRoleNFTAddQuantity: {},
+			core.ESDTRoleNFTCreate:      {},
+			core.ESDTRoleLocalBurn:      {},
+		}, esdtRolesF.crossChainActions)
+	})
+	t.Run("nil marshaller, should return error", func(t *testing.T) {
+		esdtRolesF, err := NewESDTRolesFunc(nil, &mock.CrossChainTokenCheckerMock{}, false)
+		require.Equal(t, ErrNilMarshalizer, err)
+		require.Nil(t, esdtRolesF)
+	})
+	t.Run("nil marshaller, should return error", func(t *testing.T) {
+		esdtRolesF, err := NewESDTRolesFunc(&mock.MarshalizerMock{}, nil, false)
+		require.Equal(t, ErrNilCrossChainTokenChecker, err)
+		require.Nil(t, esdtRolesF)
+	})
 }
 
 func TestEsdtRoles_ProcessBuiltinFunction_NilVMInputShouldErr(t *testing.T) {
@@ -384,4 +401,27 @@ func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 		},
 	}, []byte("ID"), []byte(core.ESDTRoleLocalMint))
 	require.Equal(t, ErrActionNotAllowed, err)
+}
+
+func TestEsdtRoles_isAllowedToExecuteCrossChain(t *testing.T) {
+	isCrossChainOperationAllowedCt := 0
+	ctc := &mock.CrossChainTokenCheckerMock{
+		IsCrossChainOperationAllowedCalled: func(address []byte, tokenID []byte) bool {
+			isCrossChainOperationAllowedCt++
+			return true
+		},
+	}
+	esdtRolesF, _ := NewESDTRolesFunc(&mock.MarshalizerMock{}, ctc, false)
+
+	isAllowed := esdtRolesF.isAllowedToExecuteCrossChain([]byte("addr"), []byte("token"), []byte(core.ESDTRoleLocalBurn))
+	require.True(t, isAllowed)
+	require.Equal(t, 1, isCrossChainOperationAllowedCt)
+
+	isAllowed = esdtRolesF.isAllowedToExecuteCrossChain([]byte("addr"), []byte("token"), []byte(core.ESDTRoleNFTAddQuantity))
+	require.True(t, isAllowed)
+	require.Equal(t, 2, isCrossChainOperationAllowedCt)
+
+	isAllowed = esdtRolesF.isAllowedToExecuteCrossChain([]byte("addr"), []byte("token"), []byte(core.ESDTRoleModifyRoyalties))
+	require.False(t, isAllowed)
+	require.Equal(t, 2, isCrossChainOperationAllowedCt)
 }

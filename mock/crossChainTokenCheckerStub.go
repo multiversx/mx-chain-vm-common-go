@@ -2,8 +2,8 @@ package mock
 
 // CrossChainTokenCheckerMock -
 type CrossChainTokenCheckerMock struct {
-	IsCrossChainOperationCalled func(tokenID []byte) bool
-	IsAllowedToMintCalled       func(address []byte, tokenID []byte) bool
+	IsCrossChainOperationCalled        func(tokenID []byte) bool
+	IsCrossChainOperationAllowedCalled func(address []byte, tokenID []byte) bool
 }
 
 // IsCrossChainOperation -
@@ -17,8 +17,8 @@ func (stub *CrossChainTokenCheckerMock) IsCrossChainOperation(tokenID []byte) bo
 
 // IsCrossChainOperationAllowed -
 func (stub *CrossChainTokenCheckerMock) IsCrossChainOperationAllowed(address []byte, tokenID []byte) bool {
-	if stub.IsAllowedToMintCalled != nil {
-		return stub.IsAllowedToMintCalled(address, tokenID)
+	if stub.IsCrossChainOperationAllowedCalled != nil {
+		return stub.IsCrossChainOperationAllowedCalled(address, tokenID)
 	}
 
 	return false
