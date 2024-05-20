@@ -81,7 +81,7 @@ func TestCrossChainTokenChecker_isWhiteListed(t *testing.T) {
 	require.False(t, ctc.isWhiteListed(nil))
 }
 
-func TestCrossChainTokenChecker_IsAllowedToMint(t *testing.T) {
+func TestCrossChainTokenChecker_IsCrossChainOperationAllowed(t *testing.T) {
 	t.Parallel()
 
 	whiteListAddr := []byte("whiteListedAddress")
