@@ -22,24 +22,24 @@ func TestNewCrossChainTokenChecker(t *testing.T) {
 	})
 
 	t.Run("sovereign chain valid prefix, should work", func(t *testing.T) {
-		ctc, err := NewCrossChainTokenChecker([]byte("pref"), map[string]struct{}{})
+		ctc, err := NewCrossChainTokenChecker([]byte("pref"), getWhiteListedAddress())
 		require.Nil(t, err)
 		require.False(t, ctc.IsInterfaceNil())
 	})
 
 	t.Run("sovereign chain with invalid prefix, should not work", func(t *testing.T) {
-		ctc, err := NewCrossChainTokenChecker([]byte("PREFIX"), map[string]struct{}{})
+		ctc, err := NewCrossChainTokenChecker([]byte("PREFIX"), getWhiteListedAddress())
 		require.ErrorIs(t, err, ErrInvalidTokenPrefix)
 		require.Nil(t, ctc)
 	})
 
-	t.Run("invalid chain config compatibility, should not work", func(t *testing.T) {
-		ctc, err := NewCrossChainTokenChecker([]byte("PREFIX"), getWhiteListedAddress())
-		require.ErrorIs(t, err, ErrInvalidCrossChainConfig)
+	t.Run("no whitelisted address, should not work", func(t *testing.T) {
+		ctc, err := NewCrossChainTokenChecker([]byte("PREFIX"), nil)
+		require.ErrorIs(t, err, ErrNoWhiteListedAddressCrossChainOperations)
 		require.Nil(t, ctc)
 
 		ctc, err = NewCrossChainTokenChecker(nil, nil)
-		require.ErrorIs(t, err, ErrInvalidCrossChainConfig)
+		require.ErrorIs(t, err, ErrNoWhiteListedAddressCrossChainOperations)
 		require.Nil(t, ctc)
 	})
 }
@@ -48,7 +48,7 @@ func TestCrossChainTokenChecker_IsCrossChainOperation(t *testing.T) {
 	t.Parallel()
 
 	t.Run("cross chain operations in a sovereign shard", func(t *testing.T) {
-		ctc, _ := NewCrossChainTokenChecker([]byte("sov1"), map[string]struct{}{})
+		ctc, _ := NewCrossChainTokenChecker([]byte("sov1"), getWhiteListedAddress())
 
 		require.True(t, ctc.IsCrossChainOperation([]byte("ALICE-abcdef")))
 		require.True(t, ctc.IsCrossChainOperation([]byte("sov2-ALICE-abcdef")))
@@ -88,16 +88,18 @@ func TestCrossChainTokenChecker_IsAllowedToMint(t *testing.T) {
 	t.Run("main chain", func(t *testing.T) {
 		ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
 
-		require.True(t, ctc.IsAllowedToMint(whiteListAddr, []byte("sov1-ALICE-abcdef")))
-		require.False(t, ctc.IsAllowedToMint([]byte("anotherAddress"), []byte("sov1-ALICE-abcdef")))
-		require.False(t, ctc.IsAllowedToMint(whiteListAddr, []byte("ALICE-abcdef")))
-		require.False(t, ctc.IsAllowedToMint([]byte("anotherAddress"), []byte("ALICE-abcdef")))
+		require.True(t, ctc.IsCrossChainOperationAllowed(whiteListAddr, []byte("sov1-ALICE-abcdef")))
+		require.False(t, ctc.IsCrossChainOperationAllowed([]byte("anotherAddress"), []byte("sov1-ALICE-abcdef")))
+		require.False(t, ctc.IsCrossChainOperationAllowed(whiteListAddr, []byte("ALICE-abcdef")))
+		require.False(t, ctc.IsCrossChainOperationAllowed([]byte("anotherAddress"), []byte("ALICE-abcdef")))
 	})
 
 	t.Run("single shard chain", func(t *testing.T) {
-		ctc, _ := NewCrossChainTokenChecker([]byte("pref"), nil)
+		ctc, _ := NewCrossChainTokenChecker([]byte("pref"), getWhiteListedAddress())
 
-		require.False(t, ctc.IsAllowedToMint(whiteListAddr, []byte("sov1-ALICE-abcdef")))
-		require.False(t, ctc.IsAllowedToMint(whiteListAddr, []byte("ALICE-abcdef")))
+		require.True(t, ctc.IsCrossChainOperationAllowed(whiteListAddr, []byte("sov1-ALICE-abcdef")))
+		require.True(t, ctc.IsCrossChainOperationAllowed(whiteListAddr, []byte("ALICE-abcdef")))
+		require.False(t, ctc.IsCrossChainOperationAllowed([]byte("anotherAddress"), []byte("sov1-ALICE-abcdef")))
+		require.False(t, ctc.IsCrossChainOperationAllowed(whiteListAddr, []byte("pref-ALICE-abcdef")))
 	})
 }

@@ -63,16 +63,6 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 			exError: ErrNilEnableEpochsHandler,
 		},
 		{
-			name: "NilCrossChainTokenChecker",
-			argsFunc: func() ESDTLocalMintBurnFuncArgs {
-				args := createESDTLocalMintBurnArgs()
-				args.CrossChainTokenChecker = nil
-
-				return args
-			},
-			exError: ErrNilCrossChainTokenChecker,
-		},
-		{
 			name: "Ok",
 			argsFunc: func() ESDTLocalMintBurnFuncArgs {
 				return createESDTLocalMintBurnArgs()
@@ -303,12 +293,16 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMai
 	args := createESDTLocalMintBurnArgs()
 
 	whiteListedAddr := []byte("whiteListedAddress")
-	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker(nil, map[string]struct{}{
+	ctc, _ := NewCrossChainTokenChecker(nil, map[string]struct{}{
 		string(whiteListedAddr): {},
 	})
 
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			if ctc.IsCrossChainOperationAllowed(account.AddressBytes(), tokenID) {
+				return nil
+			}
+
 			require.Fail(t, "should not check here, should only check if cross operation and self chain == main chain")
 			return nil
 		},
@@ -367,10 +361,14 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldNotMintCrossChainTokenInSove
 	t.Parallel()
 
 	args := createESDTLocalMintBurnArgs()
-	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker([]byte("self"), map[string]struct{}{})
+	ctc, _ := NewCrossChainTokenChecker([]byte("self"), getWhiteListedAddress())
 	errNotAllowedToMint := errors.New("not allowed")
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			if ctc.IsCrossChainOperationAllowed(account.AddressBytes(), tokenID) {
+				return nil
+			}
+
 			return errNotAllowedToMint
 		},
 	}

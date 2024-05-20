@@ -227,5 +227,5 @@ var ErrInvalidTokenPrefix = errors.New("invalid token prefix, should have max 4 
 // ErrNilCrossChainTokenChecker signals that a nil cross chain token checker has been provided
 var ErrNilCrossChainTokenChecker = errors.New("nil cross chain token checker has been provided")
 
-// ErrInvalidCrossChainConfig signals that a wrong cross chain config has been provided
-var ErrInvalidCrossChainConfig = errors.New("wrong cross chain config provided; valid main chain configs: no esdt prefix + non empty whitelisted addresses; valid single shard config: valid esdt prefix + no whitelisted address")
+// ErrNoWhiteListedAddressCrossChainOperations signals that no white listed address has been set for cross chain operations
+var ErrNoWhiteListedAddressCrossChainOperations = errors.New("no whitelisted address set for cross chain operation actions")

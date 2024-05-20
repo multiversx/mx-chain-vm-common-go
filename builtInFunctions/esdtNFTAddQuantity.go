@@ -14,7 +14,6 @@ const maxLenForAddNFTQuantity = 32
 
 type esdtNFTAddQuantity struct {
 	baseAlwaysActiveHandler
-	*baseCrossChainActionAllowedChecker
 	keyPrefix             []byte
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
@@ -31,7 +30,6 @@ func NewESDTNFTAddQuantityFunc(
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
-	crossChainTokenChecker CrossChainTokenCheckerHandler,
 ) (*esdtNFTAddQuantity, error) {
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
@@ -45,9 +43,6 @@ func NewESDTNFTAddQuantityFunc(
 	if check.IfNil(enableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
-	if check.IfNil(crossChainTokenChecker) {
-		return nil, ErrNilCrossChainTokenChecker
-	}
 
 	e := &esdtNFTAddQuantity{
 		keyPrefix:             []byte(baseESDTKeyPrefix),
@@ -57,10 +52,6 @@ func NewESDTNFTAddQuantityFunc(
 		mutExecution:          sync.RWMutex{},
 		esdtStorageHandler:    esdtStorageHandler,
 		enableEpochsHandler:   enableEpochsHandler,
-		baseCrossChainActionAllowedChecker: &baseCrossChainActionAllowedChecker{
-			rolesHandler:           rolesHandler,
-			crossChainTokenChecker: crossChainTokenChecker,
-		},
 	}
 
 	return e, nil
@@ -97,7 +88,7 @@ func (e *esdtNFTAddQuantity) ProcessBuiltinFunction(
 		return nil, ErrInvalidArguments
 	}
 
-	err = e.isAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
 	if err != nil {
 		return nil, err
 	}

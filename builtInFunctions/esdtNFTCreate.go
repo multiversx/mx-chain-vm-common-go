@@ -21,7 +21,6 @@ var (
 
 type esdtNFTCreate struct {
 	baseAlwaysActiveHandler
-	*baseCrossChainActionAllowedChecker
 	keyPrefix             []byte
 	accounts              vmcommon.AccountsAdapter
 	marshaller            vmcommon.Marshalizer
@@ -44,7 +43,6 @@ func NewESDTNFTCreateFunc(
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	accounts vmcommon.AccountsAdapter,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
-	crossChainTokenChecker CrossChainTokenCheckerHandler,
 ) (*esdtNFTCreate, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
@@ -64,9 +62,6 @@ func NewESDTNFTCreateFunc(
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
-	if check.IfNil(crossChainTokenChecker) {
-		return nil, ErrNilCrossChainTokenChecker
-	}
 
 	e := &esdtNFTCreate{
 		keyPrefix:             []byte(baseESDTKeyPrefix),
@@ -79,10 +74,6 @@ func NewESDTNFTCreateFunc(
 		enableEpochsHandler:   enableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
 		accounts:              accounts,
-		baseCrossChainActionAllowedChecker: &baseCrossChainActionAllowedChecker{
-			rolesHandler:           rolesHandler,
-			crossChainTokenChecker: crossChainTokenChecker,
-		},
 	}
 
 	return e, nil
@@ -150,7 +141,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	tokenID := vmInput.Arguments[0]
-	err = e.isAllowedToExecute(accountWithRoles, vmInput.Arguments[0], []byte(core.ESDTRoleNFTCreate))
+	err = e.rolesHandler.CheckAllowedToExecute(accountWithRoles, vmInput.Arguments[0], []byte(core.ESDTRoleNFTCreate))
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +171,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, fmt.Errorf("%w, invalid quantity", ErrInvalidArguments)
 	}
 	if quantity.Cmp(big.NewInt(1)) > 0 {
-		err = e.isAllowedToExecute(accountWithRoles, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
+		err = e.rolesHandler.CheckAllowedToExecute(accountWithRoles, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
 		if err != nil {
 			return nil, err
 		}

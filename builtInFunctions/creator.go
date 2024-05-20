@@ -199,7 +199,12 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 	b.esdtGlobalSettingsHandler = globalSettingsFunc
 
-	setRoleFunc, err := NewESDTRolesFunc(b.marshaller, true)
+	crossChainTokenCheckerHandler, err := NewCrossChainTokenChecker(b.selfESDTPrefix, b.mapWhiteListedCrossChainMintAddresses)
+	if err != nil {
+		return err
+	}
+
+	setRoleFunc, err := NewESDTRolesFunc(b.marshaller, crossChainTokenCheckerHandler, true)
 	if err != nil {
 		return err
 	}
@@ -247,7 +252,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTRolesFunc(b.marshaller, false)
+	newFunc, err = NewESDTRolesFunc(b.marshaller, crossChainTokenCheckerHandler, false)
 	if err != nil {
 		return err
 	}
@@ -256,18 +261,12 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	crossChainTokenCheckerHandler, err := NewCrossChainTokenChecker(b.selfESDTPrefix, b.mapWhiteListedCrossChainMintAddresses)
-	if err != nil {
-		return err
-	}
-
 	argsEsdtLocalBurn := ESDTLocalMintBurnFuncArgs{
-		FuncGasCost:            b.gasConfig.BuiltInCost.ESDTLocalBurn,
-		Marshaller:             b.marshaller,
-		GlobalSettingsHandler:  globalSettingsFunc,
-		RolesHandler:           setRoleFunc,
-		EnableEpochsHandler:    b.enableEpochsHandler,
-		CrossChainTokenChecker: crossChainTokenCheckerHandler,
+		FuncGasCost:           b.gasConfig.BuiltInCost.ESDTLocalBurn,
+		Marshaller:            b.marshaller,
+		GlobalSettingsHandler: globalSettingsFunc,
+		RolesHandler:          setRoleFunc,
+		EnableEpochsHandler:   b.enableEpochsHandler,
 	}
 	newFunc, err = NewESDTLocalBurnFunc(argsEsdtLocalBurn)
 	if err != nil {
@@ -279,12 +278,11 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	argsLocalMint := ESDTLocalMintBurnFuncArgs{
-		FuncGasCost:            b.gasConfig.BuiltInCost.ESDTLocalMint,
-		Marshaller:             b.marshaller,
-		GlobalSettingsHandler:  globalSettingsFunc,
-		RolesHandler:           setRoleFunc,
-		EnableEpochsHandler:    b.enableEpochsHandler,
-		CrossChainTokenChecker: crossChainTokenCheckerHandler,
+		FuncGasCost:           b.gasConfig.BuiltInCost.ESDTLocalMint,
+		Marshaller:            b.marshaller,
+		GlobalSettingsHandler: globalSettingsFunc,
+		RolesHandler:          setRoleFunc,
+		EnableEpochsHandler:   b.enableEpochsHandler,
 	}
 	newFunc, err = NewESDTLocalMintFunc(argsLocalMint)
 	if err != nil {
@@ -313,7 +311,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		globalSettingsFunc,
 		setRoleFunc,
 		b.enableEpochsHandler,
-		crossChainTokenCheckerHandler,
 	)
 	if err != nil {
 		return err
@@ -341,7 +338,6 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.esdtStorageHandler,
 		b.accounts,
 		b.enableEpochsHandler,
-		crossChainTokenCheckerHandler,
 	)
 	if err != nil {
 		return err

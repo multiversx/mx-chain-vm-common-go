@@ -15,14 +15,12 @@ import (
 )
 
 func createESDTLocalMintBurnArgs() ESDTLocalMintBurnFuncArgs {
-	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
 	return ESDTLocalMintBurnFuncArgs{
-		FuncGasCost:            0,
-		Marshaller:             &mock.MarshalizerMock{},
-		GlobalSettingsHandler:  &mock.GlobalSettingsHandlerStub{},
-		RolesHandler:           &mock.ESDTRoleHandlerStub{},
-		EnableEpochsHandler:    &mock.EnableEpochsHandlerStub{},
-		CrossChainTokenChecker: ctc,
+		FuncGasCost:           0,
+		Marshaller:            &mock.MarshalizerMock{},
+		GlobalSettingsHandler: &mock.GlobalSettingsHandlerStub{},
+		RolesHandler:          &mock.ESDTRoleHandlerStub{},
+		EnableEpochsHandler:   &mock.EnableEpochsHandlerStub{},
 	}
 }
 
@@ -73,16 +71,6 @@ func TestNewESDTLocalBurnFunc(t *testing.T) {
 				return args
 			},
 			exError: ErrNilEnableEpochsHandler,
-		},
-		{
-			name: "NilCrossChainTokenChecker",
-			argsFunc: func() ESDTLocalMintBurnFuncArgs {
-				args := createESDTLocalMintBurnArgs()
-				args.CrossChainTokenChecker = nil
-
-				return args
-			},
-			exError: ErrNilCrossChainTokenChecker,
 		},
 		{
 			name: "Ok",
@@ -406,27 +394,19 @@ func testEsdtLocalBurnCrossChainOperations(t *testing.T, selfPrefix, crossChainT
 	args := createESDTLocalMintBurnArgs()
 	args.FuncGasCost = 50
 
-	whiteListedAddr := make(map[string]struct{})
-	if len(selfPrefix) == 0 {
-		whiteListedAddr = getWhiteListedAddress()
-	}
-	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker(selfPrefix, whiteListedAddr)
+	ctc, _ := NewCrossChainTokenChecker(selfPrefix, getWhiteListedAddress())
 
 	wasAllowedToExecuteCalled := false
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			if ctc.IsCrossChainOperationAllowed(account.AddressBytes(), tokenID) {
+				return nil
+			}
+
 			wasAllowedToExecuteCalled = true
 			return nil
 		},
 	}
-	wasBurnForAllCalled := false
-	args.GlobalSettingsHandler = &mock.GlobalSettingsHandlerStub{
-		IsBurnForAllCalled: func(token []byte) bool {
-			wasBurnForAllCalled = true
-			return false
-		},
-	}
-
 	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
 
 	initialBalance := big.NewInt(100)
@@ -451,6 +431,7 @@ func testEsdtLocalBurnCrossChainOperations(t *testing.T, selfPrefix, crossChainT
 				},
 			}
 		},
+		Address: []byte("whiteListedAddress"),
 	}
 
 	vmOutput, err := esdtLocalBurnF.ProcessBuiltinFunction(senderAcc, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
@@ -476,5 +457,4 @@ func testEsdtLocalBurnCrossChainOperations(t *testing.T, selfPrefix, crossChainT
 	require.Equal(t, expectedVMOutput, vmOutput)
 	require.True(t, wasNewBalanceUpdated)
 	require.False(t, wasAllowedToExecuteCalled)
-	require.False(t, wasBurnForAllCalled)
 }

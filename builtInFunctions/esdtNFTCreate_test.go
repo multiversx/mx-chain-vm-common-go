@@ -30,7 +30,6 @@ func createNftCreateWithStubArguments() *esdtNFTCreate {
 				return flag == ValueLengthCheckFlag
 			},
 		},
-		&mock.CrossChainTokenCheckerMock{},
 	)
 
 	return nftCreate
@@ -51,7 +50,6 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 			createNewESDTDataStorageHandler(),
 			&mock.AccountsStub{},
 			&mock.EnableEpochsHandlerStub{},
-			&mock.CrossChainTokenCheckerMock{},
 		)
 		assert.True(t, check.IfNil(nftCreate))
 		assert.Equal(t, ErrNilMarshalizer, err)
@@ -68,7 +66,6 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 			createNewESDTDataStorageHandler(),
 			&mock.AccountsStub{},
 			&mock.EnableEpochsHandlerStub{},
-			&mock.CrossChainTokenCheckerMock{},
 		)
 		assert.True(t, check.IfNil(nftCreate))
 		assert.Equal(t, ErrNilGlobalSettingsHandler, err)
@@ -85,7 +82,6 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 			createNewESDTDataStorageHandler(),
 			&mock.AccountsStub{},
 			&mock.EnableEpochsHandlerStub{},
-			&mock.CrossChainTokenCheckerMock{},
 		)
 		assert.True(t, check.IfNil(nftCreate))
 		assert.Equal(t, ErrNilRolesHandler, err)
@@ -102,7 +98,6 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 			nil,
 			&mock.AccountsStub{},
 			&mock.EnableEpochsHandlerStub{},
-			&mock.CrossChainTokenCheckerMock{},
 		)
 		assert.True(t, check.IfNil(nftCreate))
 		assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
@@ -119,27 +114,9 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 			createNewESDTDataStorageHandler(),
 			&mock.AccountsStub{},
 			nil,
-			&mock.CrossChainTokenCheckerMock{},
 		)
 		assert.True(t, check.IfNil(nftCreate))
 		assert.Equal(t, ErrNilEnableEpochsHandler, err)
-	})
-	t.Run("nil cross chain token checker, should error", func(t *testing.T) {
-		t.Parallel()
-
-		nftCreate, err := NewESDTNFTCreateFunc(
-			0,
-			vmcommon.BaseOperationCost{},
-			&mock.MarshalizerMock{},
-			&mock.GlobalSettingsHandlerStub{},
-			&mock.ESDTRoleHandlerStub{},
-			createNewESDTDataStorageHandler(),
-			&mock.AccountsStub{},
-			&mock.EnableEpochsHandlerStub{},
-			nil,
-		)
-		require.True(t, check.IfNil(nftCreate))
-		require.Equal(t, ErrNilCrossChainTokenChecker, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
@@ -153,7 +130,6 @@ func TestNewESDTNFTCreateFunc_NilArgumentsShouldErr(t *testing.T) {
 			createNewESDTDataStorageHandler(),
 			&mock.AccountsStub{},
 			&mock.EnableEpochsHandlerStub{},
-			&mock.CrossChainTokenCheckerMock{},
 		)
 		assert.Nil(t, err)
 		assert.False(t, check.IfNil(nftCreate))
@@ -176,7 +152,6 @@ func TestNewESDTNFTCreateFunc(t *testing.T) {
 				return flag == ValueLengthCheckFlag
 			},
 		},
-		&mock.CrossChainTokenCheckerMock{},
 	)
 	assert.False(t, check.IfNil(nftCreate))
 	assert.Nil(t, err)
@@ -277,7 +252,6 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionNotAllowedToExecute(t *testing.T) {
 				return flag == ValueLengthCheckFlag
 			},
 		},
-		&mock.CrossChainTokenCheckerMock{},
 	)
 	sender := mock.NewAccountWrapMock([]byte("address"))
 	vmInput := &vmcommon.ContractCallInput{
@@ -322,7 +296,6 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 				return flag == ValueLengthCheckFlag
 			},
 		},
-		&mock.CrossChainTokenCheckerMock{},
 	)
 	address := bytes.Repeat([]byte{1}, 32)
 	sender := mock.NewUserAccount(address)
@@ -408,7 +381,6 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 		esdtDataStorage,
 		esdtDataStorage.accounts,
 		enableEpochsHandler,
-		&mock.CrossChainTokenCheckerMock{},
 	)
 	address := bytes.Repeat([]byte{1}, 32)
 	userAddress := bytes.Repeat([]byte{2}, 32)

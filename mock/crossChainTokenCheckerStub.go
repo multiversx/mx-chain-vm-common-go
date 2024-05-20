@@ -15,8 +15,8 @@ func (stub *CrossChainTokenCheckerMock) IsCrossChainOperation(tokenID []byte) bo
 	return false
 }
 
-// IsAllowedToMint -
-func (stub *CrossChainTokenCheckerMock) IsAllowedToMint(address []byte, tokenID []byte) bool {
+// IsCrossChainOperationAllowed -
+func (stub *CrossChainTokenCheckerMock) IsCrossChainOperationAllowed(address []byte, tokenID []byte) bool {
 	if stub.IsAllowedToMintCalled != nil {
 		return stub.IsAllowedToMintCalled(address, tokenID)
 	}

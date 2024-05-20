@@ -12,7 +12,6 @@ import (
 
 type esdtLocalMint struct {
 	baseAlwaysActiveHandler
-	*baseCrossChainActionAllowedChecker
 	keyPrefix             []byte
 	marshaller            vmcommon.Marshalizer
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
@@ -36,9 +35,6 @@ func NewESDTLocalMintFunc(args ESDTLocalMintBurnFuncArgs) (*esdtLocalMint, error
 	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
-	if check.IfNil(args.CrossChainTokenChecker) {
-		return nil, ErrNilCrossChainTokenChecker
-	}
 
 	e := &esdtLocalMint{
 		keyPrefix:             []byte(baseESDTKeyPrefix),
@@ -48,10 +44,6 @@ func NewESDTLocalMintFunc(args ESDTLocalMintBurnFuncArgs) (*esdtLocalMint, error
 		funcGasCost:           args.FuncGasCost,
 		enableEpochsHandler:   args.EnableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
-		baseCrossChainActionAllowedChecker: &baseCrossChainActionAllowedChecker{
-			rolesHandler:           args.RolesHandler,
-			crossChainTokenChecker: args.CrossChainTokenChecker,
-		},
 	}
 
 	return e, nil
@@ -82,7 +74,7 @@ func (e *esdtLocalMint) ProcessBuiltinFunction(
 	}
 
 	tokenID := vmInput.Arguments[0]
-	err = e.isAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalMint))
+	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, tokenID, []byte(core.ESDTRoleLocalMint))
 	if err != nil {
 		return nil, err
 	}

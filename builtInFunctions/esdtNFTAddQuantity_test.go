@@ -20,42 +20,35 @@ func TestNewESDTNFTAddQuantityFunc(t *testing.T) {
 	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
-		eqf, err := NewESDTNFTAddQuantityFunc(10, nil, nil, nil, nil, &mock.CrossChainTokenCheckerMock{})
+		eqf, err := NewESDTNFTAddQuantityFunc(10, nil, nil, nil, nil)
 		require.True(t, check.IfNil(eqf))
 		require.Equal(t, ErrNilESDTNFTStorageHandler, err)
 	})
 	t.Run("nil global settings handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), nil, nil, nil, &mock.CrossChainTokenCheckerMock{})
+		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), nil, nil, nil)
 		require.True(t, check.IfNil(eqf))
 		require.Equal(t, ErrNilGlobalSettingsHandler, err)
 	})
 	t.Run("nil roles handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, nil, nil, &mock.CrossChainTokenCheckerMock{})
+		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, nil, nil)
 		require.True(t, check.IfNil(eqf))
 		require.Equal(t, ErrNilRolesHandler, err)
 	})
 	t.Run("nil enable epochs handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, nil, &mock.CrossChainTokenCheckerMock{})
+		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, nil)
 		require.True(t, check.IfNil(eqf))
 		require.Equal(t, ErrNilEnableEpochsHandler, err)
-	})
-	t.Run("nil cross chain token checker, should error", func(t *testing.T) {
-		t.Parallel()
-
-		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, nil)
-		require.True(t, check.IfNil(eqf))
-		require.Equal(t, ErrNilCrossChainTokenChecker, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.CrossChainTokenCheckerMock{})
+		eqf, err := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
 		require.False(t, check.IfNil(eqf))
 		require.NoError(t, err)
 	})
@@ -69,7 +62,7 @@ func TestEsdtNFTAddQuantity_SetNewGasConfig_NilGasCost(t *testing.T) {
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ValueLengthCheckFlag
 		},
-	}, &mock.CrossChainTokenCheckerMock{})
+	})
 
 	eqf.SetNewGasConfig(nil)
 	require.Equal(t, defaultGasCost, eqf.funcGasCost)
@@ -84,7 +77,7 @@ func TestEsdtNFTAddQuantity_SetNewGasConfig_ShouldWork(t *testing.T) {
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ValueLengthCheckFlag
 		},
-	}, &mock.CrossChainTokenCheckerMock{})
+	})
 
 	eqf.SetNewGasConfig(
 		&vmcommon.GasCost{
@@ -104,7 +97,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionErrorOnCheckESDTNFTCreateBurnA
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ValueLengthCheckFlag
 		},
-	}, &mock.CrossChainTokenCheckerMock{})
+	})
 
 	// nil vm input
 	output, err := eqf.ProcessBuiltinFunction(mock.NewAccountWrapMock([]byte("addr")), nil, nil)
@@ -209,7 +202,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionInvalidNumberOfArguments(t *te
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ValueLengthCheckFlag
 		},
-	}, &mock.CrossChainTokenCheckerMock{})
+	})
 	output, err := eqf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -240,7 +233,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionCheckAllowedToExecuteError(t *
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ValueLengthCheckFlag
 		},
-	}, &mock.CrossChainTokenCheckerMock{})
+	})
 	output, err := eqf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -266,7 +259,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionNewSenderShouldErr(t *testing.
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ValueLengthCheckFlag
 		},
-	}, &mock.CrossChainTokenCheckerMock{})
+	})
 	output, err := eqf.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -294,7 +287,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionMetaDataMissing(t *testing.T) 
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ValueLengthCheckFlag
 		},
-	}, &mock.CrossChainTokenCheckerMock{})
+	})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
@@ -328,7 +321,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldErrOnSaveBecauseTokenIsP
 		},
 	}
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{}
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, enableEpochsHandler), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler, &mock.CrossChainTokenCheckerMock{})
+	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, &mock.AccountsStub{}, enableEpochsHandler), globalSettingsHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -381,7 +374,7 @@ func TestEsdtNFTAddQuantity_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 			return flag == ValueLengthCheckFlag
 		},
 	}
-	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, enableEpochsHandler, &mock.CrossChainTokenCheckerMock{})
+	eqf, _ := NewESDTNFTAddQuantityFunc(10, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, enableEpochsHandler)
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
