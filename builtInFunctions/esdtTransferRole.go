@@ -64,7 +64,7 @@ func (e *esdtTransferAddress) SetNewGasConfig(_ *vmcommon.GasCost) {
 
 // ProcessBuiltinFunction resolves ESDT change roles function call
 func (e *esdtTransferAddress) ProcessBuiltinFunction(
-	_, _ vmcommon.UserAccountHandler,
+	_, dstAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	err := checkBasicESDTArguments(vmInput)
@@ -78,7 +78,10 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 		return nil, ErrOnlySystemAccountAccepted
 	}
 
-	systemAcc, err := e.getSystemAccount()
+	systemAcc, err := getSystemAccountIfNeeded(vmInput, dstAccount, e.accounts)
+	if err != nil {
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -135,20 +138,6 @@ func (e *esdtTransferAddress) addNewAddresses(vmInput *vmcommon.ContractCallInpu
 	}
 
 	return nil
-}
-
-func (e *esdtTransferAddress) getSystemAccount() (vmcommon.UserAccountHandler, error) {
-	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	userAcc, ok := systemSCAccount.(vmcommon.UserAccountHandler)
-	if !ok {
-		return nil, ErrWrongTypeAssertion
-	}
-
-	return userAcc, nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil
