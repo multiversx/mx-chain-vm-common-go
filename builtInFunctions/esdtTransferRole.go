@@ -82,9 +82,6 @@ func (e *esdtTransferAddress) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	if err != nil {
-		return nil, err
-	}
 
 	esdtTokenTransferRoleKey := append(transferAddressesKeyPrefix, vmInput.Arguments[0]...)
 	addresses, _, err := getESDTRolesForAcnt(e.marshaller, systemAcc, esdtTokenTransferRoleKey)
