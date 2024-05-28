@@ -17,17 +17,17 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 	fillGasMapInternal(gasMap, 1)
 
 	args := ArgsCreateBuiltInFunctionContainer{
-		GasMap:                                gasMap,
-		MapDNSAddresses:                       make(map[string]struct{}),
-		MapDNSV2Addresses:                     make(map[string]struct{}),
-		EnableUserNameChange:                  false,
-		Marshalizer:                           &mock.MarshalizerMock{},
-		Accounts:                              &mock.AccountsStub{},
-		ShardCoordinator:                      mock.NewMultiShardsCoordinatorMock(1),
-		EnableEpochsHandler:                   &mock.EnableEpochsHandlerStub{},
-		GuardedAccountHandler:                 &mock.GuardedAccountHandlerStub{},
-		MaxNumOfAddressesForTransferRole:      100,
-		MapWhiteListedCrossChainMintAddresses: getWhiteListedAddress(),
+		GasMap:                            gasMap,
+		MapDNSAddresses:                   make(map[string]struct{}),
+		MapDNSV2Addresses:                 make(map[string]struct{}),
+		EnableUserNameChange:              false,
+		Marshalizer:                       &mock.MarshalizerMock{},
+		Accounts:                          &mock.AccountsStub{},
+		ShardCoordinator:                  mock.NewMultiShardsCoordinatorMock(1),
+		EnableEpochsHandler:               &mock.EnableEpochsHandlerStub{},
+		GuardedAccountHandler:             &mock.GuardedAccountHandlerStub{},
+		MaxNumOfAddressesForTransferRole:  100,
+		MapWhiteListedCrossChainAddresses: getWhiteListedAddress(),
 	}
 
 	return args

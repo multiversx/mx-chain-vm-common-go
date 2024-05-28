@@ -26,6 +26,7 @@ func TestNewESDTRolesFunc(t *testing.T) {
 			core.ESDTRoleNFTAddQuantity: {},
 			core.ESDTRoleNFTCreate:      {},
 			core.ESDTRoleLocalBurn:      {},
+			core.ESDTRoleNFTBurn:        {},
 		}, esdtRolesF.crossChainActions)
 	})
 	t.Run("nil marshaller, should return error", func(t *testing.T) {
@@ -33,7 +34,7 @@ func TestNewESDTRolesFunc(t *testing.T) {
 		require.Equal(t, ErrNilMarshalizer, err)
 		require.Nil(t, esdtRolesF)
 	})
-	t.Run("nil marshaller, should return error", func(t *testing.T) {
+	t.Run("nil cross chain checker, should return error", func(t *testing.T) {
 		esdtRolesF, err := NewESDTRolesFunc(&mock.MarshalizerMock{}, nil, false)
 		require.Equal(t, ErrNilCrossChainTokenChecker, err)
 		require.Nil(t, esdtRolesF)

@@ -51,6 +51,7 @@ func getCrossChainActions() map[string]struct{} {
 	actions[core.ESDTRoleNFTAddQuantity] = struct{}{}
 	actions[core.ESDTRoleNFTCreate] = struct{}{}
 	actions[core.ESDTRoleLocalBurn] = struct{}{}
+	actions[core.ESDTRoleNFTBurn] = struct{}{}
 
 	return actions
 }

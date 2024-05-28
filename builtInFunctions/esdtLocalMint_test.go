@@ -160,7 +160,6 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t 
 func TestEsdtLocalMint_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
 	args := createESDTLocalMintBurnArgs()
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
@@ -176,13 +175,12 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshaller.Unmarshal(esdtData, value)
-					//require.Equal(t, big.NewInt(101), esdtData.Value)
+					_ = args.Marshaller.Unmarshal(esdtData, value)
 					return nil
 				},
 			}
@@ -220,8 +218,6 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
-
 	args := createESDTLocalMintBurnArgs()
 	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
@@ -237,12 +233,12 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshaller.Unmarshal(esdtData, value)
+					_ = args.Marshaller.Unmarshal(esdtData, value)
 					require.Equal(t, big.NewInt(101), esdtData.Value)
 					return nil
 				},
@@ -288,10 +284,7 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMainChain(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
-
 	args := createESDTLocalMintBurnArgs()
-
 	whiteListedAddr := []byte("whiteListedAddress")
 	ctc, _ := NewCrossChainTokenChecker(nil, map[string]struct{}{
 		string(whiteListedAddr): {},
@@ -318,12 +311,12 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMai
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: initialSupply}
-					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshaller.Unmarshal(esdtData, value)
+					_ = args.Marshaller.Unmarshal(esdtData, value)
 					require.Equal(t, big.NewInt(0).Add(initialSupply, mintQuantity), esdtData.Value)
 					return nil
 				},
