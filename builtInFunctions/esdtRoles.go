@@ -198,8 +198,7 @@ func (e *esdtRoles) CheckAllowedToExecute(account vmcommon.UserAccountHandler, t
 }
 
 func (e *esdtRoles) isAllowedToExecuteCrossChain(address []byte, tokenID []byte, action []byte) bool {
-	actionStr := string(action)
-	if _, isCrossChainAction := e.crossChainActions[actionStr]; !isCrossChainAction {
+	if _, isCrossChainAction := e.crossChainActions[string(action)]; !isCrossChainAction {
 		return false
 	}
 
