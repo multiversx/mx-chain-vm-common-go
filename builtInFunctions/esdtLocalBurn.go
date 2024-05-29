@@ -13,44 +13,53 @@ import (
 
 type esdtLocalBurn struct {
 	baseAlwaysActiveHandler
-	keyPrefix             []byte
-	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
-	rolesHandler          vmcommon.ESDTRoleHandler
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
-	funcGasCost           uint64
-	mutExecution          sync.RWMutex
+	keyPrefix              []byte
+	marshaller             vmcommon.Marshalizer
+	globalSettingsHandler  vmcommon.ExtendedESDTGlobalSettingsHandler
+	rolesHandler           vmcommon.ESDTRoleHandler
+	enableEpochsHandler    vmcommon.EnableEpochsHandler
+	funcGasCost            uint64
+	mutExecution           sync.RWMutex
+	crossChainTokenChecker CrossChainTokenCheckerHandler
+}
+
+// ESDTLocalBurnFuncArgs holds args needed for local burn
+type ESDTLocalBurnFuncArgs struct {
+	FuncGasCost            uint64
+	Marshaller             vmcommon.Marshalizer
+	GlobalSettingsHandler  vmcommon.ExtendedESDTGlobalSettingsHandler
+	RolesHandler           vmcommon.ESDTRoleHandler
+	EnableEpochsHandler    vmcommon.EnableEpochsHandler
+	CrossChainTokenChecker CrossChainTokenCheckerHandler
 }
 
 // NewESDTLocalBurnFunc returns the esdt local burn built-in function component
-func NewESDTLocalBurnFunc(
-	funcGasCost uint64,
-	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
-	rolesHandler vmcommon.ESDTRoleHandler,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtLocalBurn, error) {
-	if check.IfNil(marshaller) {
+func NewESDTLocalBurnFunc(args ESDTLocalBurnFuncArgs) (*esdtLocalBurn, error) {
+	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(globalSettingsHandler) {
+	if check.IfNil(args.GlobalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if check.IfNil(rolesHandler) {
+	if check.IfNil(args.RolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
+	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
+	}
+	if check.IfNil(args.CrossChainTokenChecker) {
+		return nil, ErrNilCrossChainTokenChecker
 	}
 
 	e := &esdtLocalBurn{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		enableEpochsHandler:   enableEpochsHandler,
-		mutExecution:          sync.RWMutex{},
+		keyPrefix:              []byte(baseESDTKeyPrefix),
+		marshaller:             args.Marshaller,
+		globalSettingsHandler:  args.GlobalSettingsHandler,
+		rolesHandler:           args.RolesHandler,
+		funcGasCost:            args.FuncGasCost,
+		enableEpochsHandler:    args.EnableEpochsHandler,
+		mutExecution:           sync.RWMutex{},
+		crossChainTokenChecker: args.CrossChainTokenChecker,
 	}
 
 	return e, nil
@@ -107,6 +116,10 @@ func (e *esdtLocalBurn) ProcessBuiltinFunction(
 }
 
 func (e *esdtLocalBurn) isAllowedToBurn(acntSnd vmcommon.UserAccountHandler, tokenID []byte) error {
+	if e.crossChainTokenChecker.IsCrossChainOperation(tokenID) {
+		return nil
+	}
+
 	esdtTokenKey := append(e.keyPrefix, tokenID...)
 	isBurnForAll := e.globalSettingsHandler.IsBurnForAll(esdtTokenKey)
 	if isBurnForAll {

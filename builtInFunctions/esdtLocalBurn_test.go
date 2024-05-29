@@ -14,46 +14,80 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func createESDTLocalBurnArgs() ESDTLocalBurnFuncArgs {
+	ctc, _ := NewCrossChainTokenChecker(nil)
+	return ESDTLocalBurnFuncArgs{
+		FuncGasCost:            0,
+		Marshaller:             &mock.MarshalizerMock{},
+		GlobalSettingsHandler:  &mock.GlobalSettingsHandlerStub{},
+		RolesHandler:           &mock.ESDTRoleHandlerStub{},
+		EnableEpochsHandler:    &mock.EnableEpochsHandlerStub{},
+		CrossChainTokenChecker: ctc,
+	}
+}
+
 func TestNewESDTLocalBurnFunc(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name     string
-		argsFunc func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler)
+		argsFunc func() ESDTLocalBurnFuncArgs
 		exError  error
 	}{
 		{
 			name: "NilMarshalizer",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, nil, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
+			argsFunc: func() ESDTLocalBurnFuncArgs {
+				args := createESDTLocalBurnArgs()
+				args.Marshaller = nil
+
+				return args
 			},
 			exError: ErrNilMarshalizer,
 		},
 		{
 			name: "NilGlobalSettingsHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, &mock.MarshalizerMock{}, nil, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
+			argsFunc: func() ESDTLocalBurnFuncArgs {
+				args := createESDTLocalBurnArgs()
+				args.GlobalSettingsHandler = nil
+
+				return args
 			},
 			exError: ErrNilGlobalSettingsHandler,
 		},
 		{
 			name: "NilRolesHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil, &mock.EnableEpochsHandlerStub{}
+			argsFunc: func() ESDTLocalBurnFuncArgs {
+				args := createESDTLocalBurnArgs()
+				args.RolesHandler = nil
+
+				return args
 			},
 			exError: ErrNilRolesHandler,
 		},
 		{
 			name: "NilEnableEpochsHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, nil
+			argsFunc: func() ESDTLocalBurnFuncArgs {
+				args := createESDTLocalBurnArgs()
+				args.EnableEpochsHandler = nil
+
+				return args
 			},
 			exError: ErrNilEnableEpochsHandler,
 		},
 		{
+			name: "NilCrossChainTokenChecker",
+			argsFunc: func() ESDTLocalBurnFuncArgs {
+				args := createESDTLocalBurnArgs()
+				args.CrossChainTokenChecker = nil
+
+				return args
+			},
+			exError: ErrNilCrossChainTokenChecker,
+		},
+		{
 			name: "Ok",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ExtendedESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
+			argsFunc: func() ESDTLocalBurnFuncArgs {
+				return createESDTLocalBurnArgs()
 			},
 			exError: nil,
 		},
@@ -70,7 +104,7 @@ func TestNewESDTLocalBurnFunc(t *testing.T) {
 func TestEsdtLocalBurn_ProcessBuiltinFunction_CalledWithValueShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(createESDTLocalBurnArgs())
 
 	_, err := esdtLocalBurnF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -84,11 +118,13 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CheckAllowToExecuteShouldErr(t *te
 	t.Parallel()
 
 	localErr := errors.New("local err")
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{
+	args := createESDTLocalBurnArgs()
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return localErr
 		},
-	}, &mock.EnableEpochsHandlerStub{})
+	}
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
 
 	_, err := esdtLocalBurnF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -102,11 +138,13 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CheckAllowToExecuteShouldErr(t *te
 func TestEsdtLocalBurn_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{
+	args := createESDTLocalBurnArgs()
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return nil
 		},
-	}, &mock.EnableEpochsHandlerStub{})
+	}
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
 
 	localErr := errors.New("local err")
 	_, err := esdtLocalBurnF.ProcessBuiltinFunction(&mock.UserAccountStub{
@@ -129,21 +167,22 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t 
 func TestEsdtLocalBurn_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
-	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+	args := createESDTLocalBurnArgs()
+	args.FuncGasCost = 50
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleLocalBurn, string(action))
 			return nil
 		},
 	}
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, &mock.EnableEpochsHandlerStub{})
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
 
 	sndAccount := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 			}
@@ -182,26 +221,27 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 func TestEsdtLocalBurn_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
-	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+	args := createESDTLocalBurnArgs()
+	args.FuncGasCost = 50
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleLocalBurn, string(action))
 			return nil
 		},
 	}
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, &mock.EnableEpochsHandlerStub{})
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
 
 	sndAccout := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshaller.Unmarshal(esdtData, value)
+					_ = args.Marshaller.Unmarshal(esdtData, value)
 					require.Equal(t, big.NewInt(99), esdtData.Value)
 					return nil
 				},
@@ -235,28 +275,31 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 func TestEsdtLocalBurn_ProcessBuiltinFunction_WithGlobalBurn(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{
+	args := createESDTLocalBurnArgs()
+	args.FuncGasCost = 50
+	args.GlobalSettingsHandler = &mock.GlobalSettingsHandlerStub{
 		IsBurnForAllCalled: func(token []byte) bool {
 			return true
 		},
-	}, &mock.ESDTRoleHandlerStub{
+	}
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return errors.New("no role")
 		},
-	}, &mock.EnableEpochsHandlerStub{})
+	}
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
 
 	sndAccout := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshaller.Unmarshal(esdtData, value)
+					_ = args.Marshaller.Unmarshal(esdtData, value)
 					require.Equal(t, big.NewInt(99), esdtData.Value)
 					return nil
 				},
@@ -290,7 +333,7 @@ func TestEsdtLocalBurn_ProcessBuiltinFunction_WithGlobalBurn(t *testing.T) {
 func TestEsdtLocalBurn_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(createESDTLocalBurnArgs())
 
 	esdtLocalBurnF.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{
 		ESDTLocalBurn: 500},
@@ -346,4 +389,84 @@ func TestCheckInputArgumentsForLocalAction_NotEnoughGas(t *testing.T) {
 
 	err := checkInputArgumentsForLocalAction(&mock.UserAccountStub{}, vmInput, 500)
 	require.Equal(t, ErrNotEnoughGas, err)
+}
+
+func TestEsdtLocalBurn_ProcessBuiltinFunction_CrossChainOperations(t *testing.T) {
+	t.Parallel()
+
+	testEsdtLocalBurnCrossChainOperations(t, nil, []byte("sov1-TKN-abcdef"))
+	testEsdtLocalBurnCrossChainOperations(t, []byte("sov2"), []byte("sov1-TKN-abcdef"))
+	testEsdtLocalBurnCrossChainOperations(t, []byte("sov1"), []byte("TKN-abcdef"))
+}
+
+func testEsdtLocalBurnCrossChainOperations(t *testing.T, selfPrefix, crossChainToken []byte) {
+	args := createESDTLocalBurnArgs()
+	args.FuncGasCost = 50
+	args.CrossChainTokenChecker, _ = NewCrossChainTokenChecker(selfPrefix)
+
+	wasAllowedToExecuteCalled := false
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			wasAllowedToExecuteCalled = true
+			return nil
+		},
+	}
+	wasBurnForAllCalled := false
+	args.GlobalSettingsHandler = &mock.GlobalSettingsHandlerStub{
+		IsBurnForAllCalled: func(token []byte) bool {
+			wasBurnForAllCalled = true
+			return false
+		},
+	}
+
+	esdtLocalBurnF, _ := NewESDTLocalBurnFunc(args)
+
+	initialBalance := big.NewInt(100)
+	burnValue := big.NewInt(44)
+	wasNewBalanceUpdated := false
+	marshaller := args.Marshaller
+	senderAcc := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					esdtData := &esdt.ESDigitalToken{Value: initialBalance}
+					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					return serializedEsdtData, 0, err
+				},
+				SaveKeyValueCalled: func(key []byte, value []byte) error {
+					esdtData := &esdt.ESDigitalToken{}
+					_ = marshaller.Unmarshal(esdtData, value)
+					require.Equal(t, big.NewInt(0).Sub(initialBalance, burnValue), esdtData.Value)
+
+					wasNewBalanceUpdated = true
+					return nil
+				},
+			}
+		},
+	}
+
+	vmOutput, err := esdtLocalBurnF.ProcessBuiltinFunction(senderAcc, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{crossChainToken, burnValue.Bytes()},
+			GasProvided: 500,
+		},
+	})
+	require.Nil(t, err)
+	expectedVMOutput := &vmcommon.VMOutput{
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: 450,
+		Logs: []*vmcommon.LogEntry{
+			{
+				Identifier: []byte("ESDTLocalBurn"),
+				Address:    nil,
+				Topics:     [][]byte{crossChainToken, big.NewInt(0).Bytes(), burnValue.Bytes()},
+				Data:       nil,
+			},
+		},
+	}
+	require.Equal(t, expectedVMOutput, vmOutput)
+	require.True(t, wasNewBalanceUpdated)
+	require.False(t, wasAllowedToExecuteCalled)
+	require.False(t, wasBurnForAllCalled)
 }
