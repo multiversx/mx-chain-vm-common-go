@@ -15,25 +15,45 @@ var roleKeyPrefix = []byte(core.ProtectedKeyPrefix + core.ESDTRoleIdentifier + c
 
 type esdtRoles struct {
 	baseAlwaysActiveHandler
-	set        bool
-	marshaller vmcommon.Marshalizer
+	set                    bool
+	marshaller             vmcommon.Marshalizer
+	crossChainTokenChecker CrossChainTokenCheckerHandler
+	crossChainActions      map[string]struct{}
 }
 
 // NewESDTRolesFunc returns the esdt change roles built-in function component
 func NewESDTRolesFunc(
 	marshaller vmcommon.Marshalizer,
+	crossChainTokenChecker CrossChainTokenCheckerHandler,
 	set bool,
 ) (*esdtRoles, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
 	}
+	if check.IfNil(crossChainTokenChecker) {
+		return nil, ErrNilCrossChainTokenChecker
+	}
 
 	e := &esdtRoles{
-		set:        set,
-		marshaller: marshaller,
+		set:                    set,
+		marshaller:             marshaller,
+		crossChainActions:      getCrossChainActions(),
+		crossChainTokenChecker: crossChainTokenChecker,
 	}
 
 	return e, nil
+}
+
+func getCrossChainActions() map[string]struct{} {
+	actions := make(map[string]struct{})
+
+	actions[core.ESDTRoleLocalMint] = struct{}{}
+	actions[core.ESDTRoleNFTAddQuantity] = struct{}{}
+	actions[core.ESDTRoleNFTCreate] = struct{}{}
+	actions[core.ESDTRoleLocalBurn] = struct{}{}
+	actions[core.ESDTRoleNFTBurn] = struct{}{}
+
+	return actions
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -157,6 +177,10 @@ func (e *esdtRoles) CheckAllowedToExecute(account vmcommon.UserAccountHandler, t
 		return ErrNilUserAccount
 	}
 
+	if e.isAllowedToExecuteCrossChain(account.AddressBytes(), tokenID, action) {
+		return nil
+	}
+
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
 	roles, isNew, err := getESDTRolesForAcnt(e.marshaller, account, esdtTokenRoleKey)
 	if err != nil {
@@ -171,6 +195,15 @@ func (e *esdtRoles) CheckAllowedToExecute(account vmcommon.UserAccountHandler, t
 	}
 
 	return nil
+}
+
+func (e *esdtRoles) isAllowedToExecuteCrossChain(address []byte, tokenID []byte, action []byte) bool {
+	actionStr := string(action)
+	if _, isCrossChainAction := e.crossChainActions[actionStr]; !isCrossChainAction {
+		return false
+	}
+
+	return e.crossChainTokenChecker.IsCrossChainOperationAllowed(address, tokenID)
 }
 
 // IsInterfaceNil returns true if underlying object in nil

@@ -16,36 +16,38 @@ const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are
 
 // ArgsCreateBuiltInFunctionContainer defines the input arguments to create built in functions container
 type ArgsCreateBuiltInFunctionContainer struct {
-	GasMap                           map[string]map[string]uint64
-	MapDNSAddresses                  map[string]struct{}
-	MapDNSV2Addresses                map[string]struct{}
-	EnableUserNameChange             bool
-	Marshalizer                      vmcommon.Marshalizer
-	Accounts                         vmcommon.AccountsAdapter
-	ShardCoordinator                 vmcommon.Coordinator
-	EnableEpochsHandler              vmcommon.EnableEpochsHandler
-	GuardedAccountHandler            vmcommon.GuardedAccountHandler
-	MaxNumOfAddressesForTransferRole uint32
-	ConfigAddress                    []byte
-	SelfESDTPrefix                   []byte
+	GasMap                            map[string]map[string]uint64
+	MapDNSAddresses                   map[string]struct{}
+	MapDNSV2Addresses                 map[string]struct{}
+	MapWhiteListedCrossChainAddresses map[string]struct{}
+	EnableUserNameChange              bool
+	Marshalizer                       vmcommon.Marshalizer
+	Accounts                          vmcommon.AccountsAdapter
+	ShardCoordinator                  vmcommon.Coordinator
+	EnableEpochsHandler               vmcommon.EnableEpochsHandler
+	GuardedAccountHandler             vmcommon.GuardedAccountHandler
+	MaxNumOfAddressesForTransferRole  uint32
+	ConfigAddress                     []byte
+	SelfESDTPrefix                    []byte
 }
 
 type builtInFuncCreator struct {
-	mapDNSAddresses                  map[string]struct{}
-	mapDNSV2Addresses                map[string]struct{}
-	enableUserNameChange             bool
-	marshaller                       vmcommon.Marshalizer
-	accounts                         vmcommon.AccountsAdapter
-	builtInFunctions                 vmcommon.BuiltInFunctionContainer
-	gasConfig                        *vmcommon.GasCost
-	shardCoordinator                 vmcommon.Coordinator
-	esdtStorageHandler               vmcommon.ESDTNFTStorageHandler
-	esdtGlobalSettingsHandler        vmcommon.ESDTGlobalSettingsHandler
-	enableEpochsHandler              vmcommon.EnableEpochsHandler
-	guardedAccountHandler            vmcommon.GuardedAccountHandler
-	maxNumOfAddressesForTransferRole uint32
-	configAddress                    []byte
-	selfESDTPrefix                   []byte
+	mapDNSAddresses                   map[string]struct{}
+	mapDNSV2Addresses                 map[string]struct{}
+	mapWhiteListedCrossChainAddresses map[string]struct{}
+	enableUserNameChange              bool
+	marshaller                        vmcommon.Marshalizer
+	accounts                          vmcommon.AccountsAdapter
+	builtInFunctions                  vmcommon.BuiltInFunctionContainer
+	gasConfig                         *vmcommon.GasCost
+	shardCoordinator                  vmcommon.Coordinator
+	esdtStorageHandler                vmcommon.ESDTNFTStorageHandler
+	esdtGlobalSettingsHandler         vmcommon.ESDTGlobalSettingsHandler
+	enableEpochsHandler               vmcommon.EnableEpochsHandler
+	guardedAccountHandler             vmcommon.GuardedAccountHandler
+	maxNumOfAddressesForTransferRole  uint32
+	configAddress                     []byte
+	selfESDTPrefix                    []byte
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -77,17 +79,18 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 	}
 
 	b := &builtInFuncCreator{
-		mapDNSAddresses:                  args.MapDNSAddresses,
-		mapDNSV2Addresses:                args.MapDNSV2Addresses,
-		enableUserNameChange:             args.EnableUserNameChange,
-		marshaller:                       args.Marshalizer,
-		accounts:                         args.Accounts,
-		shardCoordinator:                 args.ShardCoordinator,
-		enableEpochsHandler:              args.EnableEpochsHandler,
-		guardedAccountHandler:            args.GuardedAccountHandler,
-		maxNumOfAddressesForTransferRole: args.MaxNumOfAddressesForTransferRole,
-		configAddress:                    args.ConfigAddress,
-		selfESDTPrefix:                   args.SelfESDTPrefix,
+		mapDNSAddresses:                   args.MapDNSAddresses,
+		mapDNSV2Addresses:                 args.MapDNSV2Addresses,
+		enableUserNameChange:              args.EnableUserNameChange,
+		marshaller:                        args.Marshalizer,
+		accounts:                          args.Accounts,
+		shardCoordinator:                  args.ShardCoordinator,
+		enableEpochsHandler:               args.EnableEpochsHandler,
+		guardedAccountHandler:             args.GuardedAccountHandler,
+		maxNumOfAddressesForTransferRole:  args.MaxNumOfAddressesForTransferRole,
+		configAddress:                     args.ConfigAddress,
+		selfESDTPrefix:                    args.SelfESDTPrefix,
+		mapWhiteListedCrossChainAddresses: args.MapWhiteListedCrossChainAddresses,
 	}
 
 	b.gasConfig, err = createGasConfig(args.GasMap)
@@ -196,7 +199,12 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 	b.esdtGlobalSettingsHandler = globalSettingsFunc
 
-	setRoleFunc, err := NewESDTRolesFunc(b.marshaller, true)
+	crossChainTokenCheckerHandler, err := NewCrossChainTokenChecker(b.selfESDTPrefix, b.mapWhiteListedCrossChainAddresses)
+	if err != nil {
+		return err
+	}
+
+	setRoleFunc, err := NewESDTRolesFunc(b.marshaller, crossChainTokenCheckerHandler, true)
 	if err != nil {
 		return err
 	}
@@ -244,7 +252,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTRolesFunc(b.marshaller, false)
+	newFunc, err = NewESDTRolesFunc(b.marshaller, crossChainTokenCheckerHandler, false)
 	if err != nil {
 		return err
 	}
@@ -253,18 +261,12 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	crossChainTokenCheckerHandler, err := NewCrossChainTokenChecker(b.selfESDTPrefix)
-	if err != nil {
-		return err
-	}
-
-	argsEsdtLocalBurn := ESDTLocalBurnFuncArgs{
-		FuncGasCost:            b.gasConfig.BuiltInCost.ESDTLocalBurn,
-		Marshaller:             b.marshaller,
-		GlobalSettingsHandler:  globalSettingsFunc,
-		RolesHandler:           setRoleFunc,
-		EnableEpochsHandler:    b.enableEpochsHandler,
-		CrossChainTokenChecker: crossChainTokenCheckerHandler,
+	argsEsdtLocalBurn := ESDTLocalMintBurnFuncArgs{
+		FuncGasCost:           b.gasConfig.BuiltInCost.ESDTLocalBurn,
+		Marshaller:            b.marshaller,
+		GlobalSettingsHandler: globalSettingsFunc,
+		RolesHandler:          setRoleFunc,
+		EnableEpochsHandler:   b.enableEpochsHandler,
 	}
 	newFunc, err = NewESDTLocalBurnFunc(argsEsdtLocalBurn)
 	if err != nil {
@@ -275,7 +277,14 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTLocalMintFunc(b.gasConfig.BuiltInCost.ESDTLocalMint, b.marshaller, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
+	argsLocalMint := ESDTLocalMintBurnFuncArgs{
+		FuncGasCost:           b.gasConfig.BuiltInCost.ESDTLocalMint,
+		Marshaller:            b.marshaller,
+		GlobalSettingsHandler: globalSettingsFunc,
+		RolesHandler:          setRoleFunc,
+		EnableEpochsHandler:   b.enableEpochsHandler,
+	}
+	newFunc, err = NewESDTLocalMintFunc(argsLocalMint)
 	if err != nil {
 		return err
 	}
@@ -296,7 +305,13 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTAddQuantityFunc(b.gasConfig.BuiltInCost.ESDTNFTAddQuantity, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTNFTAddQuantityFunc(
+		b.gasConfig.BuiltInCost.ESDTNFTAddQuantity,
+		b.esdtStorageHandler,
+		globalSettingsFunc,
+		setRoleFunc,
+		b.enableEpochsHandler,
+	)
 	if err != nil {
 		return err
 	}
@@ -314,7 +329,16 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTCreateFunc(b.gasConfig.BuiltInCost.ESDTNFTCreate, b.gasConfig.BaseOperationCost, b.marshaller, globalSettingsFunc, setRoleFunc, b.esdtStorageHandler, b.accounts, b.enableEpochsHandler)
+	newFunc, err = NewESDTNFTCreateFunc(
+		b.gasConfig.BuiltInCost.ESDTNFTCreate,
+		b.gasConfig.BaseOperationCost,
+		b.marshaller,
+		globalSettingsFunc,
+		setRoleFunc,
+		b.esdtStorageHandler,
+		b.accounts,
+		b.enableEpochsHandler,
+	)
 	if err != nil {
 		return err
 	}

@@ -8,13 +8,19 @@ import (
 )
 
 type crossChainTokenChecker struct {
-	selfESDTPrefix []byte
+	selfESDTPrefix       []byte
+	whiteListedAddresses map[string]struct{}
 }
 
 // NewCrossChainTokenChecker creates a new cross chain token checker
-func NewCrossChainTokenChecker(selfESDTPrefix []byte) (*crossChainTokenChecker, error) {
+func NewCrossChainTokenChecker(selfESDTPrefix []byte, whiteListedAddresses map[string]struct{}) (*crossChainTokenChecker, error) {
 	ctc := &crossChainTokenChecker{
-		selfESDTPrefix: selfESDTPrefix,
+		selfESDTPrefix:       selfESDTPrefix,
+		whiteListedAddresses: whiteListedAddresses,
+	}
+
+	if len(whiteListedAddresses) == 0 {
+		return nil, ErrNoWhiteListedAddressCrossChainOperations
 	}
 
 	if len(selfESDTPrefix) == 0 {
@@ -37,6 +43,16 @@ func (ctc *crossChainTokenChecker) IsCrossChainOperation(tokenID []byte) bool {
 	}
 
 	return !bytes.Equal([]byte(tokenPrefix), ctc.selfESDTPrefix)
+}
+
+// IsCrossChainOperationAllowed checks whether an address is allowed to mint/create/add quantity a token
+func (ctc *crossChainTokenChecker) IsCrossChainOperationAllowed(address []byte, tokenID []byte) bool {
+	return ctc.isWhiteListed(address) && ctc.IsCrossChainOperation(tokenID)
+}
+
+func (ctc *crossChainTokenChecker) isWhiteListed(address []byte) bool {
+	_, found := ctc.whiteListedAddresses[string(address)]
+	return found
 }
 
 // IsInterfaceNil checks if the underlying pointer is nil
