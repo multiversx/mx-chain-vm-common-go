@@ -421,7 +421,7 @@ func (e *esdtDataStorage) removeNFTMetadataFromSystemAccountIfNeeded(esdtTokenKe
 	if err != nil {
 		return err
 	}
-	if tokenType != uint32(core.NonFungible) {
+	if esdtData.Type != uint32(core.NonFungible) || tokenType != uint32(core.NonFungibleV2) {
 		return nil
 	}
 
