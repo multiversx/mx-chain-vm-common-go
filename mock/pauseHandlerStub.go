@@ -1,5 +1,7 @@
 package mock
 
+import vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+
 // GlobalSettingsHandlerStub -
 type GlobalSettingsHandlerStub struct {
 	IsPausedCalled                              func(token []byte) bool
@@ -7,7 +9,7 @@ type GlobalSettingsHandlerStub struct {
 	IsBurnForAllCalled                          func(token []byte) bool
 	IsSenderOrDestinationWithTransferRoleCalled func(sender, destionation, tokenID []byte) bool
 	GetTokenTypeCalled                          func(esdtTokenKey []byte) (uint32, error)
-	SetTokenTypeCalled                          func(esdtTokenKey []byte, tokenType uint32) error
+	SetTokenTypeCalled                          func(esdtTokenKey []byte, tokenType uint32, dstAcc vmcommon.UserAccountHandler) error
 }
 
 // IsPaused -
@@ -51,9 +53,9 @@ func (p *GlobalSettingsHandlerStub) GetTokenType(esdtTokenKey []byte) (uint32, e
 }
 
 // SetTokenType -
-func (p *GlobalSettingsHandlerStub) SetTokenType(esdtTokenKey []byte, tokenType uint32) error {
+func (p *GlobalSettingsHandlerStub) SetTokenType(esdtTokenKey []byte, tokenType uint32, dstAcc vmcommon.UserAccountHandler) error {
 	if p.SetTokenTypeCalled != nil {
-		return p.SetTokenTypeCalled(esdtTokenKey, tokenType)
+		return p.SetTokenTypeCalled(esdtTokenKey, tokenType, dstAcc)
 	}
 	return nil
 }

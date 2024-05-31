@@ -108,6 +108,36 @@ func createESDTNFTMultiTransferWithMockArgumentsWithLogEventFlag(selfShard uint3
 	return multiTransfer
 }
 
+func createESDTNFTTokenWithReservedField(
+	tokenName []byte,
+	nftType core.ESDTType,
+	nonce uint64,
+	value *big.Int,
+	marshaller vmcommon.Marshalizer,
+	account vmcommon.UserAccountHandler,
+	reserved []byte,
+) []byte {
+	tokenId := append(keyPrefix, tokenName...)
+	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenId, nonce)
+	esdtData := &esdt.ESDigitalToken{
+		Type:     uint32(nftType),
+		Value:    value,
+		Reserved: reserved,
+	}
+
+	if nonce > 0 {
+		esdtData.TokenMetaData = &esdt.MetaData{
+			URIs:  [][]byte{[]byte("uri")},
+			Nonce: nonce,
+			Hash:  []byte("NFT hash"),
+		}
+	}
+
+	esdtDataBytes, _ := marshaller.Marshal(esdtData)
+	_ = account.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, esdtDataBytes)
+	return esdtDataBytes
+}
+
 func TestNewESDTNFTMultiTransferFunc(t *testing.T) {
 	t.Parallel()
 
@@ -953,6 +983,77 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsShouldErr(t *te
 	require.Error(t, err)
 	require.Equal(t, "sending value to non payable contract", err.Error())
 	require.Nil(t, vmOutput)
+}
+
+func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testing.T) {
+	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == FixAsyncCallbackCheckFlag || flag == CheckFunctionArgumentFlag ||
+				flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+		},
+	}
+
+	esdtStorage := createNewESDTDataStorageHandlerWithArgs(multiTransfer.globalSettingsHandler, multiTransfer.accounts, enableEpochsHandler)
+	multiTransfer.esdtStorageHandler = esdtStorage
+
+	payableChecker, _ := NewPayableCheckFunc(
+		&mock.PayableHandlerStub{
+			IsPayableCalled: func(address []byte) (bool, error) {
+				return true, nil
+			},
+		}, enableEpochsHandler)
+
+	_ = multiTransfer.SetPayableChecker(payableChecker)
+
+	senderAddress := core.ESDTSCAddress
+
+	destinationAddress := bytes.Repeat([]byte{0}, 32)
+	destinationAddress[25] = 1
+	destination, err := multiTransfer.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+
+	token1 := []byte("token1")
+	token2 := []byte("token2")
+
+	token1Nonce := uint64(1)
+	nonce1Bytes := big.NewInt(int64(token1Nonce)).Bytes()
+
+	token2Nonce := uint64(0)
+	nonce2Bytes := big.NewInt(int64(token2Nonce)).Bytes()
+
+	quantity1 := big.NewInt(1)
+	quantity2 := big.NewInt(3)
+
+	sysAcc, err := multiTransfer.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+	require.Nil(t, err)
+
+	reserved := []byte("reserved")
+	sysAccNFTInitialQuantity := big.NewInt(4)
+	_ = createESDTNFTTokenWithReservedField(token1, core.NonFungible, token1Nonce, sysAccNFTInitialQuantity, multiTransfer.marshaller, sysAcc.(vmcommon.UserAccountHandler), reserved)
+
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{big.NewInt(2).Bytes(), token1, nonce1Bytes, quantity1.Bytes(), token2, nonce2Bytes, quantity2.Bytes()},
+			GasProvided: 0,
+		},
+		RecipientAddr: destinationAddress,
+	}
+
+	sender, err := multiTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	vmOutput, err := multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	require.Nil(t, err)
+	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
+
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, destination, token1, token1Nonce, quantity1)
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, destination, token2, token2Nonce, quantity2)
+
+	testNFTTokenShouldExist(t, multiTransfer.marshaller, sysAcc, token1, token1Nonce, big.NewInt(0).Add(sysAccNFTInitialQuantity, quantity1))
 }
 
 func TestESDTNFTMultiTransfer_SndDstFrozen(t *testing.T) {

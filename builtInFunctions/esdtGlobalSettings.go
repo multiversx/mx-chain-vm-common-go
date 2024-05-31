@@ -69,7 +69,7 @@ func (e *esdtGlobalSettings) SetNewGasConfig(_ *vmcommon.GasCost) {
 
 // ProcessBuiltinFunction resolves ESDT pause function call
 func (e *esdtGlobalSettings) ProcessBuiltinFunction(
-	_, _ vmcommon.UserAccountHandler,
+	_, dstAccount vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
 ) (*vmcommon.VMOutput, error) {
 	if vmInput == nil {
@@ -88,9 +88,13 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 		return nil, ErrOnlySystemAccountAccepted
 	}
 
-	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	systemSCAccount, err := getSystemAccountIfNeeded(vmInput, dstAccount, e.accounts)
+	if err != nil {
+		return nil, err
+	}
 
-	err := e.toggleSetting(esdtTokenKey)
+	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	err = e.toggleSetting(esdtTokenKey, systemSCAccount)
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +103,20 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 	return vmOutput, nil
 }
 
-func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
-	systemSCAccount, err := getSystemAccount(e.accounts)
-	if err != nil {
-		return err
+func getSystemAccountIfNeeded(
+	vmInput *vmcommon.ContractCallInput,
+	dstAccount vmcommon.UserAccountHandler,
+	accounts vmcommon.AccountsAdapter,
+) (vmcommon.UserAccountHandler, error) {
+	if !bytes.Equal(core.SystemAccountAddress, vmInput.RecipientAddr) || check.IfNil(dstAccount) {
+		return getSystemAccount(accounts)
 	}
 
-	esdtMetaData, err := e.GetGlobalMetadata(esdtTokenKey)
+	return dstAccount, nil
+}
+
+func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte, systemSCAccount vmcommon.UserAccountHandler) error {
+	esdtMetaData, err := e.getGlobalMetadataFromAccount(esdtTokenKey, systemSCAccount)
 	if err != nil {
 		return err
 	}
@@ -204,6 +215,13 @@ func (e *esdtGlobalSettings) GetGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobal
 		return nil, err
 	}
 
+	return e.getGlobalMetadataFromAccount(esdtTokenKey, systemSCAccount)
+}
+
+func (e *esdtGlobalSettings) getGlobalMetadataFromAccount(
+	esdtTokenKey []byte,
+	systemSCAccount vmcommon.UserAccountHandler,
+) (*ESDTGlobalMetadata, error) {
 	val, _, err := systemSCAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
 	if core.IsGetNodeFromDBError(err) {
 		return nil, err
@@ -223,10 +241,21 @@ func (e *esdtGlobalSettings) GetTokenType(esdtTokenKey []byte) (uint32, error) {
 }
 
 // SetTokenType sets the token type for the esdtTokenKey
-func (e *esdtGlobalSettings) SetTokenType(esdtTokenKey []byte, tokenType uint32) error {
-	systemAccount, err := getSystemAccount(e.accounts)
-	if err != nil {
-		return err
+func (e *esdtGlobalSettings) SetTokenType(
+	esdtTokenKey []byte,
+	tokenType uint32,
+	dstAcc vmcommon.UserAccountHandler,
+) error {
+	var systemAccount vmcommon.UserAccountHandler
+	var err error
+
+	if check.IfNil(dstAcc) {
+		systemAccount, err = getSystemAccount(e.accounts)
+		if err != nil {
+			return err
+		}
+	} else {
+		systemAccount = dstAcc
 	}
 
 	val, _, err := systemAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)

@@ -56,7 +56,7 @@ func TestBaseComponentsHolder_addNFTToDestination(t *testing.T) {
 			Value:      big.NewInt(100),
 			Properties: make([]byte, 0),
 		}
-		err := b.addNFTToDestination([]byte("sndAddr"), []byte("dstAddr"), acc, esdtDataToTransfer, []byte("esdtTokenKey"), 0, false)
+		err := b.addNFTToDestination([]byte("sndAddr"), []byte("dstAddr"), acc, esdtDataToTransfer, []byte("esdtTokenKey"), 0, false, false)
 		assert.Nil(t, err)
 		assert.True(t, addToLiquiditySystemAccCalled)
 		assert.True(t, saveCalled)
