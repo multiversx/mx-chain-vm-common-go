@@ -11,6 +11,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
 	logger "github.com/multiversx/mx-chain-logger-go"
+
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -21,16 +22,17 @@ var (
 
 type esdtNFTCreate struct {
 	baseAlwaysActiveHandler
-	keyPrefix             []byte
-	accounts              vmcommon.AccountsAdapter
-	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.GlobalMetadataHandler
-	rolesHandler          vmcommon.ESDTRoleHandler
-	funcGasCost           uint64
-	gasConfig             vmcommon.BaseOperationCost
-	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
-	mutExecution          sync.RWMutex
+	keyPrefix                     []byte
+	accounts                      vmcommon.AccountsAdapter
+	marshaller                    vmcommon.Marshalizer
+	globalSettingsHandler         vmcommon.GlobalMetadataHandler
+	rolesHandler                  vmcommon.ESDTRoleHandler
+	funcGasCost                   uint64
+	gasConfig                     vmcommon.BaseOperationCost
+	esdtStorageHandler            vmcommon.ESDTNFTStorageHandler
+	enableEpochsHandler           vmcommon.EnableEpochsHandler
+	mutExecution                  sync.RWMutex
+	crossChainTokenCheckerHandler CrossChainTokenCheckerHandler
 }
 
 // NewESDTNFTCreateFunc returns the esdt NFT create built-in function component
@@ -63,17 +65,22 @@ func NewESDTNFTCreateFunc(
 		return nil, ErrNilAccountsAdapter
 	}
 
+	csc, _ := NewCrossChainTokenChecker(nil, map[string]struct{}{
+		"dsa": {},
+	})
+
 	e := &esdtNFTCreate{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		gasConfig:             gasConfig,
-		esdtStorageHandler:    esdtStorageHandler,
-		enableEpochsHandler:   enableEpochsHandler,
-		mutExecution:          sync.RWMutex{},
-		accounts:              accounts,
+		keyPrefix:                     []byte(baseESDTKeyPrefix),
+		marshaller:                    marshaller,
+		globalSettingsHandler:         globalSettingsHandler,
+		rolesHandler:                  rolesHandler,
+		funcGasCost:                   funcGasCost,
+		gasConfig:                     gasConfig,
+		esdtStorageHandler:            esdtStorageHandler,
+		enableEpochsHandler:           enableEpochsHandler,
+		mutExecution:                  sync.RWMutex{},
+		accounts:                      accounts,
+		crossChainTokenCheckerHandler: csc,
 	}
 
 	return e, nil
@@ -146,7 +153,15 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	nonce, err := getLatestNonce(accountWithRoles, tokenID)
+	var nonce uint64
+	isCrossChainToken := e.crossChainTokenCheckerHandler.IsCrossChainOperation(tokenID)
+	if !isCrossChainToken {
+		nonce, err = getLatestNonce(accountWithRoles, tokenID)
+	} else {
+		nonce, err = getCrossChainTokenNonce(vmInput.Arguments)
+		uris = uris[:len(uris)-1]
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +201,11 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	nextNonce := nonce + 1
+	nextNonce := nonce
+	if !isCrossChainToken {
+		nextNonce = nonce + 1
+	}
+
 	esdtData := &esdt.ESDigitalToken{
 		Type:  esdtType,
 		Value: quantity,
@@ -210,9 +229,11 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	err = saveLatestNonce(accountWithRoles, tokenID, nextNonce)
-	if err != nil {
-		return nil, err
+	if !isCrossChainToken {
+		err = saveLatestNonce(accountWithRoles, tokenID, nextNonce)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if vmInput.CallType == vm.ExecOnDestByCaller {
@@ -273,6 +294,15 @@ func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, e
 	}
 
 	return big.NewInt(0).SetBytes(nonceData).Uint64(), nil
+}
+
+func getCrossChainTokenNonce(args [][]byte) (uint64, error) {
+	if len(args) < 8 {
+		return 0, ErrInvalidNumberOfArguments
+	}
+
+	nonceBytes := args[len(args)-1]
+	return big.NewInt(0).SetBytes(nonceBytes).Uint64(), nil
 }
 
 func saveLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte, nonce uint64) error {
