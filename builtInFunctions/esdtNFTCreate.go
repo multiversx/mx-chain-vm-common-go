@@ -35,52 +35,54 @@ type esdtNFTCreate struct {
 	crossChainTokenCheckerHandler CrossChainTokenCheckerHandler
 }
 
+type ESDTNFTCreateFuncArgs struct {
+	FuncGasCost                   uint64
+	Marshaller                    vmcommon.Marshalizer
+	RolesHandler                  vmcommon.ESDTRoleHandler
+	EnableEpochsHandler           vmcommon.EnableEpochsHandler
+	EsdtStorageHandler            vmcommon.ESDTNFTStorageHandler
+	Accounts                      vmcommon.AccountsAdapter
+	GasConfig                     vmcommon.BaseOperationCost
+	GlobalSettingsHandler         vmcommon.GlobalMetadataHandler
+	CrossChainTokenCheckerHandler CrossChainTokenCheckerHandler
+}
+
 // NewESDTNFTCreateFunc returns the esdt NFT create built-in function component
-func NewESDTNFTCreateFunc(
-	funcGasCost uint64,
-	gasConfig vmcommon.BaseOperationCost,
-	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.GlobalMetadataHandler,
-	rolesHandler vmcommon.ESDTRoleHandler,
-	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
-	accounts vmcommon.AccountsAdapter,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtNFTCreate, error) {
-	if check.IfNil(marshaller) {
+func NewESDTNFTCreateFunc(args ESDTNFTCreateFuncArgs) (*esdtNFTCreate, error) {
+	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(globalSettingsHandler) {
+	if check.IfNil(args.GlobalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if check.IfNil(rolesHandler) {
+	if check.IfNil(args.RolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(esdtStorageHandler) {
+	if check.IfNil(args.EsdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
+	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
-	if check.IfNil(accounts) {
+	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
 	}
-
-	csc, _ := NewCrossChainTokenChecker(nil, map[string]struct{}{
-		"dsa": {},
-	})
+	if check.IfNil(args.CrossChainTokenCheckerHandler) {
+		return nil, ErrNilCrossChainTokenChecker
+	}
 
 	e := &esdtNFTCreate{
 		keyPrefix:                     []byte(baseESDTKeyPrefix),
-		marshaller:                    marshaller,
-		globalSettingsHandler:         globalSettingsHandler,
-		rolesHandler:                  rolesHandler,
-		funcGasCost:                   funcGasCost,
-		gasConfig:                     gasConfig,
-		esdtStorageHandler:            esdtStorageHandler,
-		enableEpochsHandler:           enableEpochsHandler,
+		marshaller:                    args.Marshaller,
+		globalSettingsHandler:         args.GlobalSettingsHandler,
+		rolesHandler:                  args.RolesHandler,
+		funcGasCost:                   args.FuncGasCost,
+		gasConfig:                     args.GasConfig,
+		esdtStorageHandler:            args.EsdtStorageHandler,
+		enableEpochsHandler:           args.EnableEpochsHandler,
 		mutExecution:                  sync.RWMutex{},
-		accounts:                      accounts,
-		crossChainTokenCheckerHandler: csc,
+		accounts:                      args.Accounts,
+		crossChainTokenCheckerHandler: args.CrossChainTokenCheckerHandler,
 	}
 
 	return e, nil
@@ -107,6 +109,7 @@ func (e *esdtNFTCreate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 // arg4 - hash
 // arg5 - attributes
 // arg6+ - multiple entries of URI (minimum 1)
+// lastArg - token nonce in case of cross chain operations
 func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
