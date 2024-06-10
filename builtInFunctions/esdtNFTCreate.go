@@ -20,6 +20,8 @@ var (
 	noncePrefix = []byte(core.ProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
 )
 
+const minNumOfArgsForCrossChainMint = 8
+
 type esdtNFTCreate struct {
 	baseAlwaysActiveHandler
 	keyPrefix                     []byte
@@ -300,8 +302,8 @@ func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, e
 }
 
 func getCrossChainTokenNonce(args [][]byte) (uint64, error) {
-	if len(args) < 8 {
-		return 0, ErrInvalidNumberOfArguments
+	if len(args) < minNumOfArgsForCrossChainMint {
+		return 0, fmt.Errorf("%w for cross chain token mint, last argument should be the nonce", ErrInvalidNumberOfArguments)
 	}
 
 	nonceBytes := args[len(args)-1]

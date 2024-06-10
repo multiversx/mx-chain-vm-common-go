@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -459,6 +460,84 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	err = nftCreate.marshaller.Unmarshal(&esdtDataFromLog, esdtDataBytes)
 	require.Nil(t, err)
 	require.Equal(t, esdtData.TokenMetaData, esdtDataFromLog.TokenMetaData)
+}
+
+func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testing.T) {
+	t.Parallel()
+
+	esdtDtaStorage := createNewESDTDataStorageHandler()
+	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
+	esdtRoleHandler, _ := NewESDTRolesFunc(marshallerMock, ctc, false)
+
+	args := createESDTNFTCreateArgs()
+	args.CrossChainTokenCheckerHandler, _ = NewCrossChainTokenChecker(nil, getWhiteListedAddress())
+	args.RolesHandler = esdtRoleHandler
+	args.Accounts = esdtDtaStorage.accounts
+	args.EsdtStorageHandler = esdtDtaStorage
+
+	nftCreate, _ := NewESDTNFTCreateFunc(args)
+	address := []byte("whiteListedAddress")
+	sender := mock.NewUserAccount(address)
+
+	t.Run("invalid num of args, last arg is not nonce", func(t *testing.T) {
+		token := "sov1-TOKEN-abcdef"
+		quantity := big.NewInt(2)
+		name := "name"
+		royalties := 100 //1%
+		hash := []byte("12345678901234567890123456789012")
+		attributes := []byte("attributes")
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr: sender.AddressBytes(),
+				CallValue:  big.NewInt(0),
+				Arguments: [][]byte{
+					[]byte(token),
+					quantity.Bytes(),
+					[]byte(name),
+					big.NewInt(int64(royalties)).Bytes(),
+					hash,
+					attributes,
+					[]byte("uri1"),
+				},
+			},
+			RecipientAddr: sender.AddressBytes(),
+		}
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		require.ErrorIs(t, err, ErrInvalidNumberOfArguments)
+		require.True(t, strings.Contains(err.Error(), "for cross chain"))
+		require.Nil(t, vmOutput)
+	})
+
+	t.Run("address is not whitelisted", func(t *testing.T) {
+		senderInvalid := mock.NewUserAccount([]byte("notWhiteListed"))
+
+		token := "sov1-TOKEN-abcdef"
+		quantity := big.NewInt(2)
+		name := "name"
+		royalties := 100 //1%
+		hash := []byte("12345678901234567890123456789012")
+		attributes := []byte("attributes")
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr: senderInvalid.AddressBytes(),
+				CallValue:  big.NewInt(0),
+				Arguments: [][]byte{
+					[]byte(token),
+					quantity.Bytes(),
+					[]byte(name),
+					big.NewInt(int64(royalties)).Bytes(),
+					hash,
+					attributes,
+					[]byte("uri1"),
+					big.NewInt(123).Bytes(),
+				},
+			},
+			RecipientAddr: senderInvalid.AddressBytes(),
+		}
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(senderInvalid, nil, vmInput)
+		require.Equal(t, err, ErrActionNotAllowed)
+		require.Nil(t, vmOutput)
+	})
 }
 
 func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
