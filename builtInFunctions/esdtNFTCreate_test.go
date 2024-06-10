@@ -382,6 +382,85 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 	assert.Equal(t, tokenMetaData, metaData)
 }
 
+func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
+	t.Parallel()
+
+	esdtDtaStorage := createNewESDTDataStorageHandler()
+	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
+	esdtRoleHandler, _ := NewESDTRolesFunc(marshallerMock, ctc, false)
+
+	args := createESDTNFTCreateArgs()
+	args.CrossChainTokenCheckerHandler, _ = NewCrossChainTokenChecker(nil, getWhiteListedAddress())
+	args.RolesHandler = esdtRoleHandler
+	args.Accounts = esdtDtaStorage.accounts
+	args.EsdtStorageHandler = esdtDtaStorage
+
+	nftCreate, _ := NewESDTNFTCreateFunc(args)
+	address := []byte("whiteListedAddress")
+	sender := mock.NewUserAccount(address)
+
+	token := "sov1-TOKEN-abcdef"
+	quantity := big.NewInt(2)
+	name := "name"
+	royalties := 100 //1%
+	hash := []byte("12345678901234567890123456789012")
+	attributes := []byte("attributes")
+	uris := [][]byte{[]byte("uri1"), []byte("uri2")}
+	nonce := big.NewInt(1234)
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallerAddr: sender.AddressBytes(),
+			CallValue:  big.NewInt(0),
+			Arguments: [][]byte{
+				[]byte(token),
+				quantity.Bytes(),
+				[]byte(name),
+				big.NewInt(int64(royalties)).Bytes(),
+				hash,
+				attributes,
+				uris[0],
+				uris[1],
+				nonce.Bytes(),
+			},
+		},
+		RecipientAddr: sender.AddressBytes(),
+	}
+	vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+	require.Nil(t, err)
+	require.NotNil(t, vmOutput)
+
+	tokenMetaData := &esdt.MetaData{
+		Nonce:      nonce.Uint64(),
+		Name:       []byte(name),
+		Creator:    address,
+		Royalties:  uint32(royalties),
+		Hash:       hash,
+		URIs:       uris,
+		Attributes: attributes,
+	}
+
+	// Nonce was not saved in account
+	nonceKey := getNonceKey([]byte(token))
+	latestNonceBytes, _, err := sender.AccountDataHandler().RetrieveValue(nonceKey)
+	require.Nil(t, err)
+	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
+	require.Zero(t, latestNonce)
+
+	// Nonce was not incremented when reading from logs and sys acc
+	tokenKey := []byte(baseESDTKeyPrefix + token)
+	tokenKey = append(tokenKey, big.NewInt(1234).Bytes()...)
+
+	esdtData, _, _ := esdtDtaStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey, defaultQueryOptions())
+	require.Equal(t, tokenMetaData, esdtData.TokenMetaData)
+	require.Equal(t, esdtData.Value, quantity)
+
+	esdtDataBytes := vmOutput.Logs[0].Topics[3]
+	var esdtDataFromLog esdt.ESDigitalToken
+	err = nftCreate.marshaller.Unmarshal(&esdtDataFromLog, esdtDataBytes)
+	require.Nil(t, err)
+	require.Equal(t, esdtData.TokenMetaData, esdtDataFromLog.TokenMetaData)
+}
+
 func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
 	nonceKey := getNonceKey(tokenID)
 	latestNonceBytes, _, err := account.AccountDataHandler().RetrieveValue(nonceKey)

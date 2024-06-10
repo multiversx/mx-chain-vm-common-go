@@ -126,16 +126,16 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	if vmInput.CallType == vm.ExecOnDestByCaller {
 		minNumOfArgs = 8
 	}
-	lenArgs := len(vmInput.Arguments)
-	if lenArgs < minNumOfArgs {
+	argsLen := len(vmInput.Arguments)
+	if argsLen < minNumOfArgs {
 		return nil, fmt.Errorf("%w, wrong number of arguments", ErrInvalidArguments)
 	}
 
 	accountWithRoles := acntSnd
 	uris := vmInput.Arguments[6:]
 	if vmInput.CallType == vm.ExecOnDestByCaller {
-		scAddressWithRoles := vmInput.Arguments[lenArgs-1]
-		uris = vmInput.Arguments[6 : lenArgs-1]
+		scAddressWithRoles := vmInput.Arguments[argsLen-1]
+		uris = vmInput.Arguments[6 : argsLen-1]
 
 		if len(scAddressWithRoles) != len(vmInput.CallerAddr) {
 			return nil, ErrInvalidAddressLength
