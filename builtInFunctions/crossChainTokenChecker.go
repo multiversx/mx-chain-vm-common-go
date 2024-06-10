@@ -3,13 +3,15 @@ package builtInFunctions
 import (
 	"bytes"
 	"fmt"
+	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 )
 
 type crossChainTokenChecker struct {
-	selfESDTPrefix       []byte
-	whiteListedAddresses map[string]struct{}
+	selfESDTPrefix        []byte
+	whiteListedAddresses  map[string]struct{}
+	mutWhiteListedAddress sync.RWMutex
 }
 
 // NewCrossChainTokenChecker creates a new cross chain token checker
@@ -51,6 +53,9 @@ func (ctc *crossChainTokenChecker) IsCrossChainOperationAllowed(address []byte, 
 }
 
 func (ctc *crossChainTokenChecker) isWhiteListed(address []byte) bool {
+	ctc.mutWhiteListedAddress.RLock()
+	defer ctc.mutWhiteListedAddress.RUnlock()
+
 	_, found := ctc.whiteListedAddresses[string(address)]
 	return found
 }

@@ -391,7 +391,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	esdtRoleHandler, _ := NewESDTRolesFunc(marshallerMock, ctc, false)
 
 	args := createESDTNFTCreateArgs()
-	args.CrossChainTokenCheckerHandler, _ = NewCrossChainTokenChecker(nil, getWhiteListedAddress())
+	args.CrossChainTokenCheckerHandler = ctc
 	args.RolesHandler = esdtRoleHandler
 	args.Accounts = esdtDtaStorage.accounts
 	args.EsdtStorageHandler = esdtDtaStorage
@@ -470,7 +470,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 	esdtRoleHandler, _ := NewESDTRolesFunc(marshallerMock, ctc, false)
 
 	args := createESDTNFTCreateArgs()
-	args.CrossChainTokenCheckerHandler, _ = NewCrossChainTokenChecker(nil, getWhiteListedAddress())
+	args.CrossChainTokenCheckerHandler = ctc
 	args.RolesHandler = esdtRoleHandler
 	args.Accounts = esdtDtaStorage.accounts
 	args.EsdtStorageHandler = esdtDtaStorage
@@ -480,28 +480,23 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 	sender := mock.NewUserAccount(address)
 
 	t.Run("invalid num of args, last arg is not nonce", func(t *testing.T) {
-		token := "sov1-TOKEN-abcdef"
-		quantity := big.NewInt(2)
-		name := "name"
-		royalties := 100 //1%
-		hash := []byte("12345678901234567890123456789012")
-		attributes := []byte("attributes")
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallerAddr: sender.AddressBytes(),
 				CallValue:  big.NewInt(0),
 				Arguments: [][]byte{
-					[]byte(token),
-					quantity.Bytes(),
-					[]byte(name),
-					big.NewInt(int64(royalties)).Bytes(),
-					hash,
-					attributes,
+					[]byte("sov1-TOKEN-abcdef"),
+					big.NewInt(2).Bytes(),
+					[]byte("name"),
+					big.NewInt(int64(100)).Bytes(),
+					[]byte("12345678901234567890123456789012"),
+					[]byte("attributes"),
 					[]byte("uri1"),
 				},
 			},
 			RecipientAddr: sender.AddressBytes(),
 		}
+
 		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
 		require.ErrorIs(t, err, ErrInvalidNumberOfArguments)
 		require.True(t, strings.Contains(err.Error(), "for cross chain"))
@@ -510,30 +505,24 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 
 	t.Run("address is not whitelisted", func(t *testing.T) {
 		senderInvalid := mock.NewUserAccount([]byte("notWhiteListed"))
-
-		token := "sov1-TOKEN-abcdef"
-		quantity := big.NewInt(2)
-		name := "name"
-		royalties := 100 //1%
-		hash := []byte("12345678901234567890123456789012")
-		attributes := []byte("attributes")
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallerAddr: senderInvalid.AddressBytes(),
 				CallValue:  big.NewInt(0),
 				Arguments: [][]byte{
-					[]byte(token),
-					quantity.Bytes(),
-					[]byte(name),
-					big.NewInt(int64(royalties)).Bytes(),
-					hash,
-					attributes,
+					[]byte("sov1-TOKEN-abcdef"),
+					big.NewInt(2).Bytes(),
+					[]byte("name"),
+					big.NewInt(int64(100)).Bytes(),
+					[]byte("12345678901234567890123456789012"),
+					[]byte("attributes"),
 					[]byte("uri1"),
 					big.NewInt(123).Bytes(),
 				},
 			},
 			RecipientAddr: senderInvalid.AddressBytes(),
 		}
+
 		vmOutput, err := nftCreate.ProcessBuiltinFunction(senderInvalid, nil, vmInput)
 		require.Equal(t, err, ErrActionNotAllowed)
 		require.Nil(t, vmOutput)
