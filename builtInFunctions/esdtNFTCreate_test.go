@@ -408,6 +408,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	attributes := []byte("attributes")
 	uris := [][]byte{[]byte("uri1"), []byte("uri2")}
 	nonce := big.NewInt(1234)
+	originalCreator := []byte("originalCreator")
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallerAddr: sender.AddressBytes(),
@@ -422,6 +423,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 				uris[0],
 				uris[1],
 				nonce.Bytes(),
+				originalCreator,
 			},
 		},
 		RecipientAddr: sender.AddressBytes(),
@@ -433,7 +435,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	tokenMetaData := &esdt.MetaData{
 		Nonce:      nonce.Uint64(),
 		Name:       []byte(name),
-		Creator:    address,
+		Creator:    originalCreator,
 		Royalties:  uint32(royalties),
 		Hash:       hash,
 		URIs:       uris,
@@ -460,6 +462,29 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	err = nftCreate.marshaller.Unmarshal(&esdtDataFromLog, esdtDataBytes)
 	require.Nil(t, err)
 	require.Equal(t, esdtData.TokenMetaData, esdtDataFromLog.TokenMetaData)
+
+	// Simulate one extra call with only one uri
+	vmInput = &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallerAddr: sender.AddressBytes(),
+			CallValue:  big.NewInt(0),
+			Arguments: [][]byte{
+				[]byte(token),
+				quantity.Bytes(),
+				[]byte(name),
+				big.NewInt(int64(royalties)).Bytes(),
+				hash,
+				attributes,
+				uris[0],
+				nonce.Bytes(),
+				originalCreator,
+			},
+		},
+		RecipientAddr: sender.AddressBytes(),
+	}
+	vmOutput, err = nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+	require.Nil(t, err)
+	require.NotNil(t, vmOutput)
 }
 
 func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testing.T) {
@@ -479,7 +504,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 	address := []byte("whiteListedAddress")
 	sender := mock.NewUserAccount(address)
 
-	t.Run("invalid num of args, last arg is not nonce", func(t *testing.T) {
+	t.Run("invalid num of args, penultimate arg is not nonce", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallerAddr: sender.AddressBytes(),
@@ -492,6 +517,31 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 					[]byte("12345678901234567890123456789012"),
 					[]byte("attributes"),
 					[]byte("uri1"),
+				},
+			},
+			RecipientAddr: sender.AddressBytes(),
+		}
+
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		require.ErrorIs(t, err, ErrInvalidNumberOfArguments)
+		require.True(t, strings.Contains(err.Error(), "for cross chain"))
+		require.Nil(t, vmOutput)
+	})
+
+	t.Run("invalid num of args, last arg is not creator", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr: sender.AddressBytes(),
+				CallValue:  big.NewInt(0),
+				Arguments: [][]byte{
+					[]byte("sov1-TOKEN-abcdef"),
+					big.NewInt(2).Bytes(),
+					[]byte("name"),
+					big.NewInt(int64(100)).Bytes(),
+					[]byte("12345678901234567890123456789012"),
+					[]byte("attributes"),
+					[]byte("uri1"),
+					big.NewInt(1).Bytes(),
 				},
 			},
 			RecipientAddr: sender.AddressBytes(),
@@ -518,6 +568,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 					[]byte("attributes"),
 					[]byte("uri1"),
 					big.NewInt(123).Bytes(),
+					[]byte("creator"),
 				},
 			},
 			RecipientAddr: senderInvalid.AddressBytes(),

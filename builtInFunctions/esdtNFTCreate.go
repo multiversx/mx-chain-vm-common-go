@@ -20,7 +20,7 @@ var (
 	noncePrefix = []byte(core.ProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
 )
 
-const minNumOfArgsForCrossChainMint = 8
+const minNumOfArgsForCrossChainMint = 9
 
 type esdtNFTCreate struct {
 	baseAlwaysActiveHandler
@@ -111,7 +111,9 @@ func (e *esdtNFTCreate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 // arg4 - hash
 // arg5 - attributes
 // arg6+ - multiple entries of URI (minimum 1)
-// lastArg - token nonce in case of cross chain operations
+// In case of cross chain operation, we need 2 more args:
+// extraArg1 - token nonce
+// extraArg2 - creator from originating chain
 func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -159,16 +161,22 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	var nonce uint64
+	var originalCreator []byte
 	isCrossChainToken := e.crossChainTokenCheckerHandler.IsCrossChainOperation(tokenID)
 	if !isCrossChainToken {
 		nonce, err = getLatestNonce(accountWithRoles, tokenID)
+		if err != nil {
+			return nil, err
+		}
+
+		originalCreator = vmInput.CallerAddr
 	} else {
 		nonce, err = getCrossChainTokenNonce(vmInput.Arguments)
-		uris = uris[:len(uris)-1]
-	}
-
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+		originalCreator = vmInput.Arguments[argsLen-1]
+		uris = uris[:len(uris)-2]
 	}
 
 	totalLength := uint64(0)
@@ -217,7 +225,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		TokenMetaData: &esdt.MetaData{
 			Nonce:      nextNonce,
 			Name:       vmInput.Arguments[2],
-			Creator:    vmInput.CallerAddr,
+			Creator:    originalCreator,
 			Royalties:  royalties,
 			Hash:       vmInput.Arguments[4],
 			Attributes: vmInput.Arguments[5],
@@ -306,7 +314,7 @@ func getCrossChainTokenNonce(args [][]byte) (uint64, error) {
 		return 0, fmt.Errorf("%w for cross chain token mint, last argument should be the nonce", ErrInvalidNumberOfArguments)
 	}
 
-	nonceBytes := args[len(args)-1]
+	nonceBytes := args[len(args)-2]
 	return big.NewInt(0).SetBytes(nonceBytes).Uint64(), nil
 }
 
