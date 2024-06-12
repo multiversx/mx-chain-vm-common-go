@@ -22,6 +22,13 @@ var (
 
 const minNumOfArgsForCrossChainMint = 9
 
+type esdtNFTCreateInput struct {
+	nonce                 uint64
+	originalCreator       []byte
+	uris                  [][]byte
+	isCrossChainOperation bool
+}
+
 type esdtNFTCreate struct {
 	baseAlwaysActiveHandler
 	keyPrefix                     []byte
@@ -114,6 +121,7 @@ func (e *esdtNFTCreate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 // In case of cross chain operation, we need 2 more args:
 // extraArg1 - token nonce
 // extraArg2 - creator from originating chain
+// For ExecOnDestByCaller, last arg should be sc address caller
 func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -160,24 +168,16 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	var nonce uint64
-	var originalCreator []byte
-	isCrossChainToken := e.crossChainTokenCheckerHandler.IsCrossChainOperation(tokenID)
-	if !isCrossChainToken {
-		nonce, err = getLatestNonce(accountWithRoles, tokenID)
-		if err != nil {
-			return nil, err
-		}
-
-		originalCreator = vmInput.CallerAddr
-	} else {
-		nonce, err = getCrossChainTokenNonce(vmInput.Arguments)
-		if err != nil {
-			return nil, err
-		}
-		originalCreator = vmInput.Arguments[argsLen-1]
-		uris = uris[:len(uris)-2]
+	createInput, err := e.getESDTNFTCreateInput(vmInput, tokenID, uris, accountWithRoles)
+	if err != nil {
+		return nil, err
 	}
+
+	nonce, originalCreator, uris, isCrossChainToken :=
+		createInput.nonce,
+		createInput.originalCreator,
+		createInput.uris,
+		createInput.isCrossChainOperation
 
 	totalLength := uint64(0)
 	for _, arg := range vmInput.Arguments {
@@ -309,13 +309,62 @@ func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, e
 	return big.NewInt(0).SetBytes(nonceData).Uint64(), nil
 }
 
-func getCrossChainTokenNonce(args [][]byte) (uint64, error) {
-	if len(args) < minNumOfArgsForCrossChainMint {
-		return 0, fmt.Errorf("%w for cross chain token mint, last argument should be the nonce", ErrInvalidNumberOfArguments)
+func (e *esdtNFTCreate) getESDTNFTCreateInput(
+	vmInput *vmcommon.ContractCallInput,
+	tokenID []byte,
+	originalURIs [][]byte,
+	accountWithRoles vmcommon.UserAccountHandler,
+) (*esdtNFTCreateInput, error) {
+	args := vmInput.Arguments
+
+	var uris = originalURIs
+	var nonce uint64
+	var originalCreator []byte
+	var err error
+
+	isCrossChainToken := e.crossChainTokenCheckerHandler.IsCrossChainOperation(tokenID)
+	if !isCrossChainToken {
+		nonce, err = getLatestNonce(accountWithRoles, tokenID)
+		if err != nil {
+			return nil, err
+		}
+
+		originalCreator = vmInput.CallerAddr
+	} else {
+		nonce, originalCreator, err = getCrossChainTokenNonceAndCreator(args, vmInput.CallType)
+		if err != nil {
+			return nil, err
+		}
+
+		uris = uris[:len(uris)-2]
 	}
 
-	nonceBytes := args[len(args)-2]
-	return big.NewInt(0).SetBytes(nonceBytes).Uint64(), nil
+	return &esdtNFTCreateInput{
+		nonce:                 nonce,
+		originalCreator:       originalCreator,
+		uris:                  uris,
+		isCrossChainOperation: isCrossChainToken,
+	}, nil
+}
+
+func getCrossChainTokenNonceAndCreator(args [][]byte, callType vm.CallType) (uint64, []byte, error) {
+	minRequiredArgs := minNumOfArgsForCrossChainMint
+	if callType == vm.ExecOnDestByCaller {
+		minRequiredArgs++
+	}
+
+	if len(args) < minRequiredArgs {
+		return 0, nil, fmt.Errorf("%w for cross chain token mint, last 2 arguments should be the nonce and original creator", ErrInvalidNumberOfArguments)
+	}
+
+	argsLen := len(args)
+	if !(callType == vm.ExecOnDestByCaller) {
+		nonceBytes := args[argsLen-2]
+		return big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-1], nil
+	}
+
+	nonceBytes := args[len(args)-3]
+	return big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-2], nil
 }
 
 func saveLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte, nonce uint64) error {
