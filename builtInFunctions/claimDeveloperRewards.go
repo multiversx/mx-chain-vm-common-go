@@ -48,7 +48,9 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 	}
 	gasRemaining := computeGasRemaining(acntSnd, vmInput.GasProvided, c.gasCost)
 	if check.IfNil(acntDst) {
-		// cross-shard call, in sender shard only the gas is taken out
+		// The call is cross-shard, and we are at the sender shard.
+		// Here, in the sender shard, only the gas is taken out.
+		// Log entry does not need to be added.
 		return &vmcommon.VMOutput{ReturnCode: vmcommon.Ok, GasRemaining: gasRemaining}, nil
 	}
 
@@ -89,6 +91,8 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 	vmOutput.OutputAccounts[string(outputAcc.Address)] = outputAcc
 
 	if check.IfNil(acntSnd) {
+		// The call is cross-shard, and we are at the destination shard.
+		addLogEntryForClaimDeveloperRewards(vmInput, vmOutput, value, vmInput.CallerAddr)
 		return vmOutput, nil
 	}
 
@@ -101,7 +105,26 @@ func (c *claimDeveloperRewards) ProcessBuiltinFunction(
 		vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
 	}
 
+	addLogEntryForClaimDeveloperRewards(vmInput, vmOutput, value, vmInput.CallerAddr)
 	return vmOutput, nil
+}
+
+func addLogEntryForClaimDeveloperRewards(
+	vmInput *vmcommon.ContractCallInput,
+	vmOutput *vmcommon.VMOutput,
+	value *big.Int,
+	developerAddress []byte,
+) {
+	valueAsBytes := value.Bytes()
+
+	logEntry := &vmcommon.LogEntry{
+		Identifier: []byte(vmInput.Function),
+		Address:    vmInput.RecipientAddr,
+		Topics:     [][]byte{valueAsBytes, developerAddress},
+		Data:       nil,
+	}
+	vmOutput.Logs = make([]*vmcommon.LogEntry, 1)
+	vmOutput.Logs[0] = logEntry
 }
 
 // IsInterfaceNil returns true if underlying object is nil

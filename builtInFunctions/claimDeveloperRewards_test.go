@@ -31,6 +31,7 @@ func TestClaimDeveloperRewards_ProcessBuiltinFunction(t *testing.T) {
 	vmOutput, err = cdr.ProcessBuiltinFunction(nil, nil, vmInput)
 	require.Nil(t, err)
 	require.NotNil(t, vmOutput)
+	require.Equal(t, 0, len(vmOutput.Logs))
 
 	vmOutput, err = cdr.ProcessBuiltinFunction(nil, acc, vmInput)
 	require.Nil(t, vmOutput)
@@ -44,6 +45,8 @@ func TestClaimDeveloperRewards_ProcessBuiltinFunction(t *testing.T) {
 	require.Equal(t, 1, len(vmOutput.OutputAccounts[string(vmInput.CallerAddr)].OutputTransfers))
 	require.Equal(t, value, vmOutput.OutputAccounts[string(vmInput.CallerAddr)].OutputTransfers[0].Value)
 	require.Equal(t, uint64(0), vmOutput.GasRemaining)
+	require.Equal(t, 1, len(vmOutput.Logs))
+	require.Equal(t, [][]byte{value.Bytes(), acc.OwnerAddress}, vmOutput.Logs[0].Topics)
 
 	acc.OwnerAddress = sender
 	acc.AddToDeveloperReward(value)
@@ -51,4 +54,26 @@ func TestClaimDeveloperRewards_ProcessBuiltinFunction(t *testing.T) {
 	vmOutput, err = cdr.ProcessBuiltinFunction(acc, acc, vmInput)
 	require.Nil(t, err)
 	require.Equal(t, vmOutput.GasRemaining, vmInput.GasProvided-cdr.gasCost)
+	require.Equal(t, 1, len(vmOutput.Logs))
+	require.Equal(t, [][]byte{value.Bytes(), acc.OwnerAddress}, vmOutput.Logs[0].Topics)
+}
+
+func TestAddLogEntryForClaimDeveloperRewards(t *testing.T) {
+	t.Parallel()
+
+	vmInput := &vmcommon.ContractCallInput{
+		Function:      "ClaimDeveloperRewards",
+		RecipientAddr: []byte("contract"),
+	}
+
+	vmOutput := &vmcommon.VMOutput{}
+	value := big.NewInt(42)
+	developerAddress := []byte("developer")
+
+	addLogEntryForClaimDeveloperRewards(vmInput, vmOutput, value, developerAddress)
+
+	require.Equal(t, 1, len(vmOutput.Logs))
+	require.Equal(t, []byte(vmInput.Function), vmOutput.Logs[0].Identifier)
+	require.Equal(t, vmInput.RecipientAddr, vmOutput.Logs[0].Address)
+	require.Equal(t, [][]byte{value.Bytes(), developerAddress}, vmOutput.Logs[0].Topics)
 }
