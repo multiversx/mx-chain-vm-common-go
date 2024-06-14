@@ -44,6 +44,7 @@ type esdtNFTCreate struct {
 	crossChainTokenCheckerHandler CrossChainTokenCheckerHandler
 }
 
+// ESDTNFTCreateFuncArgs is a struct placeholder for args needed to create the esdt nft create func
 type ESDTNFTCreateFuncArgs struct {
 	FuncGasCost                   uint64
 	Marshaller                    vmcommon.Marshalizer
@@ -353,11 +354,12 @@ func getCrossChainTokenNonceAndCreator(args [][]byte, callType vm.CallType) (uin
 		minRequiredArgs++
 	}
 
-	if len(args) < minRequiredArgs {
-		return 0, nil, fmt.Errorf("%w for cross chain token mint, last 2 arguments should be the nonce and original creator", ErrInvalidNumberOfArguments)
+	argsLen := len(args)
+	if argsLen < minRequiredArgs {
+		return 0, nil, fmt.Errorf("%w for cross chain token mint, received: %d, expected: %d, 2 extra arguments should be the nonce and original creator",
+			ErrInvalidNumberOfArguments, argsLen, minRequiredArgs)
 	}
 
-	argsLen := len(args)
 	if !(callType == vm.ExecOnDestByCaller) {
 		nonceBytes := args[argsLen-2]
 		return big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-1], nil

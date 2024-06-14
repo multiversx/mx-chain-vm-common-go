@@ -592,7 +592,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 	userSender := []byte("userAccountAddress")
 	sender := mock.NewUserAccount(address)
 
-	t.Run("invalid num of args, penultimate arg is not nonce", func(t *testing.T) {
+	t.Run("invalid num of args without exec on dest", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallerAddr: sender.AddressBytes(),
@@ -610,13 +610,17 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 			RecipientAddr: sender.AddressBytes(),
 		}
 
+		// missing nonce
 		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
-		require.ErrorIs(t, err, ErrInvalidNumberOfArguments)
-		require.True(t, strings.Contains(err.Error(), "for cross chain"))
-		require.Nil(t, vmOutput)
+		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
+
+		// missing original creator
+		vmInput.VMInput.Arguments = append(vmInput.VMInput.Arguments, big.NewInt(1).Bytes())
+		vmOutput, err = nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
 	})
 
-	t.Run("invalid num of args in exec on dest, penultimate arg is not nonce", func(t *testing.T) {
+	t.Run("invalid num of args in exec on dest", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallerAddr: userSender,
@@ -636,62 +640,15 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 			RecipientAddr: userSender,
 		}
 
+		// missing nonce
 		vmOutput, err := nftCreate.ProcessBuiltinFunction(nil, nil, vmInput)
-		require.ErrorIs(t, err, ErrInvalidNumberOfArguments)
-		require.True(t, strings.Contains(err.Error(), "for cross chain"))
-		require.Nil(t, vmOutput)
-	})
+		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
 
-	t.Run("invalid num of args, last arg is not original creator", func(t *testing.T) {
-		vmInput := &vmcommon.ContractCallInput{
-			VMInput: vmcommon.VMInput{
-				CallerAddr: sender.AddressBytes(),
-				CallValue:  big.NewInt(0),
-				Arguments: [][]byte{
-					[]byte("sov1-TOKEN-abcdef"),
-					big.NewInt(2).Bytes(),
-					[]byte("name"),
-					big.NewInt(int64(100)).Bytes(),
-					[]byte("12345678901234567890123456789012"),
-					[]byte("attributes"),
-					[]byte("uri1"),
-					big.NewInt(1).Bytes(),
-				},
-			},
-			RecipientAddr: sender.AddressBytes(),
-		}
-
-		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
-		require.ErrorIs(t, err, ErrInvalidNumberOfArguments)
-		require.True(t, strings.Contains(err.Error(), "for cross chain"))
-		require.Nil(t, vmOutput)
-	})
-
-	t.Run("invalid num of args in exec on dest, last arg is not original creator", func(t *testing.T) {
-		vmInput := &vmcommon.ContractCallInput{
-			VMInput: vmcommon.VMInput{
-				CallerAddr: userSender,
-				CallValue:  big.NewInt(0),
-				Arguments: [][]byte{
-					[]byte("sov1-TOKEN-abcdef"),
-					big.NewInt(2).Bytes(),
-					[]byte("name"),
-					big.NewInt(int64(100)).Bytes(),
-					[]byte("12345678901234567890123456789012"),
-					[]byte("attributes"),
-					[]byte("uri1"),
-					big.NewInt(1).Bytes(),
-					[]byte("whiteListedAddress"),
-				},
-				CallType: vm.ExecOnDestByCaller,
-			},
-			RecipientAddr: userSender,
-		}
-
-		vmOutput, err := nftCreate.ProcessBuiltinFunction(nil, nil, vmInput)
-		require.ErrorIs(t, err, ErrInvalidNumberOfArguments)
-		require.True(t, strings.Contains(err.Error(), "for cross chain"))
-		require.Nil(t, vmOutput)
+		// missing original creator
+		vmInput.VMInput.Arguments[7] = big.NewInt(1).Bytes()
+		vmInput.VMInput.Arguments = append(vmInput.VMInput.Arguments, []byte("whiteListedAddress"))
+		vmOutput, err = nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
 	})
 
 	t.Run("address is not whitelisted", func(t *testing.T) {
@@ -719,6 +676,12 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 		require.Equal(t, err, ErrActionNotAllowed)
 		require.Nil(t, vmOutput)
 	})
+}
+
+func requireErrorIsInvalidArgsCrossChain(t *testing.T, vmOutput *vmcommon.VMOutput, err error) {
+	require.ErrorIs(t, err, ErrInvalidNumberOfArguments)
+	require.True(t, strings.Contains(err.Error(), "for cross chain"))
+	require.Nil(t, vmOutput)
 }
 
 func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {
