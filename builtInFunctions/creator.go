@@ -4,6 +4,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -329,16 +330,18 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTCreateFunc(
-		b.gasConfig.BuiltInCost.ESDTNFTCreate,
-		b.gasConfig.BaseOperationCost,
-		b.marshaller,
-		globalSettingsFunc,
-		setRoleFunc,
-		b.esdtStorageHandler,
-		b.accounts,
-		b.enableEpochsHandler,
-	)
+	argsESDTNFTCreate := ESDTNFTCreateFuncArgs{
+		FuncGasCost:                   b.gasConfig.BuiltInCost.ESDTNFTCreate,
+		Marshaller:                    b.marshaller,
+		RolesHandler:                  setRoleFunc,
+		EnableEpochsHandler:           b.enableEpochsHandler,
+		EsdtStorageHandler:            b.esdtStorageHandler,
+		Accounts:                      b.accounts,
+		GasConfig:                     b.gasConfig.BaseOperationCost,
+		GlobalSettingsHandler:         globalSettingsFunc,
+		CrossChainTokenCheckerHandler: crossChainTokenCheckerHandler,
+	}
+	newFunc, err = NewESDTNFTCreateFunc(argsESDTNFTCreate)
 	if err != nil {
 		return err
 	}
