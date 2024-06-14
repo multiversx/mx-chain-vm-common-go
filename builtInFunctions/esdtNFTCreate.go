@@ -11,6 +11,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-core-go/data/vm"
 	logger "github.com/multiversx/mx-chain-logger-go"
+
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -19,61 +20,79 @@ var (
 	noncePrefix = []byte(core.ProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
 )
 
+const minNumOfArgsForCrossChainMint = 9
+
+type esdtNFTCreateInput struct {
+	nonce                 uint64
+	originalCreator       []byte
+	uris                  [][]byte
+	isCrossChainOperation bool
+}
+
 type esdtNFTCreate struct {
 	baseAlwaysActiveHandler
-	keyPrefix             []byte
-	accounts              vmcommon.AccountsAdapter
-	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.GlobalMetadataHandler
-	rolesHandler          vmcommon.ESDTRoleHandler
-	funcGasCost           uint64
-	gasConfig             vmcommon.BaseOperationCost
-	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
-	mutExecution          sync.RWMutex
+	keyPrefix                     []byte
+	accounts                      vmcommon.AccountsAdapter
+	marshaller                    vmcommon.Marshalizer
+	globalSettingsHandler         vmcommon.GlobalMetadataHandler
+	rolesHandler                  vmcommon.ESDTRoleHandler
+	funcGasCost                   uint64
+	gasConfig                     vmcommon.BaseOperationCost
+	esdtStorageHandler            vmcommon.ESDTNFTStorageHandler
+	enableEpochsHandler           vmcommon.EnableEpochsHandler
+	mutExecution                  sync.RWMutex
+	crossChainTokenCheckerHandler CrossChainTokenCheckerHandler
+}
+
+// ESDTNFTCreateFuncArgs is a struct placeholder for args needed to create the esdt nft create func
+type ESDTNFTCreateFuncArgs struct {
+	FuncGasCost                   uint64
+	Marshaller                    vmcommon.Marshalizer
+	RolesHandler                  vmcommon.ESDTRoleHandler
+	EnableEpochsHandler           vmcommon.EnableEpochsHandler
+	EsdtStorageHandler            vmcommon.ESDTNFTStorageHandler
+	Accounts                      vmcommon.AccountsAdapter
+	GasConfig                     vmcommon.BaseOperationCost
+	GlobalSettingsHandler         vmcommon.GlobalMetadataHandler
+	CrossChainTokenCheckerHandler CrossChainTokenCheckerHandler
 }
 
 // NewESDTNFTCreateFunc returns the esdt NFT create built-in function component
-func NewESDTNFTCreateFunc(
-	funcGasCost uint64,
-	gasConfig vmcommon.BaseOperationCost,
-	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.GlobalMetadataHandler,
-	rolesHandler vmcommon.ESDTRoleHandler,
-	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
-	accounts vmcommon.AccountsAdapter,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtNFTCreate, error) {
-	if check.IfNil(marshaller) {
+func NewESDTNFTCreateFunc(args ESDTNFTCreateFuncArgs) (*esdtNFTCreate, error) {
+	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(globalSettingsHandler) {
+	if check.IfNil(args.GlobalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if check.IfNil(rolesHandler) {
+	if check.IfNil(args.RolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(esdtStorageHandler) {
+	if check.IfNil(args.EsdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
+	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
-	if check.IfNil(accounts) {
+	if check.IfNil(args.Accounts) {
 		return nil, ErrNilAccountsAdapter
+	}
+	if check.IfNil(args.CrossChainTokenCheckerHandler) {
+		return nil, ErrNilCrossChainTokenChecker
 	}
 
 	e := &esdtNFTCreate{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		gasConfig:             gasConfig,
-		esdtStorageHandler:    esdtStorageHandler,
-		enableEpochsHandler:   enableEpochsHandler,
-		mutExecution:          sync.RWMutex{},
-		accounts:              accounts,
+		keyPrefix:                     []byte(baseESDTKeyPrefix),
+		marshaller:                    args.Marshaller,
+		globalSettingsHandler:         args.GlobalSettingsHandler,
+		rolesHandler:                  args.RolesHandler,
+		funcGasCost:                   args.FuncGasCost,
+		gasConfig:                     args.GasConfig,
+		esdtStorageHandler:            args.EsdtStorageHandler,
+		enableEpochsHandler:           args.EnableEpochsHandler,
+		mutExecution:                  sync.RWMutex{},
+		accounts:                      args.Accounts,
+		crossChainTokenCheckerHandler: args.CrossChainTokenCheckerHandler,
 	}
 
 	return e, nil
@@ -100,6 +119,10 @@ func (e *esdtNFTCreate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 // arg4 - hash
 // arg5 - attributes
 // arg6+ - multiple entries of URI (minimum 1)
+// In case of cross chain operation, we need 2 more args:
+// extraArg1 - token nonce
+// extraArg2 - creator from originating chain
+// For ExecOnDestByCaller, last arg should be sc address caller
 func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	acntSnd, _ vmcommon.UserAccountHandler,
 	vmInput *vmcommon.ContractCallInput,
@@ -116,16 +139,16 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	if vmInput.CallType == vm.ExecOnDestByCaller {
 		minNumOfArgs = 8
 	}
-	lenArgs := len(vmInput.Arguments)
-	if lenArgs < minNumOfArgs {
+	argsLen := len(vmInput.Arguments)
+	if argsLen < minNumOfArgs {
 		return nil, fmt.Errorf("%w, wrong number of arguments", ErrInvalidArguments)
 	}
 
 	accountWithRoles := acntSnd
 	uris := vmInput.Arguments[6:]
 	if vmInput.CallType == vm.ExecOnDestByCaller {
-		scAddressWithRoles := vmInput.Arguments[lenArgs-1]
-		uris = vmInput.Arguments[6 : lenArgs-1]
+		scAddressWithRoles := vmInput.Arguments[argsLen-1]
+		uris = vmInput.Arguments[6 : argsLen-1]
 
 		if len(scAddressWithRoles) != len(vmInput.CallerAddr) {
 			return nil, ErrInvalidAddressLength
@@ -146,10 +169,16 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	nonce, err := getLatestNonce(accountWithRoles, tokenID)
+	createInput, err := e.getESDTNFTCreateInput(vmInput, tokenID, uris, accountWithRoles)
 	if err != nil {
 		return nil, err
 	}
+
+	nonce, originalCreator, uris, isCrossChainToken :=
+		createInput.nonce,
+		createInput.originalCreator,
+		createInput.uris,
+		createInput.isCrossChainOperation
 
 	totalLength := uint64(0)
 	for _, arg := range vmInput.Arguments {
@@ -186,14 +215,18 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	nextNonce := nonce + 1
+	nextNonce := nonce
+	if !isCrossChainToken {
+		nextNonce = nonce + 1
+	}
+
 	esdtData := &esdt.ESDigitalToken{
 		Type:  esdtType,
 		Value: quantity,
 		TokenMetaData: &esdt.MetaData{
 			Nonce:      nextNonce,
 			Name:       vmInput.Arguments[2],
-			Creator:    vmInput.CallerAddr,
+			Creator:    originalCreator,
 			Royalties:  royalties,
 			Hash:       vmInput.Arguments[4],
 			Attributes: vmInput.Arguments[5],
@@ -210,9 +243,11 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	err = saveLatestNonce(accountWithRoles, tokenID, nextNonce)
-	if err != nil {
-		return nil, err
+	if !isCrossChainToken {
+		err = saveLatestNonce(accountWithRoles, tokenID, nextNonce)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if vmInput.CallType == vm.ExecOnDestByCaller {
@@ -273,6 +308,65 @@ func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, e
 	}
 
 	return big.NewInt(0).SetBytes(nonceData).Uint64(), nil
+}
+
+func (e *esdtNFTCreate) getESDTNFTCreateInput(
+	vmInput *vmcommon.ContractCallInput,
+	tokenID []byte,
+	originalURIs [][]byte,
+	accountWithRoles vmcommon.UserAccountHandler,
+) (*esdtNFTCreateInput, error) {
+	args := vmInput.Arguments
+
+	var uris = originalURIs
+	var nonce uint64
+	var originalCreator []byte
+	var err error
+
+	isCrossChainToken := e.crossChainTokenCheckerHandler.IsCrossChainOperation(tokenID)
+	if !isCrossChainToken {
+		nonce, err = getLatestNonce(accountWithRoles, tokenID)
+		if err != nil {
+			return nil, err
+		}
+
+		originalCreator = vmInput.CallerAddr
+	} else {
+		nonce, originalCreator, err = getCrossChainTokenNonceAndCreator(args, vmInput.CallType)
+		if err != nil {
+			return nil, err
+		}
+
+		uris = uris[:len(uris)-2]
+	}
+
+	return &esdtNFTCreateInput{
+		nonce:                 nonce,
+		originalCreator:       originalCreator,
+		uris:                  uris,
+		isCrossChainOperation: isCrossChainToken,
+	}, nil
+}
+
+func getCrossChainTokenNonceAndCreator(args [][]byte, callType vm.CallType) (uint64, []byte, error) {
+	minRequiredArgs := minNumOfArgsForCrossChainMint
+	if callType == vm.ExecOnDestByCaller {
+		minRequiredArgs++
+	}
+
+	argsLen := len(args)
+	if argsLen < minRequiredArgs {
+		return 0, nil, fmt.Errorf("%w for cross chain token mint, received: %d, expected: %d, 2 extra arguments should be the nonce and original creator",
+			ErrInvalidNumberOfArguments, argsLen, minRequiredArgs)
+	}
+
+	if !(callType == vm.ExecOnDestByCaller) {
+		nonceBytes := args[argsLen-2]
+		return big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-1], nil
+	}
+
+	nonceBytes := args[len(args)-3]
+	return big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-2], nil
 }
 
 func saveLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte, nonce uint64) error {
