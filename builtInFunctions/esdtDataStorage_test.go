@@ -620,7 +620,7 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 		args := createMockArgsForNewESDTDataStorage()
 		args.GlobalSettingsHandler = &mock.GlobalSettingsHandlerStub{
 			GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
-				return uint32(core.NonFungible), nil
+				return uint32(core.NonFungibleV2), nil
 			},
 			SetTokenTypeCalled: func(esdtTokenKey []byte, tokenType uint32) error {
 				assert.Equal(t, []byte(key), esdtTokenKey)
@@ -652,9 +652,8 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 		esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
 		_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
-		nftToken.Type = uint32(core.NonFungibleV2)
+		nftToken.Type = uint32(core.NonFungible)
 		nftToken.TokenMetaData = metaData
-		nftTokenBytes, _ := args.Marshalizer.Marshal(nftToken)
 
 		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, nftToken, false, false)
 		assert.Nil(t, err)
@@ -664,6 +663,8 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 		val, _, _ := systemAcc.AccountDataHandler().RetrieveValue(tokenKey)
 		assert.Nil(t, val)
 
+		nftToken.Type = uint32(core.NonFungibleV2)
+		nftTokenBytes, _ := args.Marshalizer.Marshal(nftToken)
 		// metadata has been added to the user account
 		val, _, err = userAcc.RetrieveValue(tokenKey)
 		assert.Nil(t, err)
