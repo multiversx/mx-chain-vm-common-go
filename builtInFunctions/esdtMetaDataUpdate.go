@@ -2,6 +2,7 @@ package builtInFunctions
 
 import (
 	"fmt"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	"math/big"
 	"sync"
 
@@ -20,6 +21,7 @@ type esdtMetaDataUpdate struct {
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	gasConfig             vmcommon.BaseOperationCost
+	marshaller            marshal.Marshalizer
 	mutExecution          sync.RWMutex
 }
 
@@ -32,6 +34,7 @@ func NewESDTMetaDataUpdateFunc(
 	storageHandler vmcommon.ESDTNFTStorageHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
 ) (*esdtMetaDataUpdate, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -48,6 +51,9 @@ func NewESDTMetaDataUpdateFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshalizer
+	}
 
 	e := &esdtMetaDataUpdate{
 		accounts:               accounts,
@@ -59,6 +65,7 @@ func NewESDTMetaDataUpdateFunc(
 		gasConfig:              gasConfig,
 		mutExecution:           sync.RWMutex{},
 		BlockchainDataProvider: NewBlockchainDataProvider(),
+		marshaller:             marshaller,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -142,6 +149,14 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - gasToUse,
 	}
+
+	esdtDataBytes, err := e.marshaller.Marshal(esdtInfo.esdtData)
+	if err != nil {
+		log.Warn("esdtMetaDataUpdate.ProcessBuiltinFunction: cannot marshall esdt data for log", "error", err)
+	}
+
+	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTMetaDataUpdate), vmInput.Arguments[0], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), vmInput.CallerAddr, esdtDataBytes)
+
 	return vmOutput, nil
 }
 
