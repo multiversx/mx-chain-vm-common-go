@@ -2,12 +2,12 @@ package builtInFunctions
 
 import (
 	"fmt"
-	"github.com/multiversx/mx-chain-core-go/marshal"
 	"math/big"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
