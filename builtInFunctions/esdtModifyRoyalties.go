@@ -113,7 +113,7 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 	}
 
 	extraTopics := [][]byte{vmInput.CallerAddr, vmInput.Arguments[newRoyaltiesIndex]}
-	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTModifyCreator), vmInput.Arguments[tokenIDIndex], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), extraTopics...)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTModifyRoyalties), vmInput.Arguments[tokenIDIndex], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), extraTopics...)
 
 	return vmOutput, nil
 }
