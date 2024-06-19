@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"math/big"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -99,6 +100,9 @@ func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccou
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - funcGasCost,
 	}
+
+	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTModifyCreator), vmInput.Arguments[tokenIDIndex], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), [][]byte{vmInput.CallerAddr}...)
+
 	return vmOutput, nil
 }
 
