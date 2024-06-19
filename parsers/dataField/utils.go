@@ -61,6 +61,7 @@ func getAllBuiltInFunctions() []string {
 		core.ESDTSetNewURIs,
 		core.ESDTModifyCreator,
 		core.ESDTModifyRoyalties,
+		core.ESDTSetTokenType,
 	}
 }
 
