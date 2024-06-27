@@ -60,6 +60,121 @@ type BlockchainHook interface {
 	// CurrentEpoch returns the current epoch
 	CurrentEpoch() uint32
 
+	// RoundTime returns the duration of a round
+	RoundTime() uint64
+
+	// EpochStartBlockTimeStamp returns the timestamp of the first block of the current epoch
+	EpochStartBlockTimeStamp() uint64
+
+	// EpochStartBlockNonce returns the nonce of the first block of the current epoch
+	EpochStartBlockNonce() uint64
+
+	// EpochStartBlockRound returns the round of the first block of the current epoch
+	EpochStartBlockRound() uint64
+
+	// ProcessBuiltInFunction will process the builtIn function for the created input
+	ProcessBuiltInFunction(input *ContractCallInput) (*VMOutput, error)
+
+	// GetBuiltinFunctionNames returns the names of protocol built-in functions
+	GetBuiltinFunctionNames() FunctionNames
+
+	// GetAllState returns the full state of the account, all the key-value saved
+	GetAllState(address []byte) (map[string][]byte, error)
+
+	// GetUserAccount returns a user account
+	GetUserAccount(address []byte) (UserAccountHandler, error)
+
+	// GetCode returns the code for the given account
+	GetCode(UserAccountHandler) []byte
+
+	// GetShardOfAddress returns the shard ID of a given address
+	GetShardOfAddress(address []byte) uint32
+
+	// IsSmartContract returns whether the address points to a smart contract
+	IsSmartContract(address []byte) bool
+
+	// IsPayable checks weather the provided address can receive ERD or not
+	IsPayable(sndAddress []byte, recvAddress []byte) (bool, error)
+
+	// SaveCompiledCode saves to cache and storage the compiled code
+	SaveCompiledCode(codeHash []byte, code []byte)
+
+	// GetCompiledCode returns the compiled code if it finds in the cache or storage
+	GetCompiledCode(codeHash []byte) (bool, []byte)
+
+	// ClearCompiledCodes clears the cache and storage of compiled codes
+	ClearCompiledCodes()
+
+	// GetESDTToken loads the ESDT digital token for the given key
+	GetESDTToken(address []byte, tokenID []byte, nonce uint64) (*esdt.ESDigitalToken, error)
+
+	// IsPaused returns true if the tokenID is paused globally
+	IsPaused(tokenID []byte) bool
+
+	// IsLimitedTransfer return true if the tokenID has limited transfers
+	IsLimitedTransfer(tokenID []byte) bool
+
+	// GetSnapshot gets the number of entries in the journal as a snapshot id
+	GetSnapshot() int
+
+	// RevertToSnapshot reverts snaphots up to the specified one
+	RevertToSnapshot(snapshot int) error
+
+	// ExecuteSmartContractCallOnOtherVM runs contract on another VM
+	ExecuteSmartContractCallOnOtherVM(input *ContractCallInput) (*VMOutput, error)
+
+	// IsInterfaceNil returns true if there is no value under the interface
+	IsInterfaceNil() bool
+}
+
+// LegacyBlockchainHook is the interface for VM blockchain callbacks used by previous versions of the VM
+type LegacyBlockchainHook interface {
+	// NewAddress yields the address of a new SC account, when one such account is created.
+	// The result should only depend on the creator address and nonce.
+	// Returning an empty address lets the VM decide what the new address should be.
+	NewAddress(creatorAddress []byte, creatorNonce uint64, vmType []byte) ([]byte, error)
+
+	// GetStorageData should yield the storage value for a certain account and index.
+	// Should return an empty byte array if the key is missing from the account storage,
+	// or if account does not exist.
+	GetStorageData(accountAddress []byte, index []byte) ([]byte, uint32, error)
+
+	// GetBlockhash returns the hash of the block with the asked nonce if available
+	GetBlockhash(nonce uint64) ([]byte, error)
+
+	// LastNonce returns the nonce from from the last committed block
+	LastNonce() uint64
+
+	// LastRound returns the round from the last committed block
+	LastRound() uint64
+
+	// LastTimeStamp returns the timeStamp from the last committed block
+	LastTimeStamp() uint64
+
+	// LastRandomSeed returns the random seed from the last committed block
+	LastRandomSeed() []byte
+
+	// LastEpoch returns the epoch from the last committed block
+	LastEpoch() uint32
+
+	// GetStateRootHash returns the state root hash from the last committed block
+	GetStateRootHash() []byte
+
+	// CurrentNonce returns the nonce from the current block
+	CurrentNonce() uint64
+
+	// CurrentRound returns the round from the current block
+	CurrentRound() uint64
+
+	// CurrentTimeStamp return the timestamp from the current block
+	CurrentTimeStamp() uint64
+
+	// CurrentRandomSeed returns the random seed from the current header
+	CurrentRandomSeed() []byte
+
+	// CurrentEpoch returns the current epoch
+	CurrentEpoch() uint32
+
 	// ProcessBuiltInFunction will process the builtIn function for the created input
 	ProcessBuiltInFunction(input *ContractCallInput) (*VMOutput, error)
 
