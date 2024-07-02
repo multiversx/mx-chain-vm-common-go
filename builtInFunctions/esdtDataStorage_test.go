@@ -615,18 +615,11 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 		nonce := uint64(10)
 		key := baseESDTKeyPrefix + tokenIdentifier
 		tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
-		setTokenTypeCalled := false
 
 		args := createMockArgsForNewESDTDataStorage()
 		args.GlobalSettingsHandler = &mock.GlobalSettingsHandlerStub{
 			GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
 				return uint32(core.NonFungibleV2), nil
-			},
-			SetTokenTypeCalled: func(esdtTokenKey []byte, tokenType uint32) error {
-				assert.Equal(t, []byte(key), esdtTokenKey)
-				assert.Equal(t, uint32(core.NonFungibleV2), tokenType)
-				setTokenTypeCalled = true
-				return nil
 			},
 		}
 		args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
@@ -657,7 +650,6 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 
 		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, nftToken, false, false)
 		assert.Nil(t, err)
-		assert.True(t, setTokenTypeCalled)
 
 		// metadata has been removed from the system account
 		val, _, _ := systemAcc.AccountDataHandler().RetrieveValue(tokenKey)

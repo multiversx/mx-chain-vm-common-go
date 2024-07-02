@@ -370,9 +370,12 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, err
 	}
 
-	err = e.removeNFTMetadataFromSystemAccountIfNeeded(esdtTokenKey, nonce, esdtData)
-	if err != nil {
-		return nil, err
+	isCorrectlySet := e.checkTheCorrectTokenTypeIsSet(esdtData)
+	if !isCorrectlySet {
+		err = e.migrateTokenTypeAndMetadataIfNeeded(esdtTokenKey, nonce, esdtData)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
@@ -411,8 +414,21 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
 }
 
+func (e *esdtDataStorage) checkTheCorrectTokenTypeIsSet(esdtData *esdt.ESDigitalToken) bool {
+	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		return true
+	}
+
+	if esdtData.Type != uint32(core.NonFungible) {
+		// it means that the token type was already migrated.
+		return true
+	}
+
+	return false
+}
+
 // removeNFTMetadataFromSystemAccountIfNeeded removes the NFT metadata from the system account if needed
-func (e *esdtDataStorage) removeNFTMetadataFromSystemAccountIfNeeded(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error {
+func (e *esdtDataStorage) migrateTokenTypeAndMetadataIfNeeded(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error {
 	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return nil
 	}
@@ -421,14 +437,13 @@ func (e *esdtDataStorage) removeNFTMetadataFromSystemAccountIfNeeded(esdtTokenKe
 	if err != nil {
 		return err
 	}
-	if esdtData.Type != uint32(core.NonFungible) || tokenType != uint32(core.NonFungibleV2) {
+	if tokenType == esdtData.Type {
 		return nil
 	}
+	esdtData.Type = tokenType
 
-	esdtData.Type = uint32(core.NonFungibleV2)
-	err = e.globalSettingsHandler.SetTokenType(esdtTokenKey, uint32(core.NonFungibleV2))
-	if err != nil {
-		return err
+	if tokenType != uint32(core.NonFungibleV2) {
+		return nil
 	}
 
 	systemAcc, err := getSystemAccount(e.accounts)
