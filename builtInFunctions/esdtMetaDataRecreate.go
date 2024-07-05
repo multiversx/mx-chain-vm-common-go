@@ -9,6 +9,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -30,6 +31,7 @@ type esdtMetaDataRecreate struct {
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	gasConfig             vmcommon.BaseOperationCost
+	marshaller            marshal.Marshalizer
 	mutExecution          sync.RWMutex
 }
 
@@ -42,6 +44,7 @@ func NewESDTMetaDataRecreateFunc(
 	storageHandler vmcommon.ESDTNFTStorageHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
 ) (*esdtMetaDataRecreate, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -58,6 +61,9 @@ func NewESDTMetaDataRecreateFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshalizer
+	}
 
 	e := &esdtMetaDataRecreate{
 		accounts:               accounts,
@@ -69,6 +75,7 @@ func NewESDTMetaDataRecreateFunc(
 		gasConfig:              gasConfig,
 		mutExecution:           sync.RWMutex{},
 		BlockchainDataProvider: NewBlockchainDataProvider(),
+		marshaller:             marshaller,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -202,7 +209,7 @@ func lenArgs(args [][]byte) int {
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkUpdateArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTMetaDataRecreate)
+	err := checkUpdateArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTRoleNFTRecreate)
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +259,14 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - gasToUse,
 	}
+
+	esdtDataBytes, err := e.marshaller.Marshal(esdtInfo.esdtData)
+	if err != nil {
+		log.Warn("esdtMetaDataRecreate.ProcessBuiltinFunction: cannot marshall esdt data for log", "error", err)
+	}
+
+	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTMetaDataRecreate), vmInput.Arguments[0], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), vmInput.CallerAddr, esdtDataBytes)
+
 	return vmOutput, nil
 }
 

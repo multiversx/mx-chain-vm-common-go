@@ -1,6 +1,7 @@
 package builtInFunctions
 
 import (
+	"math/big"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -111,6 +112,10 @@ func (e *esdtSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountH
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - gasToUse,
 	}
+
+	extraTopics := append([][]byte{vmInput.CallerAddr}, vmInput.Arguments[uriStartIndex:]...)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTSetNewURIs), vmInput.Arguments[0], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), extraTopics...)
+
 	return vmOutput, nil
 }
 
