@@ -1191,3 +1191,97 @@ func TestEsdtDataStorage_SaveMetaDataToSystemAccount(t *testing.T) {
 	esdtDataBytes, _ := e.marshaller.Marshal(esdtData)
 	assert.Equal(t, esdtDataBytes, retrievedVal)
 }
+
+func TestEsdtDataStorage_SaveESDTNFTToken_migrateTypeAndMetadata(t *testing.T) {
+	t.Parallel()
+
+	t.Run("migrate token type for NonFungibleV2", func(t *testing.T) {
+		t.Parallel()
+
+		saveESDTNFTTokenMigrateTypeAndMetadata(t, core.NonFungibleV2)
+	})
+	t.Run("migrate metadata for SemiFungible", func(t *testing.T) {
+		t.Parallel()
+
+		saveESDTNFTTokenMigrateTypeAndMetadata(t, core.SemiFungible)
+	})
+	t.Run("migrate metadata for MetaFungible", func(t *testing.T) {
+		t.Parallel()
+
+		saveESDTNFTTokenMigrateTypeAndMetadata(t, core.MetaFungible)
+	})
+	t.Run("migrate metadata for DynamicNFT", func(t *testing.T) {
+		t.Parallel()
+
+		saveESDTNFTTokenMigrateTypeAndMetadata(t, core.DynamicNFT)
+	})
+	t.Run("migrate metadata for DynamicMeta", func(t *testing.T) {
+		t.Parallel()
+
+		saveESDTNFTTokenMigrateTypeAndMetadata(t, core.DynamicMeta)
+	})
+	t.Run("migrate metadata for DynamicSFT", func(t *testing.T) {
+		t.Parallel()
+
+		saveESDTNFTTokenMigrateTypeAndMetadata(t, core.DynamicSFT)
+	})
+
+}
+
+func saveESDTNFTTokenMigrateTypeAndMetadata(t *testing.T, tokenType core.ESDTType) {
+	args := createMockArgsForNewESDTDataStorage()
+	args.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == DynamicEsdtFlag
+		},
+	}
+	args.GlobalSettingsHandler = &mock.GlobalSettingsHandlerStub{
+		GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
+			return uint32(tokenType), nil
+		},
+	}
+	e, _ := NewESDTDataStorage(args)
+
+	userAcc := mock.NewAccountWrapMock([]byte("addr"))
+	esdtData := &esdt.ESDigitalToken{
+		Value: big.NewInt(10),
+		Type:  uint32(core.NonFungible),
+	}
+
+	tokenIdentifier := "testTkn"
+	key := baseESDTKeyPrefix + tokenIdentifier
+	nonce := uint64(10)
+	esdtDataBytes, _ := args.Marshalizer.Marshal(esdtData)
+	tokenKey := append([]byte(key), big.NewInt(int64(nonce)).Bytes()...)
+	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
+
+	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
+	metaData := &esdt.MetaData{
+		Name: []byte("test"),
+	}
+	esdtDataOnSystemAcc := &esdt.ESDigitalToken{TokenMetaData: metaData}
+	esdtMetaDataBytes, _ := args.Marshalizer.Marshal(esdtDataOnSystemAcc)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
+
+	retrievedEsdtData, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
+	assert.Nil(t, err)
+	assert.Equal(t, uint32(core.NonFungible), retrievedEsdtData.Type)
+
+	esdtData.TokenMetaData = metaData
+	_, err = e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, false, false)
+	assert.Nil(t, err)
+
+	retrievedEsdtData, _, err = e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
+	assert.Nil(t, err)
+	assert.Equal(t, uint32(tokenType), retrievedEsdtData.Type)
+
+	if tokenType == core.NonFungibleV2 {
+		retrievedMetaData, err := e.GetMetaDataFromSystemAccount([]byte(key), nonce)
+		assert.Nil(t, err)
+		assert.Nil(t, retrievedMetaData)
+	} else {
+		retrievedMetaData, err := e.GetMetaDataFromSystemAccount([]byte(key), nonce)
+		assert.Nil(t, err)
+		assert.Equal(t, metaData, retrievedMetaData)
+	}
+}

@@ -427,7 +427,7 @@ func (e *esdtDataStorage) checkTheCorrectTokenTypeIsSet(esdtData *esdt.ESDigital
 	return false
 }
 
-// removeNFTMetadataFromSystemAccountIfNeeded removes the NFT metadata from the system account if needed
+// there should be a match between the token type on the system account (from globalSettingsHandler) and the token type on the user account.
 func (e *esdtDataStorage) migrateTokenTypeAndMetadataIfNeeded(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error {
 	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return nil
