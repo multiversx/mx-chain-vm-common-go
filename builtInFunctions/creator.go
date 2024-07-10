@@ -560,7 +560,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTMetaDataRecreateFunc(b.gasConfig.BuiltInCost.ESDTNFTRecreate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTMetaDataRecreateFunc(b.gasConfig.BuiltInCost.ESDTNFTRecreate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
 	if err != nil {
 		return err
 	}
@@ -569,7 +569,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTMetaDataUpdateFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTMetaDataUpdateFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
 	if err != nil {
 		return err
 	}
