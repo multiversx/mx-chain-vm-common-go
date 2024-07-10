@@ -2,7 +2,9 @@ package builtInFunctions
 
 import (
 	"errors"
+	"github.com/stretchr/testify/require"
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -295,4 +297,117 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.False(t, globalSettingsFunc.IsLimitedTransfer(tokenID))
+}
+
+func TestEsdtGlobalSettings_SetTokenType(t *testing.T) {
+	t.Parallel()
+
+	t.Run("invalid token type", func(t *testing.T) {
+		t.Parallel()
+
+		acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+		globalSettingsFunc, _ := NewESDTGlobalSettingsFunc(
+			&mock.AccountsStub{
+				LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+					return acnt, nil
+				},
+			},
+			&mock.MarshalizerMock{},
+			true,
+			core.BuiltInFunctionESDTPause,
+			falseHandler,
+		)
+
+		err := globalSettingsFunc.SetTokenType([]byte("key"), 100)
+		require.True(t, strings.Contains(err.Error(), "invalid esdt type"))
+	})
+	t.Run("fungible token type", func(t *testing.T) {
+		t.Parallel()
+
+		acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+		globalSettingsFunc, _ := NewESDTGlobalSettingsFunc(
+			&mock.AccountsStub{
+				LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+					return acnt, nil
+				},
+			},
+			&mock.MarshalizerMock{},
+			true,
+			core.BuiltInFunctionESDTPause,
+			falseHandler,
+		)
+
+		err := globalSettingsFunc.SetTokenType([]byte("key"), uint32(core.Fungible))
+		require.Nil(t, err)
+		retrievedVal := acnt.Storage["key"]
+		require.Equal(t, []byte{0, 1}, retrievedVal)
+	})
+}
+
+func TestEsdtGlobalSettings_GetTokenType(t *testing.T) {
+	t.Parallel()
+
+	t.Run("token type not set", func(t *testing.T) {
+		t.Parallel()
+
+		acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+		globalSettingsFunc, _ := NewESDTGlobalSettingsFunc(
+			&mock.AccountsStub{
+				LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+					return acnt, nil
+				},
+			},
+			&mock.MarshalizerMock{},
+			true,
+			core.BuiltInFunctionESDTPause,
+			falseHandler,
+		)
+
+		acnt.Storage["key"] = []byte{byte(notSet)}
+		val, err := globalSettingsFunc.GetTokenType([]byte("key"))
+		require.Nil(t, err)
+		require.Equal(t, uint32(core.NonFungible), val)
+	})
+	t.Run("retrieve token type error ", func(t *testing.T) {
+		t.Parallel()
+
+		acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+		globalSettingsFunc, _ := NewESDTGlobalSettingsFunc(
+			&mock.AccountsStub{
+				LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+					return acnt, nil
+				},
+			},
+			&mock.MarshalizerMock{},
+			true,
+			core.BuiltInFunctionESDTPause,
+			falseHandler,
+		)
+
+		acnt.Storage["key"] = []byte{0, 100}
+		val, err := globalSettingsFunc.GetTokenType([]byte("key"))
+		require.True(t, strings.Contains(err.Error(), "invalid esdt type"))
+		require.Equal(t, uint32(0), val)
+	})
+	t.Run("convert to esdt token type error", func(t *testing.T) {
+		t.Parallel()
+
+		acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+		globalSettingsFunc, _ := NewESDTGlobalSettingsFunc(
+			&mock.AccountsStub{
+				LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+					return acnt, nil
+				},
+			},
+			&mock.MarshalizerMock{},
+			true,
+			core.BuiltInFunctionESDTPause,
+			falseHandler,
+		)
+
+		acnt.Storage["key"] = []byte{0, byte(fungible)}
+		val, err := globalSettingsFunc.GetTokenType([]byte("key"))
+		require.Nil(t, err)
+		require.Equal(t, uint32(core.Fungible), val)
+	})
 }
