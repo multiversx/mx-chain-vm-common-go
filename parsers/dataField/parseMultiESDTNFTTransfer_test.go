@@ -3,9 +3,9 @@ package datafield
 import (
 	"encoding/hex"
 	"fmt"
-	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"testing"
 
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/stretchr/testify/require"
 )
 
