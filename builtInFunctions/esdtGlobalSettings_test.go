@@ -368,7 +368,7 @@ func TestEsdtGlobalSettings_GetTokenType(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, uint32(core.NonFungible), val)
 	})
-	t.Run("retrieve token type error ", func(t *testing.T) {
+	t.Run("retrieve token type error", func(t *testing.T) {
 		t.Parallel()
 
 		acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
@@ -389,7 +389,7 @@ func TestEsdtGlobalSettings_GetTokenType(t *testing.T) {
 		require.True(t, strings.Contains(err.Error(), "invalid esdt type"))
 		require.Equal(t, uint32(0), val)
 	})
-	t.Run("convert to esdt token type error", func(t *testing.T) {
+	t.Run("convert to esdt token type", func(t *testing.T) {
 		t.Parallel()
 
 		acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
