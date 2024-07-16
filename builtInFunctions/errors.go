@@ -220,3 +220,6 @@ var ErrInvalidVersion = errors.New("invalid version")
 
 // ErrNilBlockchainHook signals that a nil blockchain hook has been provided
 var ErrNilBlockchainHook = errors.New("nil blockchain hook")
+
+// ErrTypeNotSetInsideGlobalSettingsHandler signals that type is not set inside global settings handler
+var ErrTypeNotSetInsideGlobalSettingsHandler = errors.New("type not set inside global settings handler")
