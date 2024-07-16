@@ -111,6 +111,10 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - funcGasCost,
 	}
+
+	extraTopics := [][]byte{vmInput.CallerAddr, vmInput.Arguments[newRoyaltiesIndex]}
+	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTModifyRoyalties), vmInput.Arguments[tokenIDIndex], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), extraTopics...)
+
 	return vmOutput, nil
 }
 
