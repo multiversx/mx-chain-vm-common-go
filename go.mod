@@ -1,11 +1,11 @@
 module github.com/multiversx/mx-chain-vm-common-go
 
-go 1.20
+go 1.22
 
 require (
 	github.com/mitchellh/mapstructure v1.4.1
-	github.com/multiversx/mx-chain-core-go v1.2.21-0.20240508071047-fefea5737840
-	github.com/multiversx/mx-chain-logger-go v1.0.15-0.20240508072523-3f00a726af57
+	github.com/multiversx/mx-chain-core-go v1.2.21-0.20240719103659-046d9829efc9
+	github.com/multiversx/mx-chain-logger-go v1.0.15-0.20240719103913-f78291da6ec4
 	github.com/stretchr/testify v1.7.0
 )
 
