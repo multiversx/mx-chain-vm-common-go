@@ -33,6 +33,9 @@ const BuiltInFunctionESDTTransferRoleDeleteAddress = "ESDTTransferRoleDeleteAddr
 // ESDTRoleBurnForAll represents the role for burn for all
 const ESDTRoleBurnForAll = "ESDTRoleBurnForAll"
 
+// EGLDIdentifier represents the identifier for the EGLD in case of a transfer with MultIESDTNFTTransfer built-in function
+const EGLDIdentifier = "EGLD-000000"
+
 // ValidateToken - validates the token ID
 func ValidateToken(tokenID []byte) bool {
 	tokenIDLen := len(tokenID)
