@@ -27,7 +27,6 @@ type esdtNFTMultiTransfer struct {
 }
 
 const argumentsPerTransfer = uint64(3)
-const eGLD = "EGLD-000000"
 
 // NewESDTNFTMultiTransferFunc returns the esdt NFT multi transfer built-in function component
 func NewESDTNFTMultiTransferFunc(
@@ -78,7 +77,7 @@ func NewESDTNFTMultiTransferFunc(
 			shardCoordinator:      shardCoordinator,
 			enableEpochsHandler:   enableEpochsHandler,
 		},
-		baseTokenID: []byte(eGLD),
+		baseTokenID: []byte(vmcommon.EGLDIdentifier),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
