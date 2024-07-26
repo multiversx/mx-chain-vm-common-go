@@ -1218,7 +1218,7 @@ func createSetupForMultiTransferWithEGLD(t *testing.T) (*vmcommon.ContractCallIn
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte(eGLD)
+	token2 := []byte(vmcommon.EGLDIdentifier)
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -1335,7 +1335,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsWithEGLD(t *tes
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte(eGLD)
+	token2 := []byte(vmcommon.EGLDIdentifier)
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
