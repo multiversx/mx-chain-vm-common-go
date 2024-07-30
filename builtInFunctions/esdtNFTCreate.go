@@ -20,9 +20,10 @@ var (
 	noncePrefix = []byte(core.ProtectedKeyPrefix + core.ESDTNFTLatestNonceIdentifier)
 )
 
-const minNumOfArgsForCrossChainMint = 9
+const minNumOfArgsForCrossChainMint = 10
 
 type esdtNFTCreateInput struct {
+	esdtType              uint32
 	nonce                 uint64
 	originalCreator       []byte
 	uris                  [][]byte
@@ -174,7 +175,8 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	nonce, originalCreator, uris, isCrossChainToken :=
+	esdtType, nonce, originalCreator, uris, isCrossChainToken :=
+		createInput.esdtType,
 		createInput.nonce,
 		createInput.originalCreator,
 		createInput.uris,
@@ -208,11 +210,6 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	isValueLengthCheckFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(ValueLengthCheckFlag)
 	if isValueLengthCheckFlagEnabled && len(vmInput.Arguments[1]) > maxLenForAddNFTQuantity {
 		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
-	}
-
-	esdtType, err := e.getTokenType(tokenID)
-	if err != nil {
-		return nil, err
 	}
 
 	nextNonce := nonce
@@ -319,12 +316,18 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 	args := vmInput.Arguments
 
 	var uris = originalURIs
+	var esdtType uint32
 	var nonce uint64
 	var originalCreator []byte
 	var err error
 
 	isCrossChainToken := e.crossChainTokenCheckerHandler.IsCrossChainOperation(tokenID)
 	if !isCrossChainToken {
+		esdtType, err = e.getTokenType(tokenID)
+		if err != nil {
+			return nil, err
+		}
+
 		nonce, err = getLatestNonce(accountWithRoles, tokenID)
 		if err != nil {
 			return nil, err
@@ -332,15 +335,16 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 
 		originalCreator = vmInput.CallerAddr
 	} else {
-		nonce, originalCreator, err = getCrossChainTokenNonceAndCreator(args, vmInput.CallType)
+		esdtType, nonce, originalCreator, err = getCrossChainTokenNonceAndCreator(args, vmInput.CallType)
 		if err != nil {
 			return nil, err
 		}
 
-		uris = uris[:len(uris)-2]
+		uris = uris[:len(uris)-3]
 	}
 
 	return &esdtNFTCreateInput{
+		esdtType:              esdtType,
 		nonce:                 nonce,
 		originalCreator:       originalCreator,
 		uris:                  uris,
@@ -348,7 +352,7 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 	}, nil
 }
 
-func getCrossChainTokenNonceAndCreator(args [][]byte, callType vm.CallType) (uint64, []byte, error) {
+func getCrossChainTokenNonceAndCreator(args [][]byte, callType vm.CallType) (uint32, uint64, []byte, error) {
 	minRequiredArgs := minNumOfArgsForCrossChainMint
 	if callType == vm.ExecOnDestByCaller {
 		minRequiredArgs++
@@ -356,17 +360,19 @@ func getCrossChainTokenNonceAndCreator(args [][]byte, callType vm.CallType) (uin
 
 	argsLen := len(args)
 	if argsLen < minRequiredArgs {
-		return 0, nil, fmt.Errorf("%w for cross chain token mint, received: %d, expected: %d, 2 extra arguments should be the nonce and original creator",
+		return 0, 0, nil, fmt.Errorf("%w for cross chain token mint, received: %d, expected: %d, 2 extra arguments should be the nonce and original creator",
 			ErrInvalidNumberOfArguments, argsLen, minRequiredArgs)
 	}
 
 	if !(callType == vm.ExecOnDestByCaller) {
+		esdtTypeBytes := args[argsLen-3]
 		nonceBytes := args[argsLen-2]
-		return big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-1], nil
+		return uint32(big.NewInt(0).SetBytes(esdtTypeBytes).Uint64()), big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-1], nil
 	}
 
+	esdtTypeBytes := args[argsLen-4]
 	nonceBytes := args[len(args)-3]
-	return big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-2], nil
+	return uint32(big.NewInt(0).SetBytes(esdtTypeBytes).Uint64()), big.NewInt(0).SetBytes(nonceBytes).Uint64(), args[argsLen-2], nil
 }
 
 func saveLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte, nonce uint64) error {
