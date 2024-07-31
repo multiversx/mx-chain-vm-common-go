@@ -341,7 +341,7 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 
 		originalCreator = vmInput.CallerAddr
 	} else {
-		esdtData, err := getCrossChainEsdtData(args, vmInput.CallType)
+		esdtData, err := getCrossChainESDTData(args, vmInput.CallType)
 		if err != nil {
 			return nil, err
 		}
@@ -362,7 +362,7 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 	}, nil
 }
 
-func getCrossChainEsdtData(args [][]byte, callType vm.CallType) (*esdtNFTCrossChainData, error) {
+func getCrossChainESDTData(args [][]byte, callType vm.CallType) (*esdtNFTCrossChainData, error) {
 	minRequiredArgs := minNumOfArgsForCrossChainMint
 	if callType == vm.ExecOnDestByCaller {
 		minRequiredArgs++
