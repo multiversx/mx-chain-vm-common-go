@@ -407,8 +407,9 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCallerCrossChainToken(t *
 	whiteListedAddr := []byte("whiteListedAddress")
 	userAddr := []byte("userAccountAddress")
 	token := "sov1-TOKEN-abcdef"
+	tokenType := core.NonFungible
 	nonce := big.NewInt(1234)
-	quantity := big.NewInt(2)
+	quantity := big.NewInt(1)
 	name := "name"
 	royalties := 100 //1%
 	hash := []byte("12345678901234567890123456789012")
@@ -428,6 +429,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCallerCrossChainToken(t *
 				attributes,
 				uris[0],
 				uris[1],
+				big.NewInt(int64(tokenType)).Bytes(),
 				nonce.Bytes(),
 				originalCreator,
 				whiteListedAddr,
@@ -482,6 +484,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	sender := mock.NewUserAccount(address)
 
 	token := "sov1-TOKEN-abcdef"
+	tokenType := core.SemiFungible
 	quantity := big.NewInt(2)
 	name := "name"
 	royalties := 100 //1%
@@ -503,6 +506,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 				attributes,
 				uris[0],
 				uris[1],
+				big.NewInt(int64(tokenType)).Bytes(),
 				nonce.Bytes(),
 				originalCreator,
 			},
@@ -537,6 +541,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	esdtData, _, _ := esdtDtaStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey, defaultQueryOptions())
 	require.Equal(t, tokenMetaData, esdtData.TokenMetaData)
 	require.Equal(t, esdtData.Value, quantity)
+	require.Equal(t, esdtData.Type, uint32(tokenType))
 
 	esdtDataBytes := vmOutput.Logs[0].Topics[3]
 	var esdtDataFromLog esdt.ESDigitalToken
@@ -557,6 +562,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 				hash,
 				attributes,
 				uris[0],
+				big.NewInt(int64(tokenType)).Bytes(),
 				nonce.Bytes(),
 				originalCreator,
 			},
