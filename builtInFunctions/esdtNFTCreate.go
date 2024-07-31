@@ -376,20 +376,20 @@ func getCrossChainESDTData(args [][]byte, callType vm.CallType) (*esdtNFTCrossCh
 
 	if !(callType == vm.ExecOnDestByCaller) {
 		return &esdtNFTCrossChainData{
-			esdtType:        uint32(getUin46FromBytes(args[argsLen-3])),
-			nonce:           getUin46FromBytes(args[argsLen-2]),
+			esdtType:        uint32(getUIn46FromBytes(args[argsLen-3])),
+			nonce:           getUIn46FromBytes(args[argsLen-2]),
 			originalCreator: args[argsLen-1],
 		}, nil
 	}
 
 	return &esdtNFTCrossChainData{
-		esdtType:        uint32(getUin46FromBytes(args[argsLen-4])),
-		nonce:           getUin46FromBytes(args[argsLen-3]),
+		esdtType:        uint32(getUIn46FromBytes(args[argsLen-4])),
+		nonce:           getUIn46FromBytes(args[argsLen-3]),
 		originalCreator: args[argsLen-2],
 	}, nil
 }
 
-func getUin46FromBytes(value []byte) uint64 {
+func getUIn46FromBytes(value []byte) uint64 {
 	return big.NewInt(0).SetBytes(value).Uint64()
 }
 
