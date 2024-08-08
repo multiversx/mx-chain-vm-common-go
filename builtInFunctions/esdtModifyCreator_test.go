@@ -230,9 +230,11 @@ func TestESDTModifyCreator_ProcessBuiltinFunction(t *testing.T) {
 			Attributes: []byte("attributes"),
 		}
 		storageHandler := &mock.ESDTNFTStorageHandlerStub{
-			GetMetaDataFromSystemAccountCalled: func(bytes []byte, u uint64) (*esdt.MetaData, error) {
+			GetMetaDataFromSystemAccountCalled: func(bytes []byte, u uint64) (*esdt.ESDigitalToken, error) {
 				getMetaDataFromSystemAccountCalled = true
-				return oldMetaData, nil
+				return &esdt.ESDigitalToken{
+					TokenMetaData: oldMetaData,
+				}, nil
 			},
 			SaveMetaDataToSystemAccountCalled: func(tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken) error {
 				assert.Equal(t, esdtTokenKey, tokenKey)

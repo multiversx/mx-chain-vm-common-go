@@ -1158,7 +1158,7 @@ func TestEsdtDataStorage_GetMetaDataFromSystemAccount(t *testing.T) {
 
 	retrievedMetaData, err := e.GetMetaDataFromSystemAccount(key, nonce)
 	assert.Nil(t, err)
-	assert.Equal(t, metaData, retrievedMetaData)
+	assert.Equal(t, esdtData, retrievedMetaData)
 }
 
 func TestEsdtDataStorage_SaveMetaDataToSystemAccount(t *testing.T) {
@@ -1282,6 +1282,6 @@ func saveESDTNFTTokenMigrateTypeAndMetadata(t *testing.T, tokenType core.ESDTTyp
 	} else {
 		retrievedMetaData, err := e.GetMetaDataFromSystemAccount([]byte(key), nonce)
 		assert.Nil(t, err)
-		assert.Equal(t, metaData, retrievedMetaData)
+		assert.Equal(t, &esdt.ESDigitalToken{TokenMetaData: metaData}, retrievedMetaData)
 	}
 }

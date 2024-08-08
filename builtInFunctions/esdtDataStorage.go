@@ -120,9 +120,15 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestinationWithCustomSystemAccount(
 }
 
 // GetMetaDataFromSystemAccount gets the metadata from the system account
-func (e *esdtDataStorage) GetMetaDataFromSystemAccount(esdtTokenKey []byte, nonce uint64) (*esdt.MetaData, error) {
+func (e *esdtDataStorage) GetMetaDataFromSystemAccount(esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error) {
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	return e.getESDTMetaDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
+
+	esdtData, _, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
+	if err != nil {
+		return nil, err
+	}
+
+	return esdtData, nil
 }
 
 func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(
