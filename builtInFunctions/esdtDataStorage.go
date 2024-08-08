@@ -159,12 +159,15 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		return esdtData, false, nil
 	}
 
-	esdtMetaData, err := e.getESDTMetaDataFromSystemAccount(esdtNFTTokenKey, options)
+	retrievedEsdtData, _, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, options)
 	if err != nil {
 		return nil, false, err
 	}
-	if esdtMetaData != nil {
-		esdtData.TokenMetaData = esdtMetaData
+	if retrievedEsdtData != nil && retrievedEsdtData.TokenMetaData != nil {
+		esdtData.TokenMetaData = retrievedEsdtData.TokenMetaData
+		if core.IsDynamicESDT(esdtData.Type) {
+			esdtData.Reserved = retrievedEsdtData.Reserved
+		}
 	}
 
 	return esdtData, false, nil
