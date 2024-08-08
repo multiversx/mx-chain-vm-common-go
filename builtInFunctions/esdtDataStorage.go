@@ -387,7 +387,6 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
 	if e.shouldSaveMetadataInSystemAccount(esdtData.Type) {
-		// TODO check version for dynamic tokens
 		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
 		if err != nil {
 			return nil, err
@@ -512,6 +511,9 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		if err != nil {
 			return err
 		}
+	}
+	if core.IsDynamicESDT(esdtData.Type) {
+		esdtDataOnSystemAcc.Reserved = esdtData.Reserved
 	}
 
 	if !isSendAlwaysFlagEnabled {
