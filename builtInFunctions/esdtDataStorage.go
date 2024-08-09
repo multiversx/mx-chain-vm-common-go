@@ -379,11 +379,17 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, err
 	}
 
-	isCorrectlySet := e.checkTheCorrectTokenTypeIsSet(esdtData)
-	if !isCorrectlySet {
-		err = e.migrateTokenTypeAndMetadataIfNeeded(esdtTokenKey, nonce, esdtData)
-		if err != nil {
-			return nil, err
+	tokenTypeChanged, newTokenType, err := e.checkTokenTypeChanged(esdtTokenKey, esdtData)
+	if err != nil {
+		return nil, err
+	}
+	if tokenTypeChanged {
+		esdtData.Type = newTokenType
+		if newTokenType == uint32(core.NonFungibleV2) {
+			err = e.removeMetaDataFromSystemAccount(esdtTokenKey, nonce)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -435,25 +441,32 @@ func (e *esdtDataStorage) checkTheCorrectTokenTypeIsSet(esdtData *esdt.ESDigital
 	return false
 }
 
-// there should be a match between the token type on the system account (from globalSettingsHandler) and the token type on the user account.
-func (e *esdtDataStorage) migrateTokenTypeAndMetadataIfNeeded(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error {
+func (e *esdtDataStorage) checkTokenTypeChanged(esdtTokenKey []byte, esdtData *esdt.ESDigitalToken) (bool, uint32, error) {
 	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
-		return nil
+		return false, 0, nil
 	}
 
-	tokenType, err := e.globalSettingsHandler.GetTokenType(esdtTokenKey)
+	if esdtData.Type == uint32(core.NonFungibleV2) ||
+		esdtData.Type == uint32(core.DynamicNFT) ||
+		esdtData.Type == uint32(core.DynamicSFT) ||
+		esdtData.Type == uint32(core.DynamicMeta) {
+
+		return false, 0, nil
+	}
+
+	newTokenType, err := e.globalSettingsHandler.GetTokenType(esdtTokenKey)
 	if err != nil {
-		return err
-	}
-	if tokenType == esdtData.Type {
-		return nil
-	}
-	esdtData.Type = tokenType
-
-	if tokenType != uint32(core.NonFungibleV2) {
-		return nil
+		return false, 0, err
 	}
 
+	if esdtData.Type == newTokenType {
+		return false, 0, nil
+	}
+
+	return true, newTokenType, nil
+}
+
+func (e *esdtDataStorage) removeMetaDataFromSystemAccount(esdtTokenKey []byte, nonce uint64) error {
 	systemAcc, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return err
@@ -515,7 +528,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 			return err
 		}
 	}
-	if core.IsDynamicESDT(esdtData.Type) {
+	if core.IsDynamicESDT(esdtData.Type) && len(esdtData.Reserved) != 0 {
 		esdtDataOnSystemAcc.Reserved = esdtData.Reserved
 	}
 
