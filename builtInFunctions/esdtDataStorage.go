@@ -503,12 +503,12 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	if core.IsGetNodeFromDBError(err) {
 		return err
 	}
-	err = e.saveMetadataIfRequired(esdtNFTTokenKey, systemAcc, currentSaveData, esdtData)
+	shouldUpdateCurrentSavedData, err := e.saveMetadataIfRequired(esdtNFTTokenKey, systemAcc, currentSaveData, esdtData)
 	if err != nil {
 		return err
 	}
 
-	if !mustUpdateAllFields && len(currentSaveData) > 0 {
+	if !mustUpdateAllFields && len(currentSaveData) > 0 && !shouldUpdateCurrentSavedData {
 		return nil
 	}
 
@@ -550,30 +550,34 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 	systemAcc vmcommon.UserAccountHandler,
 	currentSaveData []byte,
 	esdtData *esdt.ESDigitalToken,
-) error {
+) (bool, error) {
 	if !e.enableEpochsHandler.IsFlagEnabled(AlwaysSaveTokenMetaDataFlag) {
-		return nil
+		return false, nil
 	}
 	if !e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag) {
 		// do not re-write the metadata if it is not sent, as it will cause data loss
-		return nil
+		return false, nil
 	}
 	if len(currentSaveData) == 0 {
 		// optimization: do not try to write here the token metadata, it will be written automatically by the next step
-		return nil
+		return false, nil
 	}
 
 	esdtDataOnSystemAcc := &esdt.ESDigitalToken{}
 	err := e.marshaller.Unmarshal(esdtDataOnSystemAcc, currentSaveData)
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	if big.NewInt(0).SetBytes(esdtDataOnSystemAcc.Reserved).Uint64() < big.NewInt(0).SetBytes(esdtData.Reserved).Uint64() {
+		return true, nil
 	}
 	if len(esdtDataOnSystemAcc.Reserved) > 0 {
-		return nil
+		return false, nil
 	}
 
 	esdtDataOnSystemAcc.TokenMetaData = esdtData.TokenMetaData
-	return e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
+	return false, e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
 }
 
 func (e *esdtDataStorage) setReservedToNilForOldToken(
