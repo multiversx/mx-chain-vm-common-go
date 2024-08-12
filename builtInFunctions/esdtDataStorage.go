@@ -449,7 +449,8 @@ func (e *esdtDataStorage) checkTokenTypeChanged(esdtTokenKey []byte, esdtData *e
 	if esdtData.Type == uint32(core.NonFungibleV2) ||
 		esdtData.Type == uint32(core.DynamicNFT) ||
 		esdtData.Type == uint32(core.DynamicSFT) ||
-		esdtData.Type == uint32(core.DynamicMeta) {
+		esdtData.Type == uint32(core.DynamicMeta) ||
+		esdtData.Type == uint32(core.Fungible) {
 
 		return false, 0, nil
 	}
