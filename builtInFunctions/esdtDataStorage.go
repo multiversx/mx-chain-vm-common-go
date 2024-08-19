@@ -346,7 +346,7 @@ func (e *esdtDataStorage) shouldSaveMetadataInSystemAccount(esdtDataType uint32)
 		return false
 	}
 
-	if core.IsDynamicESDT(esdtDataType) {
+	if esdtDataType == uint32(core.DynamicSFT) || esdtDataType == uint32(core.DynamicMeta) {
 		return true
 	}
 

@@ -210,8 +210,8 @@ func TestESDTMetaDataUpdate_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("update updates only the given args", func(t *testing.T) {
 		t.Parallel()
 
-		getMetaDataFromSystemAccountCalled := false
-		saveMetaDataToSystemAccountCalled := false
+		getESDTNFTTokenOnSenderCalled := false
+		saveESDTNFTTokenCalled := false
 		tokenId := []byte("tokenID")
 		esdtTokenKey := append([]byte(baseESDTKeyPrefix), tokenId...)
 		nonce := uint64(15)
@@ -243,13 +243,14 @@ func TestESDTMetaDataUpdate_ProcessBuiltinFunction(t *testing.T) {
 			Hash:  []byte("hash"),
 		}
 		storageHandler := &mock.ESDTNFTStorageHandlerStub{
-			GetMetaDataFromSystemAccountCalled: func(bytes []byte, u uint64) (*esdt.ESDigitalToken, error) {
-				getMetaDataFromSystemAccountCalled = true
+			GetESDTNFTTokenOnSenderCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error) {
+				getESDTNFTTokenOnSenderCalled = true
 				return &esdt.ESDigitalToken{
+					Value:         big.NewInt(1),
 					TokenMetaData: oldMetaData,
 				}, nil
 			},
-			SaveMetaDataToSystemAccountCalled: func(tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken) error {
+			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
 				assert.Equal(t, esdtTokenKey, tokenKey)
 				assert.Equal(t, nonce, n)
 				assert.Equal(t, newMetadata.Name, esdtData.TokenMetaData.Name)
@@ -257,8 +258,8 @@ func TestESDTMetaDataUpdate_ProcessBuiltinFunction(t *testing.T) {
 				assert.Equal(t, oldMetaData.Royalties, esdtData.TokenMetaData.Royalties)
 				assert.Equal(t, oldMetaData.Hash, esdtData.TokenMetaData.Hash)
 				assert.Equal(t, oldMetaData.Attributes, esdtData.TokenMetaData.Attributes)
-				saveMetaDataToSystemAccountCalled = true
-				return nil
+				saveESDTNFTTokenCalled = true
+				return nil, nil
 			},
 		}
 		e, _ := NewESDTMetaDataUpdateFunc(101, vmcommon.BaseOperationCost{StorePerByte: 1}, accounts, globalSettingsHandler, storageHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler, &mock.MarshalizerMock{})
@@ -277,8 +278,8 @@ func TestESDTMetaDataUpdate_ProcessBuiltinFunction(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
 		assert.Equal(t, uint64(883), vmOutput.GasRemaining)
-		assert.True(t, saveMetaDataToSystemAccountCalled)
-		assert.True(t, getMetaDataFromSystemAccountCalled)
+		assert.True(t, saveESDTNFTTokenCalled)
+		assert.True(t, getESDTNFTTokenOnSenderCalled)
 	})
 }
 
