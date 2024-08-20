@@ -86,26 +86,54 @@ func TestBaseComponentsHolder_getLatestEsdtData(t *testing.T) {
 		latestEsdtData := getLatestEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler)
 		assert.Equal(t, transferEsdtData, latestEsdtData)
 	})
-	t.Run("flag enabled and current esdt data version is higher should return current esdt data", func(t *testing.T) {
+	t.Run("flag enabled and current esdt data version is higher should merge", func(t *testing.T) {
 		t.Parallel()
 		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 			IsFlagEnabledCalled: func(_ core.EnableEpochFlag) bool {
 				return true
 			},
 		}
-		currentEsdtData := &esdt.ESDigitalToken{
-			Reserved: []byte{2},
-			Value:    big.NewInt(100),
-		}
+		name := []byte("name")
+		creator := []byte("creator")
+		newCreator := []byte("newCreator")
+		royalties := uint32(25)
+		newRoyalties := uint32(11)
+		hash := []byte("hash")
+		uris := [][]byte{[]byte("uri1"), []byte("uri2")}
+		attributes := []byte("attributes")
+		newAttributes := []byte("newAttributes")
 		transferEsdtData := &esdt.ESDigitalToken{
 			Reserved: []byte{1},
-			Value:    big.NewInt(200),
+			TokenMetaData: &esdt.MetaData{
+				Nonce:      0,
+				Name:       name,
+				Creator:    creator,
+				Royalties:  royalties,
+				Hash:       hash,
+				URIs:       uris,
+				Attributes: attributes,
+			},
+		}
+		currentEsdtData := &esdt.ESDigitalToken{
+			Reserved: []byte{2},
+			TokenMetaData: &esdt.MetaData{
+				Creator:    newCreator,
+				Royalties:  newRoyalties,
+				Attributes: newAttributes,
+			},
 		}
 
 		latestEsdtData := getLatestEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler)
-		assert.Equal(t, currentEsdtData, latestEsdtData)
+		assert.Equal(t, []byte{2}, latestEsdtData.Reserved)
+		assert.Equal(t, newCreator, latestEsdtData.TokenMetaData.Creator)
+		assert.Equal(t, newRoyalties, latestEsdtData.TokenMetaData.Royalties)
+		assert.Equal(t, newAttributes, latestEsdtData.TokenMetaData.Attributes)
+
+		assert.Equal(t, name, latestEsdtData.TokenMetaData.Name)
+		assert.Equal(t, hash, latestEsdtData.TokenMetaData.Hash)
+		assert.Equal(t, uris, latestEsdtData.TokenMetaData.URIs)
 	})
-	t.Run("flag enabled and transfer esdt data version is higher should merge with transfer esdt data", func(t *testing.T) {
+	t.Run("flag enabled and transfer esdt data version is higher should return transfer esdt data", func(t *testing.T) {
 		t.Parallel()
 
 		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
@@ -123,24 +151,24 @@ func TestBaseComponentsHolder_getLatestEsdtData(t *testing.T) {
 		uris := [][]byte{[]byte("uri1"), []byte("uri2")}
 		attributes := []byte("attributes")
 		newAttributes := []byte("newAttributes")
-		currentEsdtData := &esdt.ESDigitalToken{
-			Reserved: []byte{1},
-			TokenMetaData: &esdt.MetaData{
-				Nonce:      0,
-				Name:       name,
-				Creator:    creator,
-				Royalties:  royalties,
-				Hash:       hash,
-				URIs:       uris,
-				Attributes: attributes,
-			},
-		}
 		transferEsdtData := &esdt.ESDigitalToken{
 			Reserved: []byte{2},
 			TokenMetaData: &esdt.MetaData{
+				Nonce:      0,
+				Name:       name,
 				Creator:    newCreator,
 				Royalties:  newRoyalties,
+				Hash:       hash,
+				URIs:       uris,
 				Attributes: newAttributes,
+			},
+		}
+		currentEsdtData := &esdt.ESDigitalToken{
+			Reserved: []byte{1},
+			TokenMetaData: &esdt.MetaData{
+				Creator:    creator,
+				Royalties:  royalties,
+				Attributes: attributes,
 			},
 		}
 

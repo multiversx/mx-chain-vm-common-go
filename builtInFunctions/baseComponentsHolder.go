@@ -24,7 +24,7 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	nonce uint64,
 	isReturnWithError bool,
 ) error {
-	currentESDTData, isNew, err := b.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
+	currentESDTData, _, err := b.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
@@ -36,10 +36,7 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	latestEsdtData := esdtDataToTransfer
-	if !isNew {
-		latestEsdtData = getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler)
-	}
+	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler)
 	latestEsdtData.Value.Set(esdtDataToTransfer.Value)
 
 	_, err = b.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, latestEsdtData, false, isReturnWithError)
@@ -66,8 +63,8 @@ func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, e
 	currentEsdtDataVersion := big.NewInt(0).SetBytes(currentEsdtData.Reserved).Uint64()
 	transferEsdtDataVersion := big.NewInt(0).SetBytes(transferEsdtData.Reserved).Uint64()
 
-	if currentEsdtDataVersion > transferEsdtDataVersion {
-		return currentEsdtData
+	if transferEsdtDataVersion >= currentEsdtDataVersion {
+		return transferEsdtData
 	}
 
 	return mergeEsdtData(currentEsdtData, transferEsdtData)
@@ -75,31 +72,51 @@ func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, e
 
 func mergeEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken) *esdt.ESDigitalToken {
 	if currentEsdtData.TokenMetaData == nil {
-		currentEsdtData.TokenMetaData = &esdt.MetaData{}
-	}
-	currentEsdtData.Reserved = transferEsdtData.Reserved
-
-	if transferEsdtData.TokenMetaData.Nonce > 0 {
-		currentEsdtData.TokenMetaData.Nonce = transferEsdtData.TokenMetaData.Nonce
-	}
-	if len(transferEsdtData.TokenMetaData.Name) != 0 {
-		currentEsdtData.TokenMetaData.Name = transferEsdtData.TokenMetaData.Name
-	}
-	if len(transferEsdtData.TokenMetaData.Creator) != 0 {
-		currentEsdtData.TokenMetaData.Creator = transferEsdtData.TokenMetaData.Creator
-	}
-	if transferEsdtData.TokenMetaData.Royalties > 0 {
-		currentEsdtData.TokenMetaData.Royalties = transferEsdtData.TokenMetaData.Royalties
-	}
-	if len(transferEsdtData.TokenMetaData.Hash) != 0 {
-		currentEsdtData.TokenMetaData.Hash = transferEsdtData.TokenMetaData.Hash
-	}
-	if len(transferEsdtData.TokenMetaData.URIs) != 0 {
-		currentEsdtData.TokenMetaData.URIs = transferEsdtData.TokenMetaData.URIs
-	}
-	if len(transferEsdtData.TokenMetaData.Attributes) != 0 {
-		currentEsdtData.TokenMetaData.Attributes = transferEsdtData.TokenMetaData.Attributes
+		return transferEsdtData
 	}
 
-	return currentEsdtData
+	transferEsdtData.Reserved = currentEsdtData.Reserved
+	transferEsdtData.Type = currentEsdtData.Type
+
+	wasAnyFieldUpdated := false
+	hadNilTokenMetaData := false
+	if transferEsdtData.TokenMetaData == nil {
+		hadNilTokenMetaData = true
+		transferEsdtData.TokenMetaData = &esdt.MetaData{}
+	}
+
+	if currentEsdtData.TokenMetaData.Nonce > 0 {
+		wasAnyFieldUpdated = true
+		transferEsdtData.TokenMetaData.Nonce = currentEsdtData.TokenMetaData.Nonce
+	}
+	if len(currentEsdtData.TokenMetaData.Name) != 0 {
+		wasAnyFieldUpdated = true
+		transferEsdtData.TokenMetaData.Name = currentEsdtData.TokenMetaData.Name
+	}
+	if len(currentEsdtData.TokenMetaData.Creator) != 0 {
+		wasAnyFieldUpdated = true
+		transferEsdtData.TokenMetaData.Creator = currentEsdtData.TokenMetaData.Creator
+	}
+	if currentEsdtData.TokenMetaData.Royalties > 0 {
+		wasAnyFieldUpdated = true
+		transferEsdtData.TokenMetaData.Royalties = currentEsdtData.TokenMetaData.Royalties
+	}
+	if len(currentEsdtData.TokenMetaData.Hash) != 0 {
+		wasAnyFieldUpdated = true
+		transferEsdtData.TokenMetaData.Hash = currentEsdtData.TokenMetaData.Hash
+	}
+	if len(currentEsdtData.TokenMetaData.URIs) != 0 {
+		wasAnyFieldUpdated = true
+		transferEsdtData.TokenMetaData.URIs = currentEsdtData.TokenMetaData.URIs
+	}
+	if len(currentEsdtData.TokenMetaData.Attributes) != 0 {
+		wasAnyFieldUpdated = true
+		transferEsdtData.TokenMetaData.Attributes = currentEsdtData.TokenMetaData.Attributes
+	}
+
+	if !wasAnyFieldUpdated && hadNilTokenMetaData {
+		transferEsdtData.TokenMetaData = nil
+	}
+
+	return transferEsdtData
 }
