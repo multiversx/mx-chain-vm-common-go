@@ -67,5 +67,33 @@ func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, e
 		return currentEsdtData
 	}
 
-	return transferEsdtData
+	return mergeEsdtData(currentEsdtData, transferEsdtData)
+}
+
+func mergeEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken) *esdt.ESDigitalToken {
+	currentEsdtData.Reserved = transferEsdtData.Reserved
+
+	if transferEsdtData.TokenMetaData.Nonce > 0 {
+		currentEsdtData.TokenMetaData.Nonce = transferEsdtData.TokenMetaData.Nonce
+	}
+	if len(transferEsdtData.TokenMetaData.Name) != 0 {
+		currentEsdtData.TokenMetaData.Name = transferEsdtData.TokenMetaData.Name
+	}
+	if len(transferEsdtData.TokenMetaData.Creator) != 0 {
+		currentEsdtData.TokenMetaData.Creator = transferEsdtData.TokenMetaData.Creator
+	}
+	if transferEsdtData.TokenMetaData.Royalties > 0 {
+		currentEsdtData.TokenMetaData.Royalties = transferEsdtData.TokenMetaData.Royalties
+	}
+	if len(transferEsdtData.TokenMetaData.Hash) != 0 {
+		currentEsdtData.TokenMetaData.Hash = transferEsdtData.TokenMetaData.Hash
+	}
+	if len(transferEsdtData.TokenMetaData.URIs) != 0 {
+		currentEsdtData.TokenMetaData.URIs = transferEsdtData.TokenMetaData.URIs
+	}
+	if len(transferEsdtData.TokenMetaData.Attributes) != 0 {
+		currentEsdtData.TokenMetaData.Attributes = transferEsdtData.TokenMetaData.Attributes
+	}
+
+	return currentEsdtData
 }

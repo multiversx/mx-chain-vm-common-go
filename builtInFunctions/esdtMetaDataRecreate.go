@@ -122,10 +122,10 @@ func checkUpdateArguments(
 }
 
 type esdtStorageInfo struct {
-	esdtData     *esdt.ESDigitalToken
-	esdtTokenKey []byte
-	nonce        uint64
-	isDynamic    bool
+	esdtData            *esdt.ESDigitalToken
+	esdtTokenKey        []byte
+	nonce               uint64
+	metaDataInSystemAcc bool
 }
 
 func getEsdtInfo(
@@ -152,16 +152,29 @@ func getEsdtInfo(
 		}
 
 		return &esdtStorageInfo{
-			esdtData:     esdtData,
-			esdtTokenKey: esdtTokenKey,
-			nonce:        nonce,
-			isDynamic:    true,
+			esdtData:            esdtData,
+			esdtTokenKey:        esdtTokenKey,
+			nonce:               nonce,
+			metaDataInSystemAcc: true,
 		}, nil
 	}
 
-	esdtData, err := storageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
+	esdtData, isNew, err := storageHandler.GetESDTNFTTokenOnDestination(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
 		return nil, err
+	}
+
+	if tokenType == uint32(core.DynamicNFT) {
+		return &esdtStorageInfo{
+			esdtData:            esdtData,
+			esdtTokenKey:        esdtTokenKey,
+			nonce:               nonce,
+			metaDataInSystemAcc: false,
+		}, nil
+	}
+
+	if isNew {
+		return nil, ErrNilESDTData
 	}
 
 	if esdtData.Value == nil || esdtData.Value.Cmp(zero) == 0 {
@@ -173,10 +186,10 @@ func getEsdtInfo(
 	}
 
 	return &esdtStorageInfo{
-		esdtData:     esdtData,
-		esdtTokenKey: esdtTokenKey,
-		nonce:        nonce,
-		isDynamic:    false,
+		esdtData:            esdtData,
+		esdtTokenKey:        esdtTokenKey,
+		nonce:               nonce,
+		metaDataInSystemAcc: false,
 	}, nil
 }
 
@@ -186,12 +199,8 @@ func saveESDTMetaDataInfo(
 	acntSnd vmcommon.UserAccountHandler,
 	returnCallAfterError bool,
 ) error {
-	if esdtInfo.isDynamic {
+	if esdtInfo.metaDataInSystemAcc {
 		return storageHandler.SaveMetaDataToSystemAccount(esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData)
-	}
-
-	if esdtInfo.esdtData.Value == nil || esdtInfo.esdtData.Value.Cmp(zero) == 0 {
-		return ErrInvalidEsdtValue
 	}
 
 	_, err := storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData, true, returnCallAfterError)

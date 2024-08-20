@@ -209,7 +209,7 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("recreate dynamic esdt data", func(t *testing.T) {
 		t.Parallel()
 
-		getESDTNFTTokenOnSenderCalled := false
+		getESDTNFTTokenOnDestinationCalled := false
 		saveESDTNFTTokenCalled := false
 		tokenId := []byte("tokenID")
 		esdtTokenKey := append([]byte(baseESDTKeyPrefix), tokenId...)
@@ -237,12 +237,12 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 			Attributes: []byte("attributes"),
 		}
 		storageHandler := &mock.ESDTNFTStorageHandlerStub{
-			GetESDTNFTTokenOnSenderCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error) {
-				getESDTNFTTokenOnSenderCalled = true
+			GetESDTNFTTokenOnDestinationCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error) {
+				getESDTNFTTokenOnDestinationCalled = true
 				return &esdt.ESDigitalToken{
 					Value:         big.NewInt(1),
 					TokenMetaData: &esdt.MetaData{Nonce: nonce},
-				}, nil
+				}, false, nil
 			},
 			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
 				assert.Equal(t, esdtTokenKey, tokenKey)
@@ -269,13 +269,13 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 		assert.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
 		assert.Equal(t, uint64(866), vmOutput.GasRemaining)
 		assert.True(t, saveESDTNFTTokenCalled)
-		assert.True(t, getESDTNFTTokenOnSenderCalled)
+		assert.True(t, getESDTNFTTokenOnDestinationCalled)
 	})
 
 	t.Run("recreate non dynamic esdt data", func(t *testing.T) {
 		t.Parallel()
 
-		getESDTNFTTokenOnSenderCalled := false
+		getESDTNFTTokenOnDestinationCalled := false
 		saveESDTNFTTokenCalled := false
 		tokenId := []byte("tokenID")
 		esdtTokenKey := append([]byte(baseESDTKeyPrefix), tokenId...)
@@ -303,12 +303,12 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 			Attributes: []byte("attributes"),
 		}
 		storageHandler := &mock.ESDTNFTStorageHandlerStub{
-			GetESDTNFTTokenOnSenderCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error) {
-				getESDTNFTTokenOnSenderCalled = true
+			GetESDTNFTTokenOnDestinationCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error) {
+				getESDTNFTTokenOnDestinationCalled = true
 				return &esdt.ESDigitalToken{
 					Value:         big.NewInt(1),
 					TokenMetaData: &esdt.MetaData{Nonce: nonce},
-				}, nil
+				}, false, nil
 			},
 			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
 				assert.Equal(t, newMetadata, esdtData.TokenMetaData)
@@ -333,7 +333,7 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 		assert.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
 		assert.Equal(t, uint64(866), vmOutput.GasRemaining)
 		assert.True(t, saveESDTNFTTokenCalled)
-		assert.True(t, getESDTNFTTokenOnSenderCalled)
+		assert.True(t, getESDTNFTTokenOnDestinationCalled)
 	})
 }
 

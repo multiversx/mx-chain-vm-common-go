@@ -174,7 +174,7 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 }
 
 func isNFTWithMetadataOnAccount(esdtToken *esdt.ESDigitalToken) bool {
-	if esdtToken.Type != uint32(core.NonFungibleV2) {
+	if esdtToken.Type != uint32(core.NonFungibleV2) && esdtToken.Type != uint32(core.DynamicNFT) {
 		return false
 	}
 
