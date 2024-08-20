@@ -350,7 +350,7 @@ func (e *esdtDataStorage) shouldSaveMetadataInSystemAccount(esdtDataType uint32)
 		return true
 	}
 
-	return esdtDataType != uint32(core.NonFungibleV2)
+	return esdtDataType != uint32(core.NonFungibleV2) || esdtDataType == uint32(core.DynamicNFT)
 }
 
 // SaveMetaDataToSystemAccount saves the metadata to the system account

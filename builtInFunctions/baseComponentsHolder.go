@@ -24,7 +24,7 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	nonce uint64,
 	isReturnWithError bool,
 ) error {
-	currentESDTData, _, err := b.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
+	currentESDTData, isNew, err := b.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
@@ -36,7 +36,10 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler)
+	latestEsdtData := esdtDataToTransfer
+	if !isNew {
+		latestEsdtData = getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler)
+	}
 	latestEsdtData.Value.Set(esdtDataToTransfer.Value)
 
 	_, err = b.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, latestEsdtData, false, isReturnWithError)
@@ -71,6 +74,9 @@ func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, e
 }
 
 func mergeEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken) *esdt.ESDigitalToken {
+	if currentEsdtData.TokenMetaData == nil {
+		currentEsdtData.TokenMetaData = &esdt.MetaData{}
+	}
 	currentEsdtData.Reserved = transferEsdtData.Reserved
 
 	if transferEsdtData.TokenMetaData.Nonce > 0 {
