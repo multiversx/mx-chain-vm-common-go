@@ -1110,7 +1110,7 @@ func TestEsdtDataStorage_ShouldSaveMetadataInSystemAccount(t *testing.T) {
 		}
 		e, _ := NewESDTDataStorage(args)
 
-		assert.True(t, e.shouldSaveMetadataInSystemAccount(uint32(core.DynamicNFT)))
+		assert.False(t, e.shouldSaveMetadataInSystemAccount(uint32(core.DynamicNFT)))
 		assert.True(t, e.shouldSaveMetadataInSystemAccount(uint32(core.DynamicSFT)))
 		assert.True(t, e.shouldSaveMetadataInSystemAccount(uint32(core.DynamicMeta)))
 	})
