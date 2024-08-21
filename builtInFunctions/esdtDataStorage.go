@@ -389,7 +389,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		}
 	}
 
-	if esdtData.Value.Cmp(zero) <= 0 {
+	if esdtData.Value.Cmp(zero) <= 0 && esdtData.Type != uint32(core.DynamicNFT) {
 		return nil, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
 
