@@ -39,7 +39,13 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler)
 	latestEsdtData.Value.Set(esdtDataToTransfer.Value)
 
-	_, err = b.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, latestEsdtData, false, isReturnWithError)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           isReturnWithError,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+
+	_, err = b.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, latestEsdtData, properties)
 	if err != nil {
 		return err
 	}

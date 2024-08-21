@@ -358,10 +358,9 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtTokenKey []byte,
 	nonce uint64,
 	esdtData *esdt.ESDigitalToken,
-	mustUpdateAllFields bool,
-	isReturnWithError bool,
+	properties vmcommon.NftSaveArgs,
 ) ([]byte, error) {
-	err := e.checkFrozenPauseProperties(acnt, esdtTokenKey, nonce, esdtData, isReturnWithError)
+	err := e.checkFrozenPauseProperties(acnt, esdtTokenKey, nonce, esdtData, properties.IsReturnWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -383,13 +382,13 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
 	if e.shouldSaveMetadataInSystemAccount(esdtData.Type) {
-		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
+		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, properties.MustUpdateAllFields)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if esdtData.Value.Cmp(zero) <= 0 && esdtData.Type != uint32(core.DynamicNFT) {
+	if esdtData.Value.Cmp(zero) <= 0 && !properties.KeepMetaDataOnZeroLiquidity {
 		return nil, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
 

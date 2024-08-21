@@ -236,7 +236,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 					TokenMetaData: oldMetaData,
 				}, false, nil
 			},
-			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
+			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken, properties vmcommon.NftSaveArgs) ([]byte, error) {
 				assert.Equal(t, esdtTokenKey, tokenKey)
 				assert.Equal(t, nonce, n)
 				assert.Equal(t, oldMetaData.Name, esdtData.TokenMetaData.Name)

@@ -244,7 +244,7 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 					TokenMetaData: &esdt.MetaData{Nonce: nonce},
 				}, false, nil
 			},
-			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
+			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken, properties vmcommon.NftSaveArgs) ([]byte, error) {
 				assert.Equal(t, esdtTokenKey, tokenKey)
 				assert.Equal(t, nonce, n)
 				assert.Equal(t, newMetadata, esdtData.TokenMetaData)
@@ -310,7 +310,7 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 					TokenMetaData: &esdt.MetaData{Nonce: nonce},
 				}, false, nil
 			},
-			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
+			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, properties vmcommon.NftSaveArgs) ([]byte, error) {
 				assert.Equal(t, newMetadata, esdtData.TokenMetaData)
 				saveESDTNFTTokenCalled = true
 				return nil, nil

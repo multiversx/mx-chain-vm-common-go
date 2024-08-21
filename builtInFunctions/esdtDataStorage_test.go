@@ -412,7 +412,12 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 
 	newMetaData := &esdt.MetaData{Name: []byte("newName")}
 	transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
-	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, false, false)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           false,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, properties)
 	assert.Nil(t, err)
 
 	esdtDataGet, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
@@ -459,7 +464,12 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 
 		newMetaData := &esdt.MetaData{Name: []byte("newName")}
 		transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
-		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, false, false)
+		properties := vmcommon.NftSaveArgs{
+			MustUpdateAllFields:         false,
+			IsReturnWithError:           false,
+			KeepMetaDataOnZeroLiquidity: false,
+		}
+		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, properties)
 		assert.Nil(t, err)
 
 		esdtDataGet, _, err := dataStorage.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
@@ -561,7 +571,12 @@ func setAndGetStoredToken(
 	nonce uint64,
 	transferESDTData *esdt.ESDigitalToken,
 ) *esdt.ESDigitalToken {
-	_, err := esdtDataStorage.SaveESDTNFTToken([]byte("address"), userAcc, key, nonce, transferESDTData, false, false)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           false,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err := esdtDataStorage.SaveESDTNFTToken([]byte("address"), userAcc, key, nonce, transferESDTData, properties)
 	assert.Nil(tb, err)
 
 	esdtDataGet, _, err := esdtDataStorage.GetESDTNFTTokenOnDestination(userAcc, key, nonce)
@@ -593,7 +608,12 @@ func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 
 	esdtData.Value = big.NewInt(0)
-	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, false, false)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           false,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, properties)
 	assert.Nil(t, err)
 
 	val, _, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
@@ -648,7 +668,12 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 		nftToken.Type = uint32(core.NonFungible)
 		nftToken.TokenMetaData = metaData
 
-		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, nftToken, false, false)
+		properties := vmcommon.NftSaveArgs{
+			MustUpdateAllFields:         false,
+			IsReturnWithError:           false,
+			KeepMetaDataOnZeroLiquidity: false,
+		}
+		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, nftToken, properties)
 		assert.Nil(t, err)
 
 		// metadata has been removed from the system account
@@ -1224,7 +1249,12 @@ func saveESDTNFTTokenMigrateTypeAndMetadata(t *testing.T, tokenType core.ESDTTyp
 	assert.Equal(t, uint32(core.NonFungible), retrievedEsdtData.Type)
 
 	esdtData.TokenMetaData = metaData
-	_, err = e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, false, false)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           false,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err = e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, properties)
 	assert.Nil(t, err)
 
 	retrievedEsdtData, _, err = e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)

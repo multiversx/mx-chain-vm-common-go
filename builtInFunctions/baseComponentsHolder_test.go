@@ -26,7 +26,7 @@ func TestBaseComponentsHolder_addNFTToDestination(t *testing.T) {
 						Value: big.NewInt(100),
 					}, false, nil
 				},
-				SaveESDTNFTTokenCalled: func(_ []byte, _ vmcommon.UserAccountHandler, _ []byte, _ uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
+				SaveESDTNFTTokenCalled: func(_ []byte, _ vmcommon.UserAccountHandler, _ []byte, _ uint64, esdtData *esdt.ESDigitalToken, properties vmcommon.NftSaveArgs) ([]byte, error) {
 					assert.Equal(t, big.NewInt(200), esdtData.Value)
 					saveCalled = true
 					return nil, nil
