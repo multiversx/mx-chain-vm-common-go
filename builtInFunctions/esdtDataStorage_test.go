@@ -1038,50 +1038,6 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 	assert.Nil(t, esdtData)
 }
 
-func TestEsdtDataStorage_IsNFTWithMetadataOnAccount(t *testing.T) {
-	t.Parallel()
-
-	t.Run("returns false if not NonFungibleV2", func(t *testing.T) {
-		t.Parallel()
-
-		esdtData := &esdt.ESDigitalToken{
-			Type: uint32(core.NonFungible),
-		}
-		assert.False(t, isNFTWithMetadataOnAccount(esdtData))
-	})
-	t.Run("returns false if MetaData is nil", func(t *testing.T) {
-		t.Parallel()
-
-		esdtData := &esdt.ESDigitalToken{
-			TokenMetaData: nil,
-			Type:          uint32(core.NonFungibleV2),
-		}
-		assert.False(t, isNFTWithMetadataOnAccount(esdtData))
-	})
-	t.Run("returns false if Creator is empty", func(t *testing.T) {
-		t.Parallel()
-
-		esdtData := &esdt.ESDigitalToken{
-			TokenMetaData: &esdt.MetaData{
-				Creator: nil,
-			},
-			Type: uint32(core.NonFungibleV2),
-		}
-		assert.False(t, isNFTWithMetadataOnAccount(esdtData))
-	})
-	t.Run("returns true for NonFungibleV2 and existing MetaData", func(t *testing.T) {
-		t.Parallel()
-
-		esdtData := &esdt.ESDigitalToken{
-			TokenMetaData: &esdt.MetaData{
-				Creator: []byte("creator"),
-			},
-			Type: uint32(core.NonFungibleV2),
-		}
-		assert.True(t, isNFTWithMetadataOnAccount(esdtData))
-	})
-}
-
 func TestEsdtDataStorage_ShouldSaveMetadataInSystemAccount(t *testing.T) {
 	t.Parallel()
 
