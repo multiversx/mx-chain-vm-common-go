@@ -167,6 +167,7 @@ func getEsdtInfo(
 	if tokenType == uint32(core.DynamicNFT) {
 		if isNew {
 			esdtData.TokenMetaData = &esdt.MetaData{}
+			esdtData.Type = tokenType
 		}
 		return &esdtStorageInfo{
 			esdtData:            esdtData,
