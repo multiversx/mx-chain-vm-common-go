@@ -142,16 +142,15 @@ func getEsdtInfo(
 		return nil, err
 	}
 	if core.IsDynamicESDT(tokenType) {
-		metaData, err := storageHandler.GetMetaDataFromSystemAccount(esdtTokenKey, nonce)
+		esdtData, err := storageHandler.GetMetaDataFromSystemAccount(esdtTokenKey, nonce)
 		if err != nil {
 			return nil, err
 		}
 
-		if metaData == nil {
+		if esdtData == nil || esdtData.TokenMetaData == nil {
 			return nil, ErrInvalidMetadata
 		}
 
-		esdtData := &esdt.ESDigitalToken{TokenMetaData: metaData}
 		return &esdtStorageInfo{
 			esdtData:     esdtData,
 			esdtTokenKey: esdtTokenKey,

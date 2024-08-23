@@ -120,9 +120,15 @@ func (e *esdtDataStorage) GetESDTNFTTokenOnDestinationWithCustomSystemAccount(
 }
 
 // GetMetaDataFromSystemAccount gets the metadata from the system account
-func (e *esdtDataStorage) GetMetaDataFromSystemAccount(esdtTokenKey []byte, nonce uint64) (*esdt.MetaData, error) {
+func (e *esdtDataStorage) GetMetaDataFromSystemAccount(esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error) {
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
-	return e.getESDTMetaDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
+
+	esdtData, _, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
+	if err != nil {
+		return nil, err
+	}
+
+	return esdtData, nil
 }
 
 func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions(
@@ -153,12 +159,15 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		return esdtData, false, nil
 	}
 
-	esdtMetaData, err := e.getESDTMetaDataFromSystemAccount(esdtNFTTokenKey, options)
+	retrievedEsdtData, _, err := e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, options)
 	if err != nil {
 		return nil, false, err
 	}
-	if esdtMetaData != nil {
-		esdtData.TokenMetaData = esdtMetaData
+	if retrievedEsdtData != nil && retrievedEsdtData.TokenMetaData != nil {
+		esdtData.TokenMetaData = retrievedEsdtData.TokenMetaData
+		if core.IsDynamicESDT(esdtData.Type) {
+			esdtData.Reserved = retrievedEsdtData.Reserved
+		}
 	}
 
 	return esdtData, false, nil
@@ -370,18 +379,23 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, err
 	}
 
-	isCorrectlySet := e.checkTheCorrectTokenTypeIsSet(esdtData)
-	if !isCorrectlySet {
-		err = e.migrateTokenTypeAndMetadataIfNeeded(esdtTokenKey, nonce, esdtData)
-		if err != nil {
-			return nil, err
+	tokenTypeChanged, newTokenType, err := e.checkTokenTypeChanged(esdtTokenKey, esdtData)
+	if err != nil {
+		return nil, err
+	}
+	if tokenTypeChanged {
+		esdtData.Type = newTokenType
+		if newTokenType == uint32(core.NonFungibleV2) {
+			err = e.removeMetaDataFromSystemAccount(esdtTokenKey, nonce)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
 	if e.shouldSaveMetadataInSystemAccount(esdtData.Type) {
-		// TODO check version for dynamic tokens
 		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
 		if err != nil {
 			return nil, err
@@ -427,25 +441,33 @@ func (e *esdtDataStorage) checkTheCorrectTokenTypeIsSet(esdtData *esdt.ESDigital
 	return false
 }
 
-// there should be a match between the token type on the system account (from globalSettingsHandler) and the token type on the user account.
-func (e *esdtDataStorage) migrateTokenTypeAndMetadataIfNeeded(esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error {
+func (e *esdtDataStorage) checkTokenTypeChanged(esdtTokenKey []byte, esdtData *esdt.ESDigitalToken) (bool, uint32, error) {
 	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
-		return nil
+		return false, 0, nil
 	}
 
-	tokenType, err := e.globalSettingsHandler.GetTokenType(esdtTokenKey)
+	if esdtData.Type == uint32(core.NonFungibleV2) ||
+		esdtData.Type == uint32(core.DynamicNFT) ||
+		esdtData.Type == uint32(core.DynamicSFT) ||
+		esdtData.Type == uint32(core.DynamicMeta) ||
+		esdtData.Type == uint32(core.Fungible) {
+
+		return false, 0, nil
+	}
+
+	newTokenType, err := e.globalSettingsHandler.GetTokenType(esdtTokenKey)
 	if err != nil {
-		return err
-	}
-	if tokenType == esdtData.Type {
-		return nil
-	}
-	esdtData.Type = tokenType
-
-	if tokenType != uint32(core.NonFungibleV2) {
-		return nil
+		return false, 0, err
 	}
 
+	if esdtData.Type == newTokenType {
+		return false, 0, nil
+	}
+
+	return true, newTokenType, nil
+}
+
+func (e *esdtDataStorage) removeMetaDataFromSystemAccount(esdtTokenKey []byte, nonce uint64) error {
 	systemAcc, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return err
@@ -482,12 +504,12 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 	if core.IsGetNodeFromDBError(err) {
 		return err
 	}
-	err = e.saveMetadataIfRequired(esdtNFTTokenKey, systemAcc, currentSaveData, esdtData)
+	shouldUpdateCurrentSavedData, err := e.saveMetadataIfRequired(esdtNFTTokenKey, systemAcc, currentSaveData, esdtData)
 	if err != nil {
 		return err
 	}
 
-	if !mustUpdateAllFields && len(currentSaveData) > 0 {
+	if !mustUpdateAllFields && len(currentSaveData) > 0 && !shouldUpdateCurrentSavedData {
 		return nil
 	}
 
@@ -506,6 +528,9 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		if err != nil {
 			return err
 		}
+	}
+	if core.IsDynamicESDT(esdtData.Type) && len(esdtData.Reserved) != 0 {
+		esdtDataOnSystemAcc.Reserved = esdtData.Reserved
 	}
 
 	if !isSendAlwaysFlagEnabled {
@@ -526,30 +551,34 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 	systemAcc vmcommon.UserAccountHandler,
 	currentSaveData []byte,
 	esdtData *esdt.ESDigitalToken,
-) error {
+) (bool, error) {
 	if !e.enableEpochsHandler.IsFlagEnabled(AlwaysSaveTokenMetaDataFlag) {
-		return nil
+		return false, nil
 	}
 	if !e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag) {
 		// do not re-write the metadata if it is not sent, as it will cause data loss
-		return nil
+		return false, nil
 	}
 	if len(currentSaveData) == 0 {
 		// optimization: do not try to write here the token metadata, it will be written automatically by the next step
-		return nil
+		return false, nil
 	}
 
 	esdtDataOnSystemAcc := &esdt.ESDigitalToken{}
 	err := e.marshaller.Unmarshal(esdtDataOnSystemAcc, currentSaveData)
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	if big.NewInt(0).SetBytes(esdtDataOnSystemAcc.Reserved).Uint64() < big.NewInt(0).SetBytes(esdtData.Reserved).Uint64() {
+		return true, nil
 	}
 	if len(esdtDataOnSystemAcc.Reserved) > 0 {
-		return nil
+		return false, nil
 	}
 
 	esdtDataOnSystemAcc.TokenMetaData = esdtData.TokenMetaData
-	return e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
+	return false, e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
 }
 
 func (e *esdtDataStorage) setReservedToNilForOldToken(
