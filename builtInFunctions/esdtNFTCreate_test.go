@@ -616,8 +616,13 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 			RecipientAddr: sender.AddressBytes(),
 		}
 
-		// missing nonce
+		// missing token type
 		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
+
+		// missing nonce
+		vmInput.VMInput.Arguments = append(vmInput.VMInput.Arguments, big.NewInt(int64(core.NonFungibleV2)).Bytes())
+		vmOutput, err = nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
 		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
 
 		// missing original creator
@@ -646,12 +651,18 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 			RecipientAddr: userSender,
 		}
 
+		// missing token type
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
+
 		// missing nonce
-		vmOutput, err := nftCreate.ProcessBuiltinFunction(nil, nil, vmInput)
+		vmInput.VMInput.Arguments[7] = big.NewInt(int64(core.DynamicSFT)).Bytes()
+		vmInput.VMInput.Arguments = append(vmInput.VMInput.Arguments, []byte("whiteListedAddress"))
+		vmOutput, err = nftCreate.ProcessBuiltinFunction(nil, nil, vmInput)
 		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
 
 		// missing original creator
-		vmInput.VMInput.Arguments[7] = big.NewInt(1).Bytes()
+		vmInput.VMInput.Arguments[8] = big.NewInt(1).Bytes()
 		vmInput.VMInput.Arguments = append(vmInput.VMInput.Arguments, []byte("whiteListedAddress"))
 		vmOutput, err = nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
 		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
@@ -671,6 +682,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 					[]byte("12345678901234567890123456789012"),
 					[]byte("attributes"),
 					[]byte("uri1"),
+					big.NewInt(int64(core.MetaFungible)).Bytes(),
 					big.NewInt(123).Bytes(),
 					[]byte("creator"),
 				},
@@ -680,6 +692,60 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 
 		vmOutput, err := nftCreate.ProcessBuiltinFunction(senderInvalid, nil, vmInput)
 		require.Equal(t, err, ErrActionNotAllowed)
+		require.Nil(t, vmOutput)
+	})
+
+	t.Run("invalid quantity", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr: userSender,
+				CallValue:  big.NewInt(0),
+				Arguments: [][]byte{
+					[]byte("sov1-TOKEN-abcdef"),
+					big.NewInt(2).Bytes(),
+					[]byte("name"),
+					big.NewInt(int64(100)).Bytes(),
+					[]byte("12345678901234567890123456789012"),
+					[]byte("attributes"),
+					[]byte("uri1"),
+					big.NewInt(int64(core.NonFungibleV2)).Bytes(),
+					big.NewInt(123).Bytes(),
+					[]byte("creator"),
+				},
+			},
+			RecipientAddr: userSender,
+		}
+
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		require.ErrorIs(t, err, ErrInvalidArguments)
+		require.True(t, strings.Contains(err.Error(), "invalid quantity"))
+		require.Nil(t, vmOutput)
+	})
+
+	t.Run("invalid token type", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr: userSender,
+				CallValue:  big.NewInt(0),
+				Arguments: [][]byte{
+					[]byte("sov1-TOKEN-abcdef"),
+					big.NewInt(1).Bytes(),
+					[]byte("name"),
+					big.NewInt(int64(100)).Bytes(),
+					[]byte("12345678901234567890123456789012"),
+					[]byte("attributes"),
+					[]byte("uri1"),
+					big.NewInt(int64(999)).Bytes(),
+					big.NewInt(123).Bytes(),
+					[]byte("creator"),
+				},
+			},
+			RecipientAddr: userSender,
+		}
+
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		require.ErrorIs(t, err, ErrInvalidArguments)
+		require.True(t, strings.Contains(err.Error(), "invalid esdt type"))
 		require.Nil(t, vmOutput)
 	})
 }
