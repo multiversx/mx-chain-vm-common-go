@@ -147,8 +147,11 @@ func getEsdtInfo(
 			return nil, err
 		}
 
-		if esdtData == nil || esdtData.TokenMetaData == nil {
-			return nil, ErrInvalidMetadata
+		if esdtData == nil {
+			esdtData = &esdt.ESDigitalToken{}
+		}
+		if esdtData.TokenMetaData == nil {
+			esdtData.TokenMetaData = &esdt.MetaData{}
 		}
 
 		return &esdtStorageInfo{
@@ -263,7 +266,17 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	currentRound := e.CurrentRound()
+	metaDataVersion := &esdt.MetaDataVersion{
+		Name:       currentRound,
+		Creator:    currentRound,
+		Royalties:  currentRound,
+		Hash:       currentRound,
+		URIs:       currentRound,
+		Attributes: currentRound,
+	}
+
+	err = changeEsdtVersion(esdtInfo.esdtData, metaDataVersion, e.enableEpochsHandler, e.marshaller)
 	if err != nil {
 		return nil, err
 	}
@@ -288,18 +301,45 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	return vmOutput, nil
 }
 
-func changeEsdtVersion(esdt *esdt.ESDigitalToken, newVersion uint64, enableEpochsHandler vmcommon.EnableEpochsHandler) error {
+func changeEsdtVersion(
+	esdt *esdt.ESDigitalToken,
+	esdtVersion *esdt.MetaDataVersion,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
+) error {
 	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return nil
 	}
 
-	currentVersion := big.NewInt(0).SetBytes(esdt.Reserved).Uint64()
-	if currentVersion > newVersion {
-		return fmt.Errorf("%w, current version: %d, new version: %d, token name %s", ErrInvalidVersion, currentVersion, newVersion, esdt.TokenMetaData.Name)
+	esdtVersionBytes, err := marshaller.Marshal(esdtVersion)
+	if err != nil {
+		return err
 	}
 
-	esdt.Reserved = big.NewInt(0).SetUint64(newVersion).Bytes()
+	esdt.Reserved = esdtVersionBytes
 	return nil
+}
+
+func getMetaDataVersion(
+	esdtData *esdt.ESDigitalToken,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
+) (*esdt.MetaDataVersion, bool, error) {
+	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		return &esdt.MetaDataVersion{}, false, nil
+	}
+
+	if esdtData.Reserved == nil || bytes.Equal(esdtData.Reserved, []byte{0}) || bytes.Equal(esdtData.Reserved, []byte{1}) {
+		return &esdt.MetaDataVersion{}, false, nil
+	}
+
+	esdtMetaDataVersion := &esdt.MetaDataVersion{}
+	err := marshaller.Unmarshal(esdtMetaDataVersion, esdtData.Reserved)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return esdtMetaDataVersion, true, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed

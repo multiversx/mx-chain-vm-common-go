@@ -337,7 +337,9 @@ func (e *esdtDataStorage) shouldSaveMetadataInSystemAccount(esdtDataType uint32)
 }
 
 func metaDataOnUserAccount(esdtDataType uint32) bool {
-	return esdtDataType == uint32(core.NonFungibleV2) || esdtDataType == uint32(core.DynamicNFT)
+	return esdtDataType == uint32(core.NonFungibleV2) ||
+		esdtDataType == uint32(core.DynamicNFT) ||
+		esdtDataType == uint32(core.Fungible)
 }
 
 // SaveMetaDataToSystemAccount saves the metadata to the system account
@@ -412,19 +414,6 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	}
 
 	return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
-}
-
-func (e *esdtDataStorage) checkTheCorrectTokenTypeIsSet(esdtData *esdt.ESDigitalToken) bool {
-	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
-		return true
-	}
-
-	if esdtData.Type != uint32(core.NonFungible) {
-		// it means that the token type was already migrated.
-		return true
-	}
-
-	return false
 }
 
 func (e *esdtDataStorage) checkTokenTypeChanged(esdtTokenKey []byte, esdtData *esdt.ESDigitalToken) (bool, uint32, error) {
@@ -556,7 +545,7 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 		return false, err
 	}
 
-	if big.NewInt(0).SetBytes(esdtDataOnSystemAcc.Reserved).Uint64() < big.NewInt(0).SetBytes(esdtData.Reserved).Uint64() {
+	if wasMetaDataUpdated(esdtData.Reserved) {
 		return true, nil
 	}
 	if len(esdtDataOnSystemAcc.Reserved) > 0 {
@@ -565,6 +554,14 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 
 	esdtDataOnSystemAcc.TokenMetaData = esdtData.TokenMetaData
 	return false, e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
+}
+
+func wasMetaDataUpdated(version []byte) bool {
+	if version == nil || bytes.Equal(version, []byte{0}) || bytes.Equal(version, []byte{1}) {
+		return false
+	}
+
+	return true
 }
 
 func (e *esdtDataStorage) setReservedToNilForOldToken(

@@ -16,7 +16,6 @@ type esdtNFTMultiTransfer struct {
 	baseActiveHandler
 	*baseComponentsHolder
 	keyPrefix      []byte
-	marshaller     vmcommon.Marshalizer
 	payableHandler vmcommon.PayableChecker
 	funcGasCost    uint64
 	accounts       vmcommon.AccountsAdapter
@@ -64,7 +63,6 @@ func NewESDTNFTMultiTransferFunc(
 
 	e := &esdtNFTMultiTransfer{
 		keyPrefix:      []byte(baseESDTKeyPrefix),
-		marshaller:     marshaller,
 		funcGasCost:    funcGasCost,
 		accounts:       accounts,
 		gasConfig:      gasConfig,
@@ -76,6 +74,7 @@ func NewESDTNFTMultiTransferFunc(
 			globalSettingsHandler: globalSettingsHandler,
 			shardCoordinator:      shardCoordinator,
 			enableEpochsHandler:   enableEpochsHandler,
+			marshaller:            marshaller,
 		},
 		baseTokenID: []byte(vmcommon.EGLDIdentifier),
 	}

@@ -13,6 +13,7 @@ type baseComponentsHolder struct {
 	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	shardCoordinator      vmcommon.Coordinator
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
+	marshaller            vmcommon.Marshalizer
 }
 
 func (b *baseComponentsHolder) addNFTToDestination(
@@ -36,7 +37,10 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	latestEsdtData := getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler)
+	latestEsdtData, err := getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler, b.marshaller)
+	if err != nil {
+		return err
+	}
 	latestEsdtData.Value.Set(esdtDataToTransfer.Value)
 
 	properties := vmcommon.NftSaveArgs{
@@ -61,68 +65,61 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	return nil
 }
 
-func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, enableEpochsHandler vmcommon.EnableEpochsHandler) *esdt.ESDigitalToken {
+func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, enableEpochsHandler vmcommon.EnableEpochsHandler, marshaller vmcommon.Marshalizer) (*esdt.ESDigitalToken, error) {
 	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
-		return transferEsdtData
+		return transferEsdtData, nil
 	}
 
-	currentEsdtDataVersion := big.NewInt(0).SetBytes(currentEsdtData.Reserved).Uint64()
-	transferEsdtDataVersion := big.NewInt(0).SetBytes(transferEsdtData.Reserved).Uint64()
-
-	if transferEsdtDataVersion >= currentEsdtDataVersion {
-		return transferEsdtData
-	}
-
-	return mergeEsdtData(currentEsdtData, transferEsdtData)
+	return mergeEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler, marshaller)
 }
 
-func mergeEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken) *esdt.ESDigitalToken {
+func mergeEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, enableEpochsHandler vmcommon.EnableEpochsHandler, marshaller vmcommon.Marshalizer) (*esdt.ESDigitalToken, error) {
 	if currentEsdtData.TokenMetaData == nil {
-		return transferEsdtData
+		return transferEsdtData, nil
 	}
 
-	transferEsdtData.Reserved = currentEsdtData.Reserved
-	transferEsdtData.Type = currentEsdtData.Type
-
-	wasAnyFieldUpdated := false
-	hadNilTokenMetaData := false
-	if transferEsdtData.TokenMetaData == nil {
-		hadNilTokenMetaData = true
-		transferEsdtData.TokenMetaData = &esdt.MetaData{}
+	currentMetaDataVersion, wasCurrentMetaDataUpdated, err := getMetaDataVersion(currentEsdtData, enableEpochsHandler, marshaller)
+	if err != nil {
+		return nil, err
+	}
+	transferredMetaDataVersion, wasTransferMetaDataUpdated, err := getMetaDataVersion(transferEsdtData, enableEpochsHandler, marshaller)
+	if err != nil {
+		return nil, err
 	}
 
-	if currentEsdtData.TokenMetaData.Nonce > 0 {
-		wasAnyFieldUpdated = true
-		transferEsdtData.TokenMetaData.Nonce = currentEsdtData.TokenMetaData.Nonce
+	if !wasCurrentMetaDataUpdated && !wasTransferMetaDataUpdated {
+		return transferEsdtData, nil
 	}
-	if len(currentEsdtData.TokenMetaData.Name) != 0 {
-		wasAnyFieldUpdated = true
+
+	if currentMetaDataVersion.Name > transferredMetaDataVersion.Name {
 		transferEsdtData.TokenMetaData.Name = currentEsdtData.TokenMetaData.Name
+		transferredMetaDataVersion.Name = currentMetaDataVersion.Name
 	}
-	if len(currentEsdtData.TokenMetaData.Creator) != 0 {
-		wasAnyFieldUpdated = true
+	if currentMetaDataVersion.Creator > transferredMetaDataVersion.Creator {
 		transferEsdtData.TokenMetaData.Creator = currentEsdtData.TokenMetaData.Creator
+		transferredMetaDataVersion.Creator = currentMetaDataVersion.Creator
 	}
-	if currentEsdtData.TokenMetaData.Royalties > 0 {
-		wasAnyFieldUpdated = true
+	if currentMetaDataVersion.Royalties > transferredMetaDataVersion.Royalties {
 		transferEsdtData.TokenMetaData.Royalties = currentEsdtData.TokenMetaData.Royalties
+		transferredMetaDataVersion.Royalties = currentMetaDataVersion.Royalties
 	}
-	if len(currentEsdtData.TokenMetaData.Hash) != 0 {
-		wasAnyFieldUpdated = true
+	if currentMetaDataVersion.Hash > transferredMetaDataVersion.Hash {
 		transferEsdtData.TokenMetaData.Hash = currentEsdtData.TokenMetaData.Hash
+		transferredMetaDataVersion.Hash = currentMetaDataVersion.Hash
 	}
-	if len(currentEsdtData.TokenMetaData.URIs) != 0 {
-		wasAnyFieldUpdated = true
+	if currentMetaDataVersion.URIs > transferredMetaDataVersion.URIs {
 		transferEsdtData.TokenMetaData.URIs = currentEsdtData.TokenMetaData.URIs
+		transferredMetaDataVersion.URIs = currentMetaDataVersion.URIs
 	}
-	if len(currentEsdtData.TokenMetaData.Attributes) != 0 {
-		wasAnyFieldUpdated = true
+	if currentMetaDataVersion.Attributes > transferredMetaDataVersion.Attributes {
 		transferEsdtData.TokenMetaData.Attributes = currentEsdtData.TokenMetaData.Attributes
+		transferredMetaDataVersion.Attributes = currentMetaDataVersion.Attributes
 	}
 
-	if !wasAnyFieldUpdated && hadNilTokenMetaData {
-		transferEsdtData.TokenMetaData = nil
+	err = changeEsdtVersion(transferEsdtData, transferredMetaDataVersion, enableEpochsHandler, marshaller)
+	if err != nil {
+		return nil, err
 	}
 
-	return transferEsdtData
+	return transferEsdtData, nil
 }

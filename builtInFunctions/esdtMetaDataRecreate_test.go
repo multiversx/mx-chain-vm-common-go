@@ -368,28 +368,15 @@ func TestEsdtMetaDataRecreate_changeEsdtVersion(t *testing.T) {
 			},
 		}
 		esdtData := &esdt.ESDigitalToken{}
-		err := changeEsdtVersion(esdtData, 1, enableEpochsHandler)
+		esdtVersion := &esdt.MetaDataVersion{
+			URIs: 50,
+		}
+
+		err := changeEsdtVersion(esdtData, esdtVersion, enableEpochsHandler, &mock.MarshalizerMock{})
 		assert.Nil(t, err)
 		assert.Nil(t, esdtData.Reserved)
 	})
-	t.Run("current version is higher than new version should err", func(t *testing.T) {
-		t.Parallel()
-
-		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
-			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-				return true
-			},
-		}
-		esdtData := &esdt.ESDigitalToken{
-			Reserved: []byte{2},
-			TokenMetaData: &esdt.MetaData{
-				Name: []byte("name"),
-			},
-		}
-		err := changeEsdtVersion(esdtData, 1, enableEpochsHandler)
-		assert.True(t, errors.Is(err, ErrInvalidVersion))
-	})
-	t.Run("current version is lower than new version should change version", func(t *testing.T) {
+	t.Run("if flag is activated will change version", func(t *testing.T) {
 		t.Parallel()
 
 		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
@@ -403,9 +390,14 @@ func TestEsdtMetaDataRecreate_changeEsdtVersion(t *testing.T) {
 				Name: []byte("name"),
 			},
 		}
+		esdtVersion := &esdt.MetaDataVersion{
+			URIs: 50,
+		}
+		marshaller := &mock.MarshalizerMock{}
+		esdtVersionBytes, _ := marshaller.Marshal(esdtVersion)
 
-		err := changeEsdtVersion(esdtData, 2, enableEpochsHandler)
+		err := changeEsdtVersion(esdtData, esdtVersion, enableEpochsHandler, marshaller)
 		assert.Nil(t, err)
-		assert.Equal(t, []byte{2}, esdtData.Reserved)
+		assert.Equal(t, esdtVersionBytes, esdtData.Reserved)
 	})
 }

@@ -22,7 +22,6 @@ type esdtNFTTransfer struct {
 	baseAlwaysActiveHandler
 	*baseComponentsHolder
 	keyPrefix      []byte
-	marshaller     vmcommon.Marshalizer
 	payableHandler vmcommon.PayableChecker
 	funcGasCost    uint64
 	accounts       vmcommon.AccountsAdapter
@@ -67,7 +66,6 @@ func NewESDTNFTTransferFunc(
 
 	e := &esdtNFTTransfer{
 		keyPrefix:      []byte(baseESDTKeyPrefix),
-		marshaller:     marshaller,
 		funcGasCost:    funcGasCost,
 		accounts:       accounts,
 		gasConfig:      gasConfig,
@@ -79,6 +77,7 @@ func NewESDTNFTTransferFunc(
 			globalSettingsHandler: globalSettingsHandler,
 			shardCoordinator:      shardCoordinator,
 			enableEpochsHandler:   enableEpochsHandler,
+			marshaller:            marshaller,
 		},
 	}
 
@@ -352,6 +351,8 @@ func hasDynamicRole(account vmcommon.UserAccountHandler, tokenID []byte, marshal
 	}
 
 	dynamicRoles := [][]byte{
+		[]byte(core.ESDTRoleNFTAddURI),
+		[]byte(core.ESDTRoleNFTUpdateAttributes),
 		[]byte(core.ESDTMetaDataRecreate),
 		[]byte(core.ESDTRoleNFTUpdate),
 		[]byte(core.ESDTRoleModifyCreator),
