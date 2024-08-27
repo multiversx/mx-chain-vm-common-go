@@ -329,7 +329,7 @@ func getMetaDataVersion(
 		return &esdt.MetaDataVersion{}, false, nil
 	}
 
-	if esdtData.Reserved == nil || bytes.Equal(esdtData.Reserved, []byte{0}) || bytes.Equal(esdtData.Reserved, []byte{1}) {
+	if !wasMetaDataUpdated(esdtData.Reserved) {
 		return &esdt.MetaDataVersion{}, false, nil
 	}
 
