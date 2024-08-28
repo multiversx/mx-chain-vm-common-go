@@ -18,43 +18,51 @@ func TestNewESDTSetNewURIsFunc(t *testing.T) {
 	t.Run("nil accounts adapter", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, nil, nil, nil, nil, nil)
+		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, nil, nil, nil, nil, nil, nil)
 		assert.Nil(t, e)
 		assert.Equal(t, ErrNilAccountsAdapter, err)
 	})
 	t.Run("nil global settings handler", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, nil, nil, nil, nil)
+		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, nil, nil, nil, nil, nil)
 		assert.Nil(t, e)
 		assert.Equal(t, ErrNilGlobalSettingsHandler, err)
 	})
 	t.Run("nil enable epochs handler", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, nil, nil, nil)
+		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, nil, nil, nil, nil)
 		assert.Nil(t, e)
 		assert.Equal(t, ErrNilEnableEpochsHandler, err)
 	})
 	t.Run("nil storage handler", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, nil, nil, &mock.EnableEpochsHandlerStub{})
+		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, nil, nil, &mock.EnableEpochsHandlerStub{}, nil)
 		assert.Nil(t, e)
 		assert.Equal(t, ErrNilESDTNFTStorageHandler, err)
 	})
 	t.Run("nil roles handler", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, nil, &mock.EnableEpochsHandlerStub{})
+		e, err := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, nil, &mock.EnableEpochsHandlerStub{}, nil)
 		assert.Nil(t, e)
 		assert.Equal(t, ErrNilRolesHandler, err)
+	})
+	t.Run("nil marshaller", func(t *testing.T) {
+		t.Parallel()
+
+		funcGasCost := uint64(10)
+		e, err := NewESDTSetNewURIsFunc(funcGasCost, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, nil)
+		assert.Nil(t, e)
+		assert.Equal(t, ErrNilMarshalizer, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		funcGasCost := uint64(10)
-		e, err := NewESDTSetNewURIsFunc(funcGasCost, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		e, err := NewESDTSetNewURIsFunc(funcGasCost, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
 		assert.NotNil(t, e)
 		assert.Nil(t, err)
 		assert.Equal(t, funcGasCost, e.funcGasCost)
@@ -67,7 +75,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("nil vmInput", func(t *testing.T) {
 		t.Parallel()
 
-		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
 		vmOutput, err := e.ProcessBuiltinFunction(nil, nil, nil)
 		assert.Nil(t, vmOutput)
 		assert.Equal(t, ErrNilVmInput, err)
@@ -75,7 +83,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("nil CallValue", func(t *testing.T) {
 		t.Parallel()
 
-		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue: nil,
@@ -88,7 +96,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("call value not zero", func(t *testing.T) {
 		t.Parallel()
 
-		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue: big.NewInt(10),
@@ -101,7 +109,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("recipient address is not caller address", func(t *testing.T) {
 		t.Parallel()
 
-		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue:  big.NewInt(0),
@@ -116,7 +124,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 	t.Run("nil sender account", func(t *testing.T) {
 		t.Parallel()
 
-		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue:  big.NewInt(0),
@@ -136,7 +144,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 				return false
 			},
 		}
-		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler, &mock.MarshalizerMock{})
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue:  big.NewInt(0),
@@ -156,7 +164,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 				return true
 			},
 		}
-		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler, &mock.MarshalizerMock{})
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue:  big.NewInt(0),
@@ -185,7 +193,7 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 				return expectedErr
 			},
 		}
-		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, rolesHandler, enableEpochsHandler)
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, rolesHandler, enableEpochsHandler, &mock.MarshalizerMock{})
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
 				CallValue:  big.NewInt(0),
@@ -199,11 +207,11 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 		assert.Equal(t, expectedErr, err)
 		assert.True(t, allowedToExecuteCalled)
 	})
-	t.Run("only changes only the URIs", func(t *testing.T) {
+	t.Run("only changes the URIs", func(t *testing.T) {
 		t.Parallel()
 
-		getMetaDataFromSystemAccountCalled := false
-		saveMetaDataToSystemAccountCalled := false
+		getESDTNFTTokenOnDestinationCalled := false
+		saveESDTNFTTokenCalled := false
 		tokenId := []byte("tokenID")
 		esdtTokenKey := append([]byte(baseESDTKeyPrefix), tokenId...)
 		nonce := uint64(15)
@@ -230,13 +238,13 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 			Attributes: []byte("attributes"),
 		}
 		storageHandler := &mock.ESDTNFTStorageHandlerStub{
-			GetMetaDataFromSystemAccountCalled: func(bytes []byte, u uint64) (*esdt.ESDigitalToken, error) {
-				getMetaDataFromSystemAccountCalled = true
+			GetESDTNFTTokenOnDestinationCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error) {
+				getESDTNFTTokenOnDestinationCalled = true
 				return &esdt.ESDigitalToken{
 					TokenMetaData: oldMetaData,
-				}, nil
+				}, false, nil
 			},
-			SaveMetaDataToSystemAccountCalled: func(tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken) error {
+			SaveESDTNFTTokenCalled: func(senderAddress []byte, acnt vmcommon.UserAccountHandler, tokenKey []byte, n uint64, esdtData *esdt.ESDigitalToken, properties vmcommon.NftSaveArgs) ([]byte, error) {
 				assert.Equal(t, esdtTokenKey, tokenKey)
 				assert.Equal(t, nonce, n)
 				assert.Equal(t, oldMetaData.Name, esdtData.TokenMetaData.Name)
@@ -245,11 +253,11 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 				assert.Equal(t, oldMetaData.Hash, esdtData.TokenMetaData.Hash)
 				assert.Equal(t, oldMetaData.Attributes, esdtData.TokenMetaData.Attributes)
 				assert.Equal(t, oldMetaData.Creator, esdtData.TokenMetaData.Creator)
-				saveMetaDataToSystemAccountCalled = true
-				return nil
+				saveESDTNFTTokenCalled = true
+				return nil, nil
 			},
 		}
-		e, _ := NewESDTSetNewURIsFunc(101, vmcommon.BaseOperationCost{StorePerByte: 1}, accounts, globalSettingsHandler, storageHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler)
+		e, _ := NewESDTSetNewURIsFunc(101, vmcommon.BaseOperationCost{StorePerByte: 1}, accounts, globalSettingsHandler, storageHandler, &mock.ESDTRoleHandlerStub{}, enableEpochsHandler, &mock.MarshalizerMock{})
 
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
@@ -265,15 +273,15 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
 		assert.Equal(t, uint64(894), vmOutput.GasRemaining)
-		assert.True(t, saveMetaDataToSystemAccountCalled)
-		assert.True(t, getMetaDataFromSystemAccountCalled)
+		assert.True(t, saveESDTNFTTokenCalled)
+		assert.True(t, getESDTNFTTokenOnDestinationCalled)
 	})
 }
 
 func TestEsdtSetNewURIs_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+	e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
 
 	newGasCost := &vmcommon.GasCost{
 		BaseOperationCost: vmcommon.BaseOperationCost{
