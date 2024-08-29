@@ -299,7 +299,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 	} else {
-		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, tickerID, e.marshaller)
+		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, tickerID, e.marshaller, e.enableEpochsHandler)
 		if err != nil {
 			return nil, err
 		}
@@ -343,7 +343,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	return vmOutput, nil
 }
 
-func hasDynamicRole(account vmcommon.UserAccountHandler, tokenID []byte, marshaller vmcommon.Marshalizer) (bool, error) {
+func hasDynamicRole(account vmcommon.UserAccountHandler, tokenID []byte, marshaller vmcommon.Marshalizer, enableEpochsHandler vmcommon.EnableEpochsHandler) (bool, error) {
 	roleKey := append(roleKeyPrefix, tokenID...)
 	roles, _, err := getESDTRolesForAcnt(marshaller, account, roleKey)
 	if err != nil {
@@ -351,13 +351,15 @@ func hasDynamicRole(account vmcommon.UserAccountHandler, tokenID []byte, marshal
 	}
 
 	dynamicRoles := [][]byte{
-		[]byte(core.ESDTRoleNFTAddURI),
-		[]byte(core.ESDTRoleNFTUpdateAttributes),
 		[]byte(core.ESDTMetaDataRecreate),
 		[]byte(core.ESDTRoleNFTUpdate),
 		[]byte(core.ESDTRoleModifyCreator),
 		[]byte(core.ESDTRoleModifyRoyalties),
 		[]byte(core.ESDTRoleSetNewURI),
+	}
+
+	if enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		dynamicRoles = append(dynamicRoles, []byte(core.ESDTRoleNFTAddURI), []byte(core.ESDTRoleNFTUpdateAttributes))
 	}
 
 	for _, role := range dynamicRoles {
