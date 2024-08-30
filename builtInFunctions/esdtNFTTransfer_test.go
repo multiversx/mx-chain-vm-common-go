@@ -1093,6 +1093,8 @@ func TestEsdtNFTTransfer_SenderHasDynamicRoleAndLiqudityReaches0AfterTransfer_Sh
 		[]byte(core.ESDTRoleModifyCreator),
 		[]byte(core.ESDTRoleModifyRoyalties),
 		[]byte(core.ESDTRoleSetNewURI),
+		[]byte(core.ESDTRoleNFTAddURI),
+		[]byte(core.ESDTRoleNFTUpdateAttributes),
 	}
 
 	for _, role := range dynamicRoles {
@@ -1112,15 +1114,30 @@ func senderHasDynamicRoleAndLiqudityReaches0AfterTransfer(t *testing.T, role []b
 		},
 	}
 
-	nftTransferSenderShard, _ := createNFTTransferAndStorageHandler(0, 2, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{
-		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag || flag == SendAlwaysFlag || flag == SaveToSystemAccountFlag
+	nftTransferSenderShard, _ := createNFTTransferAndStorageHandler(
+		0,
+		2,
+		&mock.GlobalSettingsHandlerStub{
+			GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
+				return 3, nil
+			},
 		},
-	})
+		&mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag || flag == SendAlwaysFlag || flag == SaveToSystemAccountFlag || flag == DynamicEsdtFlag
+			},
+		})
 
 	_ = nftTransferSenderShard.SetPayableChecker(payableHandler)
 
-	nftTransferDestinationShard := createNftTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
+	nftTransferDestinationShard := createNftTransferWithMockArguments(
+		1,
+		2,
+		&mock.GlobalSettingsHandlerStub{
+			GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
+				return 3, nil
+			},
+		})
 	_ = nftTransferDestinationShard.SetPayableChecker(payableHandler)
 
 	senderAddress := bytes.Repeat([]byte{2}, 32) // sender is in the same shard
