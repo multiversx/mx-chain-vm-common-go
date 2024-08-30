@@ -1207,3 +1207,105 @@ func createSFT(tokenName []byte, tokenNonce uint64, nftTransferSenderShard *esdt
 	_ = systemSCAccount.(vmcommon.UserAccountHandler).AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, buff)
 	_ = nftTransferSenderShard.accounts.SaveAccount(systemSCAccount)
 }
+
+func TestHasDynamicRole(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &mock.MarshalizerMock{}
+
+	t.Run("dynamic flag not active", func(t *testing.T) {
+		t.Parallel()
+
+		roles := &esdt.ESDTRoles{
+			Roles: [][]byte{
+				[]byte(core.ESDTRoleNFTAddURI),
+				[]byte(core.ESDTRoleNFTUpdateAttributes),
+			},
+		}
+		rolesBytes, _ := marshaller.Marshal(roles)
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return false
+			},
+		}
+		userAccount := &mock.UserAccountStub{
+			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+				return &mock.DataTrieTrackerStub{
+					RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+						return rolesBytes, 0, nil
+					},
+				}
+			},
+		}
+
+		hasDynamicRole, err := hasDynamicRole(userAccount, []byte("tokenID"), marshaller, enableEpochsHandler)
+		assert.Nil(t, err)
+		assert.False(t, hasDynamicRole)
+	})
+	t.Run("dynamic flag active", func(t *testing.T) {
+		t.Parallel()
+
+		roles := &esdt.ESDTRoles{
+			Roles: [][]byte{
+				[]byte(core.ESDTRoleNFTAddURI),
+				[]byte(core.ESDTRoleNFTUpdateAttributes),
+				[]byte(core.ESDTMetaDataRecreate),
+				[]byte(core.ESDTRoleNFTUpdate),
+				[]byte(core.ESDTRoleModifyCreator),
+				[]byte(core.ESDTRoleModifyRoyalties),
+				[]byte(core.ESDTRoleSetNewURI),
+			},
+		}
+		rolesBytes, _ := marshaller.Marshal(roles)
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == DynamicEsdtFlag
+			},
+		}
+		userAccount := &mock.UserAccountStub{
+			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+				return &mock.DataTrieTrackerStub{
+					RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+						return rolesBytes, 0, nil
+					},
+				}
+			},
+		}
+
+		hasDynamicRole, err := hasDynamicRole(userAccount, []byte("tokenID"), marshaller, enableEpochsHandler)
+		assert.Nil(t, err)
+		assert.True(t, hasDynamicRole)
+	})
+	t.Run("dynamic flag active and only old roles", func(t *testing.T) {
+		t.Parallel()
+
+		roles := &esdt.ESDTRoles{
+			Roles: [][]byte{
+				[]byte(core.ESDTRoleNFTAddURI),
+				[]byte(core.ESDTRoleNFTUpdateAttributes),
+			},
+		}
+		rolesBytes, _ := marshaller.Marshal(roles)
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == DynamicEsdtFlag
+			},
+		}
+		userAccount := &mock.UserAccountStub{
+			AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+				return &mock.DataTrieTrackerStub{
+					RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+						return rolesBytes, 0, nil
+					},
+				}
+			},
+		}
+
+		hasDynamicRole, err := hasDynamicRole(userAccount, []byte("tokenID"), marshaller, enableEpochsHandler)
+		assert.Nil(t, err)
+		assert.True(t, hasDynamicRole)
+	})
+}
