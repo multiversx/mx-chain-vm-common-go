@@ -83,7 +83,7 @@ func TestBaseComponentsHolder_getLatestEsdtData(t *testing.T) {
 			Value:    big.NewInt(200),
 		}
 
-		latestEsdtData, err := getLatestEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
+		latestEsdtData, err := getLatestMetaData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
 		assert.Nil(t, err)
 		assert.Equal(t, transferEsdtData, latestEsdtData)
 	})
@@ -130,7 +130,7 @@ func TestBaseComponentsHolder_getLatestEsdtData(t *testing.T) {
 			},
 		}
 
-		latestEsdtData, err := getLatestEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
+		latestEsdtData, err := getLatestMetaData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
 		assert.Nil(t, err)
 		assert.Equal(t, versionBytes, latestEsdtData.Reserved)
 		assert.Equal(t, newCreator, latestEsdtData.TokenMetaData.Creator)
@@ -196,7 +196,7 @@ func TestBaseComponentsHolder_getLatestEsdtData(t *testing.T) {
 			},
 		}
 
-		latestEsdtData, err := getLatestEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
+		latestEsdtData, err := getLatestMetaData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
 		assert.Nil(t, err)
 		expectedVersion := &esdt.MetaDataVersion{
 			Name:       3,

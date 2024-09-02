@@ -25,7 +25,7 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	nonce uint64,
 	isReturnWithError bool,
 ) error {
-	currentESDTData, _, err := b.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
+	currentESDTData, isNew, err := b.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
 	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
 		return err
 	}
@@ -37,7 +37,18 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
 	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
 
-	latestEsdtData, err := getLatestEsdtData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler, b.marshaller)
+	if isNew && !metaDataOnUserAccount(esdtDataToTransfer.Type) {
+		esdtDataInSystemAcc, err := b.esdtStorageHandler.GetMetaDataFromSystemAccount(esdtTokenKey, nonce)
+		if err != nil {
+			return err
+		}
+		if esdtDataInSystemAcc != nil {
+			currentESDTData.TokenMetaData = esdtDataInSystemAcc.TokenMetaData
+			currentESDTData.Reserved = esdtDataInSystemAcc.Reserved
+		}
+	}
+
+	latestEsdtData, err := getLatestMetaData(currentESDTData, esdtDataToTransfer, b.enableEpochsHandler, b.marshaller)
 	if err != nil {
 		return err
 	}
@@ -65,7 +76,7 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	return nil
 }
 
-func getLatestEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, enableEpochsHandler vmcommon.EnableEpochsHandler, marshaller vmcommon.Marshalizer) (*esdt.ESDigitalToken, error) {
+func getLatestMetaData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, enableEpochsHandler vmcommon.EnableEpochsHandler, marshaller vmcommon.Marshalizer) (*esdt.ESDigitalToken, error) {
 	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return transferEsdtData, nil
 	}
