@@ -126,7 +126,7 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		metaDataVersion.Attributes = currentRound
 	}
 
-	if len(vmInput.Arguments[urisStartIndex:]) != 0 {
+	if len(vmInput.Arguments[urisStartIndex]) != 0 {
 		for _, uri := range esdtInfo.esdtData.TokenMetaData.URIs {
 			totalLengthDifference -= len(uri)
 		}
