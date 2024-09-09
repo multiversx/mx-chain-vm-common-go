@@ -16,7 +16,6 @@ type esdtNFTMultiTransfer struct {
 	baseActiveHandler
 	*baseComponentsHolder
 	keyPrefix      []byte
-	marshaller     vmcommon.Marshalizer
 	payableHandler vmcommon.PayableChecker
 	funcGasCost    uint64
 	accounts       vmcommon.AccountsAdapter
@@ -64,7 +63,6 @@ func NewESDTNFTMultiTransferFunc(
 
 	e := &esdtNFTMultiTransfer{
 		keyPrefix:      []byte(baseESDTKeyPrefix),
-		marshaller:     marshaller,
 		funcGasCost:    funcGasCost,
 		accounts:       accounts,
 		gasConfig:      gasConfig,
@@ -76,6 +74,7 @@ func NewESDTNFTMultiTransferFunc(
 			globalSettingsHandler: globalSettingsHandler,
 			shardCoordinator:      shardCoordinator,
 			enableEpochsHandler:   enableEpochsHandler,
+			marshaller:            marshaller,
 		},
 		baseTokenID: []byte(vmcommon.EGLDIdentifier),
 	}
@@ -448,7 +447,12 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, transferData.ESDTValue)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, transferData.ESDTTokenNonce, esdtData, false, isReturnCallWithError)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           isReturnCallWithError,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, transferData.ESDTTokenNonce, esdtData, properties)
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +483,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 			return nil, err
 		}
 	} else {
-		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, esdtTokenKey, e.marshaller)
+		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, esdtTokenKey, e.marshaller, e.enableEpochsHandler)
 		if err != nil {
 			return nil, err
 		}

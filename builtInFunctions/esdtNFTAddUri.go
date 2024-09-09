@@ -6,6 +6,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -19,6 +20,7 @@ type esdtNFTAddUri struct {
 	gasConfig             vmcommon.BaseOperationCost
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
+	marshaller            marshal.Marshalizer
 	mutExecution          sync.RWMutex
 }
 
@@ -30,6 +32,7 @@ func NewESDTNFTAddUriFunc(
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
 ) (*esdtNFTAddUri, error) {
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
@@ -43,6 +46,9 @@ func NewESDTNFTAddUriFunc(
 	if check.IfNil(enableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshalizer
+	}
 
 	e := &esdtNFTAddUri{
 		keyPrefix:              []byte(baseESDTKeyPrefix),
@@ -54,6 +60,7 @@ func NewESDTNFTAddUriFunc(
 		rolesHandler:           rolesHandler,
 		enableEpochsHandler:    enableEpochsHandler,
 		BlockchainDataProvider: NewBlockchainDataProvider(),
+		marshaller:             marshaller,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -115,14 +122,25 @@ func (e *esdtNFTAddUri) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
-
-	err = changeEsdtVersion(esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	metaDataVersion, _, err := getMetaDataVersion(esdtData, e.enableEpochsHandler, e.marshaller)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
+	esdtData.TokenMetaData.URIs = append(esdtData.TokenMetaData.URIs, vmInput.Arguments[2:]...)
+	metaDataVersion.URIs = e.CurrentRound()
+
+	err = changeEsdtVersion(esdtData, metaDataVersion, e.enableEpochsHandler, e.marshaller)
+	if err != nil {
+		return nil, err
+	}
+
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         true,
+		IsReturnWithError:           vmInput.ReturnCallAfterError,
+		KeepMetaDataOnZeroLiquidity: true,
+	}
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, properties)
 	if err != nil {
 		return nil, err
 	}

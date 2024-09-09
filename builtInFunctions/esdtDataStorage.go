@@ -155,7 +155,7 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 		return nil, false, err
 	}
 
-	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) || nonce == 0 || isNFTWithMetadataOnAccount(esdtData) {
+	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) || nonce == 0 || metaDataOnUserAccount(esdtData.Type) {
 		return esdtData, false, nil
 	}
 
@@ -171,18 +171,6 @@ func (e *esdtDataStorage) getESDTNFTTokenOnDestinationWithAccountsAdapterOptions
 	}
 
 	return esdtData, false, nil
-}
-
-func isNFTWithMetadataOnAccount(esdtToken *esdt.ESDigitalToken) bool {
-	if esdtToken.Type != uint32(core.NonFungibleV2) {
-		return false
-	}
-
-	if esdtToken.TokenMetaData == nil || len(esdtToken.TokenMetaData.Creator) == 0 {
-		return false
-	}
-
-	return true
 }
 
 func (e *esdtDataStorage) getESDTDigitalTokenDataFromSystemAccount(
@@ -296,8 +284,7 @@ func (e *esdtDataStorage) AddToLiquiditySystemAcc(
 ) error {
 	isSaveToSystemAccountFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag)
 	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
-	isNonFungibleV2 := tokenType == uint32(core.NonFungibleV2)
-	if !isSaveToSystemAccountFlagEnabled || !isSendAlwaysFlagEnabled || nonce == 0 || isNonFungibleV2 {
+	if !isSaveToSystemAccountFlagEnabled || !isSendAlwaysFlagEnabled || nonce == 0 || metaDataOnUserAccount(tokenType) {
 		return nil
 	}
 
@@ -346,11 +333,13 @@ func (e *esdtDataStorage) shouldSaveMetadataInSystemAccount(esdtDataType uint32)
 		return false
 	}
 
-	if core.IsDynamicESDT(esdtDataType) {
-		return true
-	}
+	return !metaDataOnUserAccount(esdtDataType)
+}
 
-	return esdtDataType != uint32(core.NonFungibleV2)
+func metaDataOnUserAccount(esdtDataType uint32) bool {
+	return esdtDataType == uint32(core.NonFungibleV2) ||
+		esdtDataType == uint32(core.DynamicNFT) ||
+		esdtDataType == uint32(core.Fungible)
 }
 
 // SaveMetaDataToSystemAccount saves the metadata to the system account
@@ -371,10 +360,9 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtTokenKey []byte,
 	nonce uint64,
 	esdtData *esdt.ESDigitalToken,
-	mustUpdateAllFields bool,
-	isReturnWithError bool,
+	properties vmcommon.NftSaveArgs,
 ) ([]byte, error) {
-	err := e.checkFrozenPauseProperties(acnt, esdtTokenKey, nonce, esdtData, isReturnWithError)
+	err := e.checkFrozenPauseProperties(acnt, esdtTokenKey, nonce, esdtData, properties.IsReturnWithError)
 	if err != nil {
 		return nil, err
 	}
@@ -396,17 +384,17 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	senderShardID := e.shardCoordinator.ComputeId(senderAddress)
 	if e.shouldSaveMetadataInSystemAccount(esdtData.Type) {
-		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, mustUpdateAllFields)
+		err = e.saveESDTMetaDataToSystemAccount(acnt, senderShardID, esdtNFTTokenKey, nonce, esdtData, properties.MustUpdateAllFields)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if esdtData.Value.Cmp(zero) <= 0 {
+	if esdtData.Value.Cmp(zero) <= 0 && !properties.KeepMetaDataOnZeroLiquidity {
 		return nil, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	}
 
-	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) || esdtData.Type == uint32(core.NonFungibleV2) {
+	if !e.enableEpochsHandler.IsFlagEnabled(SaveToSystemAccountFlag) || metaDataOnUserAccount(esdtData.Type) {
 		marshaledData, errMarshal := e.marshaller.Marshal(esdtData)
 		if errMarshal != nil {
 			return nil, errMarshal
@@ -426,19 +414,6 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	}
 
 	return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
-}
-
-func (e *esdtDataStorage) checkTheCorrectTokenTypeIsSet(esdtData *esdt.ESDigitalToken) bool {
-	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
-		return true
-	}
-
-	if esdtData.Type != uint32(core.NonFungible) {
-		// it means that the token type was already migrated.
-		return true
-	}
-
-	return false
 }
 
 func (e *esdtDataStorage) checkTokenTypeChanged(esdtTokenKey []byte, esdtData *esdt.ESDigitalToken) (bool, uint32, error) {
@@ -570,7 +545,7 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 		return false, err
 	}
 
-	if big.NewInt(0).SetBytes(esdtDataOnSystemAcc.Reserved).Uint64() < big.NewInt(0).SetBytes(esdtData.Reserved).Uint64() {
+	if wasMetaDataUpdated(esdtData.Reserved) {
 		return true, nil
 	}
 	if len(esdtDataOnSystemAcc.Reserved) > 0 {
@@ -579,6 +554,14 @@ func (e *esdtDataStorage) saveMetadataIfRequired(
 
 	esdtDataOnSystemAcc.TokenMetaData = esdtData.TokenMetaData
 	return false, e.marshalAndSaveData(systemAcc, esdtDataOnSystemAcc, esdtNFTTokenKey)
+}
+
+func wasMetaDataUpdated(version []byte) bool {
+	if version == nil || bytes.Equal(version, []byte{0}) || bytes.Equal(version, []byte{1}) {
+		return false
+	}
+
+	return true
 }
 
 func (e *esdtDataStorage) setReservedToNilForOldToken(
@@ -764,7 +747,7 @@ func (e *esdtDataStorage) addMetaDataToProperAccountFromNFTTransfer(
 		nonce := big.NewInt(0).SetBytes(arguments[1]).Uint64()
 		esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
-		if isNFTWithMetadataOnAccount(esdtTransferData) {
+		if metaDataOnUserAccount(esdtTransferData.Type) {
 			return e.saveMetaDataToUserAccount(senderAddr, esdtNFTTokenKey, esdtTransferData)
 		}
 
@@ -832,7 +815,7 @@ func (e *esdtDataStorage) addMetaDataToProperAccountFromMultiTransfer(
 			esdtTokenKey := append(e.keyPrefix, tokenID...)
 			esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 
-			if isNFTWithMetadataOnAccount(esdtTransferData) {
+			if metaDataOnUserAccount(esdtTransferData.Type) {
 				err = e.saveMetaDataToUserAccount(senderAddr, esdtNFTTokenKey, esdtTransferData)
 				if err != nil {
 					return err
