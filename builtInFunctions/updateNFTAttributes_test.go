@@ -20,35 +20,42 @@ func TestNewESDTNFTUpdateAttributesFunc(t *testing.T) {
 	t.Run("nil marshaller should error", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, nil, nil, nil, nil)
+		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, nil, nil, nil, nil, nil)
 		require.True(t, check.IfNil(e))
 		require.Equal(t, ErrNilESDTNFTStorageHandler, err)
 	})
 	t.Run("nil global settings handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), nil, nil, nil)
+		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), nil, nil, nil, nil)
 		require.True(t, check.IfNil(e))
 		require.Equal(t, ErrNilGlobalSettingsHandler, err)
 	})
 	t.Run("nil roles handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, nil, nil)
+		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, nil, nil, nil)
 		require.True(t, check.IfNil(e))
 		require.Equal(t, ErrNilRolesHandler, err)
 	})
 	t.Run("nil enable epochs handler should error", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, nil)
+		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, nil, nil)
 		require.True(t, check.IfNil(e))
 		require.Equal(t, ErrNilEnableEpochsHandler, err)
+	})
+	t.Run("nil marshaller should error", func(t *testing.T) {
+		t.Parallel()
+
+		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, nil)
+		require.True(t, check.IfNil(e))
+		require.Equal(t, ErrNilMarshalizer, err)
 	})
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+		e, err := NewESDTNFTUpdateAttributesFunc(10, vmcommon.BaseOperationCost{}, createNewESDTDataStorageHandler(), &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
 		require.False(t, check.IfNil(e))
 		require.NoError(t, err)
 		require.False(t, e.IsActive())
@@ -63,7 +70,7 @@ func TestESDTNFTUpdateAttributes_SetNewGasConfig_NilGasCost(t *testing.T) {
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 
 	e.SetNewGasConfig(nil)
 	require.Equal(t, defaultGasCost, e.funcGasCost)
@@ -78,7 +85,7 @@ func TestESDTNFTUpdateAttributes_SetNewGasConfig_ShouldWork(t *testing.T) {
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 
 	e.SetNewGasConfig(
 		&vmcommon.GasCost{
@@ -98,7 +105,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionErrorOnCheckInput(t *test
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 
 	// nil vm input
 	output, err := e.ProcessBuiltinFunction(mock.NewAccountWrapMock([]byte("addr")), nil, nil)
@@ -203,7 +210,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionInvalidNumberOfArguments(
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -234,7 +241,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionCheckAllowedToExecuteErro
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -260,7 +267,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionNewSenderShouldErr(t *tes
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 	output, err := e.ProcessBuiltinFunction(
 		mock.NewAccountWrapMock([]byte("addr")),
 		nil,
@@ -288,7 +295,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionMetaDataMissing(t *testin
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{}
@@ -326,7 +333,7 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionShouldErrOnSaveBecauseTok
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
@@ -378,10 +385,11 @@ func TestESDTNFTUpdateAttributes_ProcessBuiltinFunctionShouldWork(t *testing.T) 
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag
 		},
-	})
+	}, &mock.MarshalizerMock{})
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
+		Type: uint32(core.NonFungible),
 		TokenMetaData: &esdt.MetaData{
 			Name: []byte("test"),
 		},
