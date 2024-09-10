@@ -257,6 +257,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		MustUpdateAllFields:         true,
 		IsReturnWithError:           vmInput.ReturnCallAfterError,
 		KeepMetaDataOnZeroLiquidity: false,
+		IsCrossChainEsdt:            isCrossChainToken,
 	}
 	_, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, properties)
 	if err != nil {

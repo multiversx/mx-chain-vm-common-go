@@ -314,6 +314,7 @@ type NftSaveArgs struct {
 	MustUpdateAllFields         bool
 	IsReturnWithError           bool
 	KeepMetaDataOnZeroLiquidity bool
+	IsCrossChainEsdt            bool
 }
 
 // ESDTNFTStorageHandler will handle the storage for the nft metadata

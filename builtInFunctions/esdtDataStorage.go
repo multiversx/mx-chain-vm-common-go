@@ -9,6 +9,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
+
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/parsers"
 )
@@ -367,16 +368,18 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, err
 	}
 
-	tokenTypeChanged, newTokenType, err := e.checkTokenTypeChanged(esdtTokenKey, esdtData)
-	if err != nil {
-		return nil, err
-	}
-	if tokenTypeChanged {
-		esdtData.Type = newTokenType
-		if newTokenType == uint32(core.NonFungibleV2) {
-			err = e.removeMetaDataFromSystemAccount(esdtTokenKey, nonce)
-			if err != nil {
-				return nil, err
+	if !properties.IsCrossChainEsdt {
+		tokenTypeChanged, newTokenType, err := e.checkTokenTypeChanged(esdtTokenKey, esdtData)
+		if err != nil {
+			return nil, err
+		}
+		if tokenTypeChanged {
+			esdtData.Type = newTokenType
+			if newTokenType == uint32(core.NonFungibleV2) {
+				err = e.removeMetaDataFromSystemAccount(esdtTokenKey, nonce)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
