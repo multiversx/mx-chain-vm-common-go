@@ -253,6 +253,13 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		},
 	}
 
+	if isCrossChainToken && esdtData.Type == uint32(core.SemiFungible) {
+		err := e.globalSettingsHandler.SetTokenType(esdtTokenKey, esdtData.Type)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	properties := vmcommon.NftSaveArgs{
 		MustUpdateAllFields:         true,
 		IsReturnWithError:           vmInput.ReturnCallAfterError,
