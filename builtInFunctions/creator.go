@@ -295,11 +295,12 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	args := ArgsNewESDTDataStorage{
-		Accounts:              b.accounts,
-		GlobalSettingsHandler: globalSettingsFunc,
-		Marshalizer:           b.marshaller,
-		EnableEpochsHandler:   b.enableEpochsHandler,
-		ShardCoordinator:      b.shardCoordinator,
+		Accounts:                      b.accounts,
+		GlobalSettingsHandler:         globalSettingsFunc,
+		Marshalizer:                   b.marshaller,
+		EnableEpochsHandler:           b.enableEpochsHandler,
+		ShardCoordinator:              b.shardCoordinator,
+		CrossChainTokenCheckerHandler: crossChainTokenCheckerHandler,
 	}
 	b.esdtStorageHandler, err = NewESDTDataStorage(args)
 	if err != nil {

@@ -316,7 +316,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == CheckFrozenCollectionFlag
 		},
 	}
-	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
+	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler, &mock.CrossChainTokenCheckerMock{})
 
 	args := createESDTNFTCreateArgs()
 	args.EnableEpochsHandler = enableEpochsHandler
@@ -392,9 +392,14 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCallerCrossChainToken(t *
 			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == DynamicEsdtFlag
 		},
 	}
+	crossChainTokenHandler := &mock.CrossChainTokenCheckerMock{
+		IsCrossChainOperationCalled: func(tokenID []byte) bool {
+			return true
+		},
+	}
 	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
 	esdtRoleHandler, _ := NewESDTRolesFunc(marshallerMock, ctc, false)
-	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
+	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler, crossChainTokenHandler)
 
 	args := createESDTNFTCreateArgs()
 	args.CrossChainTokenCheckerHandler = ctc
@@ -480,9 +485,14 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == AlwaysSaveTokenMetaDataFlag || flag == DynamicEsdtFlag
 		},
 	}
+	crossChainTokenHandler := &mock.CrossChainTokenCheckerMock{
+		IsCrossChainOperationCalled: func(tokenID []byte) bool {
+			return true
+		},
+	}
 	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
 	esdtRoleHandler, _ := NewESDTRolesFunc(marshallerMock, ctc, false)
-	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
+	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler, crossChainTokenHandler)
 
 	args := createESDTNFTCreateArgs()
 	args.CrossChainTokenCheckerHandler = ctc
@@ -635,7 +645,12 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == DynamicEsdtFlag
 		},
 	}
-	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
+	crossChainTokenHandler := &mock.CrossChainTokenCheckerMock{
+		IsCrossChainOperationCalled: func(tokenID []byte) bool {
+			return true
+		},
+	}
+	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler, crossChainTokenHandler)
 	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
 	esdtRoleHandler, _ := NewESDTRolesFunc(marshallerMock, ctc, false)
 
