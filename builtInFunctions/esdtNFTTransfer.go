@@ -299,7 +299,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 	} else {
-		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, tickerID, e.marshaller, e.enableEpochsHandler)
+		keepMetadataOnZeroLiquidity, err := shouldKeepMetaDataOnZeroLiquidity(acntSnd, tickerID, esdtData.Type, e.marshaller, e.enableEpochsHandler)
 		if err != nil {
 			return nil, err
 		}
@@ -341,6 +341,24 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	)
 
 	return vmOutput, nil
+}
+
+func shouldKeepMetaDataOnZeroLiquidity(
+	acct vmcommon.UserAccountHandler,
+	tickerId []byte,
+	esdtDataType uint32,
+	marshaller vmcommon.Marshalizer,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
+) (bool, error) {
+	if esdtDataType == uint32(core.DynamicSFT) || esdtDataType == uint32(core.DynamicMeta) {
+		return true, nil
+	}
+
+	hasDynamicRole, err := hasDynamicRole(acct, tickerId, marshaller, enableEpochsHandler)
+	if err != nil {
+		return false, err
+	}
+	return hasDynamicRole, nil
 }
 
 func hasDynamicRole(account vmcommon.UserAccountHandler, tokenID []byte, marshaller vmcommon.Marshalizer, enableEpochsHandler vmcommon.EnableEpochsHandler) (bool, error) {
