@@ -483,7 +483,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 			return nil, err
 		}
 	} else {
-		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, esdtTokenKey, e.marshaller, e.enableEpochsHandler)
+		keepMetadataOnZeroLiquidity, err := shouldKeepMetaDataOnZeroLiquidity(acntSnd, transferData.ESDTTokenName, esdtData.Type, e.marshaller, e.enableEpochsHandler)
 		if err != nil {
 			return nil, err
 		}
