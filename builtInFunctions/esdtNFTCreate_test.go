@@ -389,7 +389,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCallerCrossChainToken(t *
 	accounts := createAccountsAdapterWithMap()
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == CheckFrozenCollectionFlag
+			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == DynamicEsdtFlag
 		},
 	}
 	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
@@ -405,9 +405,10 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCallerCrossChainToken(t *
 
 	nftCreate, _ := NewESDTNFTCreateFunc(args)
 	whiteListedAddr := []byte("whiteListedAddress")
+	whiteListedAcc := mock.NewUserAccount(whiteListedAddr)
 	userAddr := []byte("userAccountAddress")
 	token := "sov1-TOKEN-abcdef"
-	tokenType := core.NonFungible
+	tokenType := core.NonFungibleV2
 	nonce := big.NewInt(1234)
 	quantity := big.NewInt(1)
 	name := "name"
@@ -432,7 +433,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCallerCrossChainToken(t *
 				big.NewInt(int64(tokenType)).Bytes(),
 				nonce.Bytes(),
 				originalCreator,
-				whiteListedAddr,
+				whiteListedAcc.AddressBytes(),
 			},
 			CallType: vm.ExecOnDestByCaller,
 		},
@@ -444,72 +445,169 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCallerCrossChainToken(t *
 
 	// Nonce was not saved in account
 	nonceKey := getNonceKey([]byte(token))
-	latestNonceBytes, _, err := mock.NewUserAccount(userAddr).AccountDataHandler().RetrieveValue(nonceKey)
+	latestNonceBytes, _, err := whiteListedAcc.AccountDataHandler().RetrieveValue(nonceKey)
 	require.Nil(t, err)
 	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
 	require.Zero(t, latestNonce)
 
-	tokenMetaData := &esdt.MetaData{
-		Nonce:      nonce.Uint64(),
-		Name:       []byte(name),
-		Creator:    originalCreator,
-		Royalties:  uint32(royalties),
-		Hash:       hash,
-		URIs:       uris,
-		Attributes: attributes,
+	// check metadata from vm output
+	esdtDataBytes := vmOutput.Logs[0].Topics[3]
+	var esdtDataFromLog esdt.ESDigitalToken
+	err = nftCreate.marshaller.Unmarshal(&esdtDataFromLog, esdtDataBytes)
+	require.Nil(t, err)
+	expectedMetaEsdt := &esdt.ESDigitalToken{
+		Type:  uint32(tokenType),
+		Value: quantity,
+		TokenMetaData: &esdt.MetaData{
+			Nonce:      nonce.Uint64(),
+			Name:       []byte(name),
+			Creator:    originalCreator,
+			Royalties:  uint32(royalties),
+			Hash:       hash,
+			URIs:       uris,
+			Attributes: attributes,
+		},
 	}
-
-	tokenKey := []byte(baseESDTKeyPrefix + token)
-	tokenKey = append(tokenKey, nonce.Bytes()...)
-
-	metaData, _ := esdtDtaStorage.getESDTMetaDataFromSystemAccount(tokenKey, defaultQueryOptions())
-	assert.Equal(t, tokenMetaData, metaData)
+	require.Equal(t, expectedMetaEsdt, &esdtDataFromLog)
 }
 
 func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	t.Parallel()
 
-	esdtDtaStorage := createNewESDTDataStorageHandler()
+	accounts := createAccountsAdapterWithMap()
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == AlwaysSaveTokenMetaDataFlag || flag == DynamicEsdtFlag
+		},
+	}
 	ctc, _ := NewCrossChainTokenChecker(nil, getWhiteListedAddress())
 	esdtRoleHandler, _ := NewESDTRolesFunc(marshallerMock, ctc, false)
+	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
 
 	args := createESDTNFTCreateArgs()
 	args.CrossChainTokenCheckerHandler = ctc
 	args.RolesHandler = esdtRoleHandler
 	args.Accounts = esdtDtaStorage.accounts
 	args.EsdtStorageHandler = esdtDtaStorage
+	args.EnableEpochsHandler = enableEpochsHandler
 
 	nftCreate, _ := NewESDTNFTCreateFunc(args)
 	address := []byte("whiteListedAddress")
 	sender := mock.NewUserAccount(address)
+	sysAccount, err := esdtDtaStorage.getSystemAccount(defaultQueryOptions())
+	require.Nil(t, err)
+	uris := [][]byte{[]byte("uri1"), []byte("uri2")}
 
-	token := "sov1-TOKEN-abcdef"
-	tokenType := core.SemiFungible
-	quantity := big.NewInt(2)
+	t.Run("create nft v2 should work", func(t *testing.T) {
+		token := "sov1-NFTV2-123456"
+		tokenType := core.NonFungibleV2
+		quantity := big.NewInt(1)
+		nonce := big.NewInt(22)
+		esdtMetaData := processCrossChainCreate(t, nftCreate, sender, token, nonce, tokenType, quantity, uris)
+
+		esdtData, latestNonce := readNFTData(t, sender, nftCreate.marshaller, []byte(token), nonce.Uint64(), nil) // from user account
+		require.Zero(t, latestNonce)
+		checkESDTNFTMetaData(t, tokenType, quantity, esdtMetaData, esdtData)
+	})
+
+	t.Run("create dynamic nft should work", func(t *testing.T) {
+		token := "sov2-DYNFT-123456"
+		tokenType := core.DynamicNFT
+		quantity := big.NewInt(1)
+		nonce := big.NewInt(16)
+		esdtMetaData := processCrossChainCreate(t, nftCreate, sender, token, nonce, tokenType, quantity, uris)
+
+		esdtData, latestNonce := readNFTData(t, sender, nftCreate.marshaller, []byte(token), nonce.Uint64(), nil) // from user account
+		require.Zero(t, latestNonce)
+		checkESDTNFTMetaData(t, tokenType, quantity, esdtMetaData, esdtData)
+	})
+
+	t.Run("create sft should work", func(t *testing.T) {
+		token := "sov2-SFT-1q2w3e"
+		tokenType := core.SemiFungible
+		quantity := big.NewInt(20)
+		nonce := big.NewInt(3)
+		esdtMetaData := processCrossChainCreate(t, nftCreate, sender, token, nonce, tokenType, quantity, uris)
+
+		esdtData, latestNonce := readNFTData(t, sysAccount, nftCreate.marshaller, []byte(token), nonce.Uint64(), nil) // from system account
+		require.Zero(t, latestNonce)
+		checkESDTNFTMetaData(t, tokenType, quantity, esdtMetaData, esdtData)
+	})
+
+	t.Run("create dynamic sft should work", func(t *testing.T) {
+		token := "sov3-DSFT-1q2w33"
+		tokenType := core.DynamicSFT
+		quantity := big.NewInt(15)
+		nonce := big.NewInt(33)
+		esdtMetaData := processCrossChainCreate(t, nftCreate, sender, token, nonce, tokenType, quantity, uris)
+
+		esdtData, latestNonce := readNFTData(t, sysAccount, nftCreate.marshaller, []byte(token), nonce.Uint64(), nil) // from system account
+		require.Zero(t, latestNonce)
+		checkESDTNFTMetaData(t, tokenType, quantity, esdtMetaData, esdtData)
+	})
+
+	t.Run("create metaesdt should work", func(t *testing.T) {
+		token := "sov3-MESDT-1fg23d"
+		tokenType := core.MetaFungible
+		quantity := big.NewInt(56)
+		nonce := big.NewInt(684)
+		esdtMetaData := processCrossChainCreate(t, nftCreate, sender, token, nonce, tokenType, quantity, uris)
+
+		esdtData, latestNonce := readNFTData(t, sysAccount, nftCreate.marshaller, []byte(token), nonce.Uint64(), nil) // from system account
+		require.Zero(t, latestNonce)
+		checkESDTNFTMetaData(t, tokenType, quantity, esdtMetaData, esdtData)
+	})
+
+	t.Run("create dynamic metaesdt should work", func(t *testing.T) {
+		token := "sov1-DMESDT-f2f2d3"
+		tokenType := core.DynamicMeta
+		quantity := big.NewInt(1024)
+		nonce := big.NewInt(1024)
+		uris1 := [][]byte{[]byte("uri1")} // simulate with different uris
+		esdtMetaData := processCrossChainCreate(t, nftCreate, sender, token, nonce, tokenType, quantity, uris1)
+
+		esdtData, latestNonce := readNFTData(t, sysAccount, nftCreate.marshaller, []byte(token), nonce.Uint64(), nil) // from system account
+		require.Zero(t, latestNonce)
+		checkESDTNFTMetaData(t, tokenType, quantity, esdtMetaData, esdtData)
+	})
+}
+
+func processCrossChainCreate(
+	t *testing.T,
+	nftCreate *esdtNFTCreate,
+	sender vmcommon.UserAccountHandler,
+	token string,
+	nonce *big.Int,
+	tokenType core.ESDTType,
+	quantity *big.Int,
+	uris [][]byte,
+) *esdt.MetaData {
 	name := "name"
 	royalties := 100 //1%
 	hash := []byte("12345678901234567890123456789012")
 	attributes := []byte("attributes")
-	uris := [][]byte{[]byte("uri1"), []byte("uri2")}
-	nonce := big.NewInt(1234)
 	originalCreator := []byte("originalCreator")
+
+	arguments := [][]byte{
+		[]byte(token),
+		quantity.Bytes(),
+		[]byte(name),
+		big.NewInt(int64(royalties)).Bytes(),
+		hash,
+		attributes,
+	}
+	arguments = append(arguments, uris...)
+	arguments = append(arguments,
+		big.NewInt(int64(tokenType)).Bytes(),
+		nonce.Bytes(),
+		originalCreator,
+	)
+
 	vmInput := &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			CallerAddr: sender.AddressBytes(),
 			CallValue:  big.NewInt(0),
-			Arguments: [][]byte{
-				[]byte(token),
-				quantity.Bytes(),
-				[]byte(name),
-				big.NewInt(int64(royalties)).Bytes(),
-				hash,
-				attributes,
-				uris[0],
-				uris[1],
-				big.NewInt(int64(tokenType)).Bytes(),
-				nonce.Bytes(),
-				originalCreator,
-			},
+			Arguments:  arguments,
 		},
 		RecipientAddr: sender.AddressBytes(),
 	}
@@ -517,7 +615,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, vmOutput)
 
-	tokenMetaData := &esdt.MetaData{
+	return &esdt.MetaData{
 		Nonce:      nonce.Uint64(),
 		Name:       []byte(name),
 		Creator:    originalCreator,
@@ -526,52 +624,6 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainToken(t *testing.T) {
 		URIs:       uris,
 		Attributes: attributes,
 	}
-
-	// Nonce was not saved in account
-	nonceKey := getNonceKey([]byte(token))
-	latestNonceBytes, _, err := sender.AccountDataHandler().RetrieveValue(nonceKey)
-	require.Nil(t, err)
-	latestNonce := big.NewInt(0).SetBytes(latestNonceBytes).Uint64()
-	require.Zero(t, latestNonce)
-
-	// Nonce was not incremented when reading from logs and sys acc
-	tokenKey := []byte(baseESDTKeyPrefix + token)
-	tokenKey = append(tokenKey, big.NewInt(1234).Bytes()...)
-
-	esdtData, _, _ := esdtDtaStorage.getESDTDigitalTokenDataFromSystemAccount(tokenKey, defaultQueryOptions())
-	require.Equal(t, tokenMetaData, esdtData.TokenMetaData)
-	require.Equal(t, esdtData.Value, quantity)
-	require.Equal(t, esdtData.Type, uint32(tokenType))
-
-	esdtDataBytes := vmOutput.Logs[0].Topics[3]
-	var esdtDataFromLog esdt.ESDigitalToken
-	err = nftCreate.marshaller.Unmarshal(&esdtDataFromLog, esdtDataBytes)
-	require.Nil(t, err)
-	require.Equal(t, esdtData.TokenMetaData, esdtDataFromLog.TokenMetaData)
-
-	// Simulate one extra call with only one uri
-	vmInput = &vmcommon.ContractCallInput{
-		VMInput: vmcommon.VMInput{
-			CallerAddr: sender.AddressBytes(),
-			CallValue:  big.NewInt(0),
-			Arguments: [][]byte{
-				[]byte(token),
-				quantity.Bytes(),
-				[]byte(name),
-				big.NewInt(int64(royalties)).Bytes(),
-				hash,
-				attributes,
-				uris[0],
-				big.NewInt(int64(tokenType)).Bytes(),
-				nonce.Bytes(),
-				originalCreator,
-			},
-		},
-		RecipientAddr: sender.AddressBytes(),
-	}
-	vmOutput, err = nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
-	require.Nil(t, err)
-	require.NotNil(t, vmOutput)
 }
 
 func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testing.T) {
@@ -580,7 +632,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 	accounts := createAccountsAdapterWithMap()
 	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == CheckFrozenCollectionFlag
+			return flag == ValueLengthCheckFlag || flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == DynamicEsdtFlag
 		},
 	}
 	esdtDtaStorage := createNewESDTDataStorageHandlerWithArgs(&mock.GlobalSettingsHandlerStub{}, accounts, enableEpochsHandler)
@@ -616,8 +668,13 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 			RecipientAddr: sender.AddressBytes(),
 		}
 
-		// missing nonce
+		// missing token type
 		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
+
+		// missing nonce
+		vmInput.VMInput.Arguments = append(vmInput.VMInput.Arguments, big.NewInt(int64(core.NonFungibleV2)).Bytes())
+		vmOutput, err = nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
 		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
 
 		// missing original creator
@@ -646,12 +703,18 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 			RecipientAddr: userSender,
 		}
 
+		// missing token type
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
+
 		// missing nonce
-		vmOutput, err := nftCreate.ProcessBuiltinFunction(nil, nil, vmInput)
+		vmInput.VMInput.Arguments[7] = big.NewInt(int64(core.DynamicSFT)).Bytes()
+		vmInput.VMInput.Arguments = append(vmInput.VMInput.Arguments, []byte("whiteListedAddress"))
+		vmOutput, err = nftCreate.ProcessBuiltinFunction(nil, nil, vmInput)
 		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
 
 		// missing original creator
-		vmInput.VMInput.Arguments[7] = big.NewInt(1).Bytes()
+		vmInput.VMInput.Arguments[8] = big.NewInt(1).Bytes()
 		vmInput.VMInput.Arguments = append(vmInput.VMInput.Arguments, []byte("whiteListedAddress"))
 		vmOutput, err = nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
 		requireErrorIsInvalidArgsCrossChain(t, vmOutput, err)
@@ -671,6 +734,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 					[]byte("12345678901234567890123456789012"),
 					[]byte("attributes"),
 					[]byte("uri1"),
+					big.NewInt(int64(core.MetaFungible)).Bytes(),
 					big.NewInt(123).Bytes(),
 					[]byte("creator"),
 				},
@@ -682,6 +746,66 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 		require.Equal(t, err, ErrActionNotAllowed)
 		require.Nil(t, vmOutput)
 	})
+
+	t.Run("invalid quantity", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr: userSender,
+				CallValue:  big.NewInt(0),
+				Arguments: [][]byte{
+					[]byte("sov1-TOKEN-abcdef"),
+					big.NewInt(2).Bytes(),
+					[]byte("name"),
+					big.NewInt(int64(100)).Bytes(),
+					[]byte("12345678901234567890123456789012"),
+					[]byte("attributes"),
+					[]byte("uri1"),
+					big.NewInt(int64(core.NonFungibleV2)).Bytes(),
+					big.NewInt(123).Bytes(),
+					[]byte("creator"),
+				},
+			},
+			RecipientAddr: userSender,
+		}
+
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		require.ErrorIs(t, err, ErrInvalidArguments)
+		require.True(t, strings.Contains(err.Error(), "invalid quantity"))
+		require.Nil(t, vmOutput)
+	})
+
+	t.Run("invalid token type", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr: userSender,
+				CallValue:  big.NewInt(0),
+				Arguments: [][]byte{
+					[]byte("sov1-TOKEN-abcdef"),
+					big.NewInt(1).Bytes(),
+					[]byte("name"),
+					big.NewInt(int64(100)).Bytes(),
+					[]byte("12345678901234567890123456789012"),
+					[]byte("attributes"),
+					[]byte("uri1"),
+					big.NewInt(int64(999)).Bytes(),
+					big.NewInt(123).Bytes(),
+					[]byte("creator"),
+				},
+			},
+			RecipientAddr: userSender,
+		}
+
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		require.ErrorIs(t, err, ErrInvalidArguments)
+		require.True(t, strings.Contains(err.Error(), "invalid esdt type"))
+		require.Nil(t, vmOutput)
+	})
+}
+
+func checkESDTNFTMetaData(t *testing.T, tokenType core.ESDTType, quantity *big.Int, esdtMetaData *esdt.MetaData, esdtData *esdt.ESDigitalToken) {
+	require.Equal(t, esdtMetaData, esdtData.TokenMetaData)
+	require.Equal(t, uint32(tokenType), esdtData.Type)
+	require.Equal(t, quantity, esdtData.Value)
 }
 
 func requireErrorIsInvalidArgsCrossChain(t *testing.T, vmOutput *vmcommon.VMOutput, err error) {
