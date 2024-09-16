@@ -10,9 +10,10 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
 	"github.com/multiversx/mx-chain-core-go/data/smartContractResult"
+	"github.com/stretchr/testify/assert"
+
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func createNewESDTDataStorageHandler() *esdtDataStorage {
@@ -29,7 +30,8 @@ func createNewESDTDataStorageHandler() *esdtDataStorage {
 				return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
 			},
 		},
-		ShardCoordinator: &mock.ShardCoordinatorStub{},
+		ShardCoordinator:              &mock.ShardCoordinatorStub{},
+		CrossChainTokenCheckerHandler: &mock.CrossChainTokenCheckerMock{},
 	}
 	dataStore, _ := NewESDTDataStorage(args)
 	return dataStore
@@ -49,7 +51,8 @@ func createMockArgsForNewESDTDataStorage() ArgsNewESDTDataStorage {
 				return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
 			},
 		},
-		ShardCoordinator: &mock.ShardCoordinatorStub{},
+		ShardCoordinator:              &mock.ShardCoordinatorStub{},
+		CrossChainTokenCheckerHandler: &mock.CrossChainTokenCheckerMock{},
 	}
 	return args
 }
@@ -58,13 +61,15 @@ func createNewESDTDataStorageHandlerWithArgs(
 	globalSettingsHandler vmcommon.GlobalMetadataHandler,
 	accounts vmcommon.AccountsAdapter,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	crossChainTokenChecker CrossChainTokenCheckerHandler,
 ) *esdtDataStorage {
 	args := ArgsNewESDTDataStorage{
-		Accounts:              accounts,
-		GlobalSettingsHandler: globalSettingsHandler,
-		Marshalizer:           &mock.MarshalizerMock{},
-		EnableEpochsHandler:   enableEpochsHandler,
-		ShardCoordinator:      &mock.ShardCoordinatorStub{},
+		Accounts:                      accounts,
+		GlobalSettingsHandler:         globalSettingsHandler,
+		Marshalizer:                   &mock.MarshalizerMock{},
+		EnableEpochsHandler:           enableEpochsHandler,
+		ShardCoordinator:              &mock.ShardCoordinatorStub{},
+		CrossChainTokenCheckerHandler: crossChainTokenChecker,
 	}
 	dataStore, _ := NewESDTDataStorage(args)
 	return dataStore
