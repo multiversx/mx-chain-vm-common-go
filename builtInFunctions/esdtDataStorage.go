@@ -376,7 +376,7 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, err
 	}
 
-	esdtIdentifier := getEsdtIdentifierWithoutKeyPrefix(esdtTokenKey)
+	esdtIdentifier := getEsdtIdentifierWithoutBaseKeyPrefix(esdtTokenKey)
 	if !e.crossChainTokenCheckerHandler.IsCrossChainOperation(esdtIdentifier) {
 		tokenTypeChanged, newTokenType, err := e.checkTokenTypeChanged(esdtTokenKey, esdtData)
 		if err != nil {
@@ -428,8 +428,8 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
 }
 
-func getEsdtIdentifierWithoutKeyPrefix(esdtTokenKey []byte) []byte {
-	return esdtTokenKey[10:]
+func getEsdtIdentifierWithoutBaseKeyPrefix(esdtTokenKey []byte) []byte {
+	return esdtTokenKey[len(baseESDTKeyPrefix):]
 }
 
 func (e *esdtDataStorage) checkTokenTypeChanged(esdtTokenKey []byte, esdtData *esdt.ESDigitalToken) (bool, uint32, error) {
