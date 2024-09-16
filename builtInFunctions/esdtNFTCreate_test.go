@@ -813,6 +813,33 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionCrossChainTokenErrorCases(t *testin
 		require.Nil(t, vmOutput)
 	})
 
+	t.Run("invalid nft v1 token type", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallerAddr: userSender,
+				CallValue:  big.NewInt(0),
+				Arguments: [][]byte{
+					[]byte("sov1-TOKEN-abcdef"),
+					big.NewInt(1).Bytes(),
+					[]byte("name"),
+					big.NewInt(int64(100)).Bytes(),
+					[]byte("12345678901234567890123456789012"),
+					[]byte("attributes"),
+					[]byte("uri1"),
+					big.NewInt(int64(core.NonFungible)).Bytes(),
+					big.NewInt(123).Bytes(),
+					[]byte("creator"),
+				},
+			},
+			RecipientAddr: userSender,
+		}
+
+		vmOutput, err := nftCreate.ProcessBuiltinFunction(sender, nil, vmInput)
+		require.ErrorIs(t, err, ErrInvalidArguments)
+		require.True(t, strings.Contains(err.Error(), "invalid esdt type"))
+		require.Nil(t, vmOutput)
+	})
+
 	t.Run("invalid token type", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{
