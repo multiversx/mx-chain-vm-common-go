@@ -111,8 +111,6 @@ func NewESDTNFTCreateFunc(args ESDTNFTCreateFuncArgs) (*esdtNFTCreate, error) {
 func getAllESDTTypes() map[uint32]struct{} {
 	esdtTypes := make(map[uint32]struct{})
 
-	esdtTypes[uint32(core.Fungible)] = struct{}{}
-	esdtTypes[uint32(core.NonFungible)] = struct{}{}
 	esdtTypes[uint32(core.NonFungibleV2)] = struct{}{}
 	esdtTypes[uint32(core.SemiFungible)] = struct{}{}
 	esdtTypes[uint32(core.MetaFungible)] = struct{}{}

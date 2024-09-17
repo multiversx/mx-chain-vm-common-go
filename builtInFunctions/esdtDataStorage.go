@@ -9,6 +9,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
+
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/parsers"
 )
@@ -25,22 +26,24 @@ func defaultQueryOptions() queryOptions {
 }
 
 type esdtDataStorage struct {
-	accounts              vmcommon.AccountsAdapter
-	globalSettingsHandler vmcommon.GlobalMetadataHandler
-	marshaller            vmcommon.Marshalizer
-	keyPrefix             []byte
-	shardCoordinator      vmcommon.Coordinator
-	txDataParser          vmcommon.CallArgsParser
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
+	accounts                      vmcommon.AccountsAdapter
+	globalSettingsHandler         vmcommon.GlobalMetadataHandler
+	marshaller                    vmcommon.Marshalizer
+	keyPrefix                     []byte
+	shardCoordinator              vmcommon.Coordinator
+	txDataParser                  vmcommon.CallArgsParser
+	enableEpochsHandler           vmcommon.EnableEpochsHandler
+	crossChainTokenCheckerHandler CrossChainTokenCheckerHandler
 }
 
 // ArgsNewESDTDataStorage defines the argument list for new esdt data storage handler
 type ArgsNewESDTDataStorage struct {
-	Accounts              vmcommon.AccountsAdapter
-	GlobalSettingsHandler vmcommon.GlobalMetadataHandler
-	Marshalizer           vmcommon.Marshalizer
-	EnableEpochsHandler   vmcommon.EnableEpochsHandler
-	ShardCoordinator      vmcommon.Coordinator
+	Accounts                      vmcommon.AccountsAdapter
+	GlobalSettingsHandler         vmcommon.GlobalMetadataHandler
+	Marshalizer                   vmcommon.Marshalizer
+	EnableEpochsHandler           vmcommon.EnableEpochsHandler
+	ShardCoordinator              vmcommon.Coordinator
+	CrossChainTokenCheckerHandler CrossChainTokenCheckerHandler
 }
 
 // NewESDTDataStorage creates a new esdt data storage handler
@@ -60,15 +63,19 @@ func NewESDTDataStorage(args ArgsNewESDTDataStorage) (*esdtDataStorage, error) {
 	if check.IfNil(args.ShardCoordinator) {
 		return nil, ErrNilShardCoordinator
 	}
+	if check.IfNil(args.CrossChainTokenCheckerHandler) {
+		return nil, ErrNilCrossChainTokenChecker
+	}
 
 	e := &esdtDataStorage{
-		accounts:              args.Accounts,
-		globalSettingsHandler: args.GlobalSettingsHandler,
-		marshaller:            args.Marshalizer,
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		shardCoordinator:      args.ShardCoordinator,
-		txDataParser:          parsers.NewCallArgsParser(),
-		enableEpochsHandler:   args.EnableEpochsHandler,
+		accounts:                      args.Accounts,
+		globalSettingsHandler:         args.GlobalSettingsHandler,
+		marshaller:                    args.Marshalizer,
+		keyPrefix:                     []byte(baseESDTKeyPrefix),
+		shardCoordinator:              args.ShardCoordinator,
+		txDataParser:                  parsers.NewCallArgsParser(),
+		enableEpochsHandler:           args.EnableEpochsHandler,
+		crossChainTokenCheckerHandler: args.CrossChainTokenCheckerHandler,
 	}
 
 	return e, nil
@@ -369,16 +376,19 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 		return nil, err
 	}
 
-	tokenTypeChanged, newTokenType, err := e.checkTokenTypeChanged(esdtTokenKey, esdtData)
-	if err != nil {
-		return nil, err
-	}
-	if tokenTypeChanged {
-		esdtData.Type = newTokenType
-		if newTokenType == uint32(core.NonFungibleV2) {
-			err = e.removeMetaDataFromSystemAccount(esdtTokenKey, nonce)
-			if err != nil {
-				return nil, err
+	esdtIdentifier := getEsdtIdentifierWithoutBaseKeyPrefix(esdtTokenKey)
+	if !e.crossChainTokenCheckerHandler.IsCrossChainOperation(esdtIdentifier) {
+		tokenTypeChanged, newTokenType, err := e.checkTokenTypeChanged(esdtTokenKey, esdtData)
+		if err != nil {
+			return nil, err
+		}
+		if tokenTypeChanged {
+			esdtData.Type = newTokenType
+			if newTokenType == uint32(core.NonFungibleV2) {
+				err = e.removeMetaDataFromSystemAccount(esdtTokenKey, nonce)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -416,6 +426,10 @@ func (e *esdtDataStorage) SaveESDTNFTToken(
 	}
 
 	return marshaledData, acnt.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshaledData)
+}
+
+func getEsdtIdentifierWithoutBaseKeyPrefix(esdtTokenKey []byte) []byte {
+	return esdtTokenKey[len(baseESDTKeyPrefix):]
 }
 
 func (e *esdtDataStorage) checkTokenTypeChanged(esdtTokenKey []byte, esdtData *esdt.ESDigitalToken) (bool, uint32, error) {
