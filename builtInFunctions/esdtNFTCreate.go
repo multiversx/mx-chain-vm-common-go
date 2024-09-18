@@ -463,7 +463,7 @@ func getNonceKey(tokenID []byte) []byte {
 
 func (e *esdtNFTCreate) validateEsdtType(esdtType uint32) error {
 	if _, isValid := e.validEsdtTypes[esdtType]; !isValid {
-		return fmt.Errorf("%w, invalid esdt type", ErrInvalidArguments)
+		return fmt.Errorf("%w, invalid esdt type %d (%s)", ErrInvalidArguments, esdtType, core.ESDTType(esdtType).String())
 	}
 	return nil
 }
@@ -478,8 +478,8 @@ func isNonFungibleTokenType(esdtType uint32) bool {
 }
 
 func (e *esdtNFTCreate) validateQuantity(quantity *big.Int, esdtType uint32) error {
-	if isNonFungibleTokenType(esdtType) && quantity.Cmp(big.NewInt(1)) > 0 {
-		return fmt.Errorf("%w, invalid quantity", ErrInvalidArguments)
+	if isNonFungibleTokenType(esdtType) && quantity.Cmp(big.NewInt(1)) != 0 {
+		return fmt.Errorf("%w, invalid quantity for esdt type %d (%s)", ErrInvalidArguments, esdtType, core.ESDTType(esdtType).String())
 	}
 	return nil
 }

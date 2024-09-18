@@ -109,6 +109,12 @@ func TestNewESDTDataStorage(t *testing.T) {
 	assert.Equal(t, err, ErrNilEnableEpochsHandler)
 
 	args = createMockArgsForNewESDTDataStorage()
+	args.CrossChainTokenCheckerHandler = nil
+	e, err = NewESDTDataStorage(args)
+	assert.Nil(t, e)
+	assert.Equal(t, err, ErrNilCrossChainTokenChecker)
+
+	args = createMockArgsForNewESDTDataStorage()
 	e, err = NewESDTDataStorage(args)
 	assert.Nil(t, err)
 	assert.False(t, e.IsInterfaceNil())
