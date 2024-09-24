@@ -24,6 +24,7 @@ const minNumOfArgsForCrossChainMint = 10
 
 type esdtNFTCreateInput struct {
 	esdtType              uint32
+	quantity              *big.Int
 	nonce                 uint64
 	originalCreator       []byte
 	uris                  [][]byte
@@ -49,6 +50,7 @@ type esdtNFTCreate struct {
 	enableEpochsHandler           vmcommon.EnableEpochsHandler
 	mutExecution                  sync.RWMutex
 	crossChainTokenCheckerHandler CrossChainTokenCheckerHandler
+	validEsdtTypes                map[uint32]struct{}
 }
 
 // ESDTNFTCreateFuncArgs is a struct placeholder for args needed to create the esdt nft create func
@@ -100,9 +102,23 @@ func NewESDTNFTCreateFunc(args ESDTNFTCreateFuncArgs) (*esdtNFTCreate, error) {
 		mutExecution:                  sync.RWMutex{},
 		accounts:                      args.Accounts,
 		crossChainTokenCheckerHandler: args.CrossChainTokenCheckerHandler,
+		validEsdtTypes:                getAllESDTTypes(),
 	}
 
 	return e, nil
+}
+
+func getAllESDTTypes() map[uint32]struct{} {
+	esdtTypes := make(map[uint32]struct{})
+
+	esdtTypes[uint32(core.NonFungibleV2)] = struct{}{}
+	esdtTypes[uint32(core.SemiFungible)] = struct{}{}
+	esdtTypes[uint32(core.MetaFungible)] = struct{}{}
+	esdtTypes[uint32(core.DynamicNFT)] = struct{}{}
+	esdtTypes[uint32(core.DynamicSFT)] = struct{}{}
+	esdtTypes[uint32(core.DynamicMeta)] = struct{}{}
+
+	return esdtTypes
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -126,9 +142,10 @@ func (e *esdtNFTCreate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 // arg4 - hash
 // arg5 - attributes
 // arg6+ - multiple entries of URI (minimum 1)
-// In case of cross chain operation, we need 2 more args:
-// extraArg1 - token nonce
-// extraArg2 - creator from originating chain
+// In case of cross chain operation, we need 3 more args:
+// extraArg1 - token type
+// extraArg2 - token nonce
+// extraArg3 - creator from originating chain
 // For ExecOnDestByCaller, last arg should be sc address caller
 func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	acntSnd, _ vmcommon.UserAccountHandler,
@@ -181,13 +198,6 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	esdtType, nonce, originalCreator, uris, isCrossChainToken :=
-		createInput.esdtType,
-		createInput.nonce,
-		createInput.originalCreator,
-		createInput.uris,
-		createInput.isCrossChainOperation
-
 	totalLength := uint64(0)
 	for _, arg := range vmInput.Arguments {
 		totalLength += uint64(len(arg))
@@ -203,11 +213,10 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
-	quantity := big.NewInt(0).SetBytes(vmInput.Arguments[1])
-	if quantity.Cmp(zero) <= 0 {
+	if createInput.quantity.Cmp(zero) <= 0 {
 		return nil, fmt.Errorf("%w, invalid quantity", ErrInvalidArguments)
 	}
-	if quantity.Cmp(big.NewInt(1)) > 0 {
+	if createInput.quantity.Cmp(big.NewInt(1)) > 0 {
 		err = e.rolesHandler.CheckAllowedToExecute(accountWithRoles, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
 		if err != nil {
 			return nil, err
@@ -218,22 +227,22 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
 
-	nextNonce := nonce
-	if !isCrossChainToken {
-		nextNonce = nonce + 1
+	nextNonce := createInput.nonce
+	if !createInput.isCrossChainOperation {
+		nextNonce = createInput.nonce + 1
 	}
 
 	esdtData := &esdt.ESDigitalToken{
-		Type:  esdtType,
-		Value: quantity,
+		Type:  createInput.esdtType,
+		Value: createInput.quantity,
 		TokenMetaData: &esdt.MetaData{
 			Nonce:      nextNonce,
 			Name:       vmInput.Arguments[2],
-			Creator:    originalCreator,
+			Creator:    createInput.originalCreator,
 			Royalties:  royalties,
 			Hash:       vmInput.Arguments[4],
 			Attributes: vmInput.Arguments[5],
-			URIs:       uris,
+			URIs:       createInput.uris,
 		},
 	}
 
@@ -246,12 +255,12 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nextNonce, quantity, false)
+	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nextNonce, esdtData.Value, false)
 	if err != nil {
 		return nil, err
 	}
 
-	if !isCrossChainToken {
+	if !createInput.isCrossChainOperation {
 		err = saveLatestNonce(accountWithRoles, tokenID, nextNonce)
 		if err != nil {
 			return nil, err
@@ -276,7 +285,7 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		log.Warn("esdtNFTCreate.ProcessBuiltinFunction: cannot marshall esdt data for log", "error", err)
 	}
 
-	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), vmInput.Arguments[0], nextNonce, quantity, vmInput.CallerAddr, esdtDataBytes)
+	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), vmInput.Arguments[0], nextNonce, esdtData.Value, vmInput.CallerAddr, esdtDataBytes)
 
 	return vmOutput, nil
 }
@@ -331,6 +340,7 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 	var nonce uint64
 	var originalCreator []byte
 	var err error
+	quantity := big.NewInt(0).SetBytes(vmInput.Arguments[1])
 
 	isCrossChainToken := e.crossChainTokenCheckerHandler.IsCrossChainOperation(tokenID)
 	if !isCrossChainToken {
@@ -351,6 +361,16 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 			return nil, err
 		}
 
+		err = e.validateEsdtType(esdtData.esdtType)
+		if err != nil {
+			return nil, err
+		}
+
+		err = e.validateQuantity(quantity, esdtData.esdtType)
+		if err != nil {
+			return nil, err
+		}
+
 		esdtType, nonce, originalCreator =
 			esdtData.esdtType,
 			esdtData.nonce,
@@ -360,6 +380,7 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 
 	return &esdtNFTCreateInput{
 		esdtType:              esdtType,
+		quantity:              quantity,
 		nonce:                 nonce,
 		originalCreator:       originalCreator,
 		uris:                  uris,
@@ -430,6 +451,29 @@ func checkESDTNFTCreateBurnAddInput(
 
 func getNonceKey(tokenID []byte) []byte {
 	return append(noncePrefix, tokenID...)
+}
+
+func (e *esdtNFTCreate) validateEsdtType(esdtType uint32) error {
+	if _, isValid := e.validEsdtTypes[esdtType]; !isValid {
+		return fmt.Errorf("%w, invalid esdt type %d (%s)", ErrInvalidArguments, esdtType, core.ESDTType(esdtType).String())
+	}
+	return nil
+}
+
+func isNonFungibleTokenType(esdtType uint32) bool {
+	switch core.ESDTType(esdtType) {
+	case core.NonFungible, core.NonFungibleV2, core.DynamicNFT:
+		return true
+	default:
+		return false
+	}
+}
+
+func (e *esdtNFTCreate) validateQuantity(quantity *big.Int, esdtType uint32) error {
+	if isNonFungibleTokenType(esdtType) && quantity.Cmp(big.NewInt(1)) != 0 {
+		return fmt.Errorf("%w, invalid quantity for esdt type %d (%s)", ErrInvalidArguments, esdtType, core.ESDTType(esdtType).String())
+	}
+	return nil
 }
 
 // IsInterfaceNil returns true if underlying object in nil
