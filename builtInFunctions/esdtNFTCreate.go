@@ -24,7 +24,6 @@ const minNumOfArgsForCrossChainMint = 10
 
 type esdtNFTCreateInput struct {
 	esdtType              uint32
-	quantity              *big.Int
 	nonce                 uint64
 	originalCreator       []byte
 	uris                  [][]byte
@@ -198,9 +197,8 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	esdtType, quantity, nonce, originalCreator, uris, isCrossChainToken :=
+	esdtType, nonce, originalCreator, uris, isCrossChainToken :=
 		createInput.esdtType,
-		createInput.quantity,
 		createInput.nonce,
 		createInput.originalCreator,
 		createInput.uris,
@@ -221,6 +219,10 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	}
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
+	quantity := big.NewInt(0).SetBytes(vmInput.Arguments[1])
+	if quantity.Cmp(zero) <= 0 {
+		return nil, fmt.Errorf("%w, invalid quantity", ErrInvalidArguments)
+	}
 	if quantity.Cmp(big.NewInt(1)) > 0 {
 		err = e.rolesHandler.CheckAllowedToExecute(accountWithRoles, vmInput.Arguments[0], []byte(core.ESDTRoleNFTAddQuantity))
 		if err != nil {
@@ -345,10 +347,6 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 	var nonce uint64
 	var originalCreator []byte
 	var err error
-	quantity := big.NewInt(0).SetBytes(vmInput.Arguments[1])
-	if quantity.Cmp(zero) <= 0 {
-		return nil, fmt.Errorf("%w, invalid quantity", ErrInvalidArguments)
-	}
 
 	isCrossChainToken := e.crossChainTokenCheckerHandler.IsCrossChainOperation(tokenID)
 	if !isCrossChainToken {
@@ -374,7 +372,7 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 			return nil, err
 		}
 
-		err = e.validateQuantity(quantity, esdtData.esdtType)
+		err = e.validateQuantity(big.NewInt(0).SetBytes(vmInput.Arguments[1]), esdtData.esdtType)
 		if err != nil {
 			return nil, err
 		}
@@ -388,7 +386,6 @@ func (e *esdtNFTCreate) getESDTNFTCreateInput(
 
 	return &esdtNFTCreateInput{
 		esdtType:              esdtType,
-		quantity:              quantity,
 		nonce:                 nonce,
 		originalCreator:       originalCreator,
 		uris:                  uris,
