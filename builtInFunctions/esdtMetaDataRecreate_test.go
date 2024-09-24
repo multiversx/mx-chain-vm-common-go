@@ -401,3 +401,93 @@ func TestEsdtMetaDataRecreate_changeEsdtVersion(t *testing.T) {
 		assert.Equal(t, esdtVersionBytes, esdtData.Reserved)
 	})
 }
+
+func TestGetEsdtInfo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("dynamic metaEsdt not found will return empty struct with nonce set", func(t *testing.T) {
+		t.Parallel()
+
+		tokenId := []byte("tokenID")
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{tokenId, {2}},
+			},
+		}
+		accnt := mock.NewUserAccount([]byte("addr"))
+		storageHandler := &mock.ESDTNFTStorageHandlerStub{
+			GetMetaDataFromSystemAccountCalled: func(bytes []byte, u uint64) (*esdt.ESDigitalToken, error) {
+				return nil, nil
+			},
+		}
+		globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
+			GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
+				return uint32(core.DynamicMeta), nil
+			},
+		}
+
+		esdtInfo, err := getEsdtInfo(vmInput, accnt, storageHandler, globalSettingsHandler)
+		assert.Nil(t, err)
+		assert.NotNil(t, esdtInfo)
+		assert.NotNil(t, esdtInfo.esdtData)
+		assert.Equal(t, uint64(2), esdtInfo.esdtData.TokenMetaData.Nonce)
+		assert.True(t, esdtInfo.metaDataInSystemAcc)
+	})
+	t.Run("dynamic sft not found will return empty struct with nonce set", func(t *testing.T) {
+		t.Parallel()
+
+		tokenId := []byte("tokenID")
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{tokenId, {2}},
+			},
+		}
+		accnt := mock.NewUserAccount([]byte("addr"))
+		storageHandler := &mock.ESDTNFTStorageHandlerStub{
+			GetMetaDataFromSystemAccountCalled: func(bytes []byte, u uint64) (*esdt.ESDigitalToken, error) {
+				return nil, nil
+			},
+		}
+		globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
+			GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
+				return uint32(core.DynamicSFT), nil
+			},
+		}
+
+		esdtInfo, err := getEsdtInfo(vmInput, accnt, storageHandler, globalSettingsHandler)
+		assert.Nil(t, err)
+		assert.NotNil(t, esdtInfo)
+		assert.NotNil(t, esdtInfo.esdtData)
+		assert.Equal(t, uint64(2), esdtInfo.esdtData.TokenMetaData.Nonce)
+		assert.True(t, esdtInfo.metaDataInSystemAcc)
+	})
+	t.Run("dynamic nft not found will return empty struct with nonce set", func(t *testing.T) {
+		t.Parallel()
+
+		tokenId := []byte("tokenID")
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{tokenId, {2}},
+			},
+		}
+		accnt := mock.NewUserAccount([]byte("addr"))
+		storageHandler := &mock.ESDTNFTStorageHandlerStub{
+			GetESDTNFTTokenOnDestinationCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error) {
+				return &esdt.ESDigitalToken{}, true, nil
+			},
+		}
+		globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
+			GetTokenTypeCalled: func(esdtTokenKey []byte) (uint32, error) {
+				return uint32(core.DynamicNFT), nil
+			},
+		}
+
+		esdtInfo, err := getEsdtInfo(vmInput, accnt, storageHandler, globalSettingsHandler)
+		assert.Nil(t, err)
+		assert.NotNil(t, esdtInfo)
+		assert.NotNil(t, esdtInfo.esdtData)
+		assert.Equal(t, uint64(2), esdtInfo.esdtData.TokenMetaData.Nonce)
+		assert.False(t, esdtInfo.metaDataInSystemAcc)
+	})
+
+}
