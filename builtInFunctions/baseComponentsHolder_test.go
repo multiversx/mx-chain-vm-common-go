@@ -26,7 +26,7 @@ func TestBaseComponentsHolder_addNFTToDestination(t *testing.T) {
 						Value: big.NewInt(100),
 					}, false, nil
 				},
-				SaveESDTNFTTokenCalled: func(_ []byte, _ vmcommon.UserAccountHandler, _ []byte, _ uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
+				SaveESDTNFTTokenCalled: func(_ []byte, _ vmcommon.UserAccountHandler, _ []byte, _ uint64, esdtData *esdt.ESDigitalToken, properties vmcommon.NftSaveArgs) ([]byte, error) {
 					assert.Equal(t, big.NewInt(200), esdtData.Value)
 					saveCalled = true
 					return nil, nil
@@ -83,46 +83,136 @@ func TestBaseComponentsHolder_getLatestEsdtData(t *testing.T) {
 			Value:    big.NewInt(200),
 		}
 
-		latestEsdtData := getLatestEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler)
+		latestEsdtData, err := getLatestMetaData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
+		assert.Nil(t, err)
 		assert.Equal(t, transferEsdtData, latestEsdtData)
 	})
-	t.Run("flag enabled and current esdt data version is higher should return current esdt data", func(t *testing.T) {
+	t.Run("flag enabled and transfer esdt data version is not set should merge", func(t *testing.T) {
 		t.Parallel()
 		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 			IsFlagEnabledCalled: func(_ core.EnableEpochFlag) bool {
 				return true
 			},
 		}
-		currentEsdtData := &esdt.ESDigitalToken{
-			Reserved: []byte{2},
-			Value:    big.NewInt(100),
-		}
+		name := []byte("name")
+		creator := []byte("creator")
+		newCreator := []byte("newCreator")
+		royalties := uint32(25)
+		newRoyalties := uint32(11)
+		hash := []byte("hash")
+		uris := [][]byte{[]byte("uri1"), []byte("uri2")}
+		attributes := []byte("attributes")
+		newAttributes := []byte("newAttributes")
 		transferEsdtData := &esdt.ESDigitalToken{
 			Reserved: []byte{1},
-			Value:    big.NewInt(200),
+			TokenMetaData: &esdt.MetaData{
+				Nonce:      0,
+				Name:       name,
+				Creator:    creator,
+				Royalties:  royalties,
+				Hash:       hash,
+				URIs:       uris,
+				Attributes: attributes,
+			},
+		}
+		currentEsdtVersion := &esdt.MetaDataVersion{
+			Creator:    2,
+			Royalties:  2,
+			Attributes: 2,
+		}
+		versionBytes, _ := (&mock.MarshalizerMock{}).Marshal(currentEsdtVersion)
+		currentEsdtData := &esdt.ESDigitalToken{
+			Reserved: versionBytes,
+			TokenMetaData: &esdt.MetaData{
+				Creator:    newCreator,
+				Royalties:  newRoyalties,
+				Attributes: newAttributes,
+			},
 		}
 
-		latestEsdtData := getLatestEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler)
-		assert.Equal(t, currentEsdtData, latestEsdtData)
-	})
-	t.Run("flag enabled and transfer esdt data version is higher should return transfer esdt data", func(t *testing.T) {
-		t.Parallel()
+		latestEsdtData, err := getLatestMetaData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
+		assert.Nil(t, err)
+		assert.Equal(t, versionBytes, latestEsdtData.Reserved)
+		assert.Equal(t, newCreator, latestEsdtData.TokenMetaData.Creator)
+		assert.Equal(t, newRoyalties, latestEsdtData.TokenMetaData.Royalties)
+		assert.Equal(t, newAttributes, latestEsdtData.TokenMetaData.Attributes)
 
+		assert.Equal(t, name, latestEsdtData.TokenMetaData.Name)
+		assert.Equal(t, hash, latestEsdtData.TokenMetaData.Hash)
+		assert.Equal(t, uris, latestEsdtData.TokenMetaData.URIs)
+	})
+	t.Run("different versions for different fields should merge", func(t *testing.T) {
+		t.Parallel()
 		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
 			IsFlagEnabledCalled: func(_ core.EnableEpochFlag) bool {
 				return true
 			},
 		}
-		currentEsdtData := &esdt.ESDigitalToken{
-			Reserved: []byte{1},
-			Value:    big.NewInt(100),
+		name := []byte("name")
+		creator := []byte("creator")
+		newCreator := []byte("newCreator")
+		royalties := uint32(25)
+		newRoyalties := uint32(11)
+		hash := []byte("hash")
+		uris := [][]byte{[]byte("uri1"), []byte("uri2")}
+		attributes := []byte("attributes")
+		newAttributes := []byte("newAttributes")
+		transferEsdtVersion := &esdt.MetaDataVersion{
+			Name:       3,
+			Creator:    0,
+			Royalties:  0,
+			Hash:       3,
+			URIs:       3,
+			Attributes: 3,
 		}
+		versionBytes, _ := (&mock.MarshalizerMock{}).Marshal(transferEsdtVersion)
 		transferEsdtData := &esdt.ESDigitalToken{
-			Reserved: []byte{2},
-			Value:    big.NewInt(200),
+			Reserved: versionBytes,
+			TokenMetaData: &esdt.MetaData{
+				Nonce:      0,
+				Name:       name,
+				Creator:    creator,
+				Royalties:  royalties,
+				Hash:       hash,
+				URIs:       uris,
+				Attributes: attributes,
+			},
+		}
+		currentEsdtVersion := &esdt.MetaDataVersion{
+			Name:       0,
+			Creator:    2,
+			Royalties:  2,
+			Hash:       0,
+			URIs:       0,
+			Attributes: 2,
+		}
+		versionBytes, _ = (&mock.MarshalizerMock{}).Marshal(currentEsdtVersion)
+		currentEsdtData := &esdt.ESDigitalToken{
+			Reserved: versionBytes,
+			TokenMetaData: &esdt.MetaData{
+				Creator:    newCreator,
+				Royalties:  newRoyalties,
+				Attributes: newAttributes,
+			},
 		}
 
-		latestEsdtData := getLatestEsdtData(currentEsdtData, transferEsdtData, enableEpochsHandler)
-		assert.Equal(t, transferEsdtData, latestEsdtData)
+		latestEsdtData, err := getLatestMetaData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
+		assert.Nil(t, err)
+		expectedVersion := &esdt.MetaDataVersion{
+			Name:       3,
+			Creator:    2,
+			Royalties:  2,
+			Hash:       3,
+			URIs:       3,
+			Attributes: 3,
+		}
+		expectedVersionBytes, _ := (&mock.MarshalizerMock{}).Marshal(expectedVersion)
+		assert.Equal(t, expectedVersionBytes, latestEsdtData.Reserved)
+		assert.Equal(t, newCreator, latestEsdtData.TokenMetaData.Creator)
+		assert.Equal(t, newRoyalties, latestEsdtData.TokenMetaData.Royalties)
+		assert.Equal(t, name, latestEsdtData.TokenMetaData.Name)
+		assert.Equal(t, hash, latestEsdtData.TokenMetaData.Hash)
+		assert.Equal(t, uris, latestEsdtData.TokenMetaData.URIs)
+		assert.Equal(t, attributes, latestEsdtData.TokenMetaData.Attributes)
 	})
 }
