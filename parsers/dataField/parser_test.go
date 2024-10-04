@@ -193,6 +193,32 @@ func TestParseBlockingOperationESDT(t *testing.T) {
 			Function:  "callMe",
 		}, res)
 	})
+
+	t.Run("ESDTMetadataRecreate", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte("ESDTMetaDataRecreate@414c45582d656561383461@03@5245435245415445444e4654@1d4c@00@746167733a73706963612c7265637265617465643b6d657461646174613a5265637265617465642d4465736372697074696f6e@68747470733a2f2f696d616765732e756e73706c6173682e636f6d2f70686f746f2d313732373731333237343937322d6431643133386561303536393f713d383026773d33333238266175746f3d666f726d6174266669743d63726f702669786c69623d72622d342e302e3326697869643d4d3377784d6a4133664442384d48787761473930627931775957646c664878386647567566444238664878386641253344253344")
+		res := parser.Parse(dataField, sender, sender, 3)
+		require.Equal(t, &ResponseParseData{
+			Operation: core.ESDTMetaDataRecreate,
+			Tokens:    []string{"ALEX-eea84a-03"},
+		}, res)
+	})
+	t.Run("ESDTMetadataUpdate", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte("ESDTMetaDataUpdate@4d49482d656633313762@01@4d594e4654@1964@00@746167733a73706963612c706169642c7361643b6d657461646174613a536f6c6f2d4465736372697074696f6e@54574f")
+		res := parser.Parse(dataField, sender, sender, 3)
+		require.Equal(t, &ResponseParseData{
+			Operation: core.ESDTMetaDataUpdate,
+			Tokens:    []string{"MIH-ef317b-01"},
+		}, res)
+	})
+
+	t.Run("ESDTSetNewURIs", func(t *testing.T) {
+		t.Parallel()
+
+	})
 }
 
 func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
