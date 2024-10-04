@@ -89,13 +89,20 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		return nil, err
 	}
 
+	currentRound := e.CurrentRound()
+	metaDataVersion, _, err := getMetaDataVersion(esdtInfo.esdtData, e.enableEpochsHandler, e.marshaller)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(vmInput.Arguments[nameIndex]) != 0 {
 		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Name)
 		esdtInfo.esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
-
+		metaDataVersion.Name = currentRound
 	}
 	totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Creator)
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
+	metaDataVersion.Creator = currentRound
 
 	if len(vmInput.Arguments[royaltiesIndex]) != 0 {
 		totalLengthDifference -= len(vmInput.Arguments[royaltiesIndex])
@@ -104,24 +111,28 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 			return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 		}
 		esdtInfo.esdtData.TokenMetaData.Royalties = royalties
+		metaDataVersion.Royalties = currentRound
 	}
 
 	if len(vmInput.Arguments[hashIndex]) != 0 {
 		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Hash)
 		esdtInfo.esdtData.TokenMetaData.Hash = vmInput.Arguments[hashIndex]
+		metaDataVersion.Hash = currentRound
 	}
 
 	if len(vmInput.Arguments[attributesIndex]) != 0 {
 		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Attributes)
 		esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
+		metaDataVersion.Attributes = currentRound
 	}
 
-	if len(vmInput.Arguments[urisStartIndex:]) != 0 {
+	if len(vmInput.Arguments[urisStartIndex]) != 0 {
 		for _, uri := range esdtInfo.esdtData.TokenMetaData.URIs {
 			totalLengthDifference -= len(uri)
 		}
 
 		esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
+		metaDataVersion.URIs = currentRound
 	}
 
 	if totalLengthDifference < 0 {
@@ -135,7 +146,7 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		return nil, ErrNotEnoughGas
 	}
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, metaDataVersion, e.enableEpochsHandler, e.marshaller)
 	if err != nil {
 		return nil, err
 	}

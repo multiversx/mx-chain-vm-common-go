@@ -6,6 +6,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -21,6 +22,7 @@ type esdtSetNewURIs struct {
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
 	gasConfig             vmcommon.BaseOperationCost
+	marshaller            marshal.Marshalizer
 	mutExecution          sync.RWMutex
 }
 
@@ -33,6 +35,7 @@ func NewESDTSetNewURIsFunc(
 	storageHandler vmcommon.ESDTNFTStorageHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
 ) (*esdtSetNewURIs, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -49,6 +52,9 @@ func NewESDTSetNewURIsFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshalizer
+	}
 
 	e := &esdtSetNewURIs{
 		accounts:               accounts,
@@ -60,6 +66,7 @@ func NewESDTSetNewURIsFunc(
 		mutExecution:           sync.RWMutex{},
 		enableEpochsHandler:    enableEpochsHandler,
 		BlockchainDataProvider: NewBlockchainDataProvider(),
+		marshaller:             marshaller,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -96,9 +103,15 @@ func (e *esdtSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountH
 		return nil, ErrNotEnoughGas
 	}
 
-	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[uriStartIndex:]
+	metaDataVersion, _, err := getMetaDataVersion(esdtInfo.esdtData, e.enableEpochsHandler, e.marshaller)
+	if err != nil {
+		return nil, err
+	}
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[uriStartIndex:]
+	metaDataVersion.URIs = e.CurrentRound()
+
+	err = changeEsdtVersion(esdtInfo.esdtData, metaDataVersion, e.enableEpochsHandler, e.marshaller)
 	if err != nil {
 		return nil, err
 	}
