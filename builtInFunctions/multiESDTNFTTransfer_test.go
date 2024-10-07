@@ -12,10 +12,11 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
-	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 )
 
 func createESDTNFTMultiTransferWithStubArguments() *esdtNFTMultiTransfer {
@@ -102,7 +103,7 @@ func createESDTNFTMultiTransferWithMockArgumentsWithLogEventFlag(selfShard uint3
 				return nil
 			},
 		},
-		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts, enableEpochsHandler),
+		createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts, enableEpochsHandler, &mock.CrossChainTokenCheckerMock{}),
 	)
 
 	return multiTransfer
@@ -1319,7 +1320,7 @@ func createSetupForMultiTransferWithEGLD(t *testing.T) (*vmcommon.ContractCallIn
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte(eGLD)
+	token2 := []byte(vmcommon.EGLDIdentifier)
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -1436,7 +1437,7 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsWithEGLD(t *tes
 	require.Nil(t, err)
 
 	token1 := []byte("token1")
-	token2 := []byte(eGLD)
+	token2 := []byte(vmcommon.EGLDIdentifier)
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)

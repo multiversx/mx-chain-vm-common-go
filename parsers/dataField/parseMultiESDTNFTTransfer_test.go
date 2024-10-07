@@ -2,8 +2,10 @@ package datafield
 
 import (
 	"encoding/hex"
+	"fmt"
 	"testing"
 
+	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -81,6 +83,20 @@ func TestMultiESDTNFTTransferParse(t *testing.T) {
 		res := parser.Parse(dataField, sender, sender, 3)
 		require.Equal(t, &ResponseParseData{
 			Operation: "MultiESDTNFTTransfer",
+		}, res)
+	})
+
+	t.Run("MultiESDTNFTTransferWithEGLD", func(t *testing.T) {
+		egldIdentifierHex := hex.EncodeToString([]byte(vmcommon.EGLDIdentifier))
+		dataField := []byte(fmt.Sprintf("MultiESDTNFTTransfer@000000000000000005001e2a1428dd1e3a5146b3960d9e0f4a50369904ee5483@02@4d4949552d61626364@00@01@%s@00@05", egldIdentifierHex))
+		res := parser.Parse(dataField, sender, sender, 3)
+		rcv, _ := hex.DecodeString("000000000000000005001e2a1428dd1e3a5146b3960d9e0f4a50369904ee5483")
+		require.Equal(t, &ResponseParseData{
+			Operation:        "MultiESDTNFTTransfer",
+			ESDTValues:       []string{"1", "5"},
+			Tokens:           []string{"MIIU-abcd", vmcommon.EGLDIdentifier},
+			Receivers:        [][]byte{rcv, rcv},
+			ReceiversShardID: []uint32{1, 1},
 		}, res)
 	})
 }

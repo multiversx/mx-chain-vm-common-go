@@ -2,11 +2,30 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
+	"math"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-vm-common-go"
+)
+
+// ESDTTypeForGlobalSettingsHandler is needed because if 0 is retrieved from the global settings handler,
+// it means either that the type is not set or that the type is fungible. This will solve the ambiguity.
+type ESDTTypeForGlobalSettingsHandler uint32
+
+const (
+	notSet ESDTTypeForGlobalSettingsHandler = iota
+	fungible
+	nonFungible
+	nonFungibleV2
+	metaFungible
+	semiFungible
+	dynamicNFT
+	dynamicSFT
+	dynamicMeta
 )
 
 type esdtGlobalSettings struct {
@@ -237,7 +256,15 @@ func (e *esdtGlobalSettings) GetTokenType(esdtTokenKey []byte) (uint32, error) {
 		return 0, err
 	}
 
-	return uint32(esdtMetaData.TokenType), nil
+	tokenType, err := convertToESDTTokenType(uint32(esdtMetaData.TokenType))
+	if errors.Is(err, ErrTypeNotSetInsideGlobalSettingsHandler) {
+		return uint32(core.NonFungible), nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return tokenType, nil
 }
 
 // SetTokenType sets the token type for the esdtTokenKey
@@ -250,7 +277,12 @@ func (e *esdtGlobalSettings) SetTokenType(
 	var err error
 
 	if check.IfNil(dstAcc) {
-		systemAccount, err = getSystemAccount(e.accounts)
+		globalSettingsTokenType, err := convertToGlobalSettingsHandlerTokenType(tokenType)
+	if err != nil {
+		return err
+	}
+
+	systemAccount, err = getSystemAccount(e.accounts)
 		if err != nil {
 			return err
 		}
@@ -263,7 +295,7 @@ func (e *esdtGlobalSettings) SetTokenType(
 		return err
 	}
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
-	esdtMetaData.TokenType = byte(tokenType)
+	esdtMetaData.TokenType = byte(globalSettingsTokenType)
 
 	err = systemAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
 	if err != nil {
@@ -271,6 +303,54 @@ func (e *esdtGlobalSettings) SetTokenType(
 	}
 
 	return e.accounts.SaveAccount(systemAccount)
+}
+
+func convertToGlobalSettingsHandlerTokenType(esdtType uint32) (uint32, error) {
+	switch esdtType {
+	case uint32(core.Fungible):
+		return uint32(fungible), nil
+	case uint32(core.NonFungible):
+		return uint32(nonFungible), nil
+	case uint32(core.NonFungibleV2):
+		return uint32(nonFungibleV2), nil
+	case uint32(core.MetaFungible):
+		return uint32(metaFungible), nil
+	case uint32(core.SemiFungible):
+		return uint32(semiFungible), nil
+	case uint32(core.DynamicNFT):
+		return uint32(dynamicNFT), nil
+	case uint32(core.DynamicSFT):
+		return uint32(dynamicSFT), nil
+	case uint32(core.DynamicMeta):
+		return uint32(dynamicMeta), nil
+	default:
+		return math.MaxUint32, fmt.Errorf("invalid esdt type: %d", esdtType)
+	}
+}
+
+func convertToESDTTokenType(esdtType uint32) (uint32, error) {
+	switch ESDTTypeForGlobalSettingsHandler(esdtType) {
+	case notSet:
+		return 0, ErrTypeNotSetInsideGlobalSettingsHandler
+	case fungible:
+		return uint32(core.Fungible), nil
+	case nonFungible:
+		return uint32(core.NonFungible), nil
+	case nonFungibleV2:
+		return uint32(core.NonFungibleV2), nil
+	case metaFungible:
+		return uint32(core.MetaFungible), nil
+	case semiFungible:
+		return uint32(core.SemiFungible), nil
+	case dynamicNFT:
+		return uint32(core.DynamicNFT), nil
+	case dynamicSFT:
+		return uint32(core.DynamicSFT), nil
+	case dynamicMeta:
+		return uint32(core.DynamicMeta), nil
+	default:
+		return math.MaxUint32, fmt.Errorf("invalid esdt type: %d", esdtType)
+	}
 }
 
 // IsInterfaceNil returns true if underlying object in nil

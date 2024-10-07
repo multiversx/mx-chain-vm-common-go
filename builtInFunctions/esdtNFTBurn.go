@@ -101,7 +101,12 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 
 	esdtData.Value.Sub(esdtData.Value, quantityToBurn)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, false, vmInput.ReturnCallAfterError)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           vmInput.ReturnCallAfterError,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, properties)
 	if err != nil {
 		return nil, err
 	}

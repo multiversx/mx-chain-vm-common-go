@@ -16,7 +16,6 @@ type esdtNFTMultiTransfer struct {
 	baseActiveHandler
 	*baseComponentsHolder
 	keyPrefix      []byte
-	marshaller     vmcommon.Marshalizer
 	payableHandler vmcommon.PayableChecker
 	funcGasCost    uint64
 	accounts       vmcommon.AccountsAdapter
@@ -27,7 +26,6 @@ type esdtNFTMultiTransfer struct {
 }
 
 const argumentsPerTransfer = uint64(3)
-const eGLD = "EGLD-000000"
 
 // NewESDTNFTMultiTransferFunc returns the esdt NFT multi transfer built-in function component
 func NewESDTNFTMultiTransferFunc(
@@ -65,7 +63,6 @@ func NewESDTNFTMultiTransferFunc(
 
 	e := &esdtNFTMultiTransfer{
 		keyPrefix:      []byte(baseESDTKeyPrefix),
-		marshaller:     marshaller,
 		funcGasCost:    funcGasCost,
 		accounts:       accounts,
 		gasConfig:      gasConfig,
@@ -77,8 +74,9 @@ func NewESDTNFTMultiTransferFunc(
 			globalSettingsHandler: globalSettingsHandler,
 			shardCoordinator:      shardCoordinator,
 			enableEpochsHandler:   enableEpochsHandler,
+			marshaller:            marshaller,
 		},
-		baseTokenID: []byte(eGLD),
+		baseTokenID: []byte(vmcommon.EGLDIdentifier),
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -451,7 +449,12 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, transferData.ESDTValue)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, transferData.ESDTTokenNonce, esdtData, false, isReturnCallWithError)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           isReturnCallWithError,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, transferData.ESDTTokenNonce, esdtData, properties)
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +486,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 			return nil, err
 		}
 	} else {
-		keepMetadataOnZeroLiquidity, err := hasDynamicRole(acntSnd, esdtTokenKey, e.marshaller)
+		keepMetadataOnZeroLiquidity, err := shouldKeepMetaDataOnZeroLiquidity(acntSnd, transferData.ESDTTokenName, esdtData.Type, e.marshaller, e.enableEpochsHandler)
 		if err != nil {
 			return nil, err
 		}
