@@ -258,7 +258,9 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		MustUpdateAllFields:         false,
 		IsReturnWithError:           vmInput.ReturnCallAfterError,
 		KeepMetaDataOnZeroLiquidity: false,
-	}_, err = e.esdtStorageHandler.SaveESDTNFTToken(
+	}
+
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(
 		acntSnd.AddressBytes(),
 		acntSnd,
 		esdtTokenKey,

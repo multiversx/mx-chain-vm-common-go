@@ -2,10 +2,11 @@ package builtInFunctions
 
 import (
 	"errors"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -318,7 +319,7 @@ func TestEsdtGlobalSettings_SetTokenType(t *testing.T) {
 			falseHandler,
 		)
 
-		err := globalSettingsFunc.SetTokenType([]byte("key"), 100)
+		err := globalSettingsFunc.SetTokenType([]byte("key"), 100, nil)
 		require.True(t, strings.Contains(err.Error(), "invalid esdt type"))
 	})
 	t.Run("fungible token type", func(t *testing.T) {
@@ -337,7 +338,7 @@ func TestEsdtGlobalSettings_SetTokenType(t *testing.T) {
 			falseHandler,
 		)
 
-		err := globalSettingsFunc.SetTokenType([]byte("key"), uint32(core.Fungible))
+		err := globalSettingsFunc.SetTokenType([]byte("key"), uint32(core.Fungible), nil)
 		require.Nil(t, err)
 		retrievedVal := acnt.Storage["key"]
 		require.Equal(t, []byte{0, 1}, retrievedVal)
@@ -442,4 +443,3 @@ func TestESDTGlobalSettingsPause_NoNeedToGetAccount(t *testing.T) {
 	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, acnt, input)
 	assert.Nil(t, err)
 }
-

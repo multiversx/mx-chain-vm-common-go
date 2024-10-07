@@ -275,14 +275,15 @@ func (e *esdtGlobalSettings) SetTokenType(
 ) error {
 	var systemAccount vmcommon.UserAccountHandler
 	var err error
+	var globalSettingsTokenType uint32
 
 	if check.IfNil(dstAcc) {
-		globalSettingsTokenType, err := convertToGlobalSettingsHandlerTokenType(tokenType)
-	if err != nil {
-		return err
-	}
+		globalSettingsTokenType, err = convertToGlobalSettingsHandlerTokenType(tokenType)
+		if err != nil {
+			return err
+		}
 
-	systemAccount, err = getSystemAccount(e.accounts)
+		systemAccount, err = getSystemAccount(e.accounts)
 		if err != nil {
 			return err
 		}

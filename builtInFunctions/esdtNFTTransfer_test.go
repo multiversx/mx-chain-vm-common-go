@@ -1338,7 +1338,12 @@ func TestESDTNFTTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testing.T)
 				flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
 		},
 	}
-	esdtStorage := createNewESDTDataStorageHandlerWithArgs(transferFunc.globalSettingsHandler, transferFunc.accounts, enableEpochsHandler)
+	esdtStorage := createNewESDTDataStorageHandlerWithArgs(
+		transferFunc.globalSettingsHandler,
+		transferFunc.accounts,
+		enableEpochsHandler,
+		&mock.CrossChainTokenCheckerMock{},
+	)
 	transferFunc.esdtStorageHandler = esdtStorage
 
 	payableChecker, _ := NewPayableCheckFunc(
