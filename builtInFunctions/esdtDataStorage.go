@@ -472,12 +472,6 @@ func (e *esdtDataStorage) removeMetaDataFromSystemAccount(esdtTokenKey []byte, n
 		return err
 	}
 
-	// TODO: MARIUSC CHECK THIS !!!!!
-	//err = e.globalSettingsHandler.SetTokenType(esdtTokenKey, uint32(core.NonFungibleV2), systemAcc)
-	//if err != nil {
-	//	return err
-	//}
-
 	esdtNFTTokenKey := computeESDTNFTTokenKey(esdtTokenKey, nonce)
 	err = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 	if err != nil {
