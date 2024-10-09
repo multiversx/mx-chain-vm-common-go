@@ -79,10 +79,14 @@ func (u *UserAccountStub) GetOwnerAddress() []byte {
 
 // AddressBytes -
 func (u *UserAccountStub) AddressBytes() []byte {
-	return u.Address
+	if u.Address != nil {
+		return u.Address
+	}
+
+	return []byte("address")
 }
 
-//IncreaseNonce -
+// IncreaseNonce -
 func (u *UserAccountStub) IncreaseNonce(_ uint64) {
 }
 

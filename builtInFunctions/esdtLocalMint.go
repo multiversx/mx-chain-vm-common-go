@@ -22,33 +22,27 @@ type esdtLocalMint struct {
 }
 
 // NewESDTLocalMintFunc returns the esdt local mint built-in function component
-func NewESDTLocalMintFunc(
-	funcGasCost uint64,
-	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
-	rolesHandler vmcommon.ESDTRoleHandler,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtLocalMint, error) {
-	if check.IfNil(marshaller) {
+func NewESDTLocalMintFunc(args ESDTLocalMintBurnFuncArgs) (*esdtLocalMint, error) {
+	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(globalSettingsHandler) {
+	if check.IfNil(args.GlobalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if check.IfNil(rolesHandler) {
+	if check.IfNil(args.RolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
+	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtLocalMint{
 		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		enableEpochsHandler:   enableEpochsHandler,
+		marshaller:            args.Marshaller,
+		globalSettingsHandler: args.GlobalSettingsHandler,
+		rolesHandler:          args.RolesHandler,
+		funcGasCost:           args.FuncGasCost,
+		enableEpochsHandler:   args.EnableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
 	}
 

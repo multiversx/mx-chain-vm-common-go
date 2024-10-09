@@ -9,6 +9,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -30,6 +31,7 @@ type esdtMetaDataRecreate struct {
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	gasConfig             vmcommon.BaseOperationCost
+	marshaller            marshal.Marshalizer
 	mutExecution          sync.RWMutex
 }
 
@@ -42,6 +44,7 @@ func NewESDTMetaDataRecreateFunc(
 	storageHandler vmcommon.ESDTNFTStorageHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
 ) (*esdtMetaDataRecreate, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -58,6 +61,9 @@ func NewESDTMetaDataRecreateFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshalizer
+	}
 
 	e := &esdtMetaDataRecreate{
 		accounts:               accounts,
@@ -69,6 +75,7 @@ func NewESDTMetaDataRecreateFunc(
 		gasConfig:              gasConfig,
 		mutExecution:           sync.RWMutex{},
 		BlockchainDataProvider: NewBlockchainDataProvider(),
+		marshaller:             marshaller,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -115,10 +122,10 @@ func checkUpdateArguments(
 }
 
 type esdtStorageInfo struct {
-	esdtData     *esdt.ESDigitalToken
-	esdtTokenKey []byte
-	nonce        uint64
-	isDynamic    bool
+	esdtData            *esdt.ESDigitalToken
+	esdtTokenKey        []byte
+	nonce               uint64
+	metaDataInSystemAcc bool
 }
 
 func getEsdtInfo(
@@ -134,28 +141,51 @@ func getEsdtInfo(
 	if err != nil {
 		return nil, err
 	}
-	if core.IsDynamicESDT(tokenType) {
-		metaData, err := storageHandler.GetMetaDataFromSystemAccount(esdtTokenKey, nonce)
+	if tokenType == uint32(core.DynamicSFT) || tokenType == uint32(core.DynamicMeta) {
+		esdtData, err := storageHandler.GetMetaDataFromSystemAccount(esdtTokenKey, nonce)
 		if err != nil {
 			return nil, err
 		}
 
-		if metaData == nil {
-			return nil, ErrInvalidMetadata
+		if esdtData == nil {
+			esdtData = &esdt.ESDigitalToken{}
+		}
+		if esdtData.TokenMetaData == nil {
+			esdtData.TokenMetaData = &esdt.MetaData{
+				Nonce: nonce,
+			}
 		}
 
-		esdtData := &esdt.ESDigitalToken{TokenMetaData: metaData}
 		return &esdtStorageInfo{
-			esdtData:     esdtData,
-			esdtTokenKey: esdtTokenKey,
-			nonce:        nonce,
-			isDynamic:    true,
+			esdtData:            esdtData,
+			esdtTokenKey:        esdtTokenKey,
+			nonce:               nonce,
+			metaDataInSystemAcc: true,
 		}, nil
 	}
 
-	esdtData, err := storageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
+	esdtData, isNew, err := storageHandler.GetESDTNFTTokenOnDestination(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
 		return nil, err
+	}
+
+	if tokenType == uint32(core.DynamicNFT) {
+		if isNew {
+			esdtData.TokenMetaData = &esdt.MetaData{
+				Nonce: nonce,
+			}
+			esdtData.Type = tokenType
+		}
+		return &esdtStorageInfo{
+			esdtData:            esdtData,
+			esdtTokenKey:        esdtTokenKey,
+			nonce:               nonce,
+			metaDataInSystemAcc: false,
+		}, nil
+	}
+
+	if isNew {
+		return nil, ErrNilESDTData
 	}
 
 	if esdtData.Value == nil || esdtData.Value.Cmp(zero) == 0 {
@@ -163,14 +193,16 @@ func getEsdtInfo(
 	}
 
 	if esdtData.TokenMetaData == nil {
-		esdtData.TokenMetaData = &esdt.MetaData{}
+		esdtData.TokenMetaData = &esdt.MetaData{
+			Nonce: nonce,
+		}
 	}
 
 	return &esdtStorageInfo{
-		esdtData:     esdtData,
-		esdtTokenKey: esdtTokenKey,
-		nonce:        nonce,
-		isDynamic:    false,
+		esdtData:            esdtData,
+		esdtTokenKey:        esdtTokenKey,
+		nonce:               nonce,
+		metaDataInSystemAcc: false,
 	}, nil
 }
 
@@ -180,15 +212,17 @@ func saveESDTMetaDataInfo(
 	acntSnd vmcommon.UserAccountHandler,
 	returnCallAfterError bool,
 ) error {
-	if esdtInfo.isDynamic {
+	if esdtInfo.metaDataInSystemAcc {
 		return storageHandler.SaveMetaDataToSystemAccount(esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData)
 	}
 
-	if esdtInfo.esdtData.Value == nil || esdtInfo.esdtData.Value.Cmp(zero) == 0 {
-		return ErrInvalidEsdtValue
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         true,
+		IsReturnWithError:           returnCallAfterError,
+		KeepMetaDataOnZeroLiquidity: true,
 	}
 
-	_, err := storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData, true, returnCallAfterError)
+	_, err := storageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtInfo.esdtTokenKey, esdtInfo.nonce, esdtInfo.esdtData, properties)
 	return err
 }
 
@@ -202,7 +236,7 @@ func lenArgs(args [][]byte) int {
 
 // ProcessBuiltinFunction saves the token type in the system account
 func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
-	err := checkUpdateArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTMetaDataRecreate)
+	err := checkUpdateArguments(vmInput, acntSnd, e.baseActiveHandler, 7, e.rolesHandler, core.ESDTRoleNFTRecreate)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +272,17 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 	esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
 	esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	currentRound := e.CurrentRound()
+	metaDataVersion := &esdt.MetaDataVersion{
+		Name:       currentRound,
+		Creator:    currentRound,
+		Royalties:  currentRound,
+		Hash:       currentRound,
+		URIs:       currentRound,
+		Attributes: currentRound,
+	}
+
+	err = changeEsdtVersion(esdtInfo.esdtData, metaDataVersion, e.enableEpochsHandler, e.marshaller)
 	if err != nil {
 		return nil, err
 	}
@@ -252,21 +296,56 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - gasToUse,
 	}
+
+	esdtDataBytes, err := e.marshaller.Marshal(esdtInfo.esdtData)
+	if err != nil {
+		log.Warn("esdtMetaDataRecreate.ProcessBuiltinFunction: cannot marshall esdt data for log", "error", err)
+	}
+
+	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTMetaDataRecreate), vmInput.Arguments[0], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), vmInput.CallerAddr, esdtDataBytes)
+
 	return vmOutput, nil
 }
 
-func changeEsdtVersion(esdt *esdt.ESDigitalToken, newVersion uint64, enableEpochsHandler vmcommon.EnableEpochsHandler) error {
+func changeEsdtVersion(
+	esdt *esdt.ESDigitalToken,
+	esdtVersion *esdt.MetaDataVersion,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
+) error {
 	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
 		return nil
 	}
 
-	currentVersion := big.NewInt(0).SetBytes(esdt.Reserved).Uint64()
-	if currentVersion > newVersion {
-		return fmt.Errorf("%w, current version: %d, new version: %d, token name %s", ErrInvalidVersion, currentVersion, newVersion, esdt.TokenMetaData.Name)
+	esdtVersionBytes, err := marshaller.Marshal(esdtVersion)
+	if err != nil {
+		return err
 	}
 
-	esdt.Reserved = big.NewInt(0).SetUint64(newVersion).Bytes()
+	esdt.Reserved = esdtVersionBytes
 	return nil
+}
+
+func getMetaDataVersion(
+	esdtData *esdt.ESDigitalToken,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
+) (*esdt.MetaDataVersion, bool, error) {
+	if !enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		return &esdt.MetaDataVersion{}, false, nil
+	}
+
+	if !wasMetaDataUpdated(esdtData.Reserved) {
+		return &esdt.MetaDataVersion{}, false, nil
+	}
+
+	esdtMetaDataVersion := &esdt.MetaDataVersion{}
+	err := marshaller.Unmarshal(esdtMetaDataVersion, esdtData.Reserved)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return esdtMetaDataVersion, true, nil
 }
 
 // SetNewGasConfig is called whenever gas cost is changed

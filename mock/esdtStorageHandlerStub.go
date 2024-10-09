@@ -10,21 +10,21 @@ import (
 
 // ESDTNFTStorageHandlerStub -
 type ESDTNFTStorageHandlerStub struct {
-	SaveESDTNFTTokenCalled                                    func(senderAddress []byte, acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error)
+	SaveESDTNFTTokenCalled                                    func(senderAddress []byte, acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, saveArgs vmcommon.NftSaveArgs) ([]byte, error)
 	GetESDTNFTTokenOnSenderCalled                             func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, error)
 	GetESDTNFTTokenOnDestinationCalled                        func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error)
 	GetESDTNFTTokenOnDestinationWithCustomSystemAccountCalled func(accnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, systemAccount vmcommon.UserAccountHandler) (*esdt.ESDigitalToken, bool, error)
 	WasAlreadySentToDestinationShardAndUpdateStateCalled      func(tickerID []byte, nonce uint64, dstAddress []byte) (bool, error)
 	SaveNFTMetaDataCalled                                     func(tx data.TransactionHandler) error
 	AddToLiquiditySystemAccCalled                             func(esdtTokenKey []byte, tokenType uint32, nonce uint64, transferValue *big.Int, keepMetadataOnZeroLiquidity bool) error
-	GetMetaDataFromSystemAccountCalled                        func([]byte, uint64) (*esdt.MetaData, error)
+	GetMetaDataFromSystemAccountCalled                        func([]byte, uint64) (*esdt.ESDigitalToken, error)
 	SaveMetaDataToSystemAccountCalled                         func(tokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken) error
 }
 
 // SaveESDTNFTToken -
-func (stub *ESDTNFTStorageHandlerStub) SaveESDTNFTToken(senderAddress []byte, acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, mustUpdateAllFields bool, isReturnWithError bool) ([]byte, error) {
+func (stub *ESDTNFTStorageHandlerStub) SaveESDTNFTToken(senderAddress []byte, acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64, esdtData *esdt.ESDigitalToken, saveArgs vmcommon.NftSaveArgs) ([]byte, error) {
 	if stub.SaveESDTNFTTokenCalled != nil {
-		return stub.SaveESDTNFTTokenCalled(senderAddress, acnt, esdtTokenKey, nonce, esdtData, mustUpdateAllFields, isReturnWithError)
+		return stub.SaveESDTNFTTokenCalled(senderAddress, acnt, esdtTokenKey, nonce, esdtData, saveArgs)
 	}
 	return nil, nil
 }
@@ -38,7 +38,7 @@ func (stub *ESDTNFTStorageHandlerStub) GetESDTNFTTokenOnSender(acnt vmcommon.Use
 }
 
 // GetMetaDataFromSystemAccount -
-func (stub *ESDTNFTStorageHandlerStub) GetMetaDataFromSystemAccount(key []byte, nonce uint64) (*esdt.MetaData, error) {
+func (stub *ESDTNFTStorageHandlerStub) GetMetaDataFromSystemAccount(key []byte, nonce uint64) (*esdt.ESDigitalToken, error) {
 	if stub.GetMetaDataFromSystemAccountCalled != nil {
 		return stub.GetMetaDataFromSystemAccountCalled(key, nonce)
 	}

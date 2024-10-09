@@ -7,6 +7,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -20,6 +21,7 @@ type esdtMetaDataUpdate struct {
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	gasConfig             vmcommon.BaseOperationCost
+	marshaller            marshal.Marshalizer
 	mutExecution          sync.RWMutex
 }
 
@@ -32,6 +34,7 @@ func NewESDTMetaDataUpdateFunc(
 	storageHandler vmcommon.ESDTNFTStorageHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
 ) (*esdtMetaDataUpdate, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -48,6 +51,9 @@ func NewESDTMetaDataUpdateFunc(
 	if check.IfNil(rolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshalizer
+	}
 
 	e := &esdtMetaDataUpdate{
 		accounts:               accounts,
@@ -59,6 +65,7 @@ func NewESDTMetaDataUpdateFunc(
 		gasConfig:              gasConfig,
 		mutExecution:           sync.RWMutex{},
 		BlockchainDataProvider: NewBlockchainDataProvider(),
+		marshaller:             marshaller,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -82,13 +89,20 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		return nil, err
 	}
 
+	currentRound := e.CurrentRound()
+	metaDataVersion, _, err := getMetaDataVersion(esdtInfo.esdtData, e.enableEpochsHandler, e.marshaller)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(vmInput.Arguments[nameIndex]) != 0 {
 		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Name)
 		esdtInfo.esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
-
+		metaDataVersion.Name = currentRound
 	}
 	totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Creator)
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
+	metaDataVersion.Creator = currentRound
 
 	if len(vmInput.Arguments[royaltiesIndex]) != 0 {
 		totalLengthDifference -= len(vmInput.Arguments[royaltiesIndex])
@@ -97,24 +111,28 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 			return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 		}
 		esdtInfo.esdtData.TokenMetaData.Royalties = royalties
+		metaDataVersion.Royalties = currentRound
 	}
 
 	if len(vmInput.Arguments[hashIndex]) != 0 {
 		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Hash)
 		esdtInfo.esdtData.TokenMetaData.Hash = vmInput.Arguments[hashIndex]
+		metaDataVersion.Hash = currentRound
 	}
 
 	if len(vmInput.Arguments[attributesIndex]) != 0 {
 		totalLengthDifference -= len(esdtInfo.esdtData.TokenMetaData.Attributes)
 		esdtInfo.esdtData.TokenMetaData.Attributes = vmInput.Arguments[attributesIndex]
+		metaDataVersion.Attributes = currentRound
 	}
 
-	if len(vmInput.Arguments[urisStartIndex:]) != 0 {
+	if len(vmInput.Arguments[urisStartIndex]) != 0 {
 		for _, uri := range esdtInfo.esdtData.TokenMetaData.URIs {
 			totalLengthDifference -= len(uri)
 		}
 
 		esdtInfo.esdtData.TokenMetaData.URIs = vmInput.Arguments[urisStartIndex:]
+		metaDataVersion.URIs = currentRound
 	}
 
 	if totalLengthDifference < 0 {
@@ -128,7 +146,7 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		return nil, ErrNotEnoughGas
 	}
 
-	err = changeEsdtVersion(esdtInfo.esdtData, e.CurrentRound(), e.enableEpochsHandler)
+	err = changeEsdtVersion(esdtInfo.esdtData, metaDataVersion, e.enableEpochsHandler, e.marshaller)
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +160,14 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 		ReturnCode:   vmcommon.Ok,
 		GasRemaining: vmInput.GasProvided - gasToUse,
 	}
+
+	esdtDataBytes, err := e.marshaller.Marshal(esdtInfo.esdtData)
+	if err != nil {
+		log.Warn("esdtMetaDataUpdate.ProcessBuiltinFunction: cannot marshall esdt data for log", "error", err)
+	}
+
+	addESDTEntryInVMOutput(vmOutput, []byte(core.ESDTMetaDataUpdate), vmInput.Arguments[0], esdtInfo.esdtData.TokenMetaData.Nonce, big.NewInt(0), vmInput.CallerAddr, esdtDataBytes)
+
 	return vmOutput, nil
 }
 

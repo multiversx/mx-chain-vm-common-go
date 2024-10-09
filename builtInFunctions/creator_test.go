@@ -17,16 +17,17 @@ func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 	fillGasMapInternal(gasMap, 1)
 
 	args := ArgsCreateBuiltInFunctionContainer{
-		GasMap:                           gasMap,
-		MapDNSAddresses:                  make(map[string]struct{}),
-		MapDNSV2Addresses:                make(map[string]struct{}),
-		EnableUserNameChange:             false,
-		Marshalizer:                      &mock.MarshalizerMock{},
-		Accounts:                         &mock.AccountsStub{},
-		ShardCoordinator:                 mock.NewMultiShardsCoordinatorMock(1),
-		EnableEpochsHandler:              &mock.EnableEpochsHandlerStub{},
-		GuardedAccountHandler:            &mock.GuardedAccountHandlerStub{},
-		MaxNumOfAddressesForTransferRole: 100,
+		GasMap:                            gasMap,
+		MapDNSAddresses:                   make(map[string]struct{}),
+		MapDNSV2Addresses:                 make(map[string]struct{}),
+		EnableUserNameChange:              false,
+		Marshalizer:                       &mock.MarshalizerMock{},
+		Accounts:                          &mock.AccountsStub{},
+		ShardCoordinator:                  mock.NewMultiShardsCoordinatorMock(1),
+		EnableEpochsHandler:               &mock.EnableEpochsHandlerStub{},
+		GuardedAccountHandler:             &mock.GuardedAccountHandlerStub{},
+		MaxNumOfAddressesForTransferRole:  100,
+		MapWhiteListedCrossChainAddresses: getWhiteListedAddress(),
 	}
 
 	return args
@@ -198,7 +199,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 
 	err = f.SetBlockchainHook(&disabledBlockchainHook{})
 	assert.Nil(t, err)
-	assert.Equal(t, 6, numSetBlockDataHandlerCalls)
+	assert.Equal(t, 7, numSetBlockDataHandlerCalls)
 
 	fillGasMapInternal(args.GasMap, 5)
 	f.GasScheduleChange(args.GasMap)
