@@ -195,6 +195,7 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationGetDataFromSystemAcc(t *tes
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
+		Type:  uint32(core.NonFungible),
 		Value: big.NewInt(10),
 	}
 
@@ -227,6 +228,7 @@ func TestEsdtDataStorage_GetESDTNFTTokenOnDestinationWithCustomSystemAccount(t *
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
+		Type:  uint32(core.NonFungible),
 		Value: big.NewInt(10),
 	}
 
@@ -300,6 +302,7 @@ func TestEsdtDataStorage_MarshalErrorOnSystemACC(t *testing.T) {
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
+		Type:  uint32(core.NonFungible),
 		Value: big.NewInt(10),
 	}
 
@@ -392,6 +395,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	esdtData := &esdt.ESDigitalToken{
+		Type:  uint32(core.SemiFungible),
 		Value: big.NewInt(10),
 	}
 
@@ -411,8 +415,17 @@ func TestEsdtDataStorage_SaveESDTNFTTokenNoChangeInSystemAcc(t *testing.T) {
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
 	newMetaData := &esdt.MetaData{Name: []byte("newName")}
-	transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
-	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, false, false)
+	transferESDTData := &esdt.ESDigitalToken{
+		Type:          uint32(core.SemiFungible),
+		Value:         big.NewInt(100),
+		TokenMetaData: newMetaData,
+	}
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           false,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, properties)
 	assert.Nil(t, err)
 
 	esdtDataGet, _, err := e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
@@ -438,6 +451,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 
 	t.Run("new token should not rewrite metadata", func(t *testing.T) {
 		newToken := &esdt.ESDigitalToken{
+			Type:  uint32(core.SemiFungible),
 			Value: big.NewInt(10),
 		}
 		tokenIdentifier := "newTkn"
@@ -458,14 +472,24 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 		_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
 		newMetaData := &esdt.MetaData{Name: []byte("newName")}
-		transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
-		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, false, false)
+		transferESDTData := &esdt.ESDigitalToken{
+			Type:          uint32(core.SemiFungible),
+			Value:         big.NewInt(100),
+			TokenMetaData: newMetaData,
+		}
+		properties := vmcommon.NftSaveArgs{
+			MustUpdateAllFields:         false,
+			IsReturnWithError:           false,
+			KeepMetaDataOnZeroLiquidity: false,
+		}
+		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, transferESDTData, properties)
 		assert.Nil(t, err)
 
 		esdtDataGet, _, err := dataStorage.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
 		assert.Nil(t, err)
 
 		expectedESDTData := &esdt.ESDigitalToken{
+			Type:          uint32(core.SemiFungible),
 			Value:         big.NewInt(100),
 			TokenMetaData: metaData,
 		}
@@ -512,6 +536,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 		localDataStorage, _ := NewESDTDataStorage(localArgs)
 
 		newToken := &esdt.ESDigitalToken{
+			Type:  uint32(core.SemiFungible),
 			Value: big.NewInt(10),
 		}
 		tokenIdentifier := "newTkn"
@@ -531,8 +556,12 @@ func TestEsdtDataStorage_SaveESDTNFTTokenAlwaysSaveTokenMetaDataEnabled(t *testi
 		_ = systemAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtMetaDataBytes)
 
 		newMetaData := &esdt.MetaData{Name: []byte("newName")}
-		transferESDTData := &esdt.ESDigitalToken{Value: big.NewInt(100), TokenMetaData: newMetaData}
+		transferESDTData := &esdt.ESDigitalToken{
+			Type:          uint32(core.SemiFungible),
+			Value:         big.NewInt(100),
+			TokenMetaData: newMetaData}
 		expectedESDTData := &esdt.ESDigitalToken{
+			Type:          uint32(core.SemiFungible),
 			Value:         big.NewInt(100),
 			TokenMetaData: metaData,
 		}
@@ -561,7 +590,12 @@ func setAndGetStoredToken(
 	nonce uint64,
 	transferESDTData *esdt.ESDigitalToken,
 ) *esdt.ESDigitalToken {
-	_, err := esdtDataStorage.SaveESDTNFTToken([]byte("address"), userAcc, key, nonce, transferESDTData, false, false)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           false,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err := esdtDataStorage.SaveESDTNFTToken([]byte("address"), userAcc, key, nonce, transferESDTData, properties)
 	assert.Nil(tb, err)
 
 	esdtDataGet, _, err := esdtDataStorage.GetESDTNFTTokenOnDestination(userAcc, key, nonce)
@@ -579,6 +613,7 @@ func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
 	userAcc := mock.NewAccountWrapMock([]byte("addr"))
 	nonce := uint64(10)
 	esdtData := &esdt.ESDigitalToken{
+		Type:  uint32(core.SemiFungible),
 		Value: big.NewInt(10),
 		TokenMetaData: &esdt.MetaData{
 			Name:  []byte("test"),
@@ -593,7 +628,12 @@ func TestEsdtDataStorage_SaveESDTNFTTokenWhenQuantityZero(t *testing.T) {
 	_ = userAcc.AccountDataHandler().SaveKeyValue(tokenKey, esdtDataBytes)
 
 	esdtData.Value = big.NewInt(0)
-	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, false, false)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           false,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err := e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, properties)
 	assert.Nil(t, err)
 
 	val, _, err := userAcc.AccountDataHandler().RetrieveValue(tokenKey)
@@ -648,7 +688,12 @@ func TestEsdtDataStorage_SaveESDTNFTToken(t *testing.T) {
 		nftToken.Type = uint32(core.NonFungible)
 		nftToken.TokenMetaData = metaData
 
-		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, nftToken, false, false)
+		properties := vmcommon.NftSaveArgs{
+			MustUpdateAllFields:         false,
+			IsReturnWithError:           false,
+			KeepMetaDataOnZeroLiquidity: false,
+		}
+		_, err := dataStorage.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, nftToken, properties)
 		assert.Nil(t, err)
 
 		// metadata has been removed from the system account
@@ -1008,78 +1053,41 @@ func TestEsdtDataStorage_AddToLiquiditySystemAcc(t *testing.T) {
 
 	tokenKey := append(e.keyPrefix, []byte("TOKEN-ababab")...)
 	nonce := uint64(10)
-	err := e.AddToLiquiditySystemAcc(tokenKey, 0, nonce, big.NewInt(10), false)
+	err := e.AddToLiquiditySystemAcc(tokenKey, 3, nonce, big.NewInt(10), false)
 	assert.Equal(t, err, ErrNilESDTData)
 
 	systemAcc, _ := e.getSystemAccount(defaultQueryOptions())
-	esdtData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
+	esdtData := &esdt.ESDigitalToken{
+		Type:  uint32(core.SemiFungible),
+		Value: big.NewInt(0),
+	}
 	marshalledData, _ := e.marshaller.Marshal(esdtData)
 
 	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
 
-	err = e.AddToLiquiditySystemAcc(tokenKey, 0, nonce, big.NewInt(10), false)
+	err = e.AddToLiquiditySystemAcc(tokenKey, 3, nonce, big.NewInt(10), false)
 	assert.Nil(t, err)
 
-	esdtData = &esdt.ESDigitalToken{Value: big.NewInt(10), Reserved: []byte{1}}
+	esdtData = &esdt.ESDigitalToken{
+		Type:     uint32(core.SemiFungible),
+		Value:    big.NewInt(10),
+		Reserved: []byte{1},
+	}
 	marshalledData, _ = e.marshaller.Marshal(esdtData)
 
 	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, marshalledData)
-	err = e.AddToLiquiditySystemAcc(tokenKey, 0, nonce, big.NewInt(10), false)
+	err = e.AddToLiquiditySystemAcc(tokenKey, 3, nonce, big.NewInt(10), false)
 	assert.Nil(t, err)
 
 	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
 	assert.Equal(t, esdtData.Value, big.NewInt(20))
 
-	err = e.AddToLiquiditySystemAcc(tokenKey, 0, nonce, big.NewInt(-20), false)
+	err = e.AddToLiquiditySystemAcc(tokenKey, 3, nonce, big.NewInt(-20), false)
 	assert.Nil(t, err)
 
 	esdtData, _, _ = e.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
 	assert.Nil(t, esdtData)
-}
-
-func TestEsdtDataStorage_IsNFTWithMetadataOnAccount(t *testing.T) {
-	t.Parallel()
-
-	t.Run("returns false if not NonFungibleV2", func(t *testing.T) {
-		t.Parallel()
-
-		esdtData := &esdt.ESDigitalToken{
-			Type: uint32(core.NonFungible),
-		}
-		assert.False(t, isNFTWithMetadataOnAccount(esdtData))
-	})
-	t.Run("returns false if MetaData is nil", func(t *testing.T) {
-		t.Parallel()
-
-		esdtData := &esdt.ESDigitalToken{
-			TokenMetaData: nil,
-			Type:          uint32(core.NonFungibleV2),
-		}
-		assert.False(t, isNFTWithMetadataOnAccount(esdtData))
-	})
-	t.Run("returns false if Creator is empty", func(t *testing.T) {
-		t.Parallel()
-
-		esdtData := &esdt.ESDigitalToken{
-			TokenMetaData: &esdt.MetaData{
-				Creator: nil,
-			},
-			Type: uint32(core.NonFungibleV2),
-		}
-		assert.False(t, isNFTWithMetadataOnAccount(esdtData))
-	})
-	t.Run("returns true for NonFungibleV2 and existing MetaData", func(t *testing.T) {
-		t.Parallel()
-
-		esdtData := &esdt.ESDigitalToken{
-			TokenMetaData: &esdt.MetaData{
-				Creator: []byte("creator"),
-			},
-			Type: uint32(core.NonFungibleV2),
-		}
-		assert.True(t, isNFTWithMetadataOnAccount(esdtData))
-	})
 }
 
 func TestEsdtDataStorage_ShouldSaveMetadataInSystemAccount(t *testing.T) {
@@ -1110,7 +1118,7 @@ func TestEsdtDataStorage_ShouldSaveMetadataInSystemAccount(t *testing.T) {
 		}
 		e, _ := NewESDTDataStorage(args)
 
-		assert.True(t, e.shouldSaveMetadataInSystemAccount(uint32(core.DynamicNFT)))
+		assert.False(t, e.shouldSaveMetadataInSystemAccount(uint32(core.DynamicNFT)))
 		assert.True(t, e.shouldSaveMetadataInSystemAccount(uint32(core.DynamicSFT)))
 		assert.True(t, e.shouldSaveMetadataInSystemAccount(uint32(core.DynamicMeta)))
 	})
@@ -1158,7 +1166,7 @@ func TestEsdtDataStorage_GetMetaDataFromSystemAccount(t *testing.T) {
 
 	retrievedMetaData, err := e.GetMetaDataFromSystemAccount(key, nonce)
 	assert.Nil(t, err)
-	assert.Equal(t, metaData, retrievedMetaData)
+	assert.Equal(t, esdtData, retrievedMetaData)
 }
 
 func TestEsdtDataStorage_SaveMetaDataToSystemAccount(t *testing.T) {
@@ -1268,7 +1276,12 @@ func saveESDTNFTTokenMigrateTypeAndMetadata(t *testing.T, tokenType core.ESDTTyp
 	assert.Equal(t, uint32(core.NonFungible), retrievedEsdtData.Type)
 
 	esdtData.TokenMetaData = metaData
-	_, err = e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, false, false)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           false,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err = e.SaveESDTNFTToken([]byte("address"), userAcc, []byte(key), nonce, esdtData, properties)
 	assert.Nil(t, err)
 
 	retrievedEsdtData, _, err = e.GetESDTNFTTokenOnDestination(userAcc, []byte(key), nonce)
@@ -1282,6 +1295,6 @@ func saveESDTNFTTokenMigrateTypeAndMetadata(t *testing.T, tokenType core.ESDTTyp
 	} else {
 		retrievedMetaData, err := e.GetMetaDataFromSystemAccount([]byte(key), nonce)
 		assert.Nil(t, err)
-		assert.Equal(t, metaData, retrievedMetaData)
+		assert.Equal(t, &esdt.ESDigitalToken{TokenMetaData: metaData}, retrievedMetaData)
 	}
 }

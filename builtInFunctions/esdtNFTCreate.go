@@ -201,7 +201,12 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		},
 	}
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         true,
+		IsReturnWithError:           vmInput.ReturnCallAfterError,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, properties)
 	if err != nil {
 		return nil, err
 	}
