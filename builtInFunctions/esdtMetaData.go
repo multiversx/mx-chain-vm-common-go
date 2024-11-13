@@ -16,11 +16,17 @@ const (
 	MetadataFrozen = 1
 )
 
+const (
+	flagsByte     = 0
+	tokenTypeByte = 1
+)
+
 // ESDTGlobalMetadata represents esdt global metadata saved on system account
 type ESDTGlobalMetadata struct {
 	Paused          bool
 	LimitedTransfer bool
 	BurnRoleForAll  bool
+	TokenType       byte
 }
 
 // ESDTGlobalMetadataFromBytes creates a metadata object from bytes
@@ -30,9 +36,10 @@ func ESDTGlobalMetadataFromBytes(bytes []byte) ESDTGlobalMetadata {
 	}
 
 	return ESDTGlobalMetadata{
-		Paused:          (bytes[0] & MetadataPaused) != 0,
-		LimitedTransfer: (bytes[0] & MetadataLimitedTransfer) != 0,
-		BurnRoleForAll:  (bytes[0] & BurnRoleForAll) != 0,
+		Paused:          (bytes[flagsByte] & MetadataPaused) != 0,
+		LimitedTransfer: (bytes[flagsByte] & MetadataLimitedTransfer) != 0,
+		BurnRoleForAll:  (bytes[flagsByte] & BurnRoleForAll) != 0,
+		TokenType:       bytes[tokenTypeByte],
 	}
 }
 
@@ -41,14 +48,15 @@ func (metadata *ESDTGlobalMetadata) ToBytes() []byte {
 	bytes := make([]byte, lengthOfESDTMetadata)
 
 	if metadata.Paused {
-		bytes[0] |= MetadataPaused
+		bytes[flagsByte] |= MetadataPaused
 	}
 	if metadata.LimitedTransfer {
-		bytes[0] |= MetadataLimitedTransfer
+		bytes[flagsByte] |= MetadataLimitedTransfer
 	}
 	if metadata.BurnRoleForAll {
-		bytes[0] |= BurnRoleForAll
+		bytes[flagsByte] |= BurnRoleForAll
 	}
+	bytes[tokenTypeByte] = metadata.TokenType
 
 	return bytes
 }
@@ -65,7 +73,7 @@ func ESDTUserMetadataFromBytes(bytes []byte) ESDTUserMetadata {
 	}
 
 	return ESDTUserMetadata{
-		Frozen: (bytes[0] & MetadataFrozen) != 0,
+		Frozen: (bytes[flagsByte] & MetadataFrozen) != 0,
 	}
 }
 
@@ -74,7 +82,7 @@ func (metadata *ESDTUserMetadata) ToBytes() []byte {
 	bytes := make([]byte, lengthOfESDTMetadata)
 
 	if metadata.Frozen {
-		bytes[0] |= MetadataFrozen
+		bytes[flagsByte] |= MetadataFrozen
 	}
 
 	return bytes

@@ -24,7 +24,7 @@ type esdtNFTCreate struct {
 	keyPrefix             []byte
 	accounts              vmcommon.AccountsAdapter
 	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
+	globalSettingsHandler vmcommon.GlobalMetadataHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	funcGasCost           uint64
 	gasConfig             vmcommon.BaseOperationCost
@@ -38,7 +38,7 @@ func NewESDTNFTCreateFunc(
 	funcGasCost uint64,
 	gasConfig vmcommon.BaseOperationCost,
 	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.GlobalMetadataHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
 	accounts vmcommon.AccountsAdapter,
@@ -181,9 +181,14 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, fmt.Errorf("%w max length for quantity in nft create is %d", ErrInvalidArguments, maxLenForAddNFTQuantity)
 	}
 
+	esdtType, err := e.getTokenType(tokenID)
+	if err != nil {
+		return nil, err
+	}
+
 	nextNonce := nonce + 1
 	esdtData := &esdt.ESDigitalToken{
-		Type:  uint32(core.NonFungible),
+		Type:  esdtType,
 		Value: quantity,
 		TokenMetaData: &esdt.MetaData{
 			Nonce:      nextNonce,
@@ -196,11 +201,16 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		},
 	}
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, true, vmInput.ReturnCallAfterError)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         true,
+		IsReturnWithError:           vmInput.ReturnCallAfterError,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(accountWithRoles.AddressBytes(), accountWithRoles, esdtTokenKey, nextNonce, esdtData, properties)
 	if err != nil {
 		return nil, err
 	}
-	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nextNonce, quantity)
+	err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nextNonce, quantity, false)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +241,15 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTCreate), vmInput.Arguments[0], nextNonce, quantity, vmInput.CallerAddr, esdtDataBytes)
 
 	return vmOutput, nil
+}
+
+func (e *esdtNFTCreate) getTokenType(tokenID []byte) (uint32, error) {
+	if !e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		return uint32(core.NonFungible), nil
+	}
+
+	esdtTokenKey := append([]byte(baseESDTKeyPrefix), tokenID...)
+	return e.globalSettingsHandler.GetTokenType(esdtTokenKey)
 }
 
 func (e *esdtNFTCreate) getAccount(address []byte) (vmcommon.UserAccountHandler, error) {

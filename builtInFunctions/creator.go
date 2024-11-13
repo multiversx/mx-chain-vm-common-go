@@ -360,7 +360,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler, b.marshaller)
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler)
+	newFunc, err = NewESDTNFTAddUriFunc(b.gasConfig.BuiltInCost.ESDTNFTAddURI, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler, b.marshaller)
 	if err != nil {
 		return err
 	}
@@ -548,6 +548,63 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	activeHandler := func() bool {
+		return b.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag)
+	}
+	newFunc, err = NewESDTSetTokenTypeFunc(b.accounts, globalSettingsFunc, b.marshaller, activeHandler)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTSetTokenType, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTMetaDataRecreateFunc(b.gasConfig.BuiltInCost.ESDTNFTRecreate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTMetaDataRecreate, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTMetaDataUpdateFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTMetaDataUpdate, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTSetNewURIsFunc(b.gasConfig.BuiltInCost.ESDTNFTRecreate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTSetNewURIs, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTModifyRoyaltiesFunc(b.gasConfig.BuiltInCost.ESDTModifyRoyalties, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTModifyRoyalties, newFunc)
+	if err != nil {
+		return err
+	}
+
+	newFunc, err = NewESDTModifyCreatorFunc(b.gasConfig.BuiltInCost.ESDTModifyRoyalties, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
+	if err != nil {
+		return err
+	}
+	err = b.builtInFunctions.Add(core.ESDTModifyCreator, newFunc)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -597,6 +654,33 @@ func createGasConfig(gasMap map[string]map[string]uint64) (*vmcommon.GasCost, er
 	return &gasCost, nil
 }
 
+// SetBlockchainHook sets the blockchain hook to the needed functions
+func (b *builtInFuncCreator) SetBlockchainHook(blockchainHook vmcommon.BlockchainDataHook) error {
+	if check.IfNil(blockchainHook) {
+		return ErrNilBlockchainHook
+	}
+
+	builtInFuncs := b.builtInFunctions.Keys()
+	for funcName := range builtInFuncs {
+		builtInFunc, err := b.builtInFunctions.Get(funcName)
+		if err != nil {
+			return err
+		}
+
+		esdtBlockchainDataProvider, ok := builtInFunc.(vmcommon.BlockchainDataProvider)
+		if !ok {
+			continue
+		}
+
+		err = esdtBlockchainDataProvider.SetBlockchainHook(blockchainHook)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // SetPayableHandler sets the payableCheck interface to the needed functions
 func (b *builtInFuncCreator) SetPayableHandler(payableHandler vmcommon.PayableHandler) error {
 	payableChecker, err := NewPayableCheckFunc(
@@ -610,7 +694,8 @@ func (b *builtInFuncCreator) SetPayableHandler(payableHandler vmcommon.PayableHa
 	listOfTransferFunc := []string{
 		core.BuiltInFunctionMultiESDTNFTTransfer,
 		core.BuiltInFunctionESDTNFTTransfer,
-		core.BuiltInFunctionESDTTransfer}
+		core.BuiltInFunctionESDTTransfer,
+	}
 
 	for _, transferFunc := range listOfTransferFunc {
 		builtInFunc, err := b.builtInFunctions.Get(transferFunc)

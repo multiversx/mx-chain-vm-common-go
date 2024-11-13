@@ -208,3 +208,18 @@ var ErrWrongUserNameSplit = errors.New("wrong user name split")
 
 // ErrUserNamePrefixNotEqual signals that user name prefix is not equal
 var ErrUserNamePrefixNotEqual = errors.New("user name prefix is not equal")
+
+// ErrBuiltInFunctionIsNotActive signals that built-in function is not active
+var ErrBuiltInFunctionIsNotActive = errors.New("built-in function is not active")
+
+// ErrInvalidEsdtValue signals that a nil value has been provided
+var ErrInvalidEsdtValue = errors.New("invalid esdt value provided")
+
+// ErrInvalidVersion signals that an invalid version has been provided
+var ErrInvalidVersion = errors.New("invalid version")
+
+// ErrNilBlockchainHook signals that a nil blockchain hook has been provided
+var ErrNilBlockchainHook = errors.New("nil blockchain hook")
+
+// ErrTypeNotSetInsideGlobalSettingsHandler signals that type is not set inside global settings handler
+var ErrTypeNotSetInsideGlobalSettingsHandler = errors.New("type not set inside global settings handler")

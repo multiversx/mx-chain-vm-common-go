@@ -3,7 +3,6 @@ package builtInFunctions
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"sync"
@@ -11,7 +10,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	"github.com/multiversx/mx-chain-core-go/data/vm"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
 )
 
@@ -22,25 +20,21 @@ var zeroByteArray = []byte{0}
 
 type esdtNFTTransfer struct {
 	baseAlwaysActiveHandler
-	keyPrefix             []byte
-	marshaller            vmcommon.Marshalizer
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
-	payableHandler        vmcommon.PayableChecker
-	funcGasCost           uint64
-	accounts              vmcommon.AccountsAdapter
-	shardCoordinator      vmcommon.Coordinator
-	gasConfig             vmcommon.BaseOperationCost
-	mutExecution          sync.RWMutex
-	rolesHandler          vmcommon.ESDTRoleHandler
-	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
-	enableEpochsHandler   vmcommon.EnableEpochsHandler
+	*baseComponentsHolder
+	keyPrefix      []byte
+	payableHandler vmcommon.PayableChecker
+	funcGasCost    uint64
+	accounts       vmcommon.AccountsAdapter
+	gasConfig      vmcommon.BaseOperationCost
+	mutExecution   sync.RWMutex
+	rolesHandler   vmcommon.ESDTRoleHandler
 }
 
 // NewESDTNFTTransferFunc returns the esdt NFT transfer built-in function component
 func NewESDTNFTTransferFunc(
 	funcGasCost uint64,
 	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
+	globalSettingsHandler vmcommon.GlobalMetadataHandler,
 	accounts vmcommon.AccountsAdapter,
 	shardCoordinator vmcommon.Coordinator,
 	gasConfig vmcommon.BaseOperationCost,
@@ -71,18 +65,20 @@ func NewESDTNFTTransferFunc(
 	}
 
 	e := &esdtNFTTransfer{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		funcGasCost:           funcGasCost,
-		accounts:              accounts,
-		shardCoordinator:      shardCoordinator,
-		gasConfig:             gasConfig,
-		mutExecution:          sync.RWMutex{},
-		payableHandler:        &disabledPayableHandler{},
-		rolesHandler:          rolesHandler,
-		enableEpochsHandler:   enableEpochsHandler,
-		esdtStorageHandler:    esdtStorageHandler,
+		keyPrefix:      []byte(baseESDTKeyPrefix),
+		funcGasCost:    funcGasCost,
+		accounts:       accounts,
+		gasConfig:      gasConfig,
+		mutExecution:   sync.RWMutex{},
+		payableHandler: &disabledPayableHandler{},
+		rolesHandler:   rolesHandler,
+		baseComponentsHolder: &baseComponentsHolder{
+			esdtStorageHandler:    esdtStorageHandler,
+			globalSettingsHandler: globalSettingsHandler,
+			shardCoordinator:      shardCoordinator,
+			enableEpochsHandler:   enableEpochsHandler,
+			marshaller:            marshaller,
+		},
 	}
 
 	return e, nil
@@ -165,7 +161,15 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
-	err = e.addNFTToDestination(vmInput.CallerAddr, vmInput.RecipientAddr, acntDst, esdtTransferData, esdtTokenKey, nonce, vmInput.ReturnCallAfterError)
+	err = e.addNFTToDestination(
+		vmInput.CallerAddr,
+		vmInput.RecipientAddr,
+		acntDst,
+		esdtTransferData,
+		esdtTokenKey,
+		nonce,
+		vmInput.ReturnCallAfterError,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +222,8 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if isTransferToMeta {
 		return nil, ErrInvalidRcvAddr
 	}
-	if vmInput.GasProvided < e.funcGasCost {
+	skipGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
+	if vmInput.GasProvided < e.funcGasCost && !skipGasUse {
 		return nil, ErrNotEnoughGas
 	}
 
@@ -247,7 +252,12 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, false, vmInput.ReturnCallAfterError)
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         false,
+		IsReturnWithError:           vmInput.ReturnCallAfterError,
+		KeepMetaDataOnZeroLiquidity: false,
+	}
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, properties)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +281,15 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		if err != nil {
 			return nil, err
 		}
-		err = e.addNFTToDestination(vmInput.CallerAddr, dstAddress, userAccount, esdtData, esdtTokenKey, nonce, vmInput.ReturnCallAfterError)
+		err = e.addNFTToDestination(
+			vmInput.CallerAddr,
+			dstAddress,
+			userAccount,
+			esdtData,
+			esdtTokenKey,
+			nonce,
+			vmInput.ReturnCallAfterError,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -281,7 +299,12 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 	} else {
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, big.NewInt(0).Neg(quantityToTransfer))
+		keepMetadataOnZeroLiquidity, err := shouldKeepMetaDataOnZeroLiquidity(acntSnd, tickerID, esdtData.Type, e.marshaller, e.enableEpochsHandler)
+		if err != nil {
+			return nil, err
+		}
+
+		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, big.NewInt(0).Neg(quantityToTransfer), keepMetadataOnZeroLiquidity)
 		if err != nil {
 			return nil, err
 		}
@@ -299,9 +322,9 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
-		GasRemaining: vmInput.GasProvided - e.funcGasCost,
+		GasRemaining: computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, e.funcGasCost, skipGasUse),
 	}
-	err = e.createNFTOutputTransfers(vmInput, vmOutput, esdtData, dstAddress, tickerID, nonce)
+	err = e.createNFTOutputTransfers(vmInput, vmOutput, esdtData, dstAddress, tickerID, nonce, skipGasUse)
 	if err != nil {
 		return nil, err
 	}
@@ -320,6 +343,53 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	return vmOutput, nil
 }
 
+func shouldKeepMetaDataOnZeroLiquidity(
+	acct vmcommon.UserAccountHandler,
+	tickerId []byte,
+	esdtDataType uint32,
+	marshaller vmcommon.Marshalizer,
+	enableEpochsHandler vmcommon.EnableEpochsHandler,
+) (bool, error) {
+	if esdtDataType == uint32(core.DynamicSFT) || esdtDataType == uint32(core.DynamicMeta) {
+		return true, nil
+	}
+
+	hasDynamicRole, err := hasDynamicRole(acct, tickerId, marshaller, enableEpochsHandler)
+	if err != nil {
+		return false, err
+	}
+	return hasDynamicRole, nil
+}
+
+func hasDynamicRole(account vmcommon.UserAccountHandler, tokenID []byte, marshaller vmcommon.Marshalizer, enableEpochsHandler vmcommon.EnableEpochsHandler) (bool, error) {
+	roleKey := append(roleKeyPrefix, tokenID...)
+	roles, _, err := getESDTRolesForAcnt(marshaller, account, roleKey)
+	if err != nil {
+		return false, err
+	}
+
+	dynamicRoles := [][]byte{
+		[]byte(core.ESDTMetaDataRecreate),
+		[]byte(core.ESDTRoleNFTUpdate),
+		[]byte(core.ESDTRoleModifyCreator),
+		[]byte(core.ESDTRoleModifyRoyalties),
+		[]byte(core.ESDTRoleSetNewURI),
+	}
+
+	if enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+		dynamicRoles = append(dynamicRoles, []byte(core.ESDTRoleNFTAddURI), []byte(core.ESDTRoleNFTUpdateAttributes))
+	}
+
+	for _, role := range dynamicRoles {
+		_, exists := doesRoleExist(roles, role)
+		if exists {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	vmInput *vmcommon.ContractCallInput,
 	vmOutput *vmcommon.VMOutput,
@@ -327,6 +397,7 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	dstAddress []byte,
 	tickerID []byte,
 	nonce uint64,
+	noGasUse bool,
 ) error {
 	nftTransferCallArgs := make([][]byte, 0)
 	nftTransferCallArgs = append(nftTransferCallArgs, vmInput.Arguments[:3]...)
@@ -342,11 +413,14 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 			return err
 		}
 
-		gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
-		if gasForTransfer > vmOutput.GasRemaining {
-			return ErrNotEnoughGas
+		if !noGasUse {
+			gasForTransfer := uint64(len(marshaledNFTTransfer)) * e.gasConfig.DataCopyPerByte
+			if gasForTransfer > vmOutput.GasRemaining {
+				return ErrNotEnoughGas
+			}
+			vmOutput.GasRemaining -= gasForTransfer
 		}
-		vmOutput.GasRemaining -= gasForTransfer
+
 		nftTransferCallArgs = append(nftTransferCallArgs, marshaledNFTTransfer)
 	} else {
 		nftTransferCallArgs = append(nftTransferCallArgs, zeroByteArray)
@@ -366,13 +440,11 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 		}
 		addNFTTransferToVMOutput(
 			1,
-			vmInput.CallerAddr,
 			dstAddress,
 			core.BuiltInFunctionESDTNFTTransfer,
 			nftTransferCallArgs,
-			vmInput.GasLocked,
 			gasToTransfer,
-			vmInput.CallType,
+			vmInput,
 			vmOutput,
 		)
 
@@ -399,51 +471,13 @@ func (e *esdtNFTTransfer) createNFTOutputTransfers(
 	return nil
 }
 
-func (e *esdtNFTTransfer) addNFTToDestination(
-	sndAddress []byte,
-	dstAddress []byte,
-	userAccount vmcommon.UserAccountHandler,
-	esdtDataToTransfer *esdt.ESDigitalToken,
-	esdtTokenKey []byte,
-	nonce uint64,
-	isReturnWithError bool,
-) error {
-	currentESDTData, _, err := e.esdtStorageHandler.GetESDTNFTTokenOnDestination(userAccount, esdtTokenKey, nonce)
-	if err != nil && !errors.Is(err, ErrNFTTokenDoesNotExist) {
-		return err
-	}
-	err = checkFrozeAndPause(dstAddress, esdtTokenKey, currentESDTData, e.globalSettingsHandler, isReturnWithError)
-	if err != nil {
-		return err
-	}
-
-	transferValue := big.NewInt(0).Set(esdtDataToTransfer.Value)
-	esdtDataToTransfer.Value.Add(esdtDataToTransfer.Value, currentESDTData.Value)
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(sndAddress, userAccount, esdtTokenKey, nonce, esdtDataToTransfer, false, isReturnWithError)
-	if err != nil {
-		return err
-	}
-
-	isSameShard := e.shardCoordinator.SameShard(sndAddress, dstAddress)
-	if !isSameShard {
-		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, nonce, transferValue)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func addNFTTransferToVMOutput(
 	index uint32,
-	senderAddress []byte,
 	recipient []byte,
 	funcToCall string,
 	arguments [][]byte,
-	gasLocked uint64,
 	gasLimit uint64,
-	callType vm.CallType,
+	vmInput *vmcommon.ContractCallInput,
 	vmOutput *vmcommon.VMOutput,
 ) {
 	nftTransferTxData := funcToCall
@@ -452,12 +486,12 @@ func addNFTTransferToVMOutput(
 	}
 	outTransfer := vmcommon.OutputTransfer{
 		Index:         index,
-		Value:         big.NewInt(0),
+		Value:         big.NewInt(0).Set(vmInput.CallValue),
 		GasLimit:      gasLimit,
-		GasLocked:     gasLocked,
+		GasLocked:     vmInput.GasLocked,
 		Data:          []byte(nftTransferTxData),
-		CallType:      callType,
-		SenderAddress: senderAddress,
+		CallType:      vmInput.CallType,
+		SenderAddress: vmInput.CallerAddr,
 	}
 	vmOutput.OutputAccounts = make(map[string]*vmcommon.OutputAccount)
 	vmOutput.OutputAccounts[string(recipient)] = &vmcommon.OutputAccount{

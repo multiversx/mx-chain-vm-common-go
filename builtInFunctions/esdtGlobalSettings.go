@@ -2,11 +2,30 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
+	"math"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-vm-common-go"
+)
+
+// ESDTTypeForGlobalSettingsHandler is needed because if 0 is retrieved from the global settings handler,
+// it means either that the type is not set or that the type is fungible. This will solve the ambiguity.
+type ESDTTypeForGlobalSettingsHandler uint32
+
+const (
+	notSet ESDTTypeForGlobalSettingsHandler = iota
+	fungible
+	nonFungible
+	nonFungibleV2
+	metaFungible
+	semiFungible
+	dynamicNFT
+	dynamicSFT
+	dynamicMeta
 )
 
 type esdtGlobalSettings struct {
@@ -100,12 +119,12 @@ func (e *esdtGlobalSettings) ProcessBuiltinFunction(
 }
 
 func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
-	systemSCAccount, err := e.getSystemAccount()
+	systemSCAccount, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return err
 	}
 
-	esdtMetaData, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetaData, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return err
 	}
@@ -127,8 +146,8 @@ func (e *esdtGlobalSettings) toggleSetting(esdtTokenKey []byte) error {
 	return e.accounts.SaveAccount(systemSCAccount)
 }
 
-func (e *esdtGlobalSettings) getSystemAccount() (vmcommon.UserAccountHandler, error) {
-	systemSCAccount, err := e.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+func getSystemAccount(accounts vmcommon.AccountsAdapter) (vmcommon.UserAccountHandler, error) {
+	systemSCAccount, err := accounts.LoadAccount(vmcommon.SystemAccountAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +162,7 @@ func (e *esdtGlobalSettings) getSystemAccount() (vmcommon.UserAccountHandler, er
 
 // IsPaused returns true if the esdtTokenKey (prefixed) is paused
 func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -153,7 +172,7 @@ func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
 
 // IsLimitedTransfer returns true if the esdtTokenKey (prefixed) is with limited transfer
 func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -163,7 +182,7 @@ func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
 
 // IsBurnForAll returns true if the esdtTokenKey (prefixed) is with burn for all
 func (e *esdtGlobalSettings) IsBurnForAll(esdtTokenKey []byte) bool {
-	esdtMetadata, err := e.getGlobalMetadata(esdtTokenKey)
+	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
 		return false
 	}
@@ -177,7 +196,7 @@ func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, desti
 		return false
 	}
 
-	systemAcc, err := e.getSystemAccount()
+	systemAcc, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return false
 	}
@@ -197,8 +216,9 @@ func (e *esdtGlobalSettings) IsSenderOrDestinationWithTransferRole(sender, desti
 	return false
 }
 
-func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {
-	systemSCAccount, err := e.getSystemAccount()
+// GetGlobalMetadata returns the global metadata for the esdtTokenKey
+func (e *esdtGlobalSettings) GetGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobalMetadata, error) {
+	systemSCAccount, err := getSystemAccount(e.accounts)
 	if err != nil {
 		return nil, err
 	}
@@ -209,6 +229,99 @@ func (e *esdtGlobalSettings) getGlobalMetadata(esdtTokenKey []byte) (*ESDTGlobal
 	}
 	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
 	return &esdtMetaData, nil
+}
+
+// GetTokenType returns the token type for the esdtTokenKey
+func (e *esdtGlobalSettings) GetTokenType(esdtTokenKey []byte) (uint32, error) {
+	esdtMetaData, err := e.GetGlobalMetadata(esdtTokenKey)
+	if err != nil {
+		return 0, err
+	}
+
+	tokenType, err := convertToESDTTokenType(uint32(esdtMetaData.TokenType))
+	if errors.Is(err, ErrTypeNotSetInsideGlobalSettingsHandler) {
+		return uint32(core.NonFungible), nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return tokenType, nil
+}
+
+// SetTokenType sets the token type for the esdtTokenKey
+func (e *esdtGlobalSettings) SetTokenType(esdtTokenKey []byte, tokenType uint32) error {
+	globalSettingsTokenType, err := convertToGlobalSettingsHandlerTokenType(tokenType)
+	if err != nil {
+		return err
+	}
+
+	systemAccount, err := getSystemAccount(e.accounts)
+	if err != nil {
+		return err
+	}
+
+	val, _, err := systemAccount.AccountDataHandler().RetrieveValue(esdtTokenKey)
+	if core.IsGetNodeFromDBError(err) {
+		return err
+	}
+	esdtMetaData := ESDTGlobalMetadataFromBytes(val)
+	esdtMetaData.TokenType = byte(globalSettingsTokenType)
+
+	err = systemAccount.AccountDataHandler().SaveKeyValue(esdtTokenKey, esdtMetaData.ToBytes())
+	if err != nil {
+		return err
+	}
+
+	return e.accounts.SaveAccount(systemAccount)
+}
+
+func convertToGlobalSettingsHandlerTokenType(esdtType uint32) (uint32, error) {
+	switch esdtType {
+	case uint32(core.Fungible):
+		return uint32(fungible), nil
+	case uint32(core.NonFungible):
+		return uint32(nonFungible), nil
+	case uint32(core.NonFungibleV2):
+		return uint32(nonFungibleV2), nil
+	case uint32(core.MetaFungible):
+		return uint32(metaFungible), nil
+	case uint32(core.SemiFungible):
+		return uint32(semiFungible), nil
+	case uint32(core.DynamicNFT):
+		return uint32(dynamicNFT), nil
+	case uint32(core.DynamicSFT):
+		return uint32(dynamicSFT), nil
+	case uint32(core.DynamicMeta):
+		return uint32(dynamicMeta), nil
+	default:
+		return math.MaxUint32, fmt.Errorf("invalid esdt type: %d", esdtType)
+	}
+}
+
+func convertToESDTTokenType(esdtType uint32) (uint32, error) {
+	switch ESDTTypeForGlobalSettingsHandler(esdtType) {
+	case notSet:
+		return 0, ErrTypeNotSetInsideGlobalSettingsHandler
+	case fungible:
+		return uint32(core.Fungible), nil
+	case nonFungible:
+		return uint32(core.NonFungible), nil
+	case nonFungibleV2:
+		return uint32(core.NonFungibleV2), nil
+	case metaFungible:
+		return uint32(core.MetaFungible), nil
+	case semiFungible:
+		return uint32(core.SemiFungible), nil
+	case dynamicNFT:
+		return uint32(core.DynamicNFT), nil
+	case dynamicSFT:
+		return uint32(core.DynamicSFT), nil
+	case dynamicMeta:
+		return uint32(core.DynamicMeta), nil
+	default:
+		return math.MaxUint32, fmt.Errorf("invalid esdt type: %d", esdtType)
+	}
 }
 
 // IsInterfaceNil returns true if underlying object in nil

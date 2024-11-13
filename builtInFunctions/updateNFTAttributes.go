@@ -6,17 +6,21 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-vm-common-go"
 )
 
 type esdtNFTupdate struct {
 	baseActiveHandler
+	vmcommon.BlockchainDataProvider
 	keyPrefix             []byte
 	esdtStorageHandler    vmcommon.ESDTNFTStorageHandler
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler
 	rolesHandler          vmcommon.ESDTRoleHandler
 	gasConfig             vmcommon.BaseOperationCost
 	funcGasCost           uint64
+	marshaller            marshal.Marshalizer
+	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	mutExecution          sync.RWMutex
 }
 
@@ -28,6 +32,7 @@ func NewESDTNFTUpdateAttributesFunc(
 	globalSettingsHandler vmcommon.ESDTGlobalSettingsHandler,
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
+	marshaller marshal.Marshalizer,
 ) (*esdtNFTupdate, error) {
 	if check.IfNil(esdtStorageHandler) {
 		return nil, ErrNilESDTNFTStorageHandler
@@ -41,15 +46,21 @@ func NewESDTNFTUpdateAttributesFunc(
 	if check.IfNil(enableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshalizer
+	}
 
 	e := &esdtNFTupdate{
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		esdtStorageHandler:    esdtStorageHandler,
-		funcGasCost:           funcGasCost,
-		mutExecution:          sync.RWMutex{},
-		globalSettingsHandler: globalSettingsHandler,
-		gasConfig:             gasConfig,
-		rolesHandler:          rolesHandler,
+		keyPrefix:              []byte(baseESDTKeyPrefix),
+		esdtStorageHandler:     esdtStorageHandler,
+		funcGasCost:            funcGasCost,
+		mutExecution:           sync.RWMutex{},
+		globalSettingsHandler:  globalSettingsHandler,
+		gasConfig:              gasConfig,
+		rolesHandler:           rolesHandler,
+		BlockchainDataProvider: NewBlockchainDataProvider(),
+		marshaller:             marshaller,
+		enableEpochsHandler:    enableEpochsHandler,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
@@ -111,9 +122,25 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 		return nil, err
 	}
 
-	esdtData.TokenMetaData.Attributes = vmInput.Arguments[2]
+	metaDataVersion, _, err := getMetaDataVersion(esdtData, e.enableEpochsHandler, e.marshaller)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, true, vmInput.ReturnCallAfterError)
+	esdtData.TokenMetaData.Attributes = vmInput.Arguments[2]
+	metaDataVersion.Attributes = e.CurrentRound()
+
+	err = changeEsdtVersion(esdtData, metaDataVersion, e.enableEpochsHandler, e.marshaller)
+	if err != nil {
+		return nil, err
+	}
+
+	properties := vmcommon.NftSaveArgs{
+		MustUpdateAllFields:         true,
+		IsReturnWithError:           vmInput.ReturnCallAfterError,
+		KeepMetaDataOnZeroLiquidity: true,
+	}
+	_, err = e.esdtStorageHandler.SaveESDTNFTToken(acntSnd.AddressBytes(), acntSnd, esdtTokenKey, nonce, esdtData, properties)
 	if err != nil {
 		return nil, err
 	}
