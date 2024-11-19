@@ -19,41 +19,53 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		argsFunc func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler)
+		argsFunc func() ESDTLocalMintBurnFuncArgs
 		exError  error
 	}{
 		{
 			name: "NilMarshalizer",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, nil, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
+				args.Marshaller = nil
+
+				return args
 			},
 			exError: ErrNilMarshalizer,
 		},
 		{
 			name: "NilGlobalSettingsHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, &mock.MarshalizerMock{}, nil, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
+				args.GlobalSettingsHandler = nil
+
+				return args
 			},
 			exError: ErrNilGlobalSettingsHandler,
 		},
 		{
 			name: "NilRolesHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, nil, &mock.EnableEpochsHandlerStub{}
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
+				args.RolesHandler = nil
+
+				return args
 			},
 			exError: ErrNilRolesHandler,
 		},
 		{
 			name: "NilEnableEpochsHandler",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, nil
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				args := createESDTLocalMintBurnArgs()
+				args.EnableEpochsHandler = nil
+
+				return args
 			},
 			exError: ErrNilEnableEpochsHandler,
 		},
 		{
 			name: "Ok",
-			argsFunc: func() (c uint64, m vmcommon.Marshalizer, p vmcommon.ESDTGlobalSettingsHandler, r vmcommon.ESDTRoleHandler, e vmcommon.EnableEpochsHandler) {
-				return 0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}
+			argsFunc: func() ESDTLocalMintBurnFuncArgs {
+				return createESDTLocalMintBurnArgs()
 			},
 			exError: nil,
 		},
@@ -70,7 +82,7 @@ func TestNewESDTLocalMintFunc(t *testing.T) {
 func TestEsdtLocalMint_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(createESDTLocalMintBurnArgs())
 
 	esdtLocalMintF.SetNewGasConfig(&vmcommon.GasCost{BuiltInCost: vmcommon.BuiltInCost{
 		ESDTLocalMint: 500},
@@ -82,7 +94,7 @@ func TestEsdtLocalMint_SetNewGasConfig(t *testing.T) {
 func TestEsdtLocalMint_ProcessBuiltinFunction_CalledWithValueShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(createESDTLocalMintBurnArgs())
 
 	_, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -96,11 +108,13 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CheckAllowToExecuteShouldErr(t *te
 	t.Parallel()
 
 	localErr := errors.New("local err")
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{
+	args := createESDTLocalMintBurnArgs()
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return localErr
 		},
-	}, &mock.EnableEpochsHandlerStub{})
+	}
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(args)
 
 	_, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -114,11 +128,13 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CheckAllowToExecuteShouldErr(t *te
 func TestEsdtLocalMint_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(0, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTRoleHandlerStub{
+	args := createESDTLocalMintBurnArgs()
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			return nil
 		},
-	}, &mock.EnableEpochsHandlerStub{})
+	}
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(args)
 
 	localErr := errors.New("local err")
 	_, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.UserAccountStub{
@@ -144,27 +160,27 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_CannotAddToEsdtBalanceShouldErr(t 
 func TestEsdtLocalMint_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
-	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+	args := createESDTLocalMintBurnArgs()
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleLocalMint, string(action))
 			return nil
 		},
 	}
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, &mock.EnableEpochsHandlerStub{})
+	args.FuncGasCost = 50
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(args)
 
 	sndAccount := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshaller.Unmarshal(esdtData, value)
-					//require.Equal(t, big.NewInt(101), esdtData.Value)
+					_ = args.Marshaller.Unmarshal(esdtData, value)
 					return nil
 				},
 			}
@@ -202,26 +218,27 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ValueTooLong(t *testing.T) {
 func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &mock.MarshalizerMock{}
-	esdtRoleHandler := &mock.ESDTRoleHandlerStub{
+	args := createESDTLocalMintBurnArgs()
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
 		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
 			assert.Equal(t, core.ESDTRoleLocalMint, string(action))
 			return nil
 		},
 	}
-	esdtLocalMintF, _ := NewESDTLocalMintFunc(50, marshaller, &mock.GlobalSettingsHandlerStub{}, esdtRoleHandler, &mock.EnableEpochsHandlerStub{})
+	args.FuncGasCost = 50
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(args)
 
 	sndAccout := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
 				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
 					esdtData := &esdt.ESDigitalToken{Value: big.NewInt(100)}
-					serializedEsdtData, err := marshaller.Marshal(esdtData)
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
 					return serializedEsdtData, 0, err
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					esdtData := &esdt.ESDigitalToken{}
-					_ = marshaller.Unmarshal(esdtData, value)
+					_ = args.Marshaller.Unmarshal(esdtData, value)
 					require.Equal(t, big.NewInt(101), esdtData.Value)
 					return nil
 				},
@@ -261,5 +278,114 @@ func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldWork(t *testing.T) {
 		},
 	})
 	require.True(t, errors.Is(err, ErrInvalidArguments))
+	require.Nil(t, vmOutput)
+}
+
+func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldMintCrossChainTokenInSelfMainChain(t *testing.T) {
+	t.Parallel()
+
+	args := createESDTLocalMintBurnArgs()
+	whiteListedAddr := []byte("whiteListedAddress")
+	ctc, _ := NewCrossChainTokenChecker(nil, map[string]struct{}{
+		string(whiteListedAddr): {},
+	})
+
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			if ctc.IsCrossChainOperationAllowed(account.AddressBytes(), tokenID) {
+				return nil
+			}
+
+			require.Fail(t, "should not check here, should only check if cross operation and self chain == main chain")
+			return nil
+		},
+	}
+	args.FuncGasCost = 50
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(args)
+
+	tokenID := []byte("pref-TKNX-abcdef")
+	initialSupply := big.NewInt(100)
+	mintQuantity := big.NewInt(1)
+	sndAccout := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+					esdtData := &esdt.ESDigitalToken{Value: initialSupply}
+					serializedEsdtData, err := args.Marshaller.Marshal(esdtData)
+					return serializedEsdtData, 0, err
+				},
+				SaveKeyValueCalled: func(key []byte, value []byte) error {
+					esdtData := &esdt.ESDigitalToken{}
+					_ = args.Marshaller.Unmarshal(esdtData, value)
+					require.Equal(t, big.NewInt(0).Add(initialSupply, mintQuantity), esdtData.Value)
+					return nil
+				},
+			}
+		},
+		Address: whiteListedAddr,
+	}
+
+	initialGas := uint64(500)
+	vmOutput, err := esdtLocalMintF.ProcessBuiltinFunction(sndAccout, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{tokenID, mintQuantity.Bytes()},
+			GasProvided: initialGas,
+		},
+	})
+	require.Equal(t, nil, err)
+
+	expectedVMOutput := &vmcommon.VMOutput{
+		ReturnCode:   vmcommon.Ok,
+		GasRemaining: initialGas - args.FuncGasCost,
+		Logs: []*vmcommon.LogEntry{
+			{
+				Identifier: []byte("ESDTLocalMint"),
+				Address:    nil,
+				Topics:     [][]byte{tokenID, big.NewInt(0).Bytes(), mintQuantity.Bytes()},
+				Data:       nil,
+			},
+		},
+	}
+	require.Equal(t, expectedVMOutput, vmOutput)
+}
+
+func TestEsdtLocalMint_ProcessBuiltinFunction_ShouldNotMintCrossChainTokenInSovereignChain(t *testing.T) {
+	t.Parallel()
+
+	args := createESDTLocalMintBurnArgs()
+	ctc, _ := NewCrossChainTokenChecker([]byte("self"), getWhiteListedAddress())
+	errNotAllowedToMint := errors.New("not allowed")
+	args.RolesHandler = &mock.ESDTRoleHandlerStub{
+		CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+			if ctc.IsCrossChainOperationAllowed(account.AddressBytes(), tokenID) {
+				return nil
+			}
+
+			return errNotAllowedToMint
+		},
+	}
+	esdtLocalMintF, _ := NewESDTLocalMintFunc(args)
+
+	// Cross chain token from another sovereign chain
+	vmOutput, err := esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{[]byte("pref-TKNX-abcdef"), big.NewInt(1).Bytes()},
+			GasProvided: 500,
+		},
+	})
+	require.Equal(t, errNotAllowedToMint, err)
+	require.Nil(t, vmOutput)
+
+	// Cross chain token from main chain
+	vmOutput, err = esdtLocalMintF.ProcessBuiltinFunction(&mock.AccountWrapMock{}, &mock.AccountWrapMock{}, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{[]byte("TKNX-abcdef"), big.NewInt(1).Bytes()},
+			GasProvided: 500,
+		},
+	})
+	require.Equal(t, errNotAllowedToMint, err)
 	require.Nil(t, vmOutput)
 }

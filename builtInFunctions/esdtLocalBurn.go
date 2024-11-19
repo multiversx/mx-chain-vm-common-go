@@ -22,34 +22,37 @@ type esdtLocalBurn struct {
 	mutExecution          sync.RWMutex
 }
 
+// ESDTLocalMintBurnFuncArgs holds args needed for local mint/burn
+type ESDTLocalMintBurnFuncArgs struct {
+	FuncGasCost           uint64
+	Marshaller            vmcommon.Marshalizer
+	GlobalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler
+	RolesHandler          vmcommon.ESDTRoleHandler
+	EnableEpochsHandler   vmcommon.EnableEpochsHandler
+}
+
 // NewESDTLocalBurnFunc returns the esdt local burn built-in function component
-func NewESDTLocalBurnFunc(
-	funcGasCost uint64,
-	marshaller vmcommon.Marshalizer,
-	globalSettingsHandler vmcommon.ExtendedESDTGlobalSettingsHandler,
-	rolesHandler vmcommon.ESDTRoleHandler,
-	enableEpochsHandler vmcommon.EnableEpochsHandler,
-) (*esdtLocalBurn, error) {
-	if check.IfNil(marshaller) {
+func NewESDTLocalBurnFunc(args ESDTLocalMintBurnFuncArgs) (*esdtLocalBurn, error) {
+	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshalizer
 	}
-	if check.IfNil(globalSettingsHandler) {
+	if check.IfNil(args.GlobalSettingsHandler) {
 		return nil, ErrNilGlobalSettingsHandler
 	}
-	if check.IfNil(rolesHandler) {
+	if check.IfNil(args.RolesHandler) {
 		return nil, ErrNilRolesHandler
 	}
-	if check.IfNil(enableEpochsHandler) {
+	if check.IfNil(args.EnableEpochsHandler) {
 		return nil, ErrNilEnableEpochsHandler
 	}
 
 	e := &esdtLocalBurn{
 		keyPrefix:             []byte(baseESDTKeyPrefix),
-		marshaller:            marshaller,
-		globalSettingsHandler: globalSettingsHandler,
-		rolesHandler:          rolesHandler,
-		funcGasCost:           funcGasCost,
-		enableEpochsHandler:   enableEpochsHandler,
+		marshaller:            args.Marshaller,
+		globalSettingsHandler: args.GlobalSettingsHandler,
+		rolesHandler:          args.RolesHandler,
+		funcGasCost:           args.FuncGasCost,
+		enableEpochsHandler:   args.EnableEpochsHandler,
 		mutExecution:          sync.RWMutex{},
 	}
 
