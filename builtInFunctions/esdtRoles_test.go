@@ -14,19 +14,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewESDTRolesFunc_NilMarshalizerShouldErr(t *testing.T) {
+func TestNewESDTRolesFunc(t *testing.T) {
 	t.Parallel()
 
-	esdtRolesF, err := NewESDTRolesFunc(nil, false)
-
-	require.Equal(t, ErrNilMarshalizer, err)
-	require.Nil(t, esdtRolesF)
+	t.Run("should work", func(t *testing.T) {
+		esdtRolesF, err := NewESDTRolesFunc(&mock.MarshalizerMock{}, &mock.CrossChainTokenCheckerMock{}, false)
+		require.Nil(t, err)
+		require.False(t, esdtRolesF.IsInterfaceNil())
+		require.Equal(t, map[string]struct{}{
+			core.ESDTRoleLocalMint:      {},
+			core.ESDTRoleNFTAddQuantity: {},
+			core.ESDTRoleNFTCreate:      {},
+			core.ESDTRoleLocalBurn:      {},
+			core.ESDTRoleNFTBurn:        {},
+		}, esdtRolesF.crossChainActions)
+	})
+	t.Run("nil marshaller, should return error", func(t *testing.T) {
+		esdtRolesF, err := NewESDTRolesFunc(nil, &mock.CrossChainTokenCheckerMock{}, false)
+		require.Equal(t, ErrNilMarshalizer, err)
+		require.Nil(t, esdtRolesF)
+	})
+	t.Run("nil cross chain checker, should return error", func(t *testing.T) {
+		esdtRolesF, err := NewESDTRolesFunc(&mock.MarshalizerMock{}, nil, false)
+		require.Equal(t, ErrNilCrossChainTokenChecker, err)
+		require.Nil(t, esdtRolesF)
+	})
 }
 
 func TestEsdtRoles_ProcessBuiltinFunction_NilVMInputShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtRolesF, _ := NewESDTRolesFunc(nil, false)
+	esdtRolesF, _ := NewESDTRolesFunc(nil, &mock.CrossChainTokenCheckerMock{}, false)
 
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, &mock.UserAccountStub{}, nil)
 	require.Equal(t, ErrNilVmInput, err)
@@ -35,7 +53,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_NilVMInputShouldErr(t *testing.T) {
 func TestEsdtRoles_ProcessBuiltinFunction_WrongCalledShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtRolesF, _ := NewESDTRolesFunc(nil, false)
+	esdtRolesF, _ := NewESDTRolesFunc(nil, &mock.CrossChainTokenCheckerMock{}, false)
 
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, &mock.UserAccountStub{}, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -50,7 +68,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_WrongCalledShouldErr(t *testing.T) {
 func TestEsdtRoles_ProcessBuiltinFunction_NilAccountDestShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtRolesF, _ := NewESDTRolesFunc(nil, false)
+	esdtRolesF, _ := NewESDTRolesFunc(nil, &mock.CrossChainTokenCheckerMock{}, false)
 
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, nil, &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -65,7 +83,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_NilAccountDestShouldErr(t *testing.T) 
 func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldErr(t *testing.T) {
 	t.Parallel()
 
-	esdtRolesF, _ := NewESDTRolesFunc(&mock.MarshalizerMock{Fail: true}, false)
+	esdtRolesF, _ := NewESDTRolesFunc(&mock.MarshalizerMock{Fail: true}, &mock.CrossChainTokenCheckerMock{}, false)
 
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -89,7 +107,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_GetRolesFailShouldWorkEvenIfAccntTrieI
 	t.Parallel()
 
 	saveKeyWasCalled := false
-	esdtRolesF, _ := NewESDTRolesFunc(&mock.MarshalizerMock{}, false)
+	esdtRolesF, _ := NewESDTRolesFunc(&mock.MarshalizerMock{}, &mock.CrossChainTokenCheckerMock{}, false)
 
 	_, err := esdtRolesF.ProcessBuiltinFunction(nil, &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -118,7 +136,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesShouldWork(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, true)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, true)
 
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -151,7 +169,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesMultiNFT(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, true)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, true)
 
 	tokenID := []byte("tokenID")
 	roleKey := append(roleKeyPrefix, tokenID...)
@@ -201,7 +219,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_SaveFailedShouldErr(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, true)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, true)
 
 	localErr := errors.New("local err")
 	acc := &mock.UserAccountStub{
@@ -232,7 +250,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesDoesNotExistsShouldWork(t *t
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, false)
 
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -265,7 +283,7 @@ func TestEsdtRoles_ProcessBuiltinFunction_UnsetRolesShouldWork(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, false)
 
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -300,7 +318,7 @@ func TestEsdtRoles_CheckAllowedToExecuteNilAccountShouldErr(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(nil, []byte("ID"), []byte(core.ESDTRoleLocalBurn))
 	require.Equal(t, ErrNilUserAccount, err)
@@ -310,7 +328,7 @@ func TestEsdtRoles_CheckAllowedToExecuteCannotGetESDTRole(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{Fail: true}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -328,7 +346,7 @@ func TestEsdtRoles_CheckAllowedToExecuteIsNewNotAllowed(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -346,7 +364,7 @@ func TestEsdtRoles_CheckAllowed_ShouldWork(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -368,7 +386,7 @@ func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &mock.MarshalizerMock{}
-	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false)
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, &mock.CrossChainTokenCheckerMock{}, false)
 
 	err := esdtRolesF.CheckAllowedToExecute(&mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
@@ -384,4 +402,27 @@ func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 		},
 	}, []byte("ID"), []byte(core.ESDTRoleLocalMint))
 	require.Equal(t, ErrActionNotAllowed, err)
+}
+
+func TestEsdtRoles_isAllowedToExecuteCrossChain(t *testing.T) {
+	isCrossChainOperationAllowedCt := 0
+	ctc := &mock.CrossChainTokenCheckerMock{
+		IsCrossChainOperationAllowedCalled: func(address []byte, tokenID []byte) bool {
+			isCrossChainOperationAllowedCt++
+			return true
+		},
+	}
+	esdtRolesF, _ := NewESDTRolesFunc(&mock.MarshalizerMock{}, ctc, false)
+
+	isAllowed := esdtRolesF.isAllowedToExecuteCrossChain([]byte("addr"), []byte("token"), []byte(core.ESDTRoleLocalBurn))
+	require.True(t, isAllowed)
+	require.Equal(t, 1, isCrossChainOperationAllowedCt)
+
+	isAllowed = esdtRolesF.isAllowedToExecuteCrossChain([]byte("addr"), []byte("token"), []byte(core.ESDTRoleNFTAddQuantity))
+	require.True(t, isAllowed)
+	require.Equal(t, 2, isCrossChainOperationAllowedCt)
+
+	isAllowed = esdtRolesF.isAllowedToExecuteCrossChain([]byte("addr"), []byte("token"), []byte(core.ESDTRoleModifyRoyalties))
+	require.False(t, isAllowed)
+	require.Equal(t, 2, isCrossChainOperationAllowedCt)
 }

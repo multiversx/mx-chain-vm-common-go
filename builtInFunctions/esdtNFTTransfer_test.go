@@ -11,10 +11,11 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
-	"github.com/multiversx/mx-chain-vm-common-go"
-	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/mock"
 )
 
 var keyPrefix = []byte(baseESDTKeyPrefix)
@@ -65,7 +66,7 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 		},
 	}
 
-	esdtStorageHandler := createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts, enableEpochsHandler)
+	esdtStorageHandler := createNewESDTDataStorageHandlerWithArgs(globalSettingsHandler, accounts, enableEpochsHandler, &mock.CrossChainTokenCheckerMock{})
 	nftTransfer, _ := NewESDTNFTTransferFunc(
 		1,
 		marshaller,
@@ -1223,6 +1224,66 @@ func createSFT(tokenName []byte, tokenNonce uint64, nftTransferSenderShard *esdt
 
 	_ = systemSCAccount.(vmcommon.UserAccountHandler).AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, buff)
 	_ = nftTransferSenderShard.accounts.SaveAccount(systemSCAccount)
+}
+
+func TestESDTNFTTransfer_ProcessBuiltinFunctionOnSovereignTransfer(t *testing.T) {
+	transferFunc := createNftTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
+
+	enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == FixAsyncCallbackCheckFlag || flag == CheckFunctionArgumentFlag ||
+				flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag
+		},
+	}
+	esdtStorage := createNewESDTDataStorageHandlerWithArgs(transferFunc.globalSettingsHandler, transferFunc.accounts, enableEpochsHandler, &mock.CrossChainTokenCheckerMock{})
+	transferFunc.esdtStorageHandler = esdtStorage
+
+	payableChecker, _ := NewPayableCheckFunc(
+		&mock.PayableHandlerStub{
+			IsPayableCalled: func(address []byte) (bool, error) {
+				return true, nil
+			},
+		}, enableEpochsHandler)
+
+	_ = transferFunc.SetPayableChecker(payableChecker)
+
+	senderAddress := core.ESDTSCAddress
+
+	destinationAddress := bytes.Repeat([]byte{0}, 32)
+	destinationAddress[25] = 1
+	destination, err := transferFunc.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+
+	token1 := []byte("token1")
+	token1Nonce := uint64(1)
+	nonce1Bytes := big.NewInt(int64(token1Nonce)).Bytes()
+	sysAcc, err := transferFunc.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+	require.Nil(t, err)
+
+	reserved := []byte("reserved")
+	sysAccNFTInitialQuantity := big.NewInt(4)
+	esdtDataBytes := createESDTNFTTokenWithReservedField(token1, core.NonFungible, token1Nonce, sysAccNFTInitialQuantity, transferFunc.marshaller, sysAcc.(vmcommon.UserAccountHandler), reserved)
+
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{token1, nonce1Bytes, sysAccNFTInitialQuantity.Bytes(), esdtDataBytes},
+			GasProvided: 0,
+		},
+		RecipientAddr: destinationAddress,
+	}
+
+	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	vmOutput, err := transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+	require.Nil(t, err)
+	require.Equal(t, vmcommon.Ok, vmOutput.ReturnCode)
+
+	testNFTTokenShouldExist(t, transferFunc.marshaller, destination, token1, token1Nonce, sysAccNFTInitialQuantity)
+	testNFTTokenShouldExist(t, transferFunc.marshaller, sysAcc, token1, token1Nonce, big.NewInt(0).Add(sysAccNFTInitialQuantity, sysAccNFTInitialQuantity))
 }
 
 func TestHasDynamicRole(t *testing.T) {

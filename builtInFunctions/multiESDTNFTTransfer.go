@@ -138,7 +138,9 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	}
 
 	// in cross shard NFT transfer the sender account must be nil
-	if !check.IfNil(acntSnd) {
+	// or sender should be ESDTSCAddress in case of a sovereign scr
+	isSenderESDTSCAddr := bytes.Equal(vmInput.CallerAddr, core.ESDTSCAddress)
+	if !check.IfNil(acntSnd) && !isSenderESDTSCAddr {
 		return nil, ErrInvalidRcvAddr
 	}
 	if check.IfNil(acntDst) {
@@ -194,7 +196,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				esdtTokenKey,
 				nonce,
 				vmInput.ReturnCallAfterError,
-			)
+				isSenderESDTSCAddr)
 			if err != nil {
 				return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 			}
@@ -478,6 +480,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 			esdtTokenKey,
 			transferData.ESDTTokenNonce,
 			isReturnCallWithError,
+			false,
 		)
 		if err != nil {
 			return nil, err

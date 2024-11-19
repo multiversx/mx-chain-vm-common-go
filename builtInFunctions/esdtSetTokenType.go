@@ -52,7 +52,10 @@ func NewESDTSetTokenTypeFunc(
 }
 
 // ProcessBuiltinFunction saves the token type in the system account
-func (e *esdtSetTokenType) ProcessBuiltinFunction(_, _ vmcommon.UserAccountHandler, vmInput *vmcommon.ContractCallInput) (*vmcommon.VMOutput, error) {
+func (e *esdtSetTokenType) ProcessBuiltinFunction(
+	_, dstAccount vmcommon.UserAccountHandler,
+	vmInput *vmcommon.ContractCallInput,
+) (*vmcommon.VMOutput, error) {
 	if vmInput == nil {
 		return nil, ErrNilVmInput
 	}
@@ -75,7 +78,12 @@ func (e *esdtSetTokenType) ProcessBuiltinFunction(_, _ vmcommon.UserAccountHandl
 		return nil, err
 	}
 
-	err = e.globalSettingsHandler.SetTokenType(esdtTokenKey, tokenType)
+	systemSCAccount, err := getSystemAccountIfNeeded(vmInput, dstAccount, e.accounts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = e.globalSettingsHandler.SetTokenType(esdtTokenKey, tokenType, systemSCAccount)
 	if err != nil {
 		return nil, err
 	}

@@ -2,16 +2,17 @@ package builtInFunctions
 
 import (
 	"errors"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"strings"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewESDTGlobalSettingsFunc(t *testing.T) {
@@ -299,6 +300,37 @@ func TestESDTGlobalSettingsBurnForAll_ProcessBuiltInFunction(t *testing.T) {
 	assert.False(t, globalSettingsFunc.IsLimitedTransfer(tokenID))
 }
 
+func TestESDTGlobalSettingsPause_NoNeedToGetAccount(t *testing.T) {
+	t.Parallel()
+
+	globalSettingsFunc, _ := NewESDTGlobalSettingsFunc(
+		&mock.AccountsStub{
+			LoadAccountCalled: func(_ []byte) (vmcommon.AccountHandler, error) {
+				return nil, errors.New("should not be called")
+			},
+		},
+		&mock.MarshalizerMock{},
+		true,
+		core.BuiltInFunctionESDTPause,
+		falseHandler,
+	)
+
+	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+	key := []byte("key")
+	input := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			GasProvided: 50,
+			CallValue:   big.NewInt(0),
+			Arguments:   [][]byte{key},
+			CallerAddr:  core.ESDTSCAddress,
+		},
+		RecipientAddr: vmcommon.SystemAccountAddress,
+	}
+
+	_, err := globalSettingsFunc.ProcessBuiltinFunction(nil, acnt, input)
+	assert.Nil(t, err)
+}
+
 func TestEsdtGlobalSettings_SetTokenType(t *testing.T) {
 	t.Parallel()
 
@@ -318,7 +350,7 @@ func TestEsdtGlobalSettings_SetTokenType(t *testing.T) {
 			falseHandler,
 		)
 
-		err := globalSettingsFunc.SetTokenType([]byte("key"), 100)
+		err := globalSettingsFunc.SetTokenType([]byte("key"), 100, acnt)
 		require.True(t, strings.Contains(err.Error(), "invalid esdt type"))
 	})
 	t.Run("fungible token type", func(t *testing.T) {
@@ -337,7 +369,7 @@ func TestEsdtGlobalSettings_SetTokenType(t *testing.T) {
 			falseHandler,
 		)
 
-		err := globalSettingsFunc.SetTokenType([]byte("key"), uint32(core.Fungible))
+		err := globalSettingsFunc.SetTokenType([]byte("key"), uint32(core.Fungible), acnt)
 		require.Nil(t, err)
 		retrievedVal := acnt.Storage["key"]
 		require.Equal(t, []byte{0, 1}, retrievedVal)

@@ -223,3 +223,12 @@ var ErrNilBlockchainHook = errors.New("nil blockchain hook")
 
 // ErrTypeNotSetInsideGlobalSettingsHandler signals that type is not set inside global settings handler
 var ErrTypeNotSetInsideGlobalSettingsHandler = errors.New("type not set inside global settings handler")
+
+// ErrInvalidTokenPrefix signals that an invalid token prefix has been provided
+var ErrInvalidTokenPrefix = errors.New("invalid token prefix, should have max 4 (lowercase/alphanumeric) characters")
+
+// ErrNilCrossChainTokenChecker signals that a nil cross chain token checker has been provided
+var ErrNilCrossChainTokenChecker = errors.New("nil cross chain token checker has been provided")
+
+// ErrNoWhiteListedAddressCrossChainOperations signals that no white listed address has been set for cross chain operations
+var ErrNoWhiteListedAddressCrossChainOperations = errors.New("no whitelisted address set for cross chain operation actions")
