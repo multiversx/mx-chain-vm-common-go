@@ -14,8 +14,14 @@ type ResponseParseData struct {
 	IsRelayed        bool
 }
 
+// NewResponseParseDataAsRelayed returns an empty ResponseParseData with IsRelayed field set to true
 func NewResponseParseDataAsRelayed() *ResponseParseData {
 	return &ResponseParseData{
 		IsRelayed: true,
 	}
+}
+
+// NewResponseParseDataAsMoveBalance returns an empty ResponseParseData
+func NewResponseParseDataAsMoveBalance() *ResponseParseData {
+	return &ResponseParseData{}
 }

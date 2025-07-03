@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/sharding"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
+	"github.com/multiversx/mx-chain-vm-common-go/builtInFunctions"
 	"github.com/multiversx/mx-chain-vm-common-go/parsers"
 )
 
@@ -35,9 +36,10 @@ var errInvalidAddressLength = errors.New("invalid address length")
 type operationDataFieldParser struct {
 	builtInFunctionsList []string
 
-	addressLength      int
-	argsParser         vmcommon.CallArgsParser
-	esdtTransferParser vmcommon.ESDTTransferParser
+	addressLength       int
+	argsParser          vmcommon.CallArgsParser
+	esdtTransferParser  vmcommon.ESDTTransferParser
+	enableEpochsHandler vmcommon.EnableEpochsHandler
 }
 
 // NewOperationDataFieldParser will return a new instance of operationDataFieldParser
@@ -47,6 +49,9 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 	}
 	if args.AddressLength == 0 {
 		return nil, errInvalidAddressLength
+	}
+	if check.IfNil(args.EnableEpochsHandler) {
+		return nil, core.ErrNilEnableEpochsHandler
 	}
 
 	argsParser := parsers.NewCallArgsParser()
@@ -60,6 +65,7 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 		esdtTransferParser:   esdtTransferParser,
 		addressLength:        args.AddressLength,
 		builtInFunctionsList: getAllBuiltInFunctions(),
+		enableEpochsHandler:  args.EnableEpochsHandler,
 	}, nil
 }
 
@@ -102,6 +108,9 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 	case core.RelayedTransaction, core.RelayedTransactionV2:
 		if ignoreRelayed {
 			return NewResponseParseDataAsRelayed()
+		}
+		if odp.enableEpochsHandler.IsFlagEnabled(builtInFunctions.RelayedTransactionsV1V2DisableFlag) {
+			return NewResponseParseDataAsMoveBalance()
 		}
 		return odp.parseRelayed(function, args, receiver, numOfShards)
 	}
