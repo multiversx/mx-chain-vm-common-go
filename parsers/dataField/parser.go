@@ -70,11 +70,17 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 }
 
 // Parse will parse the provided data field
-func (odp *operationDataFieldParser) Parse(dataField []byte, sender, receiver []byte, numOfShards uint32) *ResponseParseData {
-	return odp.parse(dataField, sender, receiver, false, numOfShards)
+func (odp *operationDataFieldParser) Parse(dataField []byte, sender, receiver []byte, numOfShards uint32, epoch uint32) *ResponseParseData {
+	return odp.parse(dataField, sender, receiver, false, numOfShards, epoch)
 }
 
-func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []byte, ignoreRelayed bool, numOfShards uint32) *ResponseParseData {
+func (odp *operationDataFieldParser) parse(
+	dataField []byte,
+	sender, receiver []byte,
+	ignoreRelayed bool,
+	numOfShards uint32,
+	epoch uint32,
+) *ResponseParseData {
 	responseParse := &ResponseParseData{
 		Operation: OperationTransfer,
 	}
@@ -109,7 +115,7 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 		if ignoreRelayed {
 			return NewResponseParseDataAsRelayed()
 		}
-		if odp.enableEpochsHandler.IsFlagEnabled(builtInFunctions.RelayedTransactionsV1V2DisableFlag) {
+		if odp.enableEpochsHandler.IsFlagEnabledInEpoch(builtInFunctions.RelayedTransactionsV1V2DisableFlag, epoch) {
 			return NewResponseParseDataAsMoveBalance()
 		}
 		return odp.parseRelayed(function, args, receiver, numOfShards)
