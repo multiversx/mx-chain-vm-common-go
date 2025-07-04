@@ -118,7 +118,7 @@ func (odp *operationDataFieldParser) parse(
 		if odp.enableEpochsHandler.IsFlagEnabledInEpoch(builtInFunctions.RelayedTransactionsV1V2DisableFlag, epoch) {
 			return NewResponseParseDataAsMoveBalance()
 		}
-		return odp.parseRelayed(function, args, receiver, numOfShards)
+		return odp.parseRelayed(function, args, receiver, numOfShards, epoch)
 	}
 
 	isBuiltInFunc := isBuiltInFunction(odp.builtInFunctionsList, function)
@@ -133,7 +133,13 @@ func (odp *operationDataFieldParser) parse(
 	return responseParse
 }
 
-func (odp *operationDataFieldParser) parseRelayed(function string, args [][]byte, receiver []byte, numOfShards uint32) *ResponseParseData {
+func (odp *operationDataFieldParser) parseRelayed(
+	function string,
+	args [][]byte,
+	receiver []byte,
+	numOfShards uint32,
+	epoch uint32,
+) *ResponseParseData {
 	if len(args) == 0 {
 		return &ResponseParseData{
 			IsRelayed: true,
@@ -147,7 +153,7 @@ func (odp *operationDataFieldParser) parseRelayed(function string, args [][]byte
 		}
 	}
 
-	res := odp.parse(tx.Data, tx.SndAddr, tx.RcvAddr, true, numOfShards)
+	res := odp.parse(tx.Data, tx.SndAddr, tx.RcvAddr, true, numOfShards, epoch)
 	if res.IsRelayed {
 		return &ResponseParseData{
 			IsRelayed: true,
