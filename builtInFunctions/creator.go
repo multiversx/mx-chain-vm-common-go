@@ -30,6 +30,7 @@ type ArgsCreateBuiltInFunctionContainer struct {
 	MaxNumOfAddressesForTransferRole  uint32
 	ConfigAddress                     []byte
 	SelfESDTPrefix                    []byte
+	BaseTokenID                       []byte
 }
 
 type builtInFuncCreator struct {
@@ -49,6 +50,7 @@ type builtInFuncCreator struct {
 	maxNumOfAddressesForTransferRole  uint32
 	configAddress                     []byte
 	selfESDTPrefix                    []byte
+	baseTokenID                       []byte
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -92,6 +94,7 @@ func NewBuiltInFunctionsCreator(args ArgsCreateBuiltInFunctionContainer) (*built
 		configAddress:                     args.ConfigAddress,
 		selfESDTPrefix:                    args.SelfESDTPrefix,
 		mapWhiteListedCrossChainAddresses: args.MapWhiteListedCrossChainAddresses,
+		baseTokenID:                       args.BaseTokenID,
 	}
 
 	b.gasConfig, err = createGasConfig(args.GasMap)
@@ -430,7 +433,8 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.gasConfig.BaseOperationCost,
 		b.enableEpochsHandler,
 		setRoleFunc,
-		b.esdtStorageHandler)
+		b.esdtStorageHandler,
+		b.baseTokenID)
 	if err != nil {
 		return err
 	}

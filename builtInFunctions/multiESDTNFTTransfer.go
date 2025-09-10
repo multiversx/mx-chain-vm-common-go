@@ -38,6 +38,7 @@ func NewESDTNFTMultiTransferFunc(
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	roleHandler vmcommon.ESDTRoleHandler,
 	esdtStorageHandler vmcommon.ESDTNFTStorageHandler,
+	baseTokenID []byte,
 ) (*esdtNFTMultiTransfer, error) {
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshalizer
@@ -76,7 +77,7 @@ func NewESDTNFTMultiTransferFunc(
 			enableEpochsHandler:   enableEpochsHandler,
 			marshaller:            marshaller,
 		},
-		baseTokenID: []byte(vmcommon.EGLDIdentifier),
+		baseTokenID: baseTokenID,
 	}
 
 	e.baseActiveHandler.activeHandler = func() bool {
