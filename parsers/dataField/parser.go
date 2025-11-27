@@ -10,7 +10,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/sharding"
 	"github.com/multiversx/mx-chain-core-go/data/transaction"
 	vmcommon "github.com/multiversx/mx-chain-vm-common-go"
-	"github.com/multiversx/mx-chain-vm-common-go/builtInFunctions"
 	"github.com/multiversx/mx-chain-vm-common-go/parsers"
 )
 
@@ -36,10 +35,10 @@ var errInvalidAddressLength = errors.New("invalid address length")
 type operationDataFieldParser struct {
 	builtInFunctionsList []string
 
-	addressLength       int
-	argsParser          vmcommon.CallArgsParser
-	esdtTransferParser  vmcommon.ESDTTransferParser
-	enableEpochsHandler vmcommon.EnableEpochsHandler
+	addressLength                       int
+	argsParser                          vmcommon.CallArgsParser
+	esdtTransferParser                  vmcommon.ESDTTransferParser
+	relayedTransactionsV1V2DisableEpoch uint32
 }
 
 // NewOperationDataFieldParser will return a new instance of operationDataFieldParser
@@ -50,9 +49,6 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 	if args.AddressLength == 0 {
 		return nil, errInvalidAddressLength
 	}
-	if check.IfNil(args.EnableEpochsHandler) {
-		return nil, core.ErrNilEnableEpochsHandler
-	}
 
 	argsParser := parsers.NewCallArgsParser()
 	esdtTransferParser, err := parsers.NewESDTTransferParser(args.Marshalizer)
@@ -61,11 +57,11 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 	}
 
 	return &operationDataFieldParser{
-		argsParser:           argsParser,
-		esdtTransferParser:   esdtTransferParser,
-		addressLength:        args.AddressLength,
-		builtInFunctionsList: getAllBuiltInFunctions(),
-		enableEpochsHandler:  args.EnableEpochsHandler,
+		argsParser:                          argsParser,
+		esdtTransferParser:                  esdtTransferParser,
+		addressLength:                       args.AddressLength,
+		builtInFunctionsList:                getAllBuiltInFunctions(),
+		relayedTransactionsV1V2DisableEpoch: args.RelayedTransactionsV1V2DisableEpoch,
 	}, nil
 }
 
@@ -115,7 +111,7 @@ func (odp *operationDataFieldParser) parse(
 		if ignoreRelayed {
 			return NewResponseParseDataAsRelayed()
 		}
-		if odp.enableEpochsHandler.IsFlagEnabledInEpoch(builtInFunctions.RelayedTransactionsV1V2DisableFlag, epoch) {
+		if epoch >= odp.relayedTransactionsV1V2DisableEpoch {
 			return NewResponseParseDataAsMoveBalance()
 		}
 		return odp.parseRelayed(function, args, receiver, numOfShards, epoch)
