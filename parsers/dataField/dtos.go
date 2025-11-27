@@ -23,5 +23,7 @@ func NewResponseParseDataAsRelayed() *ResponseParseData {
 
 // NewResponseParseDataAsMoveBalance returns an empty ResponseParseData
 func NewResponseParseDataAsMoveBalance() *ResponseParseData {
-	return &ResponseParseData{}
+	return &ResponseParseData{
+		Operation: OperationTransfer,
+	}
 }

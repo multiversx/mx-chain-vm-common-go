@@ -250,7 +250,7 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 
 		localArgs := createMockArgumentsOperationParser()
 		localArgs.EnableEpochsHandler = &mock.EnableEpochsHandlerStub{
-			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			IsFlagEnabledInEpochCalled: func(flag core.EnableEpochFlag, epoch uint32) bool {
 				return flag == builtInFunctions.RelayedTransactionsV1V2DisableFlag
 			},
 		}
@@ -259,6 +259,7 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 
 		require.Equal(t, &ResponseParseData{
 			IsRelayed: false,
+			Operation: OperationTransfer,
 		}, res)
 	})
 
