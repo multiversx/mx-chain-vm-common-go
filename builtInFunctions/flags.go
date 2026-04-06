@@ -28,6 +28,7 @@ const (
 	MigrateDataTrieFlag                         core.EnableEpochFlag = "MigrateDataTrieFlag"
 	DynamicEsdtFlag                             core.EnableEpochFlag = "DynamicEsdtFlag"
 	EGLDInESDTMultiTransferFlag                 core.EnableEpochFlag = "EGLDInESDTMultiTransferFlag"
+	DRWAEnforcementFlag                         core.EnableEpochFlag = "DRWAEnforcementFlag"
 )
 
 // allFlags must have all flags used by mx-chain-vm-common-go in the current version
@@ -56,4 +57,5 @@ var allFlags = []core.EnableEpochFlag{
 	MigrateDataTrieFlag,
 	DynamicEsdtFlag,
 	EGLDInESDTMultiTransferFlag,
+	DRWAEnforcementFlag,
 }

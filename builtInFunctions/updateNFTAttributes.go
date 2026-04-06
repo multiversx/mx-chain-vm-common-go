@@ -22,6 +22,7 @@ type esdtNFTupdate struct {
 	marshaller            marshal.Marshalizer
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	mutExecution          sync.RWMutex
+	drwaReader            drwaStateReader
 }
 
 // NewESDTNFTUpdateAttributesFunc returns the esdt NFT update attribute built-in function component
@@ -70,6 +71,12 @@ func NewESDTNFTUpdateAttributesFunc(
 	return e, nil
 }
 
+func (e *esdtNFTupdate) SetDRWAReader(reader drwaStateReader) {
+	e.mutExecution.Lock()
+	e.drwaReader = reader
+	e.mutExecution.Unlock()
+}
+
 // SetNewGasConfig is called whenever gas cost is changed
 func (e *esdtNFTupdate) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	if gasCost == nil {
@@ -101,6 +108,20 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 	if len(vmInput.Arguments) != 3 {
 		return nil, ErrInvalidArguments
 	}
+	drwaGasCost := uint64(0)
+	if isDRWAEnforcementEnabled(e.enableEpochsHandler) {
+		regulated, drwaErr := evaluateDRWAMetadataUpdate(e.drwaReader, vmInput.Arguments[0], vmInput.CallerAddr, acntSnd)
+		if regulated {
+			drwaGasCost = computeDRWAReadGasCost(e.gasConfig, e.funcGasCost, 2)
+			if vmInput.GasProvided < e.funcGasCost+drwaGasCost {
+				return nil, ErrNotEnoughGas
+			}
+		}
+		err = drwaErr
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	err = e.rolesHandler.CheckAllowedToExecute(acntSnd, vmInput.Arguments[0], []byte(core.ESDTRoleNFTUpdateAttributes))
 	if err != nil {
@@ -108,7 +129,7 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 	}
 
 	gasCostForStore := uint64(len(vmInput.Arguments[2])) * e.gasConfig.StorePerByte
-	if vmInput.GasProvided < e.funcGasCost+gasCostForStore {
+	if vmInput.GasProvided < e.funcGasCost+drwaGasCost+gasCostForStore {
 		return nil, ErrNotEnoughGas
 	}
 
@@ -147,7 +168,7 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 
 	vmOutput := &vmcommon.VMOutput{
 		ReturnCode:   vmcommon.Ok,
-		GasRemaining: vmInput.GasProvided - e.funcGasCost - gasCostForStore,
+		GasRemaining: vmInput.GasProvided - e.funcGasCost - drwaGasCost - gasCostForStore,
 	}
 
 	addESDTEntryInVMOutput(vmOutput, []byte(core.BuiltInFunctionESDTNFTUpdateAttributes), vmInput.Arguments[0], nonce, big.NewInt(0), vmInput.CallerAddr, vmInput.Arguments[2])

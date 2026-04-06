@@ -81,6 +81,9 @@ type BlockchainHook interface {
 	// ProcessBuiltInFunction will process the builtIn function for the created input
 	ProcessBuiltInFunction(input *ContractCallInput) (*VMOutput, error)
 
+	// ApplyDRWASyncEnvelopeBytes applies an encoded DRWA sync envelope atomically.
+	ApplyDRWASyncEnvelopeBytes(payload []byte, callerAddress []byte) error
+
 	// GetBuiltinFunctionNames returns the names of protocol built-in functions
 	GetBuiltinFunctionNames() FunctionNames
 

@@ -18,6 +18,7 @@ var zero = big.NewInt(0)
 
 type esdtTransfer struct {
 	baseAlwaysActiveHandler
+	vmcommon.BlockchainDataProvider
 	funcGasCost           uint64
 	marshaller            vmcommon.Marshalizer
 	keyPrefix             []byte
@@ -25,9 +26,11 @@ type esdtTransfer struct {
 	payableHandler        vmcommon.PayableChecker
 	shardCoordinator      vmcommon.Coordinator
 	mutExecution          sync.RWMutex
+	gasConfig             vmcommon.BaseOperationCost
 
 	rolesHandler        vmcommon.ESDTRoleHandler
 	enableEpochsHandler vmcommon.EnableEpochsHandler
+	drwaReader          drwaStateReader
 }
 
 // NewESDTTransferFunc returns the esdt transfer built-in function component
@@ -56,17 +59,24 @@ func NewESDTTransferFunc(
 	}
 
 	e := &esdtTransfer{
-		funcGasCost:           funcGasCost,
-		marshaller:            marshaller,
-		keyPrefix:             []byte(baseESDTKeyPrefix),
-		globalSettingsHandler: globalSettingsHandler,
-		payableHandler:        &disabledPayableHandler{},
-		shardCoordinator:      shardCoordinator,
-		rolesHandler:          rolesHandler,
-		enableEpochsHandler:   enableEpochsHandler,
+		BlockchainDataProvider: NewBlockchainDataProvider(),
+		funcGasCost:            funcGasCost,
+		marshaller:             marshaller,
+		keyPrefix:              []byte(baseESDTKeyPrefix),
+		globalSettingsHandler:  globalSettingsHandler,
+		payableHandler:         &disabledPayableHandler{},
+		shardCoordinator:       shardCoordinator,
+		rolesHandler:           rolesHandler,
+		enableEpochsHandler:    enableEpochsHandler,
 	}
 
 	return e, nil
+}
+
+func (e *esdtTransfer) SetDRWAReader(reader drwaStateReader) {
+	e.mutExecution.Lock()
+	e.drwaReader = reader
+	e.mutExecution.Unlock()
 }
 
 // SetNewGasConfig is called whenever gas cost is changed
@@ -77,6 +87,7 @@ func (e *esdtTransfer) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 
 	e.mutExecution.Lock()
 	e.funcGasCost = gasCost.BuiltInCost.ESDTTransfer
+	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
 }
 
@@ -108,7 +119,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	}
 
 	skipGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
-	gasRemaining := computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, e.funcGasCost, skipGasUse)
+	gasToUse := e.funcGasCost
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	tokenID := vmInput.Arguments[0]
 
@@ -121,10 +132,58 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
+	if isDRWAEnforcementEnabled(e.enableEpochsHandler) {
+		// Go M-2 fix: Pre-charge maximum DRWA gas before performing state reads.
+		// Prevents free trie reads as a DoS vector for regulated tokens.
+		// Max cost: 4 reads (sender policy + sender holder + receiver policy + receiver holder).
+		// DRWA gas model: conservatively pre-charge for 4 trie reads (max case: in-shard
+		// regulated transfer checks both sender and receiver, 2 reads each). Cross-shard
+		// transfers check only one side (2 reads); unused pre-charged gas is returned.
+		drwaMaxGas := computeDRWAReadGasCost(e.gasConfig, e.funcGasCost, 4)
+		if !skipGasUse && vmInput.GasProvided < gasToUse+drwaMaxGas {
+			return nil, ErrNotEnoughGas
+		}
+
+		// C-2 fix: When account is nil (cross-shard), we still validate our side.
+		// Source shard: acntSnd is present (validate sender), acntDst is nil (skip receiver — destination shard validates).
+		// Destination shard: acntDst is present (validate receiver), acntSnd is nil (skip sender — source shard validated).
+		// This is the correct cross-shard split per spec §11_DRWA_Cross_Shard_Enforcement.
+		// The critical invariant: if BOTH are nil, deny the transfer (should never happen in valid protocol).
+		if check.IfNil(acntSnd) && check.IfNil(acntDst) {
+			// Both accounts nil means no shard can validate — reject for safety
+			if e.drwaReader != nil {
+				isRegulated, _, _ := isDRWARegulatedToken(e.drwaReader, tokenID)
+				if isRegulated {
+					return nil, fmt.Errorf("DRWA enforcement: both sender and receiver accounts nil for regulated token %s — cross-shard validation gap", string(tokenID))
+				}
+			}
+		}
+		if !check.IfNil(acntSnd) {
+			regulated, drwaErr := evaluateDRWASenderTransfer(e.drwaReader, tokenID, vmInput.CallerAddr, acntSnd, e.CurrentRound())
+			if regulated {
+				gasToUse += computeDRWAReadGasCost(e.gasConfig, e.funcGasCost, 2)
+			}
+			err = drwaErr
+			if err != nil {
+				return nil, err
+			}
+		}
+		if !check.IfNil(acntDst) {
+			regulated, drwaErr := evaluateDRWAReceiverTransfer(e.drwaReader, tokenID, vmInput.RecipientAddr, acntDst, e.CurrentRound())
+			if regulated {
+				gasToUse += computeDRWAReadGasCost(e.gasConfig, e.funcGasCost, 2)
+			}
+			err = drwaErr
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	gasRemaining := computeGasRemainingIfNeeded(acntSnd, vmInput.GasProvided, gasToUse, skipGasUse)
 
 	if !check.IfNil(acntSnd) {
 		// gas is paid only by sender
-		if vmInput.GasProvided < e.funcGasCost && !skipGasUse {
+		if vmInput.GasProvided < gasToUse && !skipGasUse {
 			return nil, ErrNotEnoughGas
 		}
 
@@ -148,7 +207,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		}
 
 		if isSCCallAfter {
-			vmOutput.GasRemaining, _ = vmcommon.SafeSubUint64(vmInput.GasProvided, e.funcGasCost)
+			vmOutput.GasRemaining, _ = vmcommon.SafeSubUint64(vmInput.GasProvided, gasToUse)
 			var callArgs [][]byte
 			if len(vmInput.Arguments) > core.MinLenArgumentsESDTTransfer+1 {
 				callArgs = vmInput.Arguments[core.MinLenArgumentsESDTTransfer+1:]

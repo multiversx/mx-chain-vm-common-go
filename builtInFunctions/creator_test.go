@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var errDRWATestReaderAttach = errors.New("drwa reader attach failed")
+
 func createMockArguments() ArgsCreateBuiltInFunctionContainer {
 	gasMap := make(map[string]map[string]uint64)
 	fillGasMapInternal(gasMap, 1)
@@ -198,7 +200,7 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 
 	err = f.SetBlockchainHook(&disabledBlockchainHook{})
 	assert.Nil(t, err)
-	assert.Equal(t, 7, numSetBlockDataHandlerCalls)
+	assert.Equal(t, 10, numSetBlockDataHandlerCalls)
 
 	fillGasMapInternal(args.GasMap, 5)
 	f.GasScheduleChange(args.GasMap)
@@ -206,4 +208,21 @@ func TestCreateBuiltInContainer_Create(t *testing.T) {
 
 	nftStorageHandler := f.NFTStorageHandler()
 	assert.False(t, check.IfNil(nftStorageHandler))
+}
+
+func TestCreateBuiltInContainer_CreateReturnsErrorWhenDRWAReaderAttachFails(t *testing.T) {
+	args := createMockArguments()
+	f, _ := NewBuiltInFunctionsCreator(args)
+
+	previousFactory := drwaAccountsReaderFactory
+	drwaAccountsReaderFactory = func(accounts vmcommon.AccountsAdapter) (*drwaAccountsReader, error) {
+		return nil, errDRWATestReaderAttach
+	}
+	t.Cleanup(func() {
+		drwaAccountsReaderFactory = previousFactory
+	})
+
+	err := f.CreateBuiltInFunctionContainer()
+	require.Error(t, err)
+	require.ErrorIs(t, err, errDRWATestReaderAttach)
 }

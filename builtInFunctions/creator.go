@@ -1,6 +1,8 @@
 package builtInFunctions
 
 import (
+	"fmt"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -11,6 +13,7 @@ var _ vmcommon.BuiltInFunctionFactory = (*builtInFuncCreator)(nil)
 
 var trueHandler = func() bool { return true }
 var falseHandler = func() bool { return false }
+var drwaAccountsReaderFactory = newDRWAAccountsReader
 
 const deleteUserNameFuncName = "DeleteUserName" // all builtInFunction names are upper case
 
@@ -44,6 +47,10 @@ type builtInFuncCreator struct {
 	guardedAccountHandler            vmcommon.GuardedAccountHandler
 	maxNumOfAddressesForTransferRole uint32
 	configAddress                    []byte
+}
+
+type drwaReaderSetter interface {
+	SetDRWAReader(reader drwaStateReader)
 }
 
 // NewBuiltInFunctionsCreator creates a component which will instantiate the built in functions contracts
@@ -212,6 +219,10 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	if err != nil {
 		return err
 	}
+	err = b.attachDRWAReaderIfSupported(newFunc)
+	if err != nil {
+		return err
+	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTTransfer, newFunc)
 	if err != nil {
 		return err
@@ -346,6 +357,10 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	if err != nil {
 		return err
 	}
+	err = b.attachDRWAReaderIfSupported(newFunc)
+	if err != nil {
+		return err
+	}
 	err = b.builtInFunctions.Add(core.BuiltInFunctionESDTNFTTransfer, newFunc)
 	if err != nil {
 		return err
@@ -361,6 +376,10 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 	}
 
 	newFunc, err = NewESDTNFTUpdateAttributesFunc(b.gasConfig.BuiltInCost.ESDTNFTUpdateAttributes, b.gasConfig.BaseOperationCost, b.esdtStorageHandler, globalSettingsFunc, setRoleFunc, b.enableEpochsHandler, b.marshaller)
+	if err != nil {
+		return err
+	}
+	err = b.attachDRWAReaderIfSupported(newFunc)
 	if err != nil {
 		return err
 	}
@@ -387,6 +406,10 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		b.enableEpochsHandler,
 		setRoleFunc,
 		b.esdtStorageHandler)
+	if err != nil {
+		return err
+	}
+	err = b.attachDRWAReaderIfSupported(newFunc)
 	if err != nil {
 		return err
 	}
@@ -605,6 +628,21 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
+	return nil
+}
+
+func (b *builtInFuncCreator) attachDRWAReaderIfSupported(builtInFunc vmcommon.BuiltinFunction) error {
+	readerAware, ok := builtInFunc.(drwaReaderSetter)
+	if !ok {
+		return nil
+	}
+
+	reader, err := drwaAccountsReaderFactory(b.accounts)
+	if err != nil {
+		return fmt.Errorf("attach DRWA reader: %w", err)
+	}
+
+	readerAware.SetDRWAReader(reader)
 	return nil
 }
 

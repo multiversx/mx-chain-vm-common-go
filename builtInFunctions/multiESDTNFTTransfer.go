@@ -14,6 +14,7 @@ import (
 
 type esdtNFTMultiTransfer struct {
 	baseActiveHandler
+	vmcommon.BlockchainDataProvider
 	*baseComponentsHolder
 	keyPrefix      []byte
 	payableHandler vmcommon.PayableChecker
@@ -23,6 +24,7 @@ type esdtNFTMultiTransfer struct {
 	mutExecution   sync.RWMutex
 	rolesHandler   vmcommon.ESDTRoleHandler
 	baseTokenID    []byte
+	drwaReader     drwaStateReader
 }
 
 const argumentsPerTransfer = uint64(3)
@@ -62,13 +64,14 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	e := &esdtNFTMultiTransfer{
-		keyPrefix:      []byte(baseESDTKeyPrefix),
-		funcGasCost:    funcGasCost,
-		accounts:       accounts,
-		gasConfig:      gasConfig,
-		mutExecution:   sync.RWMutex{},
-		payableHandler: &disabledPayableHandler{},
-		rolesHandler:   roleHandler,
+		BlockchainDataProvider: NewBlockchainDataProvider(),
+		keyPrefix:              []byte(baseESDTKeyPrefix),
+		funcGasCost:            funcGasCost,
+		accounts:               accounts,
+		gasConfig:              gasConfig,
+		mutExecution:           sync.RWMutex{},
+		payableHandler:         &disabledPayableHandler{},
+		rolesHandler:           roleHandler,
 		baseComponentsHolder: &baseComponentsHolder{
 			esdtStorageHandler:    esdtStorageHandler,
 			globalSettingsHandler: globalSettingsHandler,
@@ -84,6 +87,12 @@ func NewESDTNFTMultiTransferFunc(
 	}
 
 	return e, nil
+}
+
+func (e *esdtNFTMultiTransfer) SetDRWAReader(reader drwaStateReader) {
+	e.mutExecution.Lock()
+	e.drwaReader = reader
+	e.mutExecution.Unlock()
 }
 
 // SetPayableChecker will set the payableCheck handler to the function
@@ -161,6 +170,33 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	err = e.payableHandler.CheckPayable(vmInput, vmInput.RecipientAddr, int(minNumOfArguments))
 	if err != nil {
 		return nil, err
+	}
+	if isDRWAEnforcementEnabled(e.enableEpochsHandler) {
+		// M-4 fix: Pre-charge maximum DRWA gas BEFORE any trie reads.
+		// Previous code did isDRWARegulatedToken (trie read) per token before gas check.
+		drwaMaxGas := uint64(numOfTransfers) * computeDRWAReadGasCost(e.gasConfig, e.funcGasCost, 2)
+		if vmInput.GasProvided < drwaMaxGas {
+			return nil, ErrNotEnoughGas
+		}
+		// Now do actual checks and compute actual cost
+		var drwaGasCost uint64
+		for i := uint64(0); i < numOfTransfers; i++ {
+			tokenStartIndex := startIndex + i*argumentsPerTransfer
+			tokenID := vmInput.Arguments[tokenStartIndex]
+			regulated, _, _ := isDRWARegulatedToken(e.drwaReader, tokenID)
+			if regulated {
+				drwaGasCost += computeDRWAReadGasCost(e.gasConfig, e.funcGasCost, 2)
+			}
+		}
+		vmOutput.GasRemaining = vmInput.GasProvided - drwaGasCost
+
+		for i := uint64(0); i < numOfTransfers; i++ {
+			tokenStartIndex := startIndex + i*argumentsPerTransfer
+			err = checkDRWAReceiverTransfer(e.drwaReader, vmInput.Arguments[tokenStartIndex], vmInput.RecipientAddr, acntDst, e.CurrentRound())
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	topicTokenData := make([]*TopicTokenData, 0)
@@ -287,20 +323,44 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 
 	skipGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
 	multiTransferCost := numOfTransfers * e.funcGasCost
-	if vmInput.GasProvided < multiTransferCost && !skipGasUse {
-		return nil, ErrNotEnoughGas
-	}
-
 	acntDst, err := e.loadAccountIfInShard(dstAddress)
 	if err != nil {
 		return nil, err
 	}
-
 	if !check.IfNil(acntDst) {
 		err = e.payableHandler.CheckPayable(vmInput, dstAddress, int(minNumOfArguments))
 		if err != nil {
 			return nil, err
 		}
+	}
+	startIndex := uint64(2)
+	for i := uint64(0); i < numOfTransfers; i++ {
+		tokenStartIndex := startIndex + i*argumentsPerTransfer
+		tokenID := vmInput.Arguments[tokenStartIndex]
+
+		if isDRWAEnforcementEnabled(e.enableEpochsHandler) {
+			regulated, _, drwaErr := isDRWARegulatedToken(e.drwaReader, tokenID)
+			if regulated {
+				// F-01 fix: Execution path performs evaluateDRWASenderTransfer
+				// (policy + holder mirror = 2 reads) AND evaluateDRWAReceiverTransfer
+				// (policy + holder mirror = 2 reads) per regulated token.
+				// Precharge must match: 2 sender reads + 2 receiver reads if
+				// destination is in-shard, or 2 sender reads if cross-shard
+				// (receiver check happens on destination shard).
+				reads := uint64(2) // sender: policy + holder mirror
+				if !check.IfNil(acntDst) {
+					reads += 2 // receiver: policy + holder mirror
+				}
+				multiTransferCost += computeDRWAReadGasCost(e.gasConfig, e.funcGasCost, reads)
+			}
+			err = drwaErr
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if vmInput.GasProvided < multiTransferCost && !skipGasUse {
+		return nil, ErrNotEnoughGas
 	}
 
 	vmOutput := &vmcommon.VMOutput{
@@ -309,7 +369,6 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		Logs:         make([]*vmcommon.LogEntry, 0, numOfTransfers),
 	}
 
-	startIndex := uint64(2)
 	listEsdtData := make([]*esdt.ESDigitalToken, numOfTransfers)
 	listTransferData := make([]*vmcommon.ESDTTransfer, numOfTransfers)
 
@@ -317,12 +376,25 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	topicTokenData := make([]*TopicTokenData, 0)
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
+		tokenID := vmInput.Arguments[tokenStartIndex]
 		if len(vmInput.Arguments[tokenStartIndex+2]) > core.MaxLenForESDTIssueMint && isConsistentTokensValuesLenghtCheckEnabled {
 			return nil, fmt.Errorf("%w: max length for a transfer value is %d", ErrInvalidArguments, core.MaxLenForESDTIssueMint)
 		}
+		if isDRWAEnforcementEnabled(e.enableEpochsHandler) {
+			_, err = evaluateDRWASenderTransfer(e.drwaReader, tokenID, vmInput.CallerAddr, acntSnd, e.CurrentRound())
+			if err != nil {
+				return nil, err
+			}
+			if !check.IfNil(acntDst) {
+				_, err = evaluateDRWAReceiverTransfer(e.drwaReader, tokenID, dstAddress, acntDst, e.CurrentRound())
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
 		listTransferData[i] = &vmcommon.ESDTTransfer{
 			ESDTValue:      big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2]),
-			ESDTTokenName:  vmInput.Arguments[tokenStartIndex],
+			ESDTTokenName:  tokenID,
 			ESDTTokenType:  0,
 			ESDTTokenNonce: big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+1]).Uint64(),
 		}
