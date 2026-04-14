@@ -22,6 +22,9 @@ const MinArgsForMultiESDTNFTTransfer = 4
 // ArgsPerTransfer defines the number of arguments per transfer in multi transfer
 const ArgsPerTransfer = 3
 
+// MaxNumberOfTransferInMultiTransfer defines the max number of transfers in multi transfer, used in prevalidation
+const MaxNumberOfTransferInMultiTransfer = 10000
+
 type esdtTransferParser struct {
 	marshaller vmcommon.Marshalizer
 }
@@ -137,6 +140,9 @@ func (e *esdtTransferParser) parseMultiESDTNFTTransfer(rcvAddr []byte, args [][]
 	minLenArgs := ArgsPerTransfer*numOfTransfer.Uint64() + startIndex
 	if uint64(len(args)) < minLenArgs {
 		return nil, ErrNotEnoughArguments
+	}
+	if numOfTransfer.Uint64() > MaxNumberOfTransferInMultiTransfer {
+		return nil, ErrTooManyTransfers
 	}
 
 	if uint64(len(args)) > minLenArgs {
