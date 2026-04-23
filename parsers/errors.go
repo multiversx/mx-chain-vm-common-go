@@ -33,3 +33,6 @@ var ErrNotEnoughArguments = errors.New("not enough arguments")
 
 // ErrNilMarshalizer signals that marshaller is nil
 var ErrNilMarshalizer = errors.New("nil marshaller")
+
+// ErrTooManyTransfers signals that too many transfers are in the data
+var ErrTooManyTransfers = errors.New("too many transfers")
