@@ -35,9 +35,10 @@ var errInvalidAddressLength = errors.New("invalid address length")
 type operationDataFieldParser struct {
 	builtInFunctionsList []string
 
-	addressLength      int
-	argsParser         vmcommon.CallArgsParser
-	esdtTransferParser vmcommon.ESDTTransferParser
+	addressLength                       int
+	argsParser                          vmcommon.CallArgsParser
+	esdtTransferParser                  vmcommon.ESDTTransferParser
+	relayedTransactionsV1V2DisableEpoch uint32
 }
 
 // NewOperationDataFieldParser will return a new instance of operationDataFieldParser
@@ -56,19 +57,26 @@ func NewOperationDataFieldParser(args *ArgsOperationDataFieldParser) (*operation
 	}
 
 	return &operationDataFieldParser{
-		argsParser:           argsParser,
-		esdtTransferParser:   esdtTransferParser,
-		addressLength:        args.AddressLength,
-		builtInFunctionsList: getAllBuiltInFunctions(),
+		argsParser:                          argsParser,
+		esdtTransferParser:                  esdtTransferParser,
+		addressLength:                       args.AddressLength,
+		builtInFunctionsList:                getAllBuiltInFunctions(),
+		relayedTransactionsV1V2DisableEpoch: args.RelayedTransactionsV1V2DisableEpoch,
 	}, nil
 }
 
 // Parse will parse the provided data field
-func (odp *operationDataFieldParser) Parse(dataField []byte, sender, receiver []byte, numOfShards uint32) *ResponseParseData {
-	return odp.parse(dataField, sender, receiver, false, numOfShards)
+func (odp *operationDataFieldParser) Parse(dataField []byte, sender, receiver []byte, numOfShards uint32, epoch uint32) *ResponseParseData {
+	return odp.parse(dataField, sender, receiver, false, numOfShards, epoch)
 }
 
-func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []byte, ignoreRelayed bool, numOfShards uint32) *ResponseParseData {
+func (odp *operationDataFieldParser) parse(
+	dataField []byte,
+	sender, receiver []byte,
+	ignoreRelayed bool,
+	numOfShards uint32,
+	epoch uint32,
+) *ResponseParseData {
 	responseParse := &ResponseParseData{
 		Operation: OperationTransfer,
 	}
@@ -103,7 +111,10 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 		if ignoreRelayed {
 			return NewResponseParseDataAsRelayed()
 		}
-		return odp.parseRelayed(function, args, receiver, numOfShards)
+		if epoch >= odp.relayedTransactionsV1V2DisableEpoch {
+			return NewResponseParseDataAsMoveBalance()
+		}
+		return odp.parseRelayed(function, args, receiver, numOfShards, epoch)
 	}
 
 	isBuiltInFunc := isBuiltInFunction(odp.builtInFunctionsList, function)
@@ -118,7 +129,13 @@ func (odp *operationDataFieldParser) parse(dataField []byte, sender, receiver []
 	return responseParse
 }
 
-func (odp *operationDataFieldParser) parseRelayed(function string, args [][]byte, receiver []byte, numOfShards uint32) *ResponseParseData {
+func (odp *operationDataFieldParser) parseRelayed(
+	function string,
+	args [][]byte,
+	receiver []byte,
+	numOfShards uint32,
+	epoch uint32,
+) *ResponseParseData {
 	if len(args) == 0 {
 		return &ResponseParseData{
 			IsRelayed: true,
@@ -132,7 +149,7 @@ func (odp *operationDataFieldParser) parseRelayed(function string, args [][]byte
 		}
 	}
 
-	res := odp.parse(tx.Data, tx.SndAddr, tx.RcvAddr, true, numOfShards)
+	res := odp.parse(tx.Data, tx.SndAddr, tx.RcvAddr, true, numOfShards, epoch)
 	if res.IsRelayed {
 		return &ResponseParseData{
 			IsRelayed: true,
