@@ -252,7 +252,7 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferMore(t *testing.T) {
 	assert.Equal(t, parsedData.CallFunction, "function")
 
 	overMaxTransfer := big.NewInt(0).SetUint64(6148914691236517206).Bytes()
-	parsedData, err = esdtParser.ParseESDTTransfers(
+	_, err = esdtParser.ParseESDTTransfers(
 		sndAddr,
 		dstAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
@@ -260,7 +260,7 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferMore(t *testing.T) {
 	)
 	assert.Equal(t, err, ErrTooManyTransfers)
 
-	parsedData, err = esdtParser.ParseESDTTransfers(
+	_, err = esdtParser.ParseESDTTransfers(
 		sndAddr,
 		sndAddr,
 		core.BuiltInFunctionMultiESDTNFTTransfer,
