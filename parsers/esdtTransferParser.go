@@ -2,6 +2,7 @@ package parsers
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -184,6 +185,9 @@ func (e *esdtTransferParser) createNewESDTTransfer(
 			err := e.marshaller.Unmarshal(transferESDTData, args[tokenStartIndex+2])
 			if err != nil {
 				return nil, err
+			}
+			if transferESDTData.Value == nil {
+				return nil, fmt.Errorf("%w: nil value in marshalled ESDT data", ErrNotEnoughArguments)
 			}
 			esdtTransfer.ESDTValue.Set(transferESDTData.Value)
 		}
