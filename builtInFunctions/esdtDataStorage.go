@@ -807,7 +807,7 @@ func (e *esdtDataStorage) addMetaDataToProperAccountFromMultiTransfer(
 		nonce := big.NewInt(0).SetBytes(arguments[tokenStartIndex+1]).Uint64()
 
 		if nonce > 0 && len(arguments[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
-			esdtTransferData := &esdt.ESDigitalToken{}
+			esdtTransferData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
 			marshaledNFTTransfer := arguments[tokenStartIndex+2]
 			err := e.marshaller.Unmarshal(esdtTransferData, marshaledNFTTransfer)
 			if err != nil {
