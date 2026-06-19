@@ -121,6 +121,9 @@ func (e *esdtNFTupdate) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
+	if esdtData.TokenMetaData == nil {
+		return nil, ErrNFTDoesNotHaveMetadata
+	}
 
 	metaDataVersion, _, err := getMetaDataVersion(esdtData, e.enableEpochsHandler, e.marshaller)
 	if err != nil {

@@ -173,7 +173,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 
 		value := big.NewInt(0)
 		if nonce > 0 {
-			esdtTransferData := &esdt.ESDigitalToken{}
+			esdtTransferData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
 			if len(vmInput.Arguments[tokenStartIndex+2]) > vmcommon.MaxLengthForValueToOptTransfer {
 				marshaledNFTTransfer := vmInput.Arguments[tokenStartIndex+2]
 				err = e.marshaller.Unmarshal(esdtTransferData, marshaledNFTTransfer)

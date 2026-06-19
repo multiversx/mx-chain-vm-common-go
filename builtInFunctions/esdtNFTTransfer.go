@@ -145,7 +145,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[2])
 
-	esdtTransferData := &esdt.ESDigitalToken{}
+	esdtTransferData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
 	if !bytes.Equal(vmInput.Arguments[3], zeroByteArray) {
 		marshaledNFTTransfer := vmInput.Arguments[3]
 		err = e.marshaller.Unmarshal(esdtTransferData, marshaledNFTTransfer)
