@@ -265,6 +265,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	esdtData.Value.Set(quantityToTransfer)
 
 	var userAccount vmcommon.UserAccountHandler
+	saveUserAcc := false
 	if e.shardCoordinator.SelfId() == e.shardCoordinator.ComputeId(dstAddress) {
 		accountHandler, errLoad := e.accounts.LoadAccount(dstAddress)
 		if errLoad != nil {
@@ -294,10 +295,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 
-		err = e.accounts.SaveAccount(userAccount)
-		if err != nil {
-			return nil, err
-		}
+		saveUserAcc = true
 	} else {
 		keepMetadataOnZeroLiquidity, err := shouldKeepMetaDataOnZeroLiquidity(acntSnd, tickerID, esdtData.Type, e.marshaller, e.enableEpochsHandler)
 		if err != nil {
@@ -339,6 +337,13 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			quantityToTransfer,
 		}},
 	)
+
+	if saveUserAcc {
+		err = e.accounts.SaveAccount(userAccount)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return vmOutput, nil
 }
