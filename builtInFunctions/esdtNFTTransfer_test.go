@@ -1326,3 +1326,117 @@ func TestHasDynamicRole(t *testing.T) {
 		assert.True(t, hasDynamicRole)
 	})
 }
+
+func TestESDTNFTTransfer_AtomicityFlag_DeferredSaveOnSenderShard(t *testing.T) {
+	t.Parallel()
+
+	runTest := func(t *testing.T, isAtomicityEnabled bool) {
+		globalSettings := &mock.GlobalSettingsHandlerStub{
+			IsLimiterTransferCalled: func(token []byte) bool {
+				return true
+			},
+		}
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				if flag == ESDTTransferAndExecuteAtomicityFlag {
+					return isAtomicityEnabled
+				}
+				return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
+			},
+		}
+
+		marshaller := &mock.MarshalizerMock{}
+		shardCoordinator := mock.NewMultiShardsCoordinatorMock(1)
+		shardCoordinator.CurrentShard = 0
+		shardCoordinator.ComputeIdCalled = func(address []byte) uint32 {
+			return 0
+		}
+		mapAccounts := make(map[string]vmcommon.UserAccountHandler)
+		saveAccountCalledCount := 0
+		accounts := &mock.AccountsStub{
+			LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+				_, ok := mapAccounts[string(address)]
+				if !ok {
+					mapAccounts[string(address)] = mock.NewUserAccount(address)
+				}
+				return mapAccounts[string(address)], nil
+			},
+			GetExistingAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+				_, ok := mapAccounts[string(address)]
+				if !ok {
+					mapAccounts[string(address)] = mock.NewUserAccount(address)
+				}
+				return mapAccounts[string(address)], nil
+			},
+			SaveAccountCalled: func(account vmcommon.AccountHandler) error {
+				saveAccountCalledCount++
+				return nil
+			},
+		}
+
+		esdtStorageHandler := createNewESDTDataStorageHandlerWithArgs(globalSettings, accounts, enableEpochsHandler)
+		transferFunc, err := NewESDTNFTTransferFunc(
+			1,
+			marshaller,
+			globalSettings,
+			accounts,
+			shardCoordinator,
+			vmcommon.BaseOperationCost{},
+			&mock.ESDTRoleHandlerStub{
+				CheckAllowedToExecuteCalled: func(account vmcommon.UserAccountHandler, tokenID []byte, action []byte) error {
+					if bytes.Equal(action, []byte(core.ESDTRoleTransfer)) {
+						return ErrActionNotAllowed
+					}
+					return nil
+				},
+			},
+			esdtStorageHandler,
+			enableEpochsHandler,
+		)
+		require.Nil(t, err)
+		_ = transferFunc.SetPayableChecker(&mock.PayableHandlerStub{})
+
+		senderAddress := bytes.Repeat([]byte{2}, 32)
+		destinationAddress := bytes.Repeat([]byte{1}, 32)
+		sender, err := transferFunc.accounts.LoadAccount(senderAddress)
+		require.Nil(t, err)
+
+		tokenName := []byte("token")
+		tokenNonce := uint64(1)
+		initialTokens := big.NewInt(3)
+		createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, transferFunc.marshaller, sender.(vmcommon.UserAccountHandler))
+
+		destination, err := transferFunc.accounts.LoadAccount(destinationAddress)
+		require.Nil(t, err)
+
+		nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
+		quantityBytes := big.NewInt(1).Bytes()
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:   big.NewInt(0),
+				CallerAddr:  senderAddress,
+				Arguments:   [][]byte{tokenName, nonceBytes, quantityBytes, destinationAddress},
+				GasProvided: 1,
+			},
+			RecipientAddr: senderAddress,
+		}
+
+		saveAccountCalledCount = 0
+		_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+		require.Equal(t, ErrActionNotAllowed, err)
+
+		if isAtomicityEnabled {
+			assert.Equal(t, 0, saveAccountCalledCount)
+		} else {
+			assert.Equal(t, 1, saveAccountCalledCount)
+		}
+	}
+
+	t.Run("atomicity enabled", func(t *testing.T) {
+		runTest(t, true)
+	})
+	t.Run("atomicity disabled", func(t *testing.T) {
+		runTest(t, false)
+	})
+}
+

@@ -1414,3 +1414,115 @@ func TestESDTNFTMultiTransfer_ProcessBuiltinFunctionOnCrossShardsWithEGLD(t *tes
 	require.Equal(t, 1, len(args))
 	require.Equal(t, []byte(scCallArg), args[0])
 }
+
+func TestESDTNFTMultiTransfer_AtomicityFlag_OrderOfExecution(t *testing.T) {
+	t.Parallel()
+
+	runTest := func(t *testing.T, isAtomicityEnabled bool) {
+		events := make([]string, 0)
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				if flag == ESDTTransferAndExecuteAtomicityFlag {
+					return isAtomicityEnabled
+				}
+				return flag == ESDTNFTImprovementV1Flag || flag == CheckCorrectTokenIDForTransferRoleFlag
+			},
+		}
+
+		destinationAddress := bytes.Repeat([]byte{1}, 32)
+		destinationAddress[31] = 0
+		senderAddress := bytes.Repeat([]byte{2}, 32)
+
+		mapAccounts := make(map[string]vmcommon.UserAccountHandler)
+		accounts := &mock.AccountsStub{
+			LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+				_, ok := mapAccounts[string(address)]
+				if !ok {
+					mapAccounts[string(address)] = mock.NewUserAccount(address)
+				}
+				return mapAccounts[string(address)], nil
+			},
+			GetExistingAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+				_, ok := mapAccounts[string(address)]
+				if !ok {
+					mapAccounts[string(address)] = mock.NewUserAccount(address)
+				}
+				return mapAccounts[string(address)], nil
+			},
+			SaveAccountCalled: func(account vmcommon.AccountHandler) error {
+				if bytes.Equal(account.AddressBytes(), destinationAddress) {
+					events = append(events, "save_destination_account")
+				}
+				return nil
+			},
+		}
+
+		payableHandler := &mock.PayableHandlerStub{
+			DetermineIsSCCallAfterCalled: func(vmInput *vmcommon.ContractCallInput, dstAddress []byte, minArgs int) bool {
+				events = append(events, "create_output_transfers")
+				return false
+			},
+		}
+
+		multiTransfer, err := NewESDTNFTMultiTransferFunc(
+			0,
+			&mock.MarshalizerMock{},
+			&mock.GlobalSettingsHandlerStub{},
+			accounts,
+			&mock.ShardCoordinatorStub{
+				SameShardCalled: func(firstAddress, secondAddress []byte) bool {
+					return true
+				},
+			},
+			vmcommon.BaseOperationCost{},
+			enableEpochsHandler,
+			&mock.ESDTRoleHandlerStub{},
+			createNewESDTDataStorageHandler(),
+		)
+		require.Nil(t, err)
+		_ = multiTransfer.SetPayableChecker(payableHandler)
+
+		sender, err := multiTransfer.accounts.LoadAccount(senderAddress)
+		require.Nil(t, err)
+		destination, err := multiTransfer.accounts.LoadAccount(destinationAddress)
+		require.Nil(t, err)
+
+		tokenName := []byte("TEST-123456")
+		tokenNonce := uint64(1)
+		initialTokens := big.NewInt(10)
+		createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, initialTokens, multiTransfer.marshaller, sender.(vmcommon.UserAccountHandler))
+
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:  big.NewInt(0),
+				CallerAddr: senderAddress,
+				Arguments: [][]byte{
+					destinationAddress,
+					big.NewInt(1).Bytes(),
+					tokenName,
+					big.NewInt(int64(tokenNonce)).Bytes(),
+					big.NewInt(1).Bytes(),
+				},
+				GasProvided: 1000000,
+			},
+			RecipientAddr: senderAddress,
+		}
+
+		_, err = multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
+		require.Nil(t, err)
+
+		if isAtomicityEnabled {
+			require.Equal(t, []string{"create_output_transfers", "save_destination_account"}, events)
+		} else {
+			require.Equal(t, []string{"save_destination_account", "create_output_transfers"}, events)
+		}
+	}
+
+	t.Run("atomicity enabled: output transfers created before saving destination account", func(t *testing.T) {
+		runTest(t, true)
+	})
+	t.Run("atomicity disabled: destination account saved before output transfers created", func(t *testing.T) {
+		runTest(t, false)
+	})
+}
+

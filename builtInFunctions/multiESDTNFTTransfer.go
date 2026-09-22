@@ -370,13 +370,23 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		)
 	}
 
-	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress, skipGasUse)
-	if err != nil {
-		return nil, err
+	isAtomicityEnabled := e.enableEpochsHandler.IsFlagEnabled(ESDTTransferAndExecuteAtomicityFlag)
+	if isAtomicityEnabled {
+		err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress, skipGasUse)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if !check.IfNil(acntDst) {
 		err = e.accounts.SaveAccount(acntDst)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if !isAtomicityEnabled {
+		err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress, skipGasUse)
 		if err != nil {
 			return nil, err
 		}

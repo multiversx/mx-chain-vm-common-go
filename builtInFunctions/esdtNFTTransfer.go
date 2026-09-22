@@ -295,7 +295,14 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 			return nil, err
 		}
 
-		saveUserAcc = true
+		if e.enableEpochsHandler.IsFlagEnabled(ESDTTransferAndExecuteAtomicityFlag) {
+			saveUserAcc = true
+		} else {
+			err = e.accounts.SaveAccount(userAccount)
+			if err != nil {
+				return nil, err
+			}
+		}
 	} else {
 		keepMetadataOnZeroLiquidity, err := shouldKeepMetaDataOnZeroLiquidity(acntSnd, tickerID, esdtData.Type, e.marshaller, e.enableEpochsHandler)
 		if err != nil {
