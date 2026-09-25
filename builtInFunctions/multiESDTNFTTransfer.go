@@ -370,16 +370,16 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		)
 	}
 
+	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress, skipGasUse)
+	if err != nil {
+		return nil, err
+	}
+
 	if !check.IfNil(acntDst) {
 		err = e.accounts.SaveAccount(acntDst)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	err = e.createESDTNFTOutputTransfers(vmInput, vmOutput, listEsdtData, listTransferData, dstAddress, skipGasUse)
-	if err != nil {
-		return nil, err
 	}
 
 	return vmOutput, nil
