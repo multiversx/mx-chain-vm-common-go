@@ -501,7 +501,7 @@ func (e *esdtDataStorage) saveESDTMetaDataToSystemAccount(
 		Properties:    make([]byte, e.shardCoordinator.NumberOfShards()),
 	}
 	isSendAlwaysFlagEnabled := e.enableEpochsHandler.IsFlagEnabled(SendAlwaysFlag)
-	if len(currentSaveData) > 0 {
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && len(currentSaveData) > 0 {
 		existingEsdtData := &esdt.ESDigitalToken{Value: big.NewInt(0)}
 		errUnmarshal := e.marshaller.Unmarshal(existingEsdtData, currentSaveData)
 		if errUnmarshal == nil && existingEsdtData.Value != nil {
