@@ -92,7 +92,7 @@ func createNFTTransferAndStorageHandler(selfShard, numShards uint32, globalSetti
 func createNftTransferWithMockArguments(selfShard uint32, numShards uint32, globalSettingsHandler vmcommon.GlobalMetadataHandler) *esdtNFTTransfer {
 	nftTransfer, _ := createNFTTransferAndStorageHandler(selfShard, numShards, globalSettingsHandler, &mock.EnableEpochsHandlerStub{
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
-			return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
+			return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag || flag == FixCorrectSmallIntAndGasLimitsFlag
 		},
 	})
 	return nftTransfer
@@ -1498,4 +1498,31 @@ func TestEsdtNFTTransfer_InvalidTokenIDReturnsError(t *testing.T) {
 		_, err = nftTransfer.ProcessBuiltinFunction(nil, destAcc.(vmcommon.UserAccountHandler), vmInputDest)
 		require.Equal(t, ErrInvalidTokenID, err)
 	}
+}
+
+func TestEsdtNFTTransfer_LegacyTokenBypassesValidationWhenFixFlagDisabled(t *testing.T) {
+	t.Parallel()
+
+	nftTransfer, _ := createNFTTransferAndStorageHandler(0, 1, &mock.GlobalSettingsHandlerStub{}, &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == CheckTransferFlag || flag == CheckFrozenCollectionFlag
+		},
+	})
+	senderAddress := bytes.Repeat([]byte{2}, 32)
+	sender, err := nftTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	legacyToken := []byte("4STICK-a5504d-01")
+	vmInputSender := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{legacyToken, big.NewInt(1).Bytes(), big.NewInt(1).Bytes(), bytes.Repeat([]byte{1}, 32)},
+			GasProvided: 100000,
+		},
+		RecipientAddr: senderAddress,
+	}
+	_, err = nftTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInputSender)
+	// Must NOT return ErrInvalidTokenID when FixCorrectSmallIntAndGasLimitsFlag is disabled
+	require.NotEqual(t, ErrInvalidTokenID, err)
 }

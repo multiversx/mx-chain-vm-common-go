@@ -141,7 +141,7 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	}
 
 	tickerID := vmInput.Arguments[0]
-	if !vmcommon.ValidateToken(tickerID) {
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && !vmcommon.ValidateToken(tickerID) {
 		return nil, ErrInvalidTokenID
 	}
 	esdtTokenKey := append(e.keyPrefix, tickerID...)
@@ -243,7 +243,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 
 	tickerID := vmInput.Arguments[0]
-	if !vmcommon.ValidateToken(tickerID) {
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && !vmcommon.ValidateToken(tickerID) {
 		return nil, ErrInvalidTokenID
 	}
 	esdtTokenKey := append(e.keyPrefix, tickerID...)
@@ -252,7 +252,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if err != nil {
 		return nil, err
 	}
-	if nonce == 0 || esdtData.TokenMetaData == nil {
+	if nonce == 0 || (esdtData.TokenMetaData == nil && e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag)) {
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 

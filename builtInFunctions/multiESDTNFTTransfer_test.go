@@ -83,6 +83,7 @@ func createESDTNFTMultiTransferWithMockArgumentsWithLogEventFlag(selfShard uint3
 		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
 			return flag == ESDTNFTImprovementV1Flag ||
 				flag == CheckCorrectTokenIDForTransferRoleFlag ||
+				flag == FixCorrectSmallIntAndGasLimitsFlag ||
 				(flag == ScToScLogEventFlag && isScToScEventLogEnabled)
 		},
 	}
@@ -1670,4 +1671,91 @@ func TestESDTNFTMultiTransfer_HugeNumOfTransfersShouldErr(t *testing.T) {
 	_, err = multiTransfer.ProcessBuiltinFunction(nil, destAccount.(vmcommon.UserAccountHandler), vmInputDest)
 	require.ErrorIs(t, err, ErrInvalidArguments)
 	require.Contains(t, err.Error(), "invalid number of transfers")
+}
+
+func TestMultiESDTNFTTransfer_ZeroTransfersReturnsCanonicalError(t *testing.T) {
+	t.Parallel()
+
+	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	senderAddress := bytes.Repeat([]byte{1}, 32)
+	destinationAddress := bytes.Repeat([]byte{2}, 32)
+
+	sender, err := multiTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	// Sender shard test: numOfTransfers == 0
+	vmInputSender := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			GasProvided: 100000,
+			Arguments: [][]byte{
+				destinationAddress,
+				big.NewInt(0).Bytes(), // 0 transfers
+				[]byte{},
+				[]byte("swap_lkmex_to_egld"),
+			},
+		},
+		RecipientAddr: senderAddress,
+	}
+	_, err = multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInputSender)
+	require.ErrorIs(t, err, ErrInvalidArguments)
+	require.Contains(t, err.Error(), "0 tokens to transfer")
+
+	// Destination shard test: numOfTransfers == 0
+	destAccount, err := multiTransfer.accounts.LoadAccount(destinationAddress)
+	require.Nil(t, err)
+	vmInputDest := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			GasProvided: 100000,
+			Arguments: [][]byte{
+				big.NewInt(0).Bytes(), // 0 transfers
+				[]byte{},
+				[]byte{},
+				[]byte{},
+			},
+		},
+		RecipientAddr: destinationAddress,
+	}
+	_, err = multiTransfer.ProcessBuiltinFunction(nil, destAccount.(vmcommon.UserAccountHandler), vmInputDest)
+	require.ErrorIs(t, err, ErrInvalidArguments)
+	require.Contains(t, err.Error(), "0 tokens to transfer")
+}
+
+func TestMultiESDTNFTTransfer_LegacyTokenBypassesValidationWhenFixFlagDisabled(t *testing.T) {
+	t.Parallel()
+
+	multiTransfer := createESDTNFTMultiTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	multiTransfer.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == ESDTNFTImprovementV1Flag
+		},
+	}
+
+	senderAddress := bytes.Repeat([]byte{1}, 32)
+	destinationAddress := bytes.Repeat([]byte{2}, 32)
+	sender, err := multiTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	legacyToken := []byte("MUERTOS-6ae3eb-01")
+	vmInputSender := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			GasProvided: 100000,
+			Arguments: [][]byte{
+				destinationAddress,
+				big.NewInt(1).Bytes(),
+				legacyToken,
+				big.NewInt(1).Bytes(),
+				big.NewInt(1).Bytes(),
+			},
+		},
+		RecipientAddr: senderAddress,
+	}
+	_, err = multiTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInputSender)
+	// Must NOT return ErrInvalidTokenID when FixCorrectSmallIntAndGasLimitsFlag is disabled
+	require.False(t, errors.Is(err, ErrInvalidTokenID))
 }

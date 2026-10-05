@@ -145,12 +145,17 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 		return nil, ErrInvalidRcvAddr
 	}
 
-	numOfTransfersBig := big.NewInt(0).SetBytes(vmInput.Arguments[0])
-	maxPossibleTransfers := uint64(len(vmInput.Arguments)) / argumentsPerTransfer
-	if !numOfTransfersBig.IsUint64() || numOfTransfersBig.Uint64() == 0 || numOfTransfersBig.Uint64() > maxPossibleTransfers {
-		return nil, fmt.Errorf("%w, invalid number of transfers", ErrInvalidArguments)
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) {
+		numOfTransfersBig := big.NewInt(0).SetBytes(vmInput.Arguments[0])
+		maxPossibleTransfers := uint64(len(vmInput.Arguments)) / argumentsPerTransfer
+		if !numOfTransfersBig.IsUint64() || numOfTransfersBig.Uint64() > maxPossibleTransfers {
+			return nil, fmt.Errorf("%w, invalid number of transfers", ErrInvalidArguments)
+		}
 	}
-	numOfTransfers := numOfTransfersBig.Uint64()
+	numOfTransfers := big.NewInt(0).SetBytes(vmInput.Arguments[0]).Uint64()
+	if numOfTransfers == 0 {
+		return nil, fmt.Errorf("%w, 0 tokens to transfer", ErrInvalidArguments)
+	}
 	minNumOfArguments := numOfTransfers*argumentsPerTransfer + 1
 	if uint64(len(vmInput.Arguments)) < minNumOfArguments {
 		return nil, fmt.Errorf("%w, invalid number of arguments", ErrInvalidArguments)
@@ -169,7 +174,7 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
 		tokenID := vmInput.Arguments[tokenStartIndex]
-		if !bytes.Equal(e.baseTokenID, tokenID) && !vmcommon.ValidateToken(tokenID) {
+		if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && !bytes.Equal(e.baseTokenID, tokenID) && !vmcommon.ValidateToken(tokenID) {
 			return nil, ErrInvalidTokenID
 		}
 		nonce := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+1]).Uint64()
@@ -293,12 +298,17 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 	if isTransferToMeta || vmcommon.IsSystemAccountAddress(dstAddress) {
 		return nil, ErrInvalidRcvAddr
 	}
-	numOfTransfersBig := big.NewInt(0).SetBytes(vmInput.Arguments[1])
-	maxPossibleTransfers := uint64(len(vmInput.Arguments)) / argumentsPerTransfer
-	if !numOfTransfersBig.IsUint64() || numOfTransfersBig.Uint64() == 0 || numOfTransfersBig.Uint64() > maxPossibleTransfers {
-		return nil, fmt.Errorf("%w, invalid number of transfers", ErrInvalidArguments)
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) {
+		numOfTransfersBig := big.NewInt(0).SetBytes(vmInput.Arguments[1])
+		maxPossibleTransfers := uint64(len(vmInput.Arguments)) / argumentsPerTransfer
+		if !numOfTransfersBig.IsUint64() || numOfTransfersBig.Uint64() > maxPossibleTransfers {
+			return nil, fmt.Errorf("%w, invalid number of transfers", ErrInvalidArguments)
+		}
 	}
-	numOfTransfers := numOfTransfersBig.Uint64()
+	numOfTransfers := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
+	if numOfTransfers == 0 {
+		return nil, fmt.Errorf("%w, 0 tokens to transfer", ErrInvalidArguments)
+	}
 	minNumOfArguments := numOfTransfers*argumentsPerTransfer + 2
 	if uint64(len(vmInput.Arguments)) < minNumOfArguments {
 		return nil, fmt.Errorf("%w, invalid number of arguments", ErrInvalidArguments)
@@ -455,7 +465,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 		return e.transferBaseToken(acntSnd, acntDst, transferData)
 	}
 
-	if !vmcommon.ValidateToken(transferData.ESDTTokenName) {
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && !vmcommon.ValidateToken(transferData.ESDTTokenName) {
 		return nil, ErrInvalidTokenID
 	}
 
@@ -464,7 +474,7 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 	if err != nil {
 		return nil, err
 	}
-	if transferData.ESDTTokenNonce > 0 && esdtData.TokenMetaData == nil {
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && transferData.ESDTTokenNonce > 0 && esdtData.TokenMetaData == nil {
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
