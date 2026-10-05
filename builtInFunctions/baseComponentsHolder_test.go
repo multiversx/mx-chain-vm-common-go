@@ -266,4 +266,3 @@ func TestBaseComponentsHolder_getLatestEsdtData(t *testing.T) {
 		assert.Equal(t, big.NewInt(50), latestEsdtData.Value)
 	})
 }
-

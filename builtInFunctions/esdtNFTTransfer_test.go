@@ -1499,4 +1499,3 @@ func TestEsdtNFTTransfer_InvalidTokenIDReturnsError(t *testing.T) {
 		require.Equal(t, ErrInvalidTokenID, err)
 	}
 }
-

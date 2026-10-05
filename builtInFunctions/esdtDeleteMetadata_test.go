@@ -365,4 +365,3 @@ func TestEsdtDeleteMetaData_EndIndexMaxUint64(t *testing.T) {
 	assert.Nil(t, vmOutput)
 	assert.Equal(t, ErrInvalidArguments, err)
 }
-
