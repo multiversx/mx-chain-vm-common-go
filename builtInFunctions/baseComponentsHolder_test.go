@@ -215,4 +215,55 @@ func TestBaseComponentsHolder_getLatestEsdtData(t *testing.T) {
 		assert.Equal(t, uris, latestEsdtData.TokenMetaData.URIs)
 		assert.Equal(t, attributes, latestEsdtData.TokenMetaData.Attributes)
 	})
+	t.Run("nil current token metadata should return transfer esdt data", func(t *testing.T) {
+		t.Parallel()
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == DynamicEsdtFlag
+			},
+		}
+		currentEsdtData := &esdt.ESDigitalToken{
+			TokenMetaData: nil,
+			Value:         big.NewInt(100),
+		}
+		transferEsdtData := &esdt.ESDigitalToken{
+			TokenMetaData: &esdt.MetaData{
+				Name: []byte("transferName"),
+			},
+			Value: big.NewInt(50),
+		}
+
+		latestEsdtData, err := getLatestMetaData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
+		assert.Nil(t, err)
+		assert.Equal(t, transferEsdtData, latestEsdtData)
+	})
+	t.Run("nil transfer token metadata should preserve current metadata and reserved", func(t *testing.T) {
+		t.Parallel()
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == DynamicEsdtFlag
+			},
+		}
+		currentMetadata := &esdt.MetaData{
+			Name:    []byte("currentName"),
+			Creator: []byte("currentCreator"),
+		}
+		reserved := []byte("reserved-version-bytes")
+		currentEsdtData := &esdt.ESDigitalToken{
+			TokenMetaData: currentMetadata,
+			Reserved:      reserved,
+			Value:         big.NewInt(100),
+		}
+		transferEsdtData := &esdt.ESDigitalToken{
+			TokenMetaData: nil,
+			Value:         big.NewInt(50),
+		}
+
+		latestEsdtData, err := getLatestMetaData(currentEsdtData, transferEsdtData, enableEpochsHandler, &mock.MarshalizerMock{})
+		assert.Nil(t, err)
+		assert.Equal(t, currentMetadata, latestEsdtData.TokenMetaData)
+		assert.Equal(t, reserved, latestEsdtData.Reserved)
+		assert.Equal(t, big.NewInt(50), latestEsdtData.Value)
+	})
 }
+

@@ -411,3 +411,32 @@ func TestEsdtGlobalSettings_GetTokenType(t *testing.T) {
 		require.Equal(t, uint32(core.Fungible), val)
 	})
 }
+
+func TestESDTGlobalSettings_GetNodeFromDBError_FailsClosed(t *testing.T) {
+	t.Parallel()
+
+	dbErr := core.NewGetNodeFromDBErrWithKey([]byte("tokenKey"), errors.New("missing trie node"), "")
+	globalSettingsFunc, err := NewESDTGlobalSettingsFunc(
+		&mock.AccountsStub{
+			LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+				return &mock.AccountWrapMock{
+					RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
+						return nil, 0, dbErr
+					},
+				}, nil
+			},
+		},
+		&mock.MarshalizerMock{},
+		true,
+		core.BuiltInFunctionESDTPause,
+		falseHandler,
+	)
+	require.Nil(t, err)
+
+	key := []byte("tokenKey")
+	// Must fail closed (return true) when trie node is missing
+	assert.True(t, globalSettingsFunc.IsPaused(key))
+	assert.True(t, globalSettingsFunc.IsLimitedTransfer(key))
+	// For IsBurnForAll, false requires explicit burn role (fail closed)
+	assert.False(t, globalSettingsFunc.IsBurnForAll(key))
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/esdt"
+	"github.com/multiversx/mx-chain-core-go/data/vm"
 	"github.com/multiversx/mx-chain-vm-common-go"
 	"github.com/multiversx/mx-chain-vm-common-go/mock"
 	"github.com/stretchr/testify/assert"
@@ -465,4 +466,38 @@ func TestEsdtNFTBurnFunc_ProcessBuiltinFunctionWithGlobalBurn(t *testing.T) {
 	finalTokenData := esdt.ESDigitalToken{}
 	_ = marshaller.Unmarshal(&finalTokenData, res)
 	require.Equal(t, expectedQuantity.Bytes(), finalTokenData.Value.Bytes())
+}
+
+func TestESDTNFTBurn_ExecOnDestByCallerWithNilSenderAccount_ReturnsErrActionNotAllowed(t *testing.T) {
+	t.Parallel()
+
+	ebf, err := NewESDTNFTBurnFunc(
+		10,
+		createNewESDTDataStorageHandler(),
+		&mock.GlobalSettingsHandlerStub{
+			IsBurnForAllCalled: func(esdtTokenKey []byte) bool {
+				return true
+			},
+		},
+		&mock.ESDTRoleHandlerStub{},
+	)
+	require.NoError(t, err)
+
+	output, err := ebf.ProcessBuiltinFunction(
+		nil,
+		nil,
+		&vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:   big.NewInt(0),
+				Arguments:   [][]byte{[]byte("TEST-123456"), big.NewInt(1).Bytes(), big.NewInt(10).Bytes()},
+				CallerAddr:  []byte("address 1"),
+				GasProvided: 100,
+				CallType:    vm.ExecOnDestByCaller,
+			},
+			RecipientAddr: []byte("address 1"),
+		},
+	)
+
+	require.Nil(t, output)
+	require.Equal(t, ErrActionNotAllowed, err)
 }

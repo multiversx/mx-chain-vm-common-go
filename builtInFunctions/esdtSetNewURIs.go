@@ -21,6 +21,8 @@ type esdtSetNewURIs struct {
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
+	funcGasCostNew        uint64
+	funcGasCostLegacy     uint64
 	gasConfig             vmcommon.BaseOperationCost
 	marshaller            marshal.Marshalizer
 	mutExecution          sync.RWMutex
@@ -36,6 +38,7 @@ func NewESDTSetNewURIsFunc(
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	marshaller marshal.Marshalizer,
+	funcGasCostLegacy ...uint64,
 ) (*esdtSetNewURIs, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -56,12 +59,24 @@ func NewESDTSetNewURIsFunc(
 		return nil, ErrNilMarshalizer
 	}
 
+	legacyCost := funcGasCost
+	if len(funcGasCostLegacy) > 0 {
+		legacyCost = funcGasCostLegacy[0]
+	}
+
+	initialCost := funcGasCost
+	if !enableEpochsHandler.IsFlagEnabled(FixGasCostForDynamicESDTOperationsFlag) {
+		initialCost = legacyCost
+	}
+
 	e := &esdtSetNewURIs{
 		accounts:               accounts,
 		globalSettingsHandler:  globalSettingsHandler,
 		storageHandler:         storageHandler,
 		rolesHandler:           rolesHandler,
-		funcGasCost:            funcGasCost,
+		funcGasCost:            initialCost,
+		funcGasCostNew:         funcGasCost,
+		funcGasCostLegacy:      legacyCost,
 		gasConfig:              gasConfig,
 		mutExecution:           sync.RWMutex{},
 		enableEpochsHandler:    enableEpochsHandler,
@@ -96,7 +111,11 @@ func (e *esdtSetNewURIs) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccountH
 	}
 
 	e.mutExecution.RLock()
-	gasToUse := uint64(difference)*e.gasConfig.StorePerByte + e.funcGasCost
+	cost := e.funcGasCostLegacy
+	if e.enableEpochsHandler.IsFlagEnabled(FixGasCostForDynamicESDTOperationsFlag) {
+		cost = e.funcGasCostNew
+	}
+	gasToUse := uint64(difference)*e.gasConfig.StorePerByte + cost
 	e.mutExecution.RUnlock()
 
 	if vmInput.GasProvided < gasToUse {
@@ -139,7 +158,12 @@ func (e *esdtSetNewURIs) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	}
 
 	e.mutExecution.Lock()
-	e.funcGasCost = gasCost.BuiltInCost.ESDTNFTSetNewURIs
+	e.funcGasCostNew = gasCost.BuiltInCost.ESDTNFTSetNewURIs
+	e.funcGasCostLegacy = gasCost.BuiltInCost.ESDTNFTRecreate
+	e.funcGasCost = e.funcGasCostNew
+	if !e.enableEpochsHandler.IsFlagEnabled(FixGasCostForDynamicESDTOperationsFlag) {
+		e.funcGasCost = e.funcGasCostLegacy
+	}
 	e.gasConfig = gasCost.BaseOperationCost
 	e.mutExecution.Unlock()
 }

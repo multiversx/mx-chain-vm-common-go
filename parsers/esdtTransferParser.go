@@ -138,12 +138,20 @@ func (e *esdtTransferParser) parseMultiESDTNFTTransfer(rcvAddr []byte, args [][]
 		isTxAtSender = true
 	}
 
-	minLenArgs := ArgsPerTransfer*numOfTransfer.Uint64() + startIndex
-	if uint64(len(args)) < minLenArgs {
+	if !numOfTransfer.IsUint64() {
+		return nil, ErrTooManyTransfers
+	}
+	numTransfers := numOfTransfer.Uint64()
+	if numTransfers == 0 {
 		return nil, ErrNotEnoughArguments
 	}
-	if numOfTransfer.Uint64() > MaxNumberOfTransferInMultiTransfer {
+	if numTransfers > MaxNumberOfTransferInMultiTransfer {
 		return nil, ErrTooManyTransfers
+	}
+
+	minLenArgs := ArgsPerTransfer*numTransfers + startIndex
+	if uint64(len(args)) < minLenArgs {
+		return nil, ErrNotEnoughArguments
 	}
 
 	if uint64(len(args)) > minLenArgs {
@@ -154,8 +162,8 @@ func (e *esdtTransferParser) parseMultiESDTNFTTransfer(rcvAddr []byte, args [][]
 	}
 
 	var err error
-	esdtTransfers.ESDTTransfers = make([]*vmcommon.ESDTTransfer, numOfTransfer.Uint64())
-	for i := uint64(0); i < numOfTransfer.Uint64(); i++ {
+	esdtTransfers.ESDTTransfers = make([]*vmcommon.ESDTTransfer, numTransfers)
+	for i := uint64(0); i < numTransfers; i++ {
 		tokenStartIndex := startIndex + i*ArgsPerTransfer
 		esdtTransfers.ESDTTransfers[i], err = e.createNewESDTTransfer(tokenStartIndex, args, isTxAtSender)
 		if err != nil {

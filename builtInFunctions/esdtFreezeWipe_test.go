@@ -31,6 +31,15 @@ func TestESDTFreezeWipe_ProcessBuiltInFunctionErrors(t *testing.T) {
 	input = &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
 			GasProvided: 50,
+			CallValue:   nil,
+		},
+	}
+	_, err = freeze.ProcessBuiltinFunction(nil, nil, input)
+	assert.Equal(t, ErrNilValue, err)
+
+	input = &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			GasProvided: 50,
 			CallValue:   big.NewInt(1),
 		},
 	}

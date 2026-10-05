@@ -476,3 +476,26 @@ func TestESDTTransfer_ProcessBuiltInFunctionOnAsyncCallBack(t *testing.T) {
 	_ = marshaller.Unmarshal(esdtToken, marshaledData)
 	assert.True(t, esdtToken.Value.Cmp(big.NewInt(90)) == 0)
 }
+
+func TestESDTTransfer_ToSystemAccountShouldError(t *testing.T) {
+	t.Parallel()
+
+	shardC := &mock.ShardCoordinatorStub{}
+	transferFunc, _ := NewESDTTransferFunc(10, &mock.MarshalizerMock{}, &mock.GlobalSettingsHandlerStub{}, shardC, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{})
+	senderAddress := bytes.Repeat([]byte{1}, 32)
+	sender := mock.NewUserAccount(senderAddress)
+
+	tokenName := []byte("token")
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{tokenName, big.NewInt(10).Bytes()},
+			GasProvided: 100000,
+		},
+		RecipientAddr: vmcommon.SystemAccountAddress,
+	}
+
+	_, err := transferFunc.ProcessBuiltinFunction(sender, nil, vmInput)
+	assert.Equal(t, ErrInvalidRcvAddr, err)
+}

@@ -93,7 +93,7 @@ func (e *esdtTransfer) ProcessBuiltinFunction(
 		return nil, err
 	}
 	isTransferToMeta := e.shardCoordinator.ComputeId(vmInput.RecipientAddr) == core.MetachainShardId
-	if isTransferToMeta {
+	if isTransferToMeta || vmcommon.IsSystemAccountAddress(vmInput.RecipientAddr) {
 		return nil, ErrInvalidRcvAddr
 	}
 

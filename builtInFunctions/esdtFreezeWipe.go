@@ -61,6 +61,9 @@ func (e *esdtFreezeWipe) ProcessBuiltinFunction(
 	if vmInput == nil {
 		return nil, ErrNilVmInput
 	}
+	if vmInput.CallValue == nil {
+		return nil, ErrNilValue
+	}
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return nil, ErrBuiltInFunctionCalledWithValue
 	}

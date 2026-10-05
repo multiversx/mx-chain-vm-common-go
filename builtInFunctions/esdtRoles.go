@@ -69,17 +69,27 @@ func (e *esdtRoles) ProcessBuiltinFunction(
 		deleteRoles(roles, vmInput.Arguments[1:])
 	}
 
-	for _, arg := range vmInput.Arguments[1:] {
-		if !bytes.Equal(arg, []byte(core.ESDTRoleNFTCreateMultiShard)) {
-			continue
-		}
+	if e.set {
+		for _, arg := range vmInput.Arguments[1:] {
+			if !bytes.Equal(arg, []byte(core.ESDTRoleNFTCreateMultiShard)) {
+				continue
+			}
 
-		err = saveLatestNonce(acntDst, vmInput.Arguments[0], computeStartNonce(vmInput.RecipientAddr))
-		if err != nil {
-			return nil, err
-		}
+			startNonce := computeStartNonce(vmInput.RecipientAddr)
+			currentNonce, errGetNonce := getLatestNonce(acntDst, vmInput.Arguments[0])
+			if errGetNonce != nil {
+				return nil, errGetNonce
+			}
 
-		break
+			if currentNonce < startNonce {
+				err = saveLatestNonce(acntDst, vmInput.Arguments[0], startNonce)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			break
+		}
 	}
 
 	err = saveRolesToAccount(acntDst, esdtTokenRoleKey, roles, e.marshaller)

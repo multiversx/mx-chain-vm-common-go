@@ -164,6 +164,9 @@ func getSystemAccount(accounts vmcommon.AccountsAdapter) (vmcommon.UserAccountHa
 func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
 	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
+		if core.IsGetNodeFromDBError(err) {
+			return true
+		}
 		return false
 	}
 
@@ -174,6 +177,9 @@ func (e *esdtGlobalSettings) IsPaused(esdtTokenKey []byte) bool {
 func (e *esdtGlobalSettings) IsLimitedTransfer(esdtTokenKey []byte) bool {
 	esdtMetadata, err := e.GetGlobalMetadata(esdtTokenKey)
 	if err != nil {
+		if core.IsGetNodeFromDBError(err) {
+			return true
+		}
 		return false
 	}
 

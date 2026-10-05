@@ -207,6 +207,67 @@ func TestESDTModifyRoyalties_ProcessBuiltinFunction(t *testing.T) {
 		assert.Equal(t, expectedErr, err)
 		assert.True(t, allowedToExecuteCalled)
 	})
+	t.Run("royalties value wrapping uint32 or exceeding max royalty should err", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return true
+			},
+		}
+		rolesHandler := &mock.ESDTRoleHandlerStub{}
+		tokenId := []byte("tokenID")
+		globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
+			GetTokenTypeCalled: func(key []byte) (uint32, error) {
+				return uint32(core.DynamicNFT), nil
+			},
+		}
+		storageHandler := &mock.ESDTNFTStorageHandlerStub{
+			GetESDTNFTTokenOnDestinationCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error) {
+				return &esdt.ESDigitalToken{
+					TokenMetaData: &esdt.MetaData{
+						Nonce:     1,
+						Royalties: 10,
+					},
+				}, false, nil
+			},
+		}
+		e, _ := NewESDTModifyRoyaltiesFunc(101, &mock.AccountsStub{}, globalSettingsHandler, storageHandler, rolesHandler, enableEpochsHandler, &mock.MarshalizerMock{})
+
+		// Case 1: (1<<32) + 50, which wraps to 50 on uint32 truncation
+		wrappedVal := big.NewInt(1)
+		wrappedVal.Lsh(wrappedVal, 32)
+		wrappedVal.Add(wrappedVal, big.NewInt(50))
+
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:   big.NewInt(0),
+				CallerAddr:  []byte("caller"),
+				GasProvided: 1000,
+				Arguments:   [][]byte{tokenId, {1}, wrappedVal.Bytes()},
+			},
+			RecipientAddr: []byte("caller"),
+		}
+		vmOutput, err := e.ProcessBuiltinFunction(mock.NewUserAccount([]byte("addr")), nil, vmInput)
+		assert.Nil(t, vmOutput)
+		assert.ErrorIs(t, err, ErrInvalidArguments)
+		assert.Contains(t, err.Error(), "invalid max royality value")
+
+		// Case 2: Huge value (> uint64)
+		hugeVal, _ := big.NewInt(0).SetString("99999999999999999999999999999999999999999999", 10)
+		vmInput.Arguments[2] = hugeVal.Bytes()
+		vmOutput, err = e.ProcessBuiltinFunction(mock.NewUserAccount([]byte("addr")), nil, vmInput)
+		assert.Nil(t, vmOutput)
+		assert.ErrorIs(t, err, ErrInvalidArguments)
+		assert.Contains(t, err.Error(), "invalid max royality value")
+
+		// Case 3: 10001 (core.MaxRoyalty is 10000)
+		vmInput.Arguments[2] = big.NewInt(10001).Bytes()
+		vmOutput, err = e.ProcessBuiltinFunction(mock.NewUserAccount([]byte("addr")), nil, vmInput)
+		assert.Nil(t, vmOutput)
+		assert.ErrorIs(t, err, ErrInvalidArguments)
+		assert.Contains(t, err.Error(), "invalid max royality value")
+	})
 	t.Run("only changes the royalties", func(t *testing.T) {
 		t.Parallel()
 

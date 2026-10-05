@@ -362,7 +362,7 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionShouldWork(t *testing.T) {
 	require.Equal(t, esdtData.TokenMetaData, esdtDataFromLog.TokenMetaData)
 }
 
-func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
+func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller_ReturnsErrActionNotAllowed(t *testing.T) {
 	t.Parallel()
 
 	accounts := createAccountsAdapterWithMap()
@@ -411,34 +411,8 @@ func TestEsdtNFTCreate_ProcessBuiltinFunctionWithExecByCaller(t *testing.T) {
 		RecipientAddr: userAddress,
 	}
 	vmOutput, err := nftCreate.ProcessBuiltinFunction(nil, nil, vmInput)
-	assert.Nil(t, err)
-	require.NotNil(t, vmOutput)
-
-	roleAcc, _ := nftCreate.getAccount(address)
-
-	createdEsdt, latestNonce := readNFTData(t, roleAcc, nftCreate.marshaller, []byte(token), 1, address)
-	assert.Equal(t, uint64(1), latestNonce)
-	expectedEsdt := &esdt.ESDigitalToken{
-		Type:  uint32(core.NonFungible),
-		Value: quantity,
-	}
-	assert.Equal(t, expectedEsdt, createdEsdt)
-
-	tokenMetaData := &esdt.MetaData{
-		Nonce:      1,
-		Name:       []byte(name),
-		Creator:    userAddress,
-		Royalties:  uint32(royalties),
-		Hash:       hash,
-		URIs:       uris,
-		Attributes: attributes,
-	}
-
-	tokenKey := []byte(baseESDTKeyPrefix + token)
-	tokenKey = append(tokenKey, big.NewInt(1).Bytes()...)
-
-	metaData, _ := esdtDataStorage.getESDTMetaDataFromSystemAccount(tokenKey, defaultQueryOptions())
-	assert.Equal(t, tokenMetaData, metaData)
+	require.Equal(t, ErrActionNotAllowed, err)
+	require.Nil(t, vmOutput)
 }
 
 func readNFTData(t *testing.T, account vmcommon.UserAccountHandler, marshaller vmcommon.Marshalizer, tokenID []byte, nonce uint64, _ []byte) (*esdt.ESDigitalToken, uint64) {

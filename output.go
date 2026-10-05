@@ -3,6 +3,7 @@ package vmcommon
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -203,19 +204,35 @@ func (vmOutput *VMOutput) GetNextAvailableOutputTransferIndex() uint32 {
 
 // ReindexTransfers from VMOutput
 func (vmOutput *VMOutput) ReindexTransfers(nextIndexProvider NextOutputTransferIndexProvider) error {
-
 	if check.IfNil(nextIndexProvider) {
 		return ErrNilTransferIndexer
 	}
 
+	currentIndex := nextIndexProvider.GetCrtTransferIndex()
+	if currentIndex == 0 {
+		return ErrTransferIndexOverflow
+	}
+	indexOffset := currentIndex - 1
 	reindexed := false
-	crtIndex := nextIndexProvider.GetCrtTransferIndex() - 1
+	// Validate the entire VM output before mutating any transfer. A malformed
+	// later account must not leave an earlier account partially reindexed.
 	for _, account := range vmOutput.OutputAccounts {
-		for transferIdx, transfer := range account.OutputTransfers {
+		if account == nil {
+			return ErrNilOutputAccount
+		}
+		for _, transfer := range account.OutputTransfers {
 			if transfer.Index == 0 {
 				return ErrTransfersNotIndexed
 			}
-			account.OutputTransfers[transferIdx].Index = transfer.Index + crtIndex
+			maxIndexBeforeCursorOverflow := uint32(math.MaxUint32) - indexOffset
+			if maxIndexBeforeCursorOverflow == 0 || transfer.Index >= maxIndexBeforeCursorOverflow {
+				return ErrTransferIndexOverflow
+			}
+		}
+	}
+	for _, account := range vmOutput.OutputAccounts {
+		for transferIdx, transfer := range account.OutputTransfers {
+			account.OutputTransfers[transferIdx].Index = transfer.Index + indexOffset
 			reindexed = true
 		}
 	}
@@ -268,11 +285,32 @@ func (o *OutputAccount) MergeOutputAccounts(outAcc *OutputAccount) {
 
 // MergeStorageUpdates will copy all the storage updates from the given output account
 func (o *OutputAccount) MergeStorageUpdates(outAcc *OutputAccount) {
+	if outAcc == nil {
+		return
+	}
 	if o.StorageUpdates == nil {
-		o.StorageUpdates = make(map[string]*StorageUpdate)
+		o.StorageUpdates = make(map[string]*StorageUpdate, len(outAcc.StorageUpdates))
 	}
 	for key, update := range outAcc.StorageUpdates {
-		o.StorageUpdates[key] = update
+		if update == nil {
+			o.StorageUpdates[key] = nil
+			continue
+		}
+		var offsetCopy []byte
+		if update.Offset != nil {
+			offsetCopy = make([]byte, len(update.Offset))
+			copy(offsetCopy, update.Offset)
+		}
+		var dataCopy []byte
+		if update.Data != nil {
+			dataCopy = make([]byte, len(update.Data))
+			copy(dataCopy, update.Data)
+		}
+		o.StorageUpdates[key] = &StorageUpdate{
+			Offset:  offsetCopy,
+			Data:    dataCopy,
+			Written: update.Written,
+		}
 	}
 }
 

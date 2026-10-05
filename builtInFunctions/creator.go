@@ -578,7 +578,17 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTSetNewURIsFunc(b.gasConfig.BuiltInCost.ESDTNFTRecreate, b.gasConfig.BaseOperationCost, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
+	newFunc, err = NewESDTSetNewURIsFunc(
+		b.gasConfig.BuiltInCost.ESDTNFTSetNewURIs,
+		b.gasConfig.BaseOperationCost,
+		b.accounts,
+		globalSettingsFunc,
+		b.esdtStorageHandler,
+		setRoleFunc,
+		b.enableEpochsHandler,
+		b.marshaller,
+		b.gasConfig.BuiltInCost.ESDTNFTRecreate,
+	)
 	if err != nil {
 		return err
 	}
@@ -596,7 +606,16 @@ func (b *builtInFuncCreator) CreateBuiltInFunctionContainer() error {
 		return err
 	}
 
-	newFunc, err = NewESDTModifyCreatorFunc(b.gasConfig.BuiltInCost.ESDTModifyRoyalties, b.accounts, globalSettingsFunc, b.esdtStorageHandler, setRoleFunc, b.enableEpochsHandler, b.marshaller)
+	newFunc, err = NewESDTModifyCreatorFunc(
+		b.gasConfig.BuiltInCost.ESDTModifyCreator,
+		b.accounts,
+		globalSettingsFunc,
+		b.esdtStorageHandler,
+		setRoleFunc,
+		b.enableEpochsHandler,
+		b.marshaller,
+		b.gasConfig.BuiltInCost.ESDTModifyRoyalties,
+	)
 	if err != nil {
 		return err
 	}

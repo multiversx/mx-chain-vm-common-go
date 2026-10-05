@@ -72,6 +72,9 @@ func inputCheckForUserNameCall(
 	if vmInput == nil {
 		return ErrNilVmInput
 	}
+	if vmInput.CallValue == nil {
+		return ErrNilValue
+	}
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return ErrBuiltInFunctionCalledWithValue
 	}

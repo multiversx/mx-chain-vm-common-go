@@ -97,10 +97,11 @@ func (e *esdtModifyRoyalties) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcc
 		return nil, err
 	}
 
-	newRoyalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[newRoyaltiesIndex]).Uint64())
-	if newRoyalties > core.MaxRoyalty {
+	newRoyaltiesBig := big.NewInt(0).SetBytes(vmInput.Arguments[newRoyaltiesIndex])
+	if !newRoyaltiesBig.IsUint64() || newRoyaltiesBig.Uint64() > uint64(core.MaxRoyalty) {
 		return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 	}
+	newRoyalties := uint32(newRoyaltiesBig.Uint64())
 
 	metaDataVersion, _, err := getMetaDataVersion(esdtInfo.esdtData, e.enableEpochsHandler, e.marshaller)
 	if err != nil {

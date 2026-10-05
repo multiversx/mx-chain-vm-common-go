@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -362,7 +363,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionInvalidArgumentsShouldErr(t *test
 		return core.MetachainShardId
 	}}
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	senderAddress := bytes.Repeat([]byte{2}, 32)
 	vmInput = &vmcommon.ContractCallInput{
 		VMInput: vmcommon.VMInput{
@@ -395,7 +396,7 @@ func TestEsdtNFTTransfer_SenderDoesNotHaveNFT(t *testing.T) {
 	destination, err := nftTransfer.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(0)
 
 	nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
@@ -427,7 +428,7 @@ func TestEsdtNFTTransfer_ProcessWithZeroValue(t *testing.T) {
 	destination, err := nftTransfer.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -475,7 +476,7 @@ func TestEsdtNFTTransfer_TransferValueLengthChecks(t *testing.T) {
 	destination, err := nftTransfer.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -541,7 +542,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnSameShardWithScCall(t *testing.
 	destination, err := nftTransfer.accounts.LoadAccount(destinationAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -614,7 +615,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationDoesNotHo
 	sender, err := nftTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -705,7 +706,7 @@ func TestEsdtNFTTransfer_ProcessBuiltinFunctionOnCrossShardsDestinationHoldsNFT(
 	sender, err := nftTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -789,7 +790,7 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -829,6 +830,13 @@ func TestESDTNFTTransfer_SndDstFrozen(t *testing.T) {
 	vmInput.ReturnCallAfterError = true
 	_, err = transferFunc.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), destination.(vmcommon.UserAccountHandler), vmInput)
 	assert.Nil(t, err)
+
+	destRes, _, err := destination.(vmcommon.UserAccountHandler).AccountDataHandler().RetrieveValue(esdtKey)
+	assert.Nil(t, err)
+	destTokenData := &esdt.ESDigitalToken{}
+	_ = transferFunc.marshaller.Unmarshal(destTokenData, destRes)
+	destMetadata := ESDTUserMetadataFromBytes(destTokenData.Properties)
+	assert.True(t, destMetadata.Frozen)
 }
 
 func TestESDTNFTTransfer_WithLimitedTransfer(t *testing.T) {
@@ -844,7 +852,7 @@ func TestESDTNFTTransfer_WithLimitedTransfer(t *testing.T) {
 	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -891,7 +899,7 @@ func TestESDTNFTTransfer_NotEnoughGas(t *testing.T) {
 	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -964,7 +972,7 @@ func TestESDTNFTTransfer_SndDstFreezeCollection(t *testing.T) {
 	sender, err := transferFunc.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -1055,7 +1063,7 @@ func createSetupToSendNFTCrossShard(t *testing.T) (*vmcommon.ContractCallInput, 
 	sender, err := nftTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	initialTokens := big.NewInt(3)
@@ -1145,7 +1153,7 @@ func senderHasDynamicRoleAndLiqudityReaches0AfterTransfer(t *testing.T, role []b
 	sender, err := nftTransferSenderShard.accounts.LoadAccount(senderAddress)
 	require.Nil(t, err)
 
-	tokenName := []byte("token")
+	tokenName := []byte("TOKEN-abcdef")
 	tokenNonce := uint64(1)
 
 	createSFT(tokenName, tokenNonce, nftTransferSenderShard, sender.(vmcommon.UserAccountHandler), role)
@@ -1326,3 +1334,169 @@ func TestHasDynamicRole(t *testing.T) {
 		assert.True(t, hasDynamicRole)
 	})
 }
+
+func TestESDTNFTTransfer_SenderWithNilMetadataShouldError(t *testing.T) {
+	t.Parallel()
+
+	nftTransfer := createNftTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	senderAddress := bytes.Repeat([]byte{1}, 32)
+	destinationAddress := bytes.Repeat([]byte{2}, 32)
+	sender, err := nftTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	token1 := []byte("TOKEN-abcdef")
+	tokenNonce := uint64(1)
+	tokenId := append(keyPrefix, token1...)
+	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenId, tokenNonce)
+	esdtData := &esdt.ESDigitalToken{
+		Type:          uint32(core.NonFungible),
+		Value:         big.NewInt(10),
+		TokenMetaData: nil,
+	}
+	buff, _ := nftTransfer.marshaller.Marshal(esdtData)
+	_ = sender.(vmcommon.UserAccountHandler).AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, buff)
+	_ = nftTransfer.accounts.SaveAccount(sender)
+	_, _ = nftTransfer.accounts.Commit()
+
+	sender, err = nftTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	nonceBytes := big.NewInt(int64(tokenNonce)).Bytes()
+	quantityBytes := big.NewInt(1).Bytes()
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{token1, nonceBytes, quantityBytes, destinationAddress},
+			GasProvided: 100000,
+		},
+		RecipientAddr: senderAddress,
+	}
+
+	_, err = nftTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
+	require.True(t, errors.Is(err, ErrNFTDoesNotHaveMetadata))
+}
+
+func TestESDTNFTTransfer_ToSystemAccountShouldError(t *testing.T) {
+	t.Parallel()
+
+	nftTransferSenderShard := createNftTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	senderAddress := bytes.Repeat([]byte{1}, 32)
+	sender, err := nftTransferSenderShard.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	tokenName := []byte("TOKEN-abcdef")
+	tokenNonce := uint64(1)
+	createESDTNFTToken(tokenName, core.NonFungible, tokenNonce, big.NewInt(10), nftTransferSenderShard.marshaller, sender.(vmcommon.UserAccountHandler))
+
+	// Sender shard: transferring to SystemAccountAddress
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{tokenName, big.NewInt(int64(tokenNonce)).Bytes(), big.NewInt(1).Bytes(), vmcommon.SystemAccountAddress},
+			GasProvided: 100000,
+		},
+		RecipientAddr: senderAddress,
+	}
+
+	_, err = nftTransferSenderShard.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInput)
+	require.Equal(t, ErrInvalidRcvAddr, err)
+
+	// Destination shard: RecipientAddr is SystemAccountAddress
+	nftTransferDestShard := createNftTransferWithMockArguments(1, 2, &mock.GlobalSettingsHandlerStub{})
+	systemAcc, err := nftTransferDestShard.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+	require.Nil(t, err)
+
+	vmInputDest := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  senderAddress,
+			Arguments:   [][]byte{tokenName, big.NewInt(int64(tokenNonce)).Bytes(), big.NewInt(1).Bytes(), zeroByteArray},
+			GasProvided: 100000,
+		},
+		RecipientAddr: vmcommon.SystemAccountAddress,
+	}
+
+	_, err = nftTransferDestShard.ProcessBuiltinFunction(nil, systemAcc.(vmcommon.UserAccountHandler), vmInputDest)
+	require.Equal(t, ErrInvalidRcvAddr, err)
+}
+
+func TestESDTNFTTransfer_NilValueCrossShardDoesNotPanic(t *testing.T) {
+	t.Parallel()
+
+	nftTransferDestShard := createNftTransferWithMockArguments(0, 2, &mock.GlobalSettingsHandlerStub{})
+	destinationAddress := bytes.Repeat([]byte{0}, 32)
+	destAcc, _ := nftTransferDestShard.accounts.LoadAccount(destinationAddress)
+
+	tokenWithNilValue := &esdt.ESDigitalToken{
+		Value: nil,
+		TokenMetaData: &esdt.MetaData{
+			Nonce: 1,
+		},
+	}
+	marshaledToken, err := nftTransferDestShard.marshaller.Marshal(tokenWithNilValue)
+	require.Nil(t, err)
+
+	vmInputDest := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:   big.NewInt(0),
+			CallerAddr:  bytes.Repeat([]byte{1}, 32),
+			Arguments:   [][]byte{[]byte("TOKEN-abcdef"), big.NewInt(1).Bytes(), big.NewInt(1).Bytes(), marshaledToken},
+			GasProvided: 100000,
+		},
+		RecipientAddr: destinationAddress,
+	}
+
+	_, err = nftTransferDestShard.ProcessBuiltinFunction(nil, destAcc.(vmcommon.UserAccountHandler), vmInputDest)
+	require.Equal(t, ErrNilValue, err)
+}
+
+func TestEsdtNFTTransfer_InvalidTokenIDReturnsError(t *testing.T) {
+	t.Parallel()
+
+	nftTransfer := createNftTransferWithMockArguments(0, 1, &mock.GlobalSettingsHandlerStub{})
+	senderAddress := bytes.Repeat([]byte{2}, 32)
+	destinationAddress := bytes.Repeat([]byte{1}, 32)
+	sender, err := nftTransfer.accounts.LoadAccount(senderAddress)
+	require.Nil(t, err)
+
+	invalidTokens := [][]byte{
+		[]byte("short"),
+		[]byte("invalid_format"),
+		[]byte("TOKEN-12"),
+		[]byte("TOKEN-1234567"),
+		[]byte("token-123456"),
+	}
+
+	for _, invalidToken := range invalidTokens {
+		// Test on sender shard
+		vmInputSender := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:   big.NewInt(0),
+				CallerAddr:  senderAddress,
+				Arguments:   [][]byte{invalidToken, big.NewInt(1).Bytes(), big.NewInt(1).Bytes(), destinationAddress},
+				GasProvided: 100000,
+			},
+			RecipientAddr: senderAddress,
+		}
+		_, err = nftTransfer.ProcessBuiltinFunction(sender.(vmcommon.UserAccountHandler), nil, vmInputSender)
+		require.Equal(t, ErrInvalidTokenID, err)
+
+		// Test on destination shard
+		destAcc, errLoad := nftTransfer.accounts.LoadAccount(destinationAddress)
+		require.Nil(t, errLoad)
+		vmInputDest := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:   big.NewInt(0),
+				CallerAddr:  senderAddress,
+				Arguments:   [][]byte{invalidToken, big.NewInt(1).Bytes(), big.NewInt(1).Bytes(), []byte{0}},
+				GasProvided: 100000,
+			},
+			RecipientAddr: destinationAddress,
+		}
+		_, err = nftTransfer.ProcessBuiltinFunction(nil, destAcc.(vmcommon.UserAccountHandler), vmInputDest)
+		require.Equal(t, ErrInvalidTokenID, err)
+	}
+}
+

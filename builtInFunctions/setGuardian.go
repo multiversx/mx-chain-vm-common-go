@@ -147,6 +147,9 @@ func (sg *setGuardian) checkSetGuardianArgs(
 
 // SetNewGasConfig is called whenever gas cost is changed
 func (sg *setGuardian) SetNewGasConfig(gasCost *vmcommon.GasCost) {
+	if gasCost == nil {
+		return
+	}
 	sg.mutExecution.Lock()
 	sg.funcGasCost = gasCost.BuiltInCost.SetGuardian
 	sg.mutExecution.Unlock()

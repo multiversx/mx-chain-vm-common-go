@@ -222,17 +222,29 @@ func (e *esdtNFTCreateRoleTransfer) executeTransferNFTCreateChangeAtNextOwner(
 	if len(vmInput.Arguments) != 2 {
 		return ErrInvalidArguments
 	}
+	if len(vmInput.CallerAddr) != len(acntDst.AddressBytes()) {
+		return ErrInvalidArguments
+	}
+	if len(vmInput.Arguments[1]) > 8 {
+		return ErrInvalidArguments
+	}
 
 	tokenID := vmInput.Arguments[0]
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
 
-	err := saveLatestNonce(acntDst, tokenID, nonce)
-	if err != nil {
-		return err
+	currentNonce, errGetNonce := getLatestNonce(acntDst, tokenID)
+	if errGetNonce != nil {
+		return errGetNonce
+	}
+	if currentNonce < nonce {
+		err := saveLatestNonce(acntDst, tokenID, nonce)
+		if err != nil {
+			return err
+		}
 	}
 
 	esdtTokenRoleKey := append(roleKeyPrefix, tokenID...)
-	err = e.addCreateRoleToAccount(acntDst, esdtTokenRoleKey)
+	err := e.addCreateRoleToAccount(acntDst, esdtTokenRoleKey)
 	if err != nil {
 		return err
 	}

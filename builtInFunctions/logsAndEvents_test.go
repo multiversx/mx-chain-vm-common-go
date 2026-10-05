@@ -39,4 +39,23 @@ func TestExtractTokenIdentifierAndNonceESDTWipe(t *testing.T) {
 	identifier, nonce = extractTokenIdentifierAndNonceESDTWipe(args)
 	require.Equal(t, uint64(0), nonce)
 	require.Equal(t, []byte("WEGLD-7fbb90"), identifier)
+
+	// Nonce 45 (0x2d = '-')
+	tokenID := []byte("TEST-123456")
+	argWithNonce45 := append(tokenID, byte(0x2d))
+	identifier, nonce = extractTokenIdentifierAndNonceESDTWipe(argWithNonce45)
+	require.Equal(t, uint64(45), nonce)
+	require.Equal(t, tokenID, identifier)
+
+	// Nonce 301 (0x012d)
+	argWithNonce301 := append(tokenID, 0x01, 0x2d)
+	identifier, nonce = extractTokenIdentifierAndNonceESDTWipe(argWithNonce301)
+	require.Equal(t, uint64(301), nonce)
+	require.Equal(t, tokenID, identifier)
+
+	// Nonce 11521 (0x2d01)
+	argWithNonce11521 := append(tokenID, 0x2d, 0x01)
+	identifier, nonce = extractTokenIdentifierAndNonceESDTWipe(argWithNonce11521)
+	require.Equal(t, uint64(11521), nonce)
+	require.Equal(t, tokenID, identifier)
 }

@@ -19,6 +19,8 @@ type esdtModifyCreator struct {
 	accounts              vmcommon.AccountsAdapter
 	enableEpochsHandler   vmcommon.EnableEpochsHandler
 	funcGasCost           uint64
+	funcGasCostNew        uint64
+	funcGasCostLegacy     uint64
 	marshaller            marshal.Marshalizer
 	mutExecution          sync.RWMutex
 }
@@ -32,6 +34,7 @@ func NewESDTModifyCreatorFunc(
 	rolesHandler vmcommon.ESDTRoleHandler,
 	enableEpochsHandler vmcommon.EnableEpochsHandler,
 	marshaller marshal.Marshalizer,
+	funcGasCostLegacy ...uint64,
 ) (*esdtModifyCreator, error) {
 	if check.IfNil(accounts) {
 		return nil, ErrNilAccountsAdapter
@@ -52,12 +55,24 @@ func NewESDTModifyCreatorFunc(
 		return nil, ErrNilMarshalizer
 	}
 
+	legacyCost := funcGasCost
+	if len(funcGasCostLegacy) > 0 {
+		legacyCost = funcGasCostLegacy[0]
+	}
+
+	initialCost := funcGasCost
+	if !enableEpochsHandler.IsFlagEnabled(FixGasCostForDynamicESDTOperationsFlag) {
+		initialCost = legacyCost
+	}
+
 	e := &esdtModifyCreator{
 		accounts:               accounts,
 		globalSettingsHandler:  globalSettingsHandler,
 		storageHandler:         storageHandler,
 		rolesHandler:           rolesHandler,
-		funcGasCost:            funcGasCost,
+		funcGasCost:            initialCost,
+		funcGasCostNew:         funcGasCost,
+		funcGasCostLegacy:      legacyCost,
 		enableEpochsHandler:    enableEpochsHandler,
 		mutExecution:           sync.RWMutex{},
 		BlockchainDataProvider: NewBlockchainDataProvider(),
@@ -79,7 +94,10 @@ func (e *esdtModifyCreator) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAccou
 	}
 
 	e.mutExecution.RLock()
-	funcGasCost := e.funcGasCost
+	funcGasCost := e.funcGasCostLegacy
+	if e.enableEpochsHandler.IsFlagEnabled(FixGasCostForDynamicESDTOperationsFlag) {
+		funcGasCost = e.funcGasCostNew
+	}
 	e.mutExecution.RUnlock()
 
 	if vmInput.GasProvided < funcGasCost {
@@ -126,7 +144,12 @@ func (e *esdtModifyCreator) SetNewGasConfig(gasCost *vmcommon.GasCost) {
 	}
 
 	e.mutExecution.Lock()
-	e.funcGasCost = gasCost.BuiltInCost.ESDTModifyCreator
+	e.funcGasCostNew = gasCost.BuiltInCost.ESDTModifyCreator
+	e.funcGasCostLegacy = gasCost.BuiltInCost.ESDTModifyRoyalties
+	e.funcGasCost = e.funcGasCostNew
+	if !e.enableEpochsHandler.IsFlagEnabled(FixGasCostForDynamicESDTOperationsFlag) {
+		e.funcGasCost = e.funcGasCostLegacy
+	}
 	e.mutExecution.Unlock()
 }
 

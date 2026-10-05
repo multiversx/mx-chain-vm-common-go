@@ -280,14 +280,38 @@ func TestESDTModifyCreator_ProcessBuiltinFunction(t *testing.T) {
 func TestESDTModifyCreator_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	e, _ := NewESDTModifyCreatorFunc(0, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
-
 	newGasCost := &vmcommon.GasCost{
 		BuiltInCost: vmcommon.BuiltInCost{
-			ESDTNFTUpdate: 10,
+			ESDTModifyRoyalties: 25,
+			ESDTModifyCreator:   10,
 		},
 	}
-	e.SetNewGasConfig(newGasCost)
 
-	assert.Equal(t, newGasCost.BuiltInCost.ESDTModifyCreator, e.funcGasCost)
+	t.Run("flag enabled", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochs := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == FixGasCostForDynamicESDTOperationsFlag
+			},
+		}
+		e, _ := NewESDTModifyCreatorFunc(0, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, enableEpochs, &mock.MarshalizerMock{})
+		e.SetNewGasConfig(newGasCost)
+
+		assert.Equal(t, newGasCost.BuiltInCost.ESDTModifyCreator, e.funcGasCost)
+	})
+
+	t.Run("flag disabled", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochs := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return false
+			},
+		}
+		e, _ := NewESDTModifyCreatorFunc(0, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, enableEpochs, &mock.MarshalizerMock{})
+		e.SetNewGasConfig(newGasCost)
+
+		assert.Equal(t, newGasCost.BuiltInCost.ESDTModifyRoyalties, e.funcGasCost)
+	})
 }

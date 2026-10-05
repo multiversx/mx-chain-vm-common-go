@@ -281,18 +281,87 @@ func TestESDTSetNewURIs_ProcessBuiltinFunction(t *testing.T) {
 func TestEsdtSetNewURIs_SetNewGasConfig(t *testing.T) {
 	t.Parallel()
 
-	e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, &mock.EnableEpochsHandlerStub{}, &mock.MarshalizerMock{})
-
 	newGasCost := &vmcommon.GasCost{
 		BaseOperationCost: vmcommon.BaseOperationCost{
 			StorePerByte: 15,
 		},
 		BuiltInCost: vmcommon.BuiltInCost{
+			ESDTNFTRecreate:   20,
 			ESDTNFTSetNewURIs: 10,
 		},
 	}
-	e.SetNewGasConfig(newGasCost)
 
-	assert.Equal(t, newGasCost.BuiltInCost.ESDTNFTSetNewURIs, e.funcGasCost)
-	assert.Equal(t, newGasCost.BaseOperationCost.StorePerByte, e.gasConfig.StorePerByte)
+	t.Run("flag enabled", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochs := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return flag == FixGasCostForDynamicESDTOperationsFlag
+			},
+		}
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, enableEpochs, &mock.MarshalizerMock{})
+		e.SetNewGasConfig(newGasCost)
+
+		assert.Equal(t, newGasCost.BuiltInCost.ESDTNFTSetNewURIs, e.funcGasCost)
+		assert.Equal(t, newGasCost.BaseOperationCost.StorePerByte, e.gasConfig.StorePerByte)
+	})
+
+	t.Run("flag disabled", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochs := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return false
+			},
+		}
+		e, _ := NewESDTSetNewURIsFunc(0, vmcommon.BaseOperationCost{}, &mock.AccountsStub{}, &mock.GlobalSettingsHandlerStub{}, &mock.ESDTNFTStorageHandlerStub{}, &mock.ESDTRoleHandlerStub{}, enableEpochs, &mock.MarshalizerMock{})
+		e.SetNewGasConfig(newGasCost)
+
+		assert.Equal(t, newGasCost.BuiltInCost.ESDTNFTRecreate, e.funcGasCost)
+		assert.Equal(t, newGasCost.BaseOperationCost.StorePerByte, e.gasConfig.StorePerByte)
+	})
 }
+
+func TestEsdtSetNewURIs_FlagTransitionWithoutGasScheduleChange(t *testing.T) {
+	t.Parallel()
+
+	flagEnabled := false
+	enableEpochs := &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			if flag == FixGasCostForDynamicESDTOperationsFlag {
+				return flagEnabled
+			}
+			return true
+		},
+	}
+
+	costNew := uint64(50)
+	costLegacy := uint64(100)
+	e, _ := NewESDTSetNewURIsFunc(
+		costNew,
+		vmcommon.BaseOperationCost{StorePerByte: 0},
+		&mock.AccountsStub{},
+		&mock.GlobalSettingsHandlerStub{},
+		&mock.ESDTNFTStorageHandlerStub{},
+		&mock.ESDTRoleHandlerStub{},
+		enableEpochs,
+		&mock.MarshalizerMock{},
+		costLegacy,
+	)
+
+	// When flag is disabled:
+	cost := e.funcGasCostLegacy
+	if e.enableEpochsHandler.IsFlagEnabled(FixGasCostForDynamicESDTOperationsFlag) {
+		cost = e.funcGasCostNew
+	}
+	assert.Equal(t, costLegacy, cost)
+
+	// Transition to epoch 2 (flag enables, no SetNewGasConfig call):
+	flagEnabled = true
+	cost = e.funcGasCostLegacy
+	if e.enableEpochsHandler.IsFlagEnabled(FixGasCostForDynamicESDTOperationsFlag) {
+		cost = e.funcGasCostNew
+	}
+	assert.Equal(t, costNew, cost)
+}
+

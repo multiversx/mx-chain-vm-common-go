@@ -136,6 +136,9 @@ func getEsdtInfo(
 ) (*esdtStorageInfo, error) {
 	esdtTokenKey := append([]byte(baseESDTKeyPrefix), vmInput.Arguments[tokenIDIndex]...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[nonceIndex]).Uint64()
+	if nonce == 0 {
+		return nil, ErrInvalidArguments
+	}
 
 	tokenType, err := globalSettingsHandler.GetTokenType(esdtTokenKey)
 	if err != nil {
@@ -148,7 +151,10 @@ func getEsdtInfo(
 		}
 
 		if esdtData == nil {
-			esdtData = &esdt.ESDigitalToken{}
+			esdtData = &esdt.ESDigitalToken{
+				Value: big.NewInt(0),
+				Type:  tokenType,
+			}
 		}
 		if esdtData.TokenMetaData == nil {
 			esdtData.TokenMetaData = &esdt.MetaData{
@@ -264,10 +270,11 @@ func (e *esdtMetaDataRecreate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAc
 		return nil, ErrNotEnoughGas
 	}
 
-	royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex]).Uint64())
-	if royalties > core.MaxRoyalty {
+	royaltiesBig := big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex])
+	if !royaltiesBig.IsUint64() || royaltiesBig.Uint64() > uint64(core.MaxRoyalty) {
 		return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 	}
+	royalties := uint32(royaltiesBig.Uint64())
 
 	esdtInfo.esdtData.TokenMetaData.Name = vmInput.Arguments[nameIndex]
 	esdtInfo.esdtData.TokenMetaData.Creator = vmInput.CallerAddr
