@@ -262,7 +262,12 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	}
 
 	// no need to consume gas on destination - sender already paid for it
-	isSCCallAfter := e.payableHandler.DetermineIsSCCallAfter(vmInput, vmInput.RecipientAddr, int(minNumOfArguments))
+	var isSCCallAfter bool
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) {
+		isSCCallAfter = e.payableHandler.DetermineIsSCCallAfter(vmInput, vmInput.RecipientAddr, int(minNumOfArguments))
+	} else {
+		isSCCallAfter = len(vmInput.Arguments) > int(minNumOfArguments) && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr)
+	}
 	if isSCCallAfter {
 		var callArgs [][]byte
 		if len(vmInput.Arguments) > int(minNumOfArguments)+1 {

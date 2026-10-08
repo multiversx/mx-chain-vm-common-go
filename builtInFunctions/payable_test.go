@@ -94,6 +94,16 @@ func TestDetermineIsSCCallAfter(t *testing.T) {
 		assert.False(t, p1.DetermineIsSCCallAfter(vmInput, scAddress, minLenArguments))
 		assert.True(t, p2.DetermineIsSCCallAfter(vmInput, scAddress, minLenArguments))
 	})
+	t.Run("empty last argument with AsynchronousCallBack should return true", func(t *testing.T) {
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{[]byte("arg1"), []byte("arg2"), []byte("arg3"), []byte("arg4"), []byte("")},
+				CallType:  vm.AsynchronousCallBack,
+			},
+		}
+		assert.True(t, p1.DetermineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+		assert.True(t, p2.DetermineIsSCCallAfter(vmInput, scAddress, minLenArguments))
+	})
 	t.Run("should work", func(t *testing.T) {
 		vmInput := &vmcommon.ContractCallInput{
 			VMInput: vmcommon.VMInput{

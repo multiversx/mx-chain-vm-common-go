@@ -190,7 +190,12 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 
 	// no need to consume gas on destination - sender already paid for it
 	vmOutput := &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided}
-	isSCCallAfter := e.payableHandler.DetermineIsSCCallAfter(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTNFTTransfer)
+	var isSCCallAfter bool
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) {
+		isSCCallAfter = e.payableHandler.DetermineIsSCCallAfter(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTNFTTransfer)
+	} else {
+		isSCCallAfter = len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr)
+	}
 	if isSCCallAfter {
 		var callArgs [][]byte
 		if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer+1 {
