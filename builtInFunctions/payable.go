@@ -87,7 +87,7 @@ func (p *payableCheck) DetermineIsSCCallAfter(vmInput *vmcommon.ContractCallInpu
 	if !vmcommon.IsSmartContractAddress(destAddress) {
 		return false
 	}
-	if p.enableEpochsHandler.IsFlagEnabled(CheckFunctionArgumentFlag) && vmInput.CallType != vm.AsynchronousCallBack {
+	if p.enableEpochsHandler.IsFlagEnabled(CheckFunctionArgumentFlag) {
 		if len(vmInput.Arguments[minLenArguments]) == 0 {
 			return false
 		}
