@@ -2,6 +2,7 @@ package builtInFunctions
 
 import (
 	"bytes"
+	"math"
 	"math/big"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -76,6 +77,9 @@ func (e *esdtDeleteMetaData) ProcessBuiltinFunction(
 	if vmInput == nil {
 		return nil, ErrNilVmInput
 	}
+	if vmInput.CallValue == nil {
+		return nil, ErrNilValue
+	}
 	if vmInput.CallValue.Cmp(zero) != 0 {
 		return nil, ErrBuiltInFunctionCalledWithValue
 	}
@@ -128,6 +132,10 @@ func (e *esdtDeleteMetaData) deleteMetadata(args [][]byte) error {
 			return ErrInvalidNumOfArgs
 		}
 
+		if numIntervals == 0 {
+			return ErrInvalidNumOfArgs
+		}
+
 		err = e.deleteMetadataForListIntervals(systemAcc, tokenID, args, i, numIntervals)
 		if err != nil {
 			return err
@@ -151,7 +159,12 @@ func (e *esdtDeleteMetaData) deleteMetadataForListIntervals(
 	index, numIntervals uint64,
 ) error {
 	lenArgs := uint64(len(args))
-	for j := index; j < index+numIntervals*2; j += 2 {
+	for k := uint64(0); k < numIntervals; k++ {
+		if k > (lenArgs-index)/2 {
+			return ErrInvalidNumOfArgs
+		}
+
+		j := index + k*2
 		if j > lenArgs-2 {
 			return ErrInvalidNumOfArgs
 		}
@@ -173,7 +186,7 @@ func (e *esdtDeleteMetaData) deleteMetadataForInterval(
 	tokenID []byte,
 	startIndex, endIndex uint64,
 ) error {
-	if endIndex < startIndex {
+	if endIndex < startIndex || endIndex == math.MaxUint64 {
 		return ErrInvalidArguments
 	}
 	if startIndex == 0 {
@@ -187,6 +200,10 @@ func (e *esdtDeleteMetaData) deleteMetadataForInterval(
 		err := systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, nil)
 		if err != nil {
 			return err
+		}
+
+		if nonce == math.MaxUint64 {
+			break
 		}
 	}
 

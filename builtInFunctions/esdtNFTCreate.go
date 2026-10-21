@@ -160,10 +160,11 @@ func (e *esdtNFTCreate) ProcessBuiltinFunction(
 		return nil, ErrNotEnoughGas
 	}
 
-	royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[3]).Uint64())
-	if royalties > core.MaxRoyalty {
+	royaltiesBig := big.NewInt(0).SetBytes(vmInput.Arguments[3])
+	if !royaltiesBig.IsUint64() || royaltiesBig.Uint64() > uint64(core.MaxRoyalty) {
 		return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 	}
+	royalties := uint32(royaltiesBig.Uint64())
 
 	esdtTokenKey := append(e.keyPrefix, vmInput.Arguments[0]...)
 	quantity := big.NewInt(0).SetBytes(vmInput.Arguments[1])
@@ -269,11 +270,10 @@ func (e *esdtNFTCreate) getAccount(address []byte) (vmcommon.UserAccountHandler,
 func getLatestNonce(acnt vmcommon.UserAccountHandler, tokenID []byte) (uint64, error) {
 	nonceKey := getNonceKey(tokenID)
 	nonceData, _, err := acnt.AccountDataHandler().RetrieveValue(nonceKey)
-	if err != nil {
+	if core.IsGetNodeFromDBError(err) {
 		return 0, err
 	}
-
-	if len(nonceData) == 0 {
+	if err != nil || len(nonceData) == 0 {
 		return 0, nil
 	}
 
@@ -301,7 +301,10 @@ func checkESDTNFTCreateBurnAddInput(
 	if !bytes.Equal(vmInput.CallerAddr, vmInput.RecipientAddr) {
 		return ErrInvalidRcvAddr
 	}
-	if check.IfNil(account) && vmInput.CallType != vm.ExecOnDestByCaller {
+	if vmInput.CallType == vm.ExecOnDestByCaller {
+		return ErrActionNotAllowed
+	}
+	if check.IfNil(account) {
 		return ErrNilUserAccount
 	}
 	if vmInput.GasProvided < funcGasCost {

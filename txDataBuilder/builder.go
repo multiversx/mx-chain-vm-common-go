@@ -3,6 +3,7 @@ package txDataBuilder
 import (
 	"encoding/hex"
 	"math/big"
+	"strings"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 )
@@ -34,12 +35,24 @@ func (builder *txDataBuilder) Clear() *txDataBuilder {
 
 // ToString returns the data as a string.
 func (builder *txDataBuilder) ToString() string {
-	data := builder.function
-	for _, element := range builder.elements {
-		data = data + builder.separator + element
+	if len(builder.elements) == 0 {
+		return builder.function
 	}
 
-	return data
+	totalLen := len(builder.function)
+	for _, element := range builder.elements {
+		totalLen += len(builder.separator) + len(element)
+	}
+
+	var sb strings.Builder
+	sb.Grow(totalLen)
+	sb.WriteString(builder.function)
+	for _, element := range builder.elements {
+		sb.WriteString(builder.separator)
+		sb.WriteString(element)
+	}
+
+	return sb.String()
 }
 
 // ToBytes returns the data as a slice of bytes.
@@ -147,7 +160,7 @@ func (builder *txDataBuilder) TransferESDT(token string, value int64) *txDataBui
 	return builder.Func(core.BuiltInFunctionESDTTransfer).Str(token).Int64(value)
 }
 
-//TransferESDTNFT appends to the data string all the elements required to request an ESDT NFT transfer.
+// TransferESDTNFT appends to the data string all the elements required to request an ESDT NFT transfer.
 func (builder *txDataBuilder) TransferESDTNFT(token string, nonce int, value int64) *txDataBuilder {
 	return builder.Func(core.BuiltInFunctionESDTNFTTransfer).Str(token).Int(nonce).Int64(value)
 }

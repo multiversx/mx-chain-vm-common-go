@@ -185,6 +185,20 @@ func TestESDTNFTCreateRoleTransfer_ProcessCrossShard(t *testing.T) {
 	vmOutput, err = e.ProcessBuiltinFunction(nil, userAcc, vmInput)
 	assert.Equal(t, err, ErrInvalidArguments)
 	assert.Nil(t, vmOutput)
+
+	// CallerAddr wrong length
+	vmInput.Arguments = [][]byte{tokenID, big.NewInt(0).SetUint64(nonce).Bytes()}
+	vmInput.CallerAddr = []byte("short")
+	vmOutput, err = e.ProcessBuiltinFunction(nil, userAcc, vmInput)
+	assert.Equal(t, ErrInvalidArguments, err)
+	assert.Nil(t, vmOutput)
+
+	// Nonce bytes > 8
+	vmInput.CallerAddr = currentOwner
+	vmInput.Arguments = [][]byte{tokenID, bytes.Repeat([]byte{1}, 9)}
+	vmOutput, err = e.ProcessBuiltinFunction(nil, userAcc, vmInput)
+	assert.Equal(t, ErrInvalidArguments, err)
+	assert.Nil(t, vmOutput)
 }
 
 func checkLatestNonce(t *testing.T, e *esdtNFTCreateRoleTransfer, addr []byte, tokenID []byte, expectedNonce uint64) {

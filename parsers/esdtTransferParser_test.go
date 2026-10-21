@@ -267,4 +267,24 @@ func TestEsdtTransferParser_ParseMultiNFTTransferTransferMore(t *testing.T) {
 		[][]byte{dstAddr, overMaxTransfer, []byte("tokenID"), big.NewInt(10).Bytes(), marshaled, []byte("tokenID"), big.NewInt(0).Bytes(), big.NewInt(20).Bytes(), []byte("function"), []byte("arg")},
 	)
 	assert.Equal(t, err, ErrTooManyTransfers)
+
+	// Test with a number larger than uint64 (big.Int with 33 bytes)
+	hugeBigIntBytes := append([]byte{1}, bytes.Repeat([]byte{0}, 32)...)
+	_, err = esdtParser.ParseESDTTransfers(
+		sndAddr,
+		dstAddr,
+		core.BuiltInFunctionMultiESDTNFTTransfer,
+		[][]byte{hugeBigIntBytes, []byte("tokenID"), big.NewInt(10).Bytes(), marshaled},
+	)
+	assert.Equal(t, err, ErrTooManyTransfers)
+
+	// Test with zero transfers
+	zeroTransfers := big.NewInt(0).Bytes()
+	_, err = esdtParser.ParseESDTTransfers(
+		sndAddr,
+		dstAddr,
+		core.BuiltInFunctionMultiESDTNFTTransfer,
+		[][]byte{zeroTransfers, []byte("tokenID"), big.NewInt(10).Bytes(), marshaled},
+	)
+	assert.Equal(t, err, ErrNotEnoughArguments)
 }

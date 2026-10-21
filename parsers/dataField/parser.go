@@ -20,6 +20,7 @@ const (
 
 	minArgumentsQuantityOperationESDT = 2
 	minArgumentsQuantityOperationNFT  = 3
+	minArgumentsModifyCreator         = 2
 	numArgsRelayedV2                  = 4
 	receiverAddressIndexRelayedV2     = 0
 	dataFieldIndexRelayedV2           = 2
@@ -175,22 +176,26 @@ func (odp *operationDataFieldParser) parseRelayed(
 }
 
 func extractInnerTx(function string, args [][]byte, receiver []byte) (*transaction.Transaction, bool) {
-	tx := &transaction.Transaction{}
-
 	if function == core.RelayedTransaction {
+		var tx *transaction.Transaction
 		err := json.Unmarshal(args[0], &tx)
+		if err != nil || tx == nil {
+			return nil, false
+		}
 
-		return tx, err == nil
+		return tx, true
 	}
 
 	if len(args) != numArgsRelayedV2 {
 		return nil, false
 	}
 
-	// sender of the inner tx is the receiver of the relayed tx
-	tx.SndAddr = receiver
-	tx.RcvAddr = args[receiverAddressIndexRelayedV2]
-	tx.Data = args[dataFieldIndexRelayedV2]
+	tx := &transaction.Transaction{
+		// sender of the inner tx is the receiver of the relayed tx
+		SndAddr: receiver,
+		RcvAddr: args[receiverAddressIndexRelayedV2],
+		Data:    args[dataFieldIndexRelayedV2],
+	}
 
 	return tx, true
 }
@@ -271,7 +276,12 @@ func parseModifyOperationNFT(args [][]byte, funcName string) *ResponseParseData 
 		Operation: funcName,
 	}
 
-	if len(args) < minArgumentsQuantityOperationNFT {
+	minArgs := minArgumentsQuantityOperationNFT
+	if funcName == core.ESDTModifyCreator {
+		minArgs = minArgumentsModifyCreator
+	}
+
+	if len(args) < minArgs {
 		return responseData
 	}
 

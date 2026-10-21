@@ -1298,3 +1298,117 @@ func saveESDTNFTTokenMigrateTypeAndMetadata(t *testing.T, tokenType core.ESDTTyp
 		assert.Equal(t, &esdt.ESDigitalToken{TokenMetaData: metaData}, retrievedMetaData)
 	}
 }
+
+func TestAddToLiquiditySystemAcc_WithNilValueDoesNotPanic(t *testing.T) {
+	t.Parallel()
+
+	dataStore := createNewESDTDataStorageHandler()
+	systemAccHandler, _ := dataStore.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+	systemAcc := systemAccHandler.(vmcommon.UserAccountHandler)
+
+	tokenKey := []byte("tokenKey")
+	nonce := uint64(1)
+	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
+
+	// Save token with nil Value and Reserved version
+	esdtData := &esdt.ESDigitalToken{
+		Type:     uint32(core.DynamicSFT),
+		Value:    nil,
+		Reserved: []byte{1},
+	}
+	buff, _ := dataStore.marshaller.Marshal(esdtData)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, buff)
+
+	err := dataStore.AddToLiquiditySystemAcc(tokenKey, uint32(core.DynamicSFT), nonce, big.NewInt(10), false)
+	assert.Nil(t, err)
+
+	retrieved, _, _ := dataStore.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
+	assert.NotNil(t, retrieved)
+	assert.Equal(t, big.NewInt(10), retrieved.Value)
+}
+
+func TestSaveESDTMetaDataToSystemAccount_PreservesExistingValueAndProperties(t *testing.T) {
+	t.Parallel()
+
+	dataStore := createNewESDTDataStorageHandler()
+	dataStore.enableEpochsHandler = &mock.EnableEpochsHandlerStub{
+		IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+			return flag == SaveToSystemAccountFlag || flag == SendAlwaysFlag || flag == FixCorrectSmallIntAndGasLimitsFlag
+		},
+	}
+	systemAccHandler, _ := dataStore.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+	systemAcc := systemAccHandler.(vmcommon.UserAccountHandler)
+
+	tokenKey := []byte("tokenKey")
+	nonce := uint64(1)
+	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
+
+	initialValue := big.NewInt(500)
+	initialProperties := []byte{1, 2, 3}
+	existingEsdtData := &esdt.ESDigitalToken{
+		Type:          uint32(core.DynamicSFT),
+		Value:         initialValue,
+		Properties:    initialProperties,
+		TokenMetaData: &esdt.MetaData{Name: []byte("initial")},
+		Reserved:      []byte{1},
+	}
+	buff, _ := dataStore.marshaller.Marshal(existingEsdtData)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, buff)
+
+	newMetadata := &esdt.MetaData{Name: []byte("updated")}
+	updatedData := &esdt.ESDigitalToken{
+		Type:          uint32(core.DynamicSFT),
+		TokenMetaData: newMetadata,
+		Reserved:      []byte{1},
+	}
+
+	err := dataStore.saveESDTMetaDataToSystemAccount(systemAcc, 0, esdtNFTTokenKey, nonce, updatedData, true)
+	assert.Nil(t, err)
+
+	retrieved, _, _ := dataStore.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
+	assert.NotNil(t, retrieved)
+	assert.Equal(t, initialValue, retrieved.Value)
+	assert.Equal(t, initialProperties, retrieved.Properties)
+	assert.Equal(t, newMetadata.Name, retrieved.TokenMetaData.Name)
+}
+
+func TestSaveESDTMetaDataToSystemAccount_OldWayWhenSendAlwaysEnabledWithoutFixFlag(t *testing.T) {
+	t.Parallel()
+
+	dataStore := createNewESDTDataStorageHandler()
+	// FixCorrectSmallIntAndGasLimitsFlag is NOT enabled by default in createNewESDTDataStorageHandler()
+	systemAccHandler, _ := dataStore.accounts.LoadAccount(vmcommon.SystemAccountAddress)
+	systemAcc := systemAccHandler.(vmcommon.UserAccountHandler)
+
+	tokenKey := []byte("tokenKey")
+	nonce := uint64(1)
+	esdtNFTTokenKey := computeESDTNFTTokenKey(tokenKey, nonce)
+
+	initialValue := big.NewInt(500)
+	initialProperties := []byte{1, 2, 3}
+	existingEsdtData := &esdt.ESDigitalToken{
+		Type:          uint32(core.DynamicSFT),
+		Value:         initialValue,
+		Properties:    initialProperties,
+		TokenMetaData: &esdt.MetaData{Name: []byte("initial")},
+		Reserved:      []byte{1},
+	}
+	buff, _ := dataStore.marshaller.Marshal(existingEsdtData)
+	_ = systemAcc.AccountDataHandler().SaveKeyValue(esdtNFTTokenKey, buff)
+
+	newMetadata := &esdt.MetaData{Name: []byte("updated")}
+	updatedData := &esdt.ESDigitalToken{
+		Type:          uint32(core.DynamicSFT),
+		TokenMetaData: newMetadata,
+		Reserved:      []byte{1},
+	}
+
+	err := dataStore.saveESDTMetaDataToSystemAccount(systemAcc, 0, esdtNFTTokenKey, nonce, updatedData, true)
+	assert.Nil(t, err)
+
+	retrieved, _, _ := dataStore.getESDTDigitalTokenDataFromSystemAccount(esdtNFTTokenKey, defaultQueryOptions())
+	assert.NotNil(t, retrieved)
+	assert.Equal(t, big.NewInt(0), retrieved.Value)
+	assert.Equal(t, make([]byte, dataStore.shardCoordinator.NumberOfShards()), retrieved.Properties)
+	assert.Equal(t, newMetadata.Name, retrieved.TokenMetaData.Name)
+}

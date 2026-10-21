@@ -160,10 +160,13 @@ func TestEsdtRoles_ProcessBuiltinFunction_SetRolesMultiNFT(t *testing.T) {
 	acc := &mock.UserAccountStub{
 		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
 			return &mock.DataTrieTrackerStub{
-				RetrieveValueCalled: func(_ []byte) ([]byte, uint32, error) {
-					roles := &esdt.ESDTRoles{}
-					serializedRoles, err := marshaller.Marshal(roles)
-					return serializedRoles, 0, err
+				RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+					if bytes.Equal(key, roleKey) {
+						roles := &esdt.ESDTRoles{}
+						serializedRoles, err := marshaller.Marshal(roles)
+						return serializedRoles, 0, err
+					}
+					return nil, 0, nil
 				},
 				SaveKeyValueCalled: func(key []byte, value []byte) error {
 					if bytes.Equal(key, roleKey) {
@@ -384,4 +387,100 @@ func TestEsdtRoles_CheckAllowedToExecuteRoleNotFind(t *testing.T) {
 		},
 	}, []byte("ID"), []byte(core.ESDTRoleLocalMint))
 	require.Equal(t, ErrActionNotAllowed, err)
+}
+
+func TestEsdtRoles_UnSetRoleDoesNotResetNonce(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, false) // un-set
+
+	tokenID := []byte("tokenID")
+	roleKey := append(roleKeyPrefix, tokenID...)
+
+	saveNonceCalled := false
+	acc := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+					if bytes.Equal(key, roleKey) {
+						roles := &esdt.ESDTRoles{
+							Roles: [][]byte{[]byte(core.ESDTRoleNFTCreateMultiShard)},
+						}
+						serializedRoles, err := marshaller.Marshal(roles)
+						return serializedRoles, 0, err
+					}
+					return nil, 0, nil
+				},
+				SaveKeyValueCalled: func(key []byte, value []byte) error {
+					if bytes.Equal(key, getNonceKey(tokenID)) {
+						saveNonceCalled = true
+					}
+					return nil
+				},
+			}
+		},
+	}
+	dstAddr := bytes.Repeat([]byte{1}, 32)
+	_, err := esdtRolesF.ProcessBuiltinFunction(nil, acc, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:  big.NewInt(0),
+			CallerAddr: core.ESDTSCAddress,
+			Arguments:  [][]byte{tokenID, []byte(core.ESDTRoleNFTCreateMultiShard)},
+		},
+		RecipientAddr: dstAddr,
+	})
+
+	require.Nil(t, err)
+	require.False(t, saveNonceCalled)
+}
+
+func TestEsdtRoles_SetRoleDoesNotRewindHigherNonce(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &mock.MarshalizerMock{}
+	esdtRolesF, _ := NewESDTRolesFunc(marshaller, true) // set
+
+	tokenID := []byte("tokenID")
+	roleKey := append(roleKeyPrefix, tokenID...)
+
+	saveNonceCalled := false
+	dstAddr := bytes.Repeat([]byte{1}, 32)
+	startNonce := computeStartNonce(dstAddr)
+	higherNonce := startNonce + 100
+
+	acc := &mock.UserAccountStub{
+		AccountDataHandlerCalled: func() vmcommon.AccountDataHandler {
+			return &mock.DataTrieTrackerStub{
+				RetrieveValueCalled: func(key []byte) ([]byte, uint32, error) {
+					if bytes.Equal(key, roleKey) {
+						roles := &esdt.ESDTRoles{}
+						serializedRoles, err := marshaller.Marshal(roles)
+						return serializedRoles, 0, err
+					}
+					if bytes.Equal(key, getNonceKey(tokenID)) {
+						return big.NewInt(0).SetUint64(higherNonce).Bytes(), 0, nil
+					}
+					return nil, 0, nil
+				},
+				SaveKeyValueCalled: func(key []byte, value []byte) error {
+					if bytes.Equal(key, getNonceKey(tokenID)) {
+						saveNonceCalled = true
+					}
+					return nil
+				},
+			}
+		},
+	}
+	_, err := esdtRolesF.ProcessBuiltinFunction(nil, acc, &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:  big.NewInt(0),
+			CallerAddr: core.ESDTSCAddress,
+			Arguments:  [][]byte{tokenID, []byte(core.ESDTRoleNFTCreateMultiShard)},
+		},
+		RecipientAddr: dstAddr,
+	})
+
+	require.Nil(t, err)
+	require.False(t, saveNonceCalled)
 }

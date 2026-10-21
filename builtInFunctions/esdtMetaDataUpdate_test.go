@@ -280,6 +280,59 @@ func TestESDTMetaDataUpdate_ProcessBuiltinFunction(t *testing.T) {
 		assert.True(t, saveESDTNFTTokenCalled)
 		assert.True(t, getESDTNFTTokenOnDestinationCalled)
 	})
+	t.Run("royalties value wrapping uint32 or exceeding max royalty should err", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return true
+			},
+		}
+		rolesHandler := &mock.ESDTRoleHandlerStub{}
+		tokenId := []byte("tokenID")
+		globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
+			GetTokenTypeCalled: func(key []byte) (uint32, error) {
+				return uint32(core.DynamicNFT), nil
+			},
+		}
+		storageHandler := &mock.ESDTNFTStorageHandlerStub{
+			GetESDTNFTTokenOnDestinationCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error) {
+				return &esdt.ESDigitalToken{
+					TokenMetaData: &esdt.MetaData{
+						Nonce: 1,
+					},
+				}, false, nil
+			},
+		}
+		e, _ := NewESDTMetaDataUpdateFunc(101, vmcommon.BaseOperationCost{StorePerByte: 1}, &mock.AccountsStub{}, globalSettingsHandler, storageHandler, rolesHandler, enableEpochsHandler, &mock.MarshalizerMock{})
+
+		// Case 1: (1<<32) + 50, which wraps to 50 on uint32 truncation
+		wrappedVal := big.NewInt(1)
+		wrappedVal.Lsh(wrappedVal, 32)
+		wrappedVal.Add(wrappedVal, big.NewInt(50))
+
+		// Arguments: tokenID, nonce, name, royalties, hash, attributes, uris...
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:   big.NewInt(0),
+				CallerAddr:  []byte("caller"),
+				GasProvided: 1000,
+				Arguments:   [][]byte{tokenId, {1}, {}, wrappedVal.Bytes(), {}, {}, {}},
+			},
+			RecipientAddr: []byte("caller"),
+		}
+		vmOutput, err := e.ProcessBuiltinFunction(mock.NewUserAccount([]byte("addr")), nil, vmInput)
+		assert.Nil(t, vmOutput)
+		assert.ErrorIs(t, err, ErrInvalidArguments)
+		assert.Contains(t, err.Error(), "invalid max royality value")
+
+		// Case 2: Exceeds core.MaxRoyalty (10001)
+		vmInput.Arguments[3] = big.NewInt(10001).Bytes()
+		vmOutput, err = e.ProcessBuiltinFunction(mock.NewUserAccount([]byte("addr")), nil, vmInput)
+		assert.Nil(t, vmOutput)
+		assert.ErrorIs(t, err, ErrInvalidArguments)
+		assert.Contains(t, err.Error(), "invalid max royality value")
+	})
 }
 
 func TestEsdtMetaDataUpdate_SetNewGasConfig(t *testing.T) {

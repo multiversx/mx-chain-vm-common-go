@@ -136,11 +136,14 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 	if !check.IfNil(acntSnd) {
 		return nil, ErrInvalidRcvAddr
 	}
-	if check.IfNil(acntDst) {
+	if check.IfNil(acntDst) || vmcommon.IsSystemAccountAddress(vmInput.RecipientAddr) {
 		return nil, ErrInvalidRcvAddr
 	}
 
 	tickerID := vmInput.Arguments[0]
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && !vmcommon.ValidateToken(tickerID) {
+		return nil, ErrInvalidTokenID
+	}
 	esdtTokenKey := append(e.keyPrefix, tickerID...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
 	value := big.NewInt(0).SetBytes(vmInput.Arguments[2])
@@ -152,9 +155,20 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 		if err != nil {
 			return nil, err
 		}
+		if esdtTransferData.Value == nil {
+			return nil, ErrNilValue
+		}
 	} else {
 		esdtTransferData.Value = big.NewInt(0).Set(value)
 		esdtTransferData.Type = uint32(core.NonFungible)
+		if e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+			sysData, _ := e.esdtStorageHandler.GetMetaDataFromSystemAccount(esdtTokenKey, nonce)
+			if sysData != nil && sysData.Type != 0 {
+				esdtTransferData.Type = sysData.Type
+				esdtTransferData.TokenMetaData = sysData.TokenMetaData
+				esdtTransferData.Reserved = sysData.Reserved
+			}
+		}
 	}
 
 	err = e.payableHandler.CheckPayable(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTNFTTransfer)
@@ -176,7 +190,13 @@ func (e *esdtNFTTransfer) ProcessBuiltinFunction(
 
 	// no need to consume gas on destination - sender already paid for it
 	vmOutput := &vmcommon.VMOutput{GasRemaining: vmInput.GasProvided}
-	if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
+	var isSCCallAfter bool
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) {
+		isSCCallAfter = e.payableHandler.DetermineIsSCCallAfter(vmInput, vmInput.RecipientAddr, core.MinLenArgumentsESDTNFTTransfer)
+	} else {
+		isSCCallAfter = len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr)
+	}
+	if isSCCallAfter {
 		var callArgs [][]byte
 		if len(vmInput.Arguments) > core.MinLenArgumentsESDTNFTTransfer+1 {
 			callArgs = vmInput.Arguments[core.MinLenArgumentsESDTNFTTransfer+1:]
@@ -219,7 +239,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
 	isTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId
-	if isTransferToMeta {
+	if isTransferToMeta || vmcommon.IsSystemAccountAddress(dstAddress) {
 		return nil, ErrInvalidRcvAddr
 	}
 	skipGasUse := noGasUseIfReturnCallAfterErrorWithFlag(e.enableEpochsHandler, vmInput)
@@ -228,13 +248,16 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	}
 
 	tickerID := vmInput.Arguments[0]
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && !vmcommon.ValidateToken(tickerID) {
+		return nil, ErrInvalidTokenID
+	}
 	esdtTokenKey := append(e.keyPrefix, tickerID...)
 	nonce := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
 	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, nonce)
 	if err != nil {
 		return nil, err
 	}
-	if nonce == 0 {
+	if nonce == 0 || (esdtData.TokenMetaData == nil && e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag)) {
 		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
@@ -250,6 +273,31 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 	if isCheckTransferFlagEnabled && quantityToTransfer.Cmp(zero) <= 0 {
 		return nil, ErrInvalidNFTQuantity
 	}
+	var userAccount vmcommon.UserAccountHandler
+	saveUserAcc := false
+	if e.shardCoordinator.SelfId() == e.shardCoordinator.ComputeId(dstAddress) {
+		accountHandler, errLoad := e.accounts.LoadAccount(dstAddress)
+		if errLoad != nil {
+			return nil, errLoad
+		}
+
+		var ok bool
+		userAccount, ok = accountHandler.(vmcommon.UserAccountHandler)
+		if !ok {
+			return nil, ErrWrongTypeAssertion
+		}
+	}
+
+	tokenID := esdtTokenKey
+	if e.enableEpochsHandler.IsFlagEnabled(CheckCorrectTokenIDForTransferRoleFlag) {
+		tokenID = tickerID
+	}
+
+	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, acntSnd.AddressBytes(), dstAddress, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
+	if err != nil {
+		return nil, err
+	}
+
 	esdtData.Value.Sub(esdtData.Value, quantityToTransfer)
 
 	properties := vmcommon.NftSaveArgs{
@@ -264,20 +312,7 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 	esdtData.Value.Set(quantityToTransfer)
 
-	var userAccount vmcommon.UserAccountHandler
-	saveUserAcc := false
-	if e.shardCoordinator.SelfId() == e.shardCoordinator.ComputeId(dstAddress) {
-		accountHandler, errLoad := e.accounts.LoadAccount(dstAddress)
-		if errLoad != nil {
-			return nil, errLoad
-		}
-
-		var ok bool
-		userAccount, ok = accountHandler.(vmcommon.UserAccountHandler)
-		if !ok {
-			return nil, ErrWrongTypeAssertion
-		}
-
+	if userAccount != nil {
 		err = e.payableHandler.CheckPayable(vmInput, dstAddress, core.MinLenArgumentsESDTNFTTransfer)
 		if err != nil {
 			return nil, err
@@ -297,25 +332,15 @@ func (e *esdtNFTTransfer) processNFTTransferOnSenderShard(
 
 		saveUserAcc = true
 	} else {
-		keepMetadataOnZeroLiquidity, err := shouldKeepMetaDataOnZeroLiquidity(acntSnd, tickerID, esdtData.Type, e.marshaller, e.enableEpochsHandler)
-		if err != nil {
-			return nil, err
+		keepMetadataOnZeroLiquidity, errKeep := shouldKeepMetaDataOnZeroLiquidity(acntSnd, tickerID, esdtData.Type, e.marshaller, e.enableEpochsHandler)
+		if errKeep != nil {
+			return nil, errKeep
 		}
 
 		err = e.esdtStorageHandler.AddToLiquiditySystemAcc(esdtTokenKey, esdtData.Type, nonce, big.NewInt(0).Neg(quantityToTransfer), keepMetadataOnZeroLiquidity)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	tokenID := esdtTokenKey
-	if e.enableEpochsHandler.IsFlagEnabled(CheckCorrectTokenIDForTransferRoleFlag) {
-		tokenID = tickerID
-	}
-
-	err = checkIfTransferCanHappenWithLimitedTransfer(tokenID, esdtTokenKey, acntSnd.AddressBytes(), dstAddress, e.globalSettingsHandler, e.rolesHandler, acntSnd, userAccount, vmInput.ReturnCallAfterError)
-	if err != nil {
-		return nil, err
 	}
 
 	vmOutput := &vmcommon.VMOutput{

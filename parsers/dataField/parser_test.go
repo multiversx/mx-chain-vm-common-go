@@ -154,11 +154,11 @@ func TestParseBlockingOperationESDT(t *testing.T) {
 	t.Run("ESDTFreezeNFT", func(t *testing.T) {
 		t.Parallel()
 
-		dataField := []byte("ESDTFreeze@544f4b454e2d616263642d3031")
+		dataField := []byte("ESDTFreeze@544f4b454e2d61626364656601")
 		res := parser.Parse(dataField, sender, receiver, 3, 0)
 		require.Equal(t, &ResponseParseData{
 			Operation: "ESDTFreeze",
-			Tokens:    []string{"TOKEN-abcd-01"},
+			Tokens:    []string{"TOKEN-abcdef-01"},
 		}, res)
 	})
 
@@ -223,6 +223,17 @@ func TestParseBlockingOperationESDT(t *testing.T) {
 		require.Equal(t, &ResponseParseData{
 			Operation: core.ESDTSetNewURIs,
 			Tokens:    []string{"SCAVANGER-af576a-02"},
+		}, res)
+	})
+
+	t.Run("ESDTModifyCreator", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte("ESDTModifyCreator@4e46542d616263646566@01")
+		res := parser.Parse(dataField, sender, sender, 3, 0)
+		require.Equal(t, &ResponseParseData{
+			Operation: core.ESDTModifyCreator,
+			Tokens:    []string{"NFT-abcdef-01"},
 		}, res)
 	})
 }
@@ -306,6 +317,16 @@ func TestOperationDataFieldParser_ParseRelayed(t *testing.T) {
 		t.Parallel()
 
 		dataField := []byte(core.RelayedTransaction)
+		res := parser.Parse(dataField, sender, receiver, 3, 0)
+		require.Equal(t, &ResponseParseData{
+			IsRelayed: true,
+		}, res)
+	})
+
+	t.Run("RelayedTxV1NullPayload", func(t *testing.T) {
+		t.Parallel()
+
+		dataField := []byte(core.RelayedTransaction + "@6e756c6c")
 		res := parser.Parse(dataField, sender, receiver, 3, 0)
 		require.Equal(t, &ResponseParseData{
 			IsRelayed: true,

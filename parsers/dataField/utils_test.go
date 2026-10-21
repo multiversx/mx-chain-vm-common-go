@@ -18,6 +18,26 @@ func TestExtractTokenAndNonce(t *testing.T) {
 	require.Equal(t, "SKE7Y-73bbcd", token)
 }
 
+func TestExtractTokenAndNonce_HyphenInNonce(t *testing.T) {
+	t.Parallel()
+
+	tokenID := []byte("SKE7Y-73bbcd")
+	arg45 := append(tokenID, 0x2d)
+	token, nonce := extractTokenAndNonce(arg45)
+	require.Equal(t, uint64(45), nonce)
+	require.Equal(t, "SKE7Y-73bbcd", token)
+
+	arg301 := append(tokenID, 0x01, 0x2d)
+	token, nonce = extractTokenAndNonce(arg301)
+	require.Equal(t, uint64(301), nonce)
+	require.Equal(t, "SKE7Y-73bbcd", token)
+
+	arg11521 := append(tokenID, 0x2d, 0x01)
+	token, nonce = extractTokenAndNonce(arg11521)
+	require.Equal(t, uint64(11521), nonce)
+	require.Equal(t, "SKE7Y-73bbcd", token)
+}
+
 func TestComputeTokenIdentifier(t *testing.T) {
 	t.Parallel()
 

@@ -16,3 +16,9 @@ var ErrTransfersNotIndexed = errors.New("unindexed transfers found")
 
 // ErrNilTransferIndexer signals that the provided transfer indexer is nil
 var ErrNilTransferIndexer = errors.New("nil NextOutputTransferIndexProvider")
+
+// ErrTransferIndexOverflow signals that transfer index would overflow MaxUint32
+var ErrTransferIndexOverflow = errors.New("transfer index overflow")
+
+// ErrNilOutputAccount signals that a nil output account was encountered
+var ErrNilOutputAccount = errors.New("nil output account")

@@ -206,6 +206,59 @@ func TestESDTMetaDataRecreate_ProcessBuiltinFunction(t *testing.T) {
 		assert.Equal(t, expectedErr, err)
 		assert.True(t, allowedToExecuteCalled)
 	})
+	t.Run("royalties value wrapping uint32 or exceeding max royalty should err", func(t *testing.T) {
+		t.Parallel()
+
+		enableEpochsHandler := &mock.EnableEpochsHandlerStub{
+			IsFlagEnabledCalled: func(flag core.EnableEpochFlag) bool {
+				return true
+			},
+		}
+		rolesHandler := &mock.ESDTRoleHandlerStub{}
+		tokenId := []byte("tokenID")
+		globalSettingsHandler := &mock.GlobalSettingsHandlerStub{
+			GetTokenTypeCalled: func(key []byte) (uint32, error) {
+				return uint32(core.DynamicNFT), nil
+			},
+		}
+		storageHandler := &mock.ESDTNFTStorageHandlerStub{
+			GetESDTNFTTokenOnDestinationCalled: func(acnt vmcommon.UserAccountHandler, esdtTokenKey []byte, nonce uint64) (*esdt.ESDigitalToken, bool, error) {
+				return &esdt.ESDigitalToken{
+					TokenMetaData: &esdt.MetaData{
+						Nonce: 1,
+					},
+				}, false, nil
+			},
+		}
+		e, _ := NewESDTMetaDataRecreateFunc(101, vmcommon.BaseOperationCost{StorePerByte: 1}, &mock.AccountsStub{}, globalSettingsHandler, storageHandler, rolesHandler, enableEpochsHandler, &mock.MarshalizerMock{})
+
+		// Case 1: (1<<32) + 50, which wraps to 50 on uint32 truncation
+		wrappedVal := big.NewInt(1)
+		wrappedVal.Lsh(wrappedVal, 32)
+		wrappedVal.Add(wrappedVal, big.NewInt(50))
+
+		// Arguments: tokenID, nonce, name, royalties, hash, attributes, uris...
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue:   big.NewInt(0),
+				CallerAddr:  []byte("caller"),
+				GasProvided: 1000,
+				Arguments:   [][]byte{tokenId, {1}, []byte("name"), wrappedVal.Bytes(), []byte("hash"), []byte("attributes"), {}},
+			},
+			RecipientAddr: []byte("caller"),
+		}
+		vmOutput, err := e.ProcessBuiltinFunction(mock.NewUserAccount([]byte("addr")), nil, vmInput)
+		assert.Nil(t, vmOutput)
+		assert.ErrorIs(t, err, ErrInvalidArguments)
+		assert.Contains(t, err.Error(), "invalid max royality value")
+
+		// Case 2: Exceeds core.MaxRoyalty (10001)
+		vmInput.Arguments[3] = big.NewInt(10001).Bytes()
+		vmOutput, err = e.ProcessBuiltinFunction(mock.NewUserAccount([]byte("addr")), nil, vmInput)
+		assert.Nil(t, vmOutput)
+		assert.ErrorIs(t, err, ErrInvalidArguments)
+		assert.Contains(t, err.Error(), "invalid max royality value")
+	})
 	t.Run("recreate dynamic esdt data", func(t *testing.T) {
 		t.Parallel()
 
@@ -405,7 +458,24 @@ func TestEsdtMetaDataRecreate_changeEsdtVersion(t *testing.T) {
 func TestGetEsdtInfo(t *testing.T) {
 	t.Parallel()
 
-	t.Run("dynamic metaEsdt not found will return empty struct with nonce set", func(t *testing.T) {
+	t.Run("nonce 0 will return ErrInvalidArguments", func(t *testing.T) {
+		t.Parallel()
+
+		tokenId := []byte("tokenID")
+		vmInput := &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				Arguments: [][]byte{tokenId, {0}},
+			},
+		}
+		accnt := mock.NewUserAccount([]byte("addr"))
+		storageHandler := &mock.ESDTNFTStorageHandlerStub{}
+		globalSettingsHandler := &mock.GlobalSettingsHandlerStub{}
+
+		esdtInfo, err := getEsdtInfo(vmInput, accnt, storageHandler, globalSettingsHandler)
+		assert.Equal(t, ErrInvalidArguments, err)
+		assert.Nil(t, esdtInfo)
+	})
+	t.Run("dynamic metaEsdt not found will create initial metadata structure", func(t *testing.T) {
 		t.Parallel()
 
 		tokenId := []byte("tokenID")
@@ -429,11 +499,9 @@ func TestGetEsdtInfo(t *testing.T) {
 		esdtInfo, err := getEsdtInfo(vmInput, accnt, storageHandler, globalSettingsHandler)
 		assert.Nil(t, err)
 		assert.NotNil(t, esdtInfo)
-		assert.NotNil(t, esdtInfo.esdtData)
-		assert.Equal(t, uint64(2), esdtInfo.esdtData.TokenMetaData.Nonce)
 		assert.True(t, esdtInfo.metaDataInSystemAcc)
 	})
-	t.Run("dynamic sft not found will return empty struct with nonce set", func(t *testing.T) {
+	t.Run("dynamic sft not found will create initial metadata structure", func(t *testing.T) {
 		t.Parallel()
 
 		tokenId := []byte("tokenID")
@@ -457,11 +525,9 @@ func TestGetEsdtInfo(t *testing.T) {
 		esdtInfo, err := getEsdtInfo(vmInput, accnt, storageHandler, globalSettingsHandler)
 		assert.Nil(t, err)
 		assert.NotNil(t, esdtInfo)
-		assert.NotNil(t, esdtInfo.esdtData)
-		assert.Equal(t, uint64(2), esdtInfo.esdtData.TokenMetaData.Nonce)
 		assert.True(t, esdtInfo.metaDataInSystemAcc)
 	})
-	t.Run("dynamic nft not found will return empty struct with nonce set", func(t *testing.T) {
+	t.Run("dynamic nft not found will create initial metadata structure on destination", func(t *testing.T) {
 		t.Parallel()
 
 		tokenId := []byte("tokenID")
@@ -485,8 +551,6 @@ func TestGetEsdtInfo(t *testing.T) {
 		esdtInfo, err := getEsdtInfo(vmInput, accnt, storageHandler, globalSettingsHandler)
 		assert.Nil(t, err)
 		assert.NotNil(t, esdtInfo)
-		assert.NotNil(t, esdtInfo.esdtData)
-		assert.Equal(t, uint64(2), esdtInfo.esdtData.TokenMetaData.Nonce)
 		assert.False(t, esdtInfo.metaDataInSystemAcc)
 	})
 

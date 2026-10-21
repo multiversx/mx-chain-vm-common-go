@@ -54,6 +54,15 @@ func (b *baseComponentsHolder) addNFTToDestination(
 	}
 	latestEsdtData.Value.Set(esdtDataToTransfer.Value)
 
+	if len(currentESDTData.Properties) > 0 {
+		currentMetadata := ESDTUserMetadataFromBytes(currentESDTData.Properties)
+		if currentMetadata.Frozen {
+			destMetadata := ESDTUserMetadataFromBytes(latestEsdtData.Properties)
+			destMetadata.Frozen = true
+			latestEsdtData.Properties = destMetadata.ToBytes()
+		}
+	}
+
 	properties := vmcommon.NftSaveArgs{
 		MustUpdateAllFields:         false,
 		IsReturnWithError:           isReturnWithError,
@@ -86,6 +95,11 @@ func getLatestMetaData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, e
 
 func mergeEsdtData(currentEsdtData, transferEsdtData *esdt.ESDigitalToken, enableEpochsHandler vmcommon.EnableEpochsHandler, marshaller vmcommon.Marshalizer) (*esdt.ESDigitalToken, error) {
 	if currentEsdtData.TokenMetaData == nil {
+		return transferEsdtData, nil
+	}
+	if transferEsdtData.TokenMetaData == nil {
+		transferEsdtData.TokenMetaData = currentEsdtData.TokenMetaData
+		transferEsdtData.Reserved = currentEsdtData.Reserved
 		return transferEsdtData, nil
 	}
 

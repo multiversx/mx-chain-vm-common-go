@@ -86,19 +86,20 @@ func computeTokenIdentifier(token string, nonce uint64) string {
 }
 
 func extractTokenAndNonce(arg []byte) (string, uint64) {
-	argsSplit := bytes.Split(arg, []byte(esdtIdentifierSeparator))
-	if len(argsSplit) < 2 {
+	firstDash := bytes.IndexByte(arg, esdtIdentifierSeparator[0])
+	if firstDash < 0 {
 		return string(arg), 0
 	}
 
-	if len(argsSplit[1]) <= esdtRandomSequenceLength {
+	identifierEnd := firstDash + 1 + esdtRandomSequenceLength
+	if len(arg) <= identifierEnd {
 		return string(arg), 0
 	}
 
-	identifier := []byte(fmt.Sprintf("%s-%s", argsSplit[0], argsSplit[1][:esdtRandomSequenceLength]))
-	nonce := big.NewInt(0).SetBytes(argsSplit[1][esdtRandomSequenceLength:])
+	identifier := string(arg[:identifierEnd])
+	nonce := big.NewInt(0).SetBytes(arg[identifierEnd:])
 
-	return string(identifier), nonce.Uint64()
+	return identifier, nonce.Uint64()
 }
 
 func isEmptyAddr(addrLength int, address []byte) bool {

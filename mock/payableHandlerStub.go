@@ -30,7 +30,10 @@ func (p *PayableHandlerStub) DetermineIsSCCallAfter(vmInput *vmcommon.ContractCa
 	if p.DetermineIsSCCallAfterCalled != nil {
 		return p.DetermineIsSCCallAfterCalled(vmInput, dstAddress, minArgs)
 	}
-	return false
+	if vmInput == nil {
+		return false
+	}
+	return len(vmInput.Arguments) > minArgs && vmcommon.IsSmartContractAddress(dstAddress)
 }
 
 // IsInterfaceNil -

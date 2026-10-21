@@ -106,10 +106,11 @@ func (e *esdtMetaDataUpdate) ProcessBuiltinFunction(acntSnd, _ vmcommon.UserAcco
 
 	if len(vmInput.Arguments[royaltiesIndex]) != 0 {
 		totalLengthDifference -= len(vmInput.Arguments[royaltiesIndex])
-		royalties := uint32(big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex]).Uint64())
-		if royalties > core.MaxRoyalty {
+		royaltiesBig := big.NewInt(0).SetBytes(vmInput.Arguments[royaltiesIndex])
+		if !royaltiesBig.IsUint64() || royaltiesBig.Uint64() > uint64(core.MaxRoyalty) {
 			return nil, fmt.Errorf("%w, invalid max royality value", ErrInvalidArguments)
 		}
+		royalties := uint32(royaltiesBig.Uint64())
 		esdtInfo.esdtData.TokenMetaData.Royalties = royalties
 		metaDataVersion.Royalties = currentRound
 	}

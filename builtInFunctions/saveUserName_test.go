@@ -126,4 +126,7 @@ func TestSaveUserName_ProcessBuiltinFunction(t *testing.T) {
 	require.Equal(t, acc.GetUserName(), vmInput.Arguments[0])
 	require.Equal(t, vmOutput.GasRemaining, vmInput.GasProvided-coa.gasCost)
 
+	vmInput.CallValue = nil
+	_, err = coa.ProcessBuiltinFunction(acc, acc, vmInput)
+	require.Equal(t, ErrNilValue, err)
 }

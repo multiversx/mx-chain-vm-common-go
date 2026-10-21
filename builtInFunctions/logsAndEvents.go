@@ -2,7 +2,6 @@ package builtInFunctions
 
 import (
 	"bytes"
-	"fmt"
 	"math/big"
 	"strconv"
 
@@ -80,17 +79,18 @@ func newEntryForESDT(identifier, tokenID []byte, nonce uint64, value *big.Int, a
 }
 
 func extractTokenIdentifierAndNonceESDTWipe(args []byte) ([]byte, uint64) {
-	argsSplit := bytes.Split(args, []byte(esdtIdentifierSeparator))
-	if len(argsSplit) < 2 {
+	firstDash := bytes.IndexByte(args, esdtIdentifierSeparator[0])
+	if firstDash < 0 {
 		return args, 0
 	}
 
-	if len(argsSplit[1]) <= esdtRandomSequenceLength {
+	identifierEnd := firstDash + 1 + esdtRandomSequenceLength
+	if len(args) <= identifierEnd {
 		return args, 0
 	}
 
-	identifier := []byte(fmt.Sprintf("%s-%s", argsSplit[0], argsSplit[1][:esdtRandomSequenceLength]))
-	nonce := big.NewInt(0).SetBytes(argsSplit[1][esdtRandomSequenceLength:])
+	identifier := args[:identifierEnd]
+	nonce := big.NewInt(0).SetBytes(args[identifierEnd:])
 
 	return identifier, nonce.Uint64()
 }

@@ -305,3 +305,15 @@ func getDefaultVmInput(args [][]byte) *vmcommon.ContractCallInput {
 		RecipientAddr: userAddress,
 	}
 }
+
+func TestSetGuardian_SetNewGasConfigNilDoesNotPanic(t *testing.T) {
+	t.Parallel()
+
+	instance, err := NewSetGuardianFunc(createSetGuardianFuncMockArgs())
+	require.Nil(t, err)
+	require.NotNil(t, instance)
+
+	require.NotPanics(t, func() {
+		instance.SetNewGasConfig(nil)
+	})
+}

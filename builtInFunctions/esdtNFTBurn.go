@@ -75,6 +75,9 @@ func (e *esdtNFTBurn) ProcessBuiltinFunction(
 	if err != nil {
 		return nil, err
 	}
+	if check.IfNil(acntSnd) {
+		return nil, ErrNilUserAccount
+	}
 	if len(vmInput.Arguments) < 3 {
 		return nil, ErrInvalidArguments
 	}

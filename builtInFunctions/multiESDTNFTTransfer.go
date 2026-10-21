@@ -141,10 +141,17 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	if !check.IfNil(acntSnd) {
 		return nil, ErrInvalidRcvAddr
 	}
-	if check.IfNil(acntDst) {
+	if check.IfNil(acntDst) || vmcommon.IsSystemAccountAddress(vmInput.RecipientAddr) {
 		return nil, ErrInvalidRcvAddr
 	}
 
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) {
+		numOfTransfersBig := big.NewInt(0).SetBytes(vmInput.Arguments[0])
+		maxPossibleTransfers := uint64(len(vmInput.Arguments)) / argumentsPerTransfer
+		if !numOfTransfersBig.IsUint64() || numOfTransfersBig.Uint64() > maxPossibleTransfers {
+			return nil, fmt.Errorf("%w, invalid number of transfers", ErrInvalidArguments)
+		}
+	}
 	numOfTransfers := big.NewInt(0).SetBytes(vmInput.Arguments[0]).Uint64()
 	if numOfTransfers == 0 {
 		return nil, fmt.Errorf("%w, 0 tokens to transfer", ErrInvalidArguments)
@@ -167,6 +174,9 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	for i := uint64(0); i < numOfTransfers; i++ {
 		tokenStartIndex := startIndex + i*argumentsPerTransfer
 		tokenID := vmInput.Arguments[tokenStartIndex]
+		if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && !bytes.Equal(e.baseTokenID, tokenID) && !vmcommon.ValidateToken(tokenID) {
+			return nil, ErrInvalidTokenID
+		}
 		nonce := big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+1]).Uint64()
 
 		esdtTokenKey := append(e.keyPrefix, tokenID...)
@@ -180,9 +190,20 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 				if err != nil {
 					return nil, fmt.Errorf("%w for token %s", err, string(tokenID))
 				}
+				if esdtTransferData.Value == nil {
+					return nil, ErrNilValue
+				}
 			} else {
 				esdtTransferData.Value = big.NewInt(0).SetBytes(vmInput.Arguments[tokenStartIndex+2])
 				esdtTransferData.Type = uint32(core.NonFungible)
+				if e.enableEpochsHandler.IsFlagEnabled(DynamicEsdtFlag) {
+					sysData, _ := e.esdtStorageHandler.GetMetaDataFromSystemAccount(esdtTokenKey, nonce)
+					if sysData != nil && sysData.Type != 0 {
+						esdtTransferData.Type = sysData.Type
+						esdtTransferData.TokenMetaData = sysData.TokenMetaData
+						esdtTransferData.Reserved = sysData.Reserved
+					}
+				}
 			}
 
 			value.Set(esdtTransferData.Value)
@@ -241,7 +262,13 @@ func (e *esdtNFTMultiTransfer) ProcessBuiltinFunction(
 	}
 
 	// no need to consume gas on destination - sender already paid for it
-	if len(vmInput.Arguments) > int(minNumOfArguments) && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr) {
+	var isSCCallAfter bool
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) {
+		isSCCallAfter = e.payableHandler.DetermineIsSCCallAfter(vmInput, vmInput.RecipientAddr, int(minNumOfArguments))
+	} else {
+		isSCCallAfter = len(vmInput.Arguments) > int(minNumOfArguments) && vmcommon.IsSmartContractAddress(vmInput.RecipientAddr)
+	}
+	if isSCCallAfter {
 		var callArgs [][]byte
 		if len(vmInput.Arguments) > int(minNumOfArguments)+1 {
 			callArgs = vmInput.Arguments[minNumOfArguments+1:]
@@ -273,8 +300,15 @@ func (e *esdtNFTMultiTransfer) processESDTNFTMultiTransferOnSenderShard(
 		return nil, fmt.Errorf("%w, can not transfer to self", ErrInvalidArguments)
 	}
 	isTransferToMeta := e.shardCoordinator.ComputeId(dstAddress) == core.MetachainShardId
-	if isTransferToMeta {
+	if isTransferToMeta || vmcommon.IsSystemAccountAddress(dstAddress) {
 		return nil, ErrInvalidRcvAddr
+	}
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) {
+		numOfTransfersBig := big.NewInt(0).SetBytes(vmInput.Arguments[1])
+		maxPossibleTransfers := uint64(len(vmInput.Arguments)) / argumentsPerTransfer
+		if !numOfTransfersBig.IsUint64() || numOfTransfersBig.Uint64() > maxPossibleTransfers {
+			return nil, fmt.Errorf("%w, invalid number of transfers", ErrInvalidArguments)
+		}
 	}
 	numOfTransfers := big.NewInt(0).SetBytes(vmInput.Arguments[1]).Uint64()
 	if numOfTransfers == 0 {
@@ -436,10 +470,17 @@ func (e *esdtNFTMultiTransfer) transferOneTokenOnSenderShard(
 		return e.transferBaseToken(acntSnd, acntDst, transferData)
 	}
 
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && !vmcommon.ValidateToken(transferData.ESDTTokenName) {
+		return nil, ErrInvalidTokenID
+	}
+
 	esdtTokenKey := append(e.keyPrefix, transferData.ESDTTokenName...)
 	esdtData, err := e.esdtStorageHandler.GetESDTNFTTokenOnSender(acntSnd, esdtTokenKey, transferData.ESDTTokenNonce)
 	if err != nil {
 		return nil, err
+	}
+	if e.enableEpochsHandler.IsFlagEnabled(FixCorrectSmallIntAndGasLimitsFlag) && transferData.ESDTTokenNonce > 0 && esdtData.TokenMetaData == nil {
+		return nil, ErrNFTDoesNotHaveMetadata
 	}
 
 	if esdtData.Value.Cmp(transferData.ESDTValue) < 0 {

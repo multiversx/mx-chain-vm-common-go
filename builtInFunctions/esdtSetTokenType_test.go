@@ -63,6 +63,17 @@ func TestESDTSetTokenType_ProcessBuiltinFunction(t *testing.T) {
 		_, err := e.ProcessBuiltinFunction(nil, nil, nil)
 		require.Equal(t, ErrNilVmInput, err)
 	})
+	t.Run("nil call value", func(t *testing.T) {
+		t.Parallel()
+
+		e := &esdtSetTokenType{}
+		_, err := e.ProcessBuiltinFunction(nil, nil, &vmcommon.ContractCallInput{
+			VMInput: vmcommon.VMInput{
+				CallValue: nil,
+			},
+		})
+		require.Equal(t, ErrNilValue, err)
+	})
 	t.Run("built-in function called with value", func(t *testing.T) {
 		t.Parallel()
 

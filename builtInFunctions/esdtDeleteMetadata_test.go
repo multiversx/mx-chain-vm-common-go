@@ -3,6 +3,7 @@ package builtInFunctions
 import (
 	"bytes"
 	"errors"
+	"math"
 	"math/big"
 	"testing"
 
@@ -74,7 +75,9 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionErrors(t *testing.T) {
 
 	vmOutput, err := e.ProcessBuiltinFunction(nil, nil, nil)
 	assert.Nil(t, vmOutput)
-	assert.Equal(t, ErrNilVmInput, err)
+	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: nil}})
+	assert.Nil(t, vmOutput)
+	assert.Equal(t, ErrNilValue, err)
 
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, &vmcommon.ContractCallInput{VMInput: vmcommon.VMInput{CallValue: big.NewInt(10)}})
 	assert.Nil(t, vmOutput)
@@ -291,4 +294,74 @@ func TestEsdtDeleteMetaData_ProcessBuiltinFunctionDelete(t *testing.T) {
 	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
 	assert.NotNil(t, vmOutput)
 	assert.Nil(t, err)
+}
+
+func TestEsdtDeleteMetaData_NumIntervalsOverflowOrExceedsArgs(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDelete()
+	e, _ := NewESDTDeleteMetadataFunc(args)
+	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+	e.accounts = &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return acnt, nil
+		},
+	}
+
+	hugeNumIntervals := big.NewInt(0).SetUint64(0x7FFFFFFFFFFFFFFF).Bytes()
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:  big.NewInt(0),
+			CallerAddr: e.allowedAddress,
+			Arguments: [][]byte{
+				[]byte("TOKEN-123456"),
+				hugeNumIntervals,
+				big.NewInt(1).Bytes(),
+				big.NewInt(1).Bytes(),
+			},
+		},
+		RecipientAddr: e.allowedAddress,
+	}
+
+	vmOutput, err := e.ProcessBuiltinFunction(nil, nil, vmInput)
+	assert.Nil(t, vmOutput)
+	assert.Equal(t, ErrInvalidNumOfArgs, err)
+
+	// numIntervals == 0
+	vmInput.Arguments[1] = big.NewInt(0).Bytes()
+	vmOutput, err = e.ProcessBuiltinFunction(nil, nil, vmInput)
+	assert.Nil(t, vmOutput)
+	assert.Equal(t, ErrInvalidNumOfArgs, err)
+}
+
+func TestEsdtDeleteMetaData_EndIndexMaxUint64(t *testing.T) {
+	t.Parallel()
+
+	args := createMockArgsForNewESDTDelete()
+	e, _ := NewESDTDeleteMetadataFunc(args)
+	acnt := mock.NewUserAccount(vmcommon.SystemAccountAddress)
+	e.accounts = &mock.AccountsStub{
+		LoadAccountCalled: func(address []byte) (vmcommon.AccountHandler, error) {
+			return acnt, nil
+		},
+	}
+
+	maxUint64Bytes := big.NewInt(0).SetUint64(math.MaxUint64).Bytes()
+	vmInput := &vmcommon.ContractCallInput{
+		VMInput: vmcommon.VMInput{
+			CallValue:  big.NewInt(0),
+			CallerAddr: e.allowedAddress,
+			Arguments: [][]byte{
+				[]byte("TOKEN-123456"),
+				big.NewInt(1).Bytes(),
+				big.NewInt(1).Bytes(),
+				maxUint64Bytes,
+			},
+		},
+		RecipientAddr: e.allowedAddress,
+	}
+
+	vmOutput, err := e.ProcessBuiltinFunction(nil, nil, vmInput)
+	assert.Nil(t, vmOutput)
+	assert.Equal(t, ErrInvalidArguments, err)
 }
